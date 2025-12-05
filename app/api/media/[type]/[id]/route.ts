@@ -2,6 +2,39 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getMovieDetails, getTVDetails, getEpisodeDetails, generateWWId } from "@/lib/tmdb"
 
+function generateStreamingUrl(
+  pattern: string,
+  mediaType: "movie" | "tv",
+  tmdbId: number,
+  seasonNumber?: number | null,
+  episodeNumber?: number | null,
+): string {
+  let url = pattern.replace(/{tmdb_id}/g, String(tmdbId)).replace(/{media_type}/g, mediaType)
+
+  if (mediaType === "movie") {
+    // For movies, remove season/episode placeholders and clean up URL
+    url = url
+      .replace(/{season}/g, "")
+      .replace(/{episode}/g, "")
+      .replace(/{season_number}/g, "")
+      .replace(/{episode_number}/g, "")
+  } else {
+    // For TV shows, replace with actual values
+    url = url
+      .replace(/{season}/g, String(seasonNumber || 1))
+      .replace(/{episode}/g, String(episodeNumber || 1))
+      .replace(/{season_number}/g, String(seasonNumber || 1))
+      .replace(/{episode_number}/g, String(episodeNumber || 1))
+  }
+
+  // Clean up URL: remove trailing slashes and multiple consecutive slashes (except after protocol)
+  url = url
+    .replace(/([^:]\/)\/+/g, "$1") // Replace multiple slashes with single (but not after http:)
+    .replace(/\/+$/g, "") // Remove trailing slashes
+
+  return url
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ type: string; id: string }> }) {
   const { type, id } = await params
   const tmdbId = Number.parseInt(id, 10)
@@ -69,25 +102,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const autoStreamingLinks = (apis || [])
     .filter((api) => {
       if (mediaType === "movie") {
-        // Only include if there's a movie pattern
         return !!(api.url_pattern_movie || api.url_pattern)
       } else {
-        // Only include if there's a TV pattern
         return !!api.url_pattern_tv
       }
     })
     .map((api) => {
-      let url: string
-      if (mediaType === "movie") {
-        url = (api.url_pattern_movie || api.url_pattern || "").replace("{tmdb_id}", String(tmdbId))
-      } else {
-        url = (api.url_pattern_tv || api.url_pattern || "")
-          .replace("{tmdb_id}", String(tmdbId))
-          .replace("{season}", seasonNumber !== null ? String(seasonNumber) : "1")
-          .replace("{episode}", episodeNumber !== null ? String(episodeNumber) : "1")
-          .replace("{season_number}", seasonNumber !== null ? String(seasonNumber) : "1")
-          .replace("{episode_number}", episodeNumber !== null ? String(episodeNumber) : "1")
-      }
+      const pattern =
+        mediaType === "movie"
+          ? api.url_pattern_movie || api.url_pattern || ""
+          : api.url_pattern_tv || api.url_pattern || ""
+
+      const url = generateStreamingUrl(pattern, mediaType, tmdbId, seasonNumber, episodeNumber)
 
       return {
         id: `auto-${api.id}`,

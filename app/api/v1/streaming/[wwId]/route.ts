@@ -6,9 +6,43 @@ function generateRandomId(prefix = "x"): string {
   return prefix + Math.random().toString(36).substring(2, 10)
 }
 
+function generateStreamingUrl(
+  pattern: string,
+  mediaType: "movie" | "tv",
+  tmdbId: number,
+  seasonNumber?: number,
+  episodeNumber?: number,
+): string {
+  let url = pattern.replace(/{tmdb_id}/g, String(tmdbId)).replace(/{media_type}/g, mediaType)
+
+  if (mediaType === "movie") {
+    // For movies, remove season/episode placeholders and clean up URL
+    url = url
+      .replace(/{season}/g, "")
+      .replace(/{episode}/g, "")
+      .replace(/{season_number}/g, "")
+      .replace(/{episode_number}/g, "")
+  } else {
+    // For TV shows, replace with actual values
+    url = url
+      .replace(/{season}/g, String(seasonNumber || 1))
+      .replace(/{episode}/g, String(episodeNumber || 1))
+      .replace(/{season_number}/g, String(seasonNumber || 1))
+      .replace(/{episode_number}/g, String(episodeNumber || 1))
+  }
+
+  // Clean up URL: remove trailing slashes and multiple consecutive slashes (except after protocol)
+  url = url
+    .replace(/([^:]\/)\/+/g, "$1") // Replace multiple slashes with single (but not after http:)
+    .replace(/\/+$/g, "") // Remove trailing slashes
+
+  return url
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
   try {
-    const { wwId } = await params
+    const resolvedParams = await params
+    const wwId = resolvedParams?.wwId
 
     if (!wwId) {
       return NextResponse.json({ error: "Missing WW ID" }, { status: 400 })
@@ -71,6 +105,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .eq("is_active", true)
       .order("priority", { ascending: true })
 
+    console.log("[v0] Found APIs:", apis?.length || 0)
+
     const autoLinks = (apis || [])
       .filter((api) => {
         if (mediaType === "movie") {
@@ -80,38 +116,29 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
       })
       .map((api, index) => {
-        let url: string
-        if (mediaType === "movie") {
-          const pattern = api.url_pattern_movie || api.url_pattern || ""
-          url = pattern
-            .replace(/{tmdb_id}/g, String(tmdbId))
-            .replace(/{media_type}/g, "movie")
-            .replace(/{season}/g, "")
-            .replace(/{episode}/g, "")
-            .replace(/\/+$/g, "") // Remove trailing slashes
-            .replace(/\/\/+/g, "/") // Replace multiple slashes with single slash
-        } else {
-          const pattern = api.url_pattern_tv || api.url_pattern || ""
-          url = pattern
-            .replace(/{tmdb_id}/g, String(tmdbId))
-            .replace(/{media_type}/g, "tv")
-            .replace(/{season}/g, String(seasonNumber || 1))
-            .replace(/{episode}/g, String(episodeNumber || 1))
-        }
-        return { name: "Source #" + (index + 1), url, quality: "HD" }
+        const pattern =
+          mediaType === "movie"
+            ? api.url_pattern_movie || api.url_pattern || ""
+            : api.url_pattern_tv || api.url_pattern || ""
+
+        const url = generateStreamingUrl(pattern, mediaType, tmdbId, seasonNumber, episodeNumber)
+
+        console.log("[v0] Generated URL for", api.name, ":", url)
+
+        return { name: api.name || "Source #" + (index + 1), url, quality: "HD" }
       })
+      .filter((link) => link.url && link.url.length > 0) // Filter out empty URLs
 
     const allSources = [
       ...autoLinks,
       ...(userLinks || []).map((l, i) => ({
-        name: "Source #" + (autoLinks.length + i + 1),
+        name: l.source_name || "Source #" + (autoLinks.length + i + 1),
         url: l.source_url,
         quality: l.quality || "HD",
       })),
     ]
 
     console.log("[v0] All sources generated:", allSources.length)
-    console.log("[v0] Sources:", JSON.stringify(allSources, null, 2))
 
     // Log embed view
     await supabase.from("embed_views").insert({
@@ -179,6 +206,7 @@ html,body{font-family:system-ui,-apple-system,sans-serif;background:#0c1520;colo
 .ft{margin-top:12px;font-size:10px;color:#888}
 .ft a{color:#667eea}
 .tg{background:#ff6b6b;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px}
+.ns{display:flex;align-items:center;justify-content:center;height:100%;color:#888;font-size:14px}
 @media(max-width:480px){
 .mc{padding:16px;border-radius:12px}
 .mc h2{font-size:16px;margin-bottom:12px}
@@ -216,7 +244,9 @@ function _bs(){
 var c=document.getElementById(_ids.sources);
 if(!c)return;
 if(_d.length===0){
-c.innerHTML='<span style="color:#5a7a8a;padding:8px">Aucune source</span>';
+c.innerHTML='<span style="color:#5a7a8a;padding:8px">Aucune source disponible</span>';
+var p=document.getElementById(_ids.player);
+if(p)p.innerHTML='<div class="ns">Aucune source de streaming disponible</div>';
 return;
 }
 c.innerHTML="";
