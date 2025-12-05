@@ -7,128 +7,136 @@ function generateRandomId(prefix = "x"): string {
 }
 
 export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
-  const { wwId } = params
-  const parsed = parseWWId(wwId)
+  try {
+    const { wwId } = params
+    console.log("[v0] Streaming request for wwId:", wwId)
 
-  if (!parsed) {
-    return NextResponse.json({ error: "Invalid WW ID format" }, { status: 400 })
-  }
+    const parsed = parseWWId(wwId)
+    console.log("[v0] Parsed wwId:", parsed)
 
-  const { mediaType, tmdbId, seasonNumber, episodeNumber } = parsed
-  const supabase = createAdminClient()
+    if (!parsed) {
+      console.log("[v0] Invalid WW ID format")
+      return NextResponse.json({ error: "Invalid WW ID format" }, { status: 400 })
+    }
 
-  // Fetch ads
-  const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
+    const { mediaType, tmdbId, seasonNumber, episodeNumber } = parsed
+    const supabase = createAdminClient()
 
-  const hasAds = ads && ads.length > 0
-  const adUrl = hasAds ? ads[0].ad_url : ""
-  const adId = hasAds ? ads[0].id : ""
-  const adCount = ads ? ads.length : 0
+    // Fetch ads
+    const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
 
-  // Get TMDB data for title
-  const tmdbData = mediaType === "movie" ? await getMovieDetails(tmdbId) : await getTVDetails(tmdbId)
+    const hasAds = ads && ads.length > 0
+    const adUrl = hasAds ? ads[0].ad_url : ""
+    const adId = hasAds ? ads[0].id : ""
+    const adCount = ads ? ads.length : 0
 
-  let episodeData = null
-  if (mediaType === "tv" && seasonNumber !== undefined && episodeNumber !== undefined) {
-    episodeData = await getEpisodeDetails(tmdbId, seasonNumber, episodeNumber)
-  }
+    // Get TMDB data for title
+    const tmdbData = mediaType === "movie" ? await getMovieDetails(tmdbId) : await getTVDetails(tmdbId)
 
-  let title = tmdbData ? ("title" in tmdbData ? tmdbData.title : tmdbData.name) : "Unknown Media"
-  if (episodeData) {
-    title = title + " - S" + seasonNumber + "E" + episodeNumber
-  }
+    let episodeData = null
+    if (mediaType === "tv" && seasonNumber !== undefined && episodeNumber !== undefined) {
+      episodeData = await getEpisodeDetails(tmdbId, seasonNumber, episodeNumber)
+    }
 
-  // Get streaming links
-  let streamingQuery = supabase
-    .from("streaming_links")
-    .select("*")
-    .eq("tmdb_id", tmdbId)
-    .eq("media_type", mediaType)
-    .eq("is_active", true)
-    .eq("status", "approved")
+    let title = tmdbData ? ("title" in tmdbData ? tmdbData.title : tmdbData.name) : "Unknown Media"
+    if (episodeData) {
+      title = title + " - S" + seasonNumber + "E" + episodeNumber
+    }
 
-  if (mediaType === "tv" && seasonNumber !== undefined && episodeNumber !== undefined) {
-    streamingQuery = streamingQuery.eq("season_number", seasonNumber).eq("episode_number", episodeNumber)
-  }
+    // Get streaming links
+    let streamingQuery = supabase
+      .from("streaming_links")
+      .select("*")
+      .eq("tmdb_id", tmdbId)
+      .eq("media_type", mediaType)
+      .eq("is_active", true)
+      .eq("status", "approved")
 
-  const { data: userLinks } = await streamingQuery
+    if (mediaType === "tv" && seasonNumber !== undefined && episodeNumber !== undefined) {
+      streamingQuery = streamingQuery.eq("season_number", seasonNumber).eq("episode_number", episodeNumber)
+    }
 
-  // Get auto-generated from APIs
-  const { data: apis } = await supabase
-    .from("third_party_apis")
-    .select("*")
-    .eq("api_type", "streaming")
-    .eq("is_active", true)
-    .order("priority", { ascending: true })
+    const { data: userLinks } = await streamingQuery
 
-  const autoLinks = (apis || [])
-    .filter((api) => {
-      if (mediaType === "movie") {
-        return !!(api.url_pattern_movie || api.url_pattern)
-      } else {
-        return !!api.url_pattern_tv
-      }
+    // Get auto-generated from APIs
+    const { data: apis } = await supabase
+      .from("third_party_apis")
+      .select("*")
+      .eq("api_type", "streaming")
+      .eq("is_active", true)
+      .order("priority", { ascending: true })
+
+    const autoLinks = (apis || [])
+      .filter((api) => {
+        if (mediaType === "movie") {
+          return !!(api.url_pattern_movie || api.url_pattern)
+        } else {
+          return !!api.url_pattern_tv
+        }
+      })
+      .map((api, index) => {
+        let url: string
+        if (mediaType === "movie") {
+          const pattern = api.url_pattern_movie || api.url_pattern || ""
+          url = pattern
+            .replace(/{tmdb_id}/g, String(tmdbId))
+            .replace(/{media_type}/g, "movie")
+            .replace(/{season}/g, "")
+            .replace(/{episode}/g, "")
+            .replace(/\/+$/g, "") // Remove trailing slashes
+            .replace(/\/\/+/g, "/") // Replace multiple slashes with single slash
+        } else {
+          const pattern = api.url_pattern_tv || api.url_pattern || ""
+          url = pattern
+            .replace(/{tmdb_id}/g, String(tmdbId))
+            .replace(/{media_type}/g, "tv")
+            .replace(/{season}/g, String(seasonNumber || 1))
+            .replace(/{episode}/g, String(episodeNumber || 1))
+        }
+        return { name: "Source #" + (index + 1), url, quality: "HD" }
+      })
+
+    const allSources = [
+      ...autoLinks,
+      ...(userLinks || []).map((l, i) => ({
+        name: "Source #" + (autoLinks.length + i + 1),
+        url: l.source_url,
+        quality: l.quality || "HD",
+      })),
+    ]
+
+    console.log("[v0] All sources generated:", allSources.length)
+    console.log("[v0] Sources:", JSON.stringify(allSources, null, 2))
+
+    // Log embed view
+    await supabase.from("embed_views").insert({
+      ww_id: wwId,
+      tmdb_id: tmdbId,
+      media_type: mediaType,
+      season_number: seasonNumber ?? null,
+      episode_number: episodeNumber ?? null,
+      embed_type: "streaming",
+      referrer: request.headers.get("referer"),
+      user_agent: request.headers.get("user-agent"),
     })
-    .map((api, index) => {
-      let url: string
-      if (mediaType === "movie") {
-        const pattern = api.url_pattern_movie || api.url_pattern || ""
-        url = pattern
-          .replace(/{tmdb_id}/g, String(tmdbId))
-          .replace(/{media_type}/g, "movie")
-          .replace(/{season}/g, "")
-          .replace(/{episode}/g, "")
-          .replace(/\/+$/g, "") // Remove trailing slashes
-          .replace(/\/\/+/g, "/") // Replace multiple slashes with single slash
-      } else {
-        const pattern = api.url_pattern_tv || api.url_pattern || ""
-        url = pattern
-          .replace(/{tmdb_id}/g, String(tmdbId))
-          .replace(/{media_type}/g, "tv")
-          .replace(/{season}/g, String(seasonNumber || 1))
-          .replace(/{episode}/g, String(episodeNumber || 1))
-      }
-      return { name: "Source #" + (index + 1), url, quality: "HD" }
-    })
 
-  const allSources = [
-    ...autoLinks,
-    ...(userLinks || []).map((l, i) => ({
-      name: "Source #" + (autoLinks.length + i + 1),
-      url: l.source_url,
-      quality: l.quality || "HD",
-    })),
-  ]
+    const sourcesJson = JSON.stringify(allSources).replace(/'/g, "\\'")
 
-  // Log embed view
-  await supabase.from("embed_views").insert({
-    ww_id: wwId,
-    tmdb_id: tmdbId,
-    media_type: mediaType,
-    season_number: seasonNumber ?? null,
-    episode_number: episodeNumber ?? null,
-    embed_type: "streaming",
-    referrer: request.headers.get("referer"),
-    user_agent: request.headers.get("user-agent"),
-  })
+    const ids = {
+      overlay: generateRandomId("m"),
+      player: generateRandomId("p"),
+      sources: generateRandomId("s"),
+      timer: generateRandomId("t"),
+      progress: generateRandomId("g"),
+      btnUnlock: generateRandomId("u"),
+      btnPlay: generateRandomId("y"),
+      boxTime: generateRandomId("bt"),
+      boxHelp: generateRandomId("bh"),
+      boxThanks: generateRandomId("bk"),
+      boxDone: generateRandomId("bd"),
+    }
 
-  const sourcesJson = JSON.stringify(allSources).replace(/'/g, "\\'")
-
-  const ids = {
-    overlay: generateRandomId("m"),
-    player: generateRandomId("p"),
-    sources: generateRandomId("s"),
-    timer: generateRandomId("t"),
-    progress: generateRandomId("g"),
-    btnUnlock: generateRandomId("u"),
-    btnPlay: generateRandomId("y"),
-    boxTime: generateRandomId("bt"),
-    boxHelp: generateRandomId("bh"),
-    boxThanks: generateRandomId("bk"),
-    boxDone: generateRandomId("bd"),
-  }
-
-  const html = `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -313,11 +321,15 @@ if(_h&&_u){_cm();}else{_li();}
 </body>
 </html>`
 
-  return new NextResponse(html, {
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "X-Frame-Options": "ALLOWALL",
-      "Access-Control-Allow-Origin": "*",
-    },
-  })
+    return new NextResponse(html, {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "X-Frame-Options": "ALLOWALL",
+        "Access-Control-Allow-Origin": "*",
+      },
+    })
+  } catch (error) {
+    console.error("[v0] Streaming error:", error)
+    return NextResponse.json({ error: "Internal server error", details: String(error) }, { status: 500 })
+  }
 }
