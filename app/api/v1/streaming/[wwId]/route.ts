@@ -6,8 +6,8 @@ function generateRandomId(prefix = "x"): string {
   return prefix + Math.random().toString(36).substring(2, 10)
 }
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
-  const { wwId } = await params
+export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
+  const { wwId } = params
   const parsed = parseWWId(wwId)
 
   if (!parsed) {
@@ -73,13 +73,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       let url: string
       if (mediaType === "movie") {
         const pattern = api.url_pattern_movie || api.url_pattern || ""
-        url = pattern.replace("{tmdb_id}", String(tmdbId))
+        url = pattern
+          .replace(/{tmdb_id}/g, String(tmdbId))
+          .replace(/{media_type}/g, "movie")
+          .replace(/{season}/g, "")
+          .replace(/{episode}/g, "")
       } else {
         const pattern = api.url_pattern_tv || api.url_pattern || ""
         url = pattern
-          .replace("{tmdb_id}", String(tmdbId))
-          .replace("{season}", String(seasonNumber || 1))
-          .replace("{episode}", String(episodeNumber || 1))
+          .replace(/{tmdb_id}/g, String(tmdbId))
+          .replace(/{media_type}/g, "tv")
+          .replace(/{season}/g, String(seasonNumber || 1))
+          .replace(/{episode}/g, String(episodeNumber || 1))
       }
       return { name: "Source #" + (index + 1), url, quality: "HD" }
     })
@@ -220,7 +225,7 @@ var p=document.getElementById(_ids.player);
 if(!p||_d.length===0)return;
 var f=_r("iframe");
 f.src=_d[_c].url;
-f.setAttribute("allowfullscreen","true);
+f.setAttribute("allowfullscreen","true");
 f.setAttribute("allow","accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture");
 p.innerHTML="";
 p.appendChild(f);
