@@ -2,6 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { parseWWId, getMovieDetails, getTVDetails, getPosterUrl } from "@/lib/tmdb"
 
+function generateRandomId(prefix = "x"): string {
+  return prefix + Math.random().toString(36).substring(2, 10)
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
   const { wwId } = await params
   const parsed = parseWWId(wwId)
@@ -70,6 +74,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     })),
   )
 
+  const ids = {
+    overlay: generateRandomId("m"),
+    container: generateRandomId("c"),
+    timer: generateRandomId("t"),
+    progress: generateRandomId("g"),
+    btnUnlock: generateRandomId("u"),
+    btnDownload: generateRandomId("d"),
+    boxTime: generateRandomId("bt"),
+    boxHelp: generateRandomId("bh"),
+    boxThanks: generateRandomId("bk"),
+    boxDone: generateRandomId("bd"),
+  }
+
   const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -79,186 +96,195 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:system-ui,-apple-system,sans-serif;background:#0c1520;color:#fff;min-height:100vh;padding:12px}
-.header{display:flex;gap:12px;margin-bottom:16px;align-items:center}
-.poster{width:60px;border-radius:6px;flex-shrink:0}
-.title{font-size:16px;font-weight:600;line-height:1.3}
-.links{background:#162230;border-radius:8px;overflow:hidden;border:1px solid #1e3a4f}
-.link{display:flex;flex-direction:column;gap:8px;padding:12px;border-bottom:1px solid #1e3a4f}
-.link:last-child{border-bottom:none}
-.link-info{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.link-name{font-weight:500;font-size:14px}
-.badge{padding:2px 6px;background:#1e3a4f;border-radius:4px;font-size:10px;color:#8ba3b5}
-.dl-btn{padding:10px 16px;background:#14B8A6;color:#0c1520;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;width:100%;transition:background 0.2s}
-.dl-btn:active{background:#0d9488;transform:scale(0.98)}
-.empty{color:#5a7a8a;padding:20px;text-align:center;font-size:14px}
-.footer{text-align:center;color:#5a7a8a;font-size:11px;margin-top:16px}
-.footer a{color:#14B8A6}
-.overlay{position:fixed;inset:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 50%,#f093fb 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px}
-.overlay.show{display:flex}
-.card{background:#fff;border-radius:16px;padding:20px;max-width:380px;width:100%;text-align:center;max-height:90vh;overflow-y:auto}
-.card h2{color:#5b6b8a;margin-bottom:16px;font-size:16px}
-.box{border-radius:8px;padding:10px;margin:8px 0;text-align:left}
-.box-warn{background:#fef3cd;border:2px solid #ffc107;color:#856404}
-.box-help{background:#ffe4d6;border:2px solid #ff9a6c;color:#c44d00}
-.box-time{background:#fff3cd;border:2px solid #ffc107;color:#664d03}
-.box-ok{background:#d4edda;border:2px solid #28a745;color:#155724}
-.box b{display:block;font-size:12px}
-.box span{font-size:10px;opacity:0.8}
-.bar{height:5px;background:#e0e0e0;border-radius:3px;margin:12px 0;overflow:hidden}
-.bar-fill{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2);transition:width 0.3s}
-.btn{width:100%;padding:12px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;transition:transform 0.1s}
-.btn:active{transform:scale(0.98)}
-.btn-purple{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
-.btn-green{background:#28a745;color:#fff}
-.hide{display:none}
-.card-footer{margin-top:12px;font-size:10px;color:#888}
-.card-footer a{color:#667eea}
-.ad-badge{background:#ff6b6b;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px}
+.hd{display:flex;gap:12px;margin-bottom:16px;align-items:center}
+.ps{width:60px;border-radius:6px;flex-shrink:0}
+.tt{font-size:16px;font-weight:600;line-height:1.3}
+.lk{background:#162230;border-radius:8px;overflow:hidden;border:1px solid #1e3a4f}
+.li{display:flex;flex-direction:column;gap:8px;padding:12px;border-bottom:1px solid #1e3a4f}
+.li:last-child{border-bottom:none}
+.ln{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.nm{font-weight:500;font-size:14px}
+.bg{padding:2px 6px;background:#1e3a4f;border-radius:4px;font-size:10px;color:#8ba3b5}
+.db{padding:10px 16px;background:#14B8A6;color:#0c1520;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;width:100%;transition:background 0.2s}
+.db:active{background:#0d9488;transform:scale(0.98)}
+.em{color:#5a7a8a;padding:20px;text-align:center;font-size:14px}
+.ft{text-align:center;color:#5a7a8a;font-size:11px;margin-top:16px}
+.ft a{color:#14B8A6}
+.mo{position:fixed;inset:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 50%,#f093fb 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px}
+.mo.sh{display:flex}
+.mc{background:#fff;border-radius:16px;padding:20px;max-width:380px;width:100%;text-align:center;max-height:90vh;overflow-y:auto}
+.mc h2{color:#5b6b8a;margin-bottom:16px;font-size:16px}
+.bx{border-radius:8px;padding:10px;margin:8px 0;text-align:left}
+.bw{background:#fef3cd;border:2px solid #ffc107;color:#856404}
+.bh{background:#ffe4d6;border:2px solid #ff9a6c;color:#c44d00}
+.bi{background:#fff3cd;border:2px solid #ffc107;color:#664d03}
+.bo{background:#d4edda;border:2px solid #28a745;color:#155724}
+.bx b{display:block;font-size:12px}
+.bx span{font-size:10px;opacity:0.8}
+.pb{height:5px;background:#e0e0e0;border-radius:3px;margin:12px 0;overflow:hidden}
+.pf{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2);transition:width 0.3s}
+.bt{width:100%;padding:12px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;transition:transform 0.1s}
+.bt:active{transform:scale(0.98)}
+.bp{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.bn{background:#28a745;color:#fff}
+.hi{display:none}
+.cf{margin-top:12px;font-size:10px;color:#888}
+.cf a{color:#667eea}
+.tg{background:#ff6b6b;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px}
 @media(min-width:480px){
-.link{flex-direction:row;justify-content:space-between;align-items:center}
-.dl-btn{width:auto;padding:8px 20px}
-.poster{width:80px}
-.title{font-size:18px}
+.li{flex-direction:row;justify-content:space-between;align-items:center}
+.db{width:auto;padding:8px 20px}
+.ps{width:80px}
+.tt{font-size:18px}
 }
 </style>
 </head>
 <body>
-${
-  hasAds
-    ? `
-<div class="overlay" id="overlay">
-<div class="card">
-<h2>Votre telechargement vous attend</h2>
-<div class="box box-warn"><b>Bloqueur de pub detecte</b><span>Autorisez les popups pour ce site</span></div>
-<div class="box box-help" id="boxHelp"><b>Cela aide WaveWatch a rester gratuit</b></div>
-<div class="box box-time" id="boxTime"><b>Temps estime : <span id="timer">5</span> secondes</b><span>Cliquez, fermez les pubs, et hop !</span></div>
-<div class="box box-ok hide" id="boxThanks"><b>Merci d'avoir soutenu WaveWatch !</b></div>
-<div class="box box-ok hide" id="boxDone"><b>Pubs validees !</b><span>Cliquez pour telecharger</span></div>
-<div class="bar"><div class="bar-fill" id="progress"></div></div>
-<button class="btn btn-purple" id="btnUnlock">DEBLOQUER<span class="ad-badge">x${adCount}</span></button>
-<button class="btn btn-green hide" id="btnDownload">TELECHARGER</button>
-<div class="card-footer">Nos sites <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
+<div class="hd">
+${poster ? `<img src="${poster}" alt="${title}" class="ps">` : ""}
+<div class="tt">${title}</div>
 </div>
-</div>
-`
-    : ""
-}
-<div class="header">
-${poster ? `<img src="${poster}" alt="${title}" class="poster">` : ""}
-<div class="title">${title}</div>
-</div>
-<div class="links" id="linksContainer"></div>
-<div class="footer">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
+<div class="lk" id="${ids.container}"></div>
+<div class="ft">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
 <script>
 (function(){
-var links = ${linksJson};
-var adUrl = "${adUrl}";
-var adId = "${adId}";
-var hasAds = ${hasAds};
-var pendingUrl = null;
+var _l=${linksJson};
+var _u="${adUrl}";
+var _i="${adId}";
+var _h=${hasAds};
+var _p=null;
+var _ids=${JSON.stringify(ids)};
 
-function buildLinks(){
-  var c = document.getElementById("linksContainer");
-  if(!c) return;
-  if(links.length === 0){
-    c.innerHTML = '<div class="empty">Aucun lien disponible</div>';
-    return;
-  }
-  var h = "";
-  for(var i=0;i<links.length;i++){
-    var l = links[i];
-    h += '<div class="link">';
-    h += '<div class="link-info">';
-    h += '<span class="link-name">' + l.name + '</span>';
-    h += '<span class="badge">' + l.quality + '</span>';
-    if(l.size) h += '<span class="badge">' + l.size + '</span>';
-    h += '</div>';
-    h += '<button class="dl-btn" data-url="' + l.url + '">Telecharger</button>';
-    h += '</div>';
-  }
-  c.innerHTML = h;
-  
-  var btns = document.querySelectorAll(".dl-btn");
-  for(var j=0;j<btns.length;j++){
-    btns[j].onclick = function(){
-      var url = this.getAttribute("data-url");
-      if(hasAds && adUrl){
-        showAd(url);
-      } else {
-        window.open(url,"_blank");
-      }
-    };
-  }
+function _r(t,c,p){
+var e=document.createElement(t);
+if(c)e.className=c;
+if(p)p.appendChild(e);
+return e;
 }
 
-function showAd(url){
-  pendingUrl = url;
-  var o = document.getElementById("overlay");
-  var btnU = document.getElementById("btnUnlock");
-  var btnD = document.getElementById("btnDownload");
-  var bt = document.getElementById("boxTime");
-  var bh = document.getElementById("boxHelp");
-  var bth = document.getElementById("boxThanks");
-  var bd = document.getElementById("boxDone");
-  var pr = document.getElementById("progress");
-  var tm = document.getElementById("timer");
-  if(bt) bt.classList.remove("hide");
-  if(bh) bh.classList.remove("hide");
-  if(bth) bth.classList.add("hide");
-  if(bd) bd.classList.add("hide");
-  if(pr) pr.style.width = "0";
-  if(tm) tm.textContent = "5";
-  if(btnU) btnU.classList.remove("hide");
-  if(btnD) btnD.classList.add("hide");
-  if(o) o.classList.add("show");
+function _bl(){
+var c=document.getElementById(_ids.container);
+if(!c)return;
+if(_l.length===0){
+c.innerHTML='<div class="em">Aucun lien disponible</div>';
+return;
+}
+var h="";
+for(var i=0;i<_l.length;i++){
+var l=_l[i];
+h+='<div class="li">';
+h+='<div class="ln">';
+h+='<span class="nm">'+l.name+'</span>';
+h+='<span class="bg">'+l.quality+'</span>';
+if(l.size)h+='<span class="bg">'+l.size+'</span>';
+h+='</div>';
+h+='<button class="db" data-url="'+l.url+'">Telecharger</button>';
+h+='</div>';
+}
+c.innerHTML=h;
+
+var bs=document.querySelectorAll(".db");
+for(var j=0;j<bs.length;j++){
+bs[j].onclick=function(){
+var url=this.getAttribute("data-url");
+if(_h&&_u){_sa(url);}else{window.open(url,"_blank");}
+};
+}
 }
 
-var btnUnlock = document.getElementById("btnUnlock");
-var btnDownload = document.getElementById("btnDownload");
+function _sa(url){
+_p=url;
+var o=document.getElementById(_ids.overlay);
+if(!o){
+o=_r("div","mo",document.body);
+o.id=_ids.overlay;
+var mc=_r("div","mc",o);
+var h2=_r("h2",null,mc);
+h2.textContent="Votre telechargement vous attend";
+var bw=_r("div","bx bw",mc);
+bw.innerHTML="<b>Verification en cours</b><span>Merci de patienter</span>";
+var bh=_r("div","bx bh",mc);
+bh.id=_ids.boxHelp;
+bh.innerHTML="<b>Cela aide a maintenir le service gratuit</b>";
+var bi=_r("div","bx bi",mc);
+bi.id=_ids.boxTime;
+bi.innerHTML="<b>Temps estime : <span id='"+_ids.timer+"'>5</span> secondes</b><span>Cliquez, fermez la fenetre</span>";
+var bk=_r("div","bx bo hi",mc);
+bk.id=_ids.boxThanks;
+bk.innerHTML="<b>Merci pour votre soutien !</b>";
+var bd=_r("div","bx bo hi",mc);
+bd.id=_ids.boxDone;
+bd.innerHTML="<b>Pret !</b><span>Cliquez pour telecharger</span>";
+var pb=_r("div","pb",mc);
+var pf=_r("div","pf",pb);
+pf.id=_ids.progress;
+var bu=_r("button","bt bp",mc);
+bu.id=_ids.btnUnlock;
+bu.innerHTML="CONTINUER<span class='tg'>x${adCount}</span>";
+var bd=_r("button","bt bn hi",mc);
+bd.id=_ids.btnDownload;
+bd.textContent="TELECHARGER";
+var cf=_r("div","cf",mc);
+cf.innerHTML='<a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a>';
 
-if(btnUnlock){
-  btnUnlock.onclick = function(){
-    fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:adId})});
-    window.open(adUrl,"_blank");
-    btnUnlock.classList.add("hide");
-    var sec = 5;
-    var prog = 0;
-    var iv = setInterval(function(){
-      sec--;
-      prog += 20;
-      var tm = document.getElementById("timer");
-      var pr = document.getElementById("progress");
-      if(tm) tm.textContent = sec;
-      if(pr) pr.style.width = prog + "%";
-      if(sec <= 0){
-        clearInterval(iv);
-        var bt = document.getElementById("boxTime");
-        var bh = document.getElementById("boxHelp");
-        var bth = document.getElementById("boxThanks");
-        var bd = document.getElementById("boxDone");
-        if(bt) bt.classList.add("hide");
-        if(bh) bh.classList.add("hide");
-        if(bth) bth.classList.remove("hide");
-        if(bd) bd.classList.remove("hide");
-        if(pr) pr.style.width = "100%";
-        if(btnDownload) btnDownload.classList.remove("hide");
-      }
-    },1000);
-  };
+bu.onclick=function(){
+var xhr=new XMLHttpRequest();
+xhr.open("POST","/api/ads/click",true);
+xhr.setRequestHeader("Content-Type","application/json");
+xhr.send(JSON.stringify({adId:_i}));
+window.open(_u,"_blank");
+bu.classList.add("hi");
+var s=5,pg=0;
+var iv=setInterval(function(){
+s--;pg+=20;
+var tm=document.getElementById(_ids.timer);
+var pr=document.getElementById(_ids.progress);
+if(tm)tm.textContent=s;
+if(pr)pr.style.width=pg+"%";
+if(s<=0){
+clearInterval(iv);
+var bt=document.getElementById(_ids.boxTime);
+var bh=document.getElementById(_ids.boxHelp);
+var bk=document.getElementById(_ids.boxThanks);
+var bd=document.getElementById(_ids.boxDone);
+var dn=document.getElementById(_ids.btnDownload);
+if(bt)bt.classList.add("hi");
+if(bh)bh.classList.add("hi");
+if(bk)bk.classList.remove("hi");
+if(bd)bd.classList.remove("hi");
+if(pr)pr.style.width="100%";
+if(dn)dn.classList.remove("hi");
+}
+},1000);
+};
+
+document.getElementById(_ids.btnDownload).onclick=function(){
+var ov=document.getElementById(_ids.overlay);
+if(ov)ov.classList.remove("sh");
+if(_p){window.open(_p,"_blank");_p=null;}
+};
+}
+// Reset overlay state
+var bt=document.getElementById(_ids.boxTime);
+var bh=document.getElementById(_ids.boxHelp);
+var bk=document.getElementById(_ids.boxThanks);
+var bd=document.getElementById(_ids.boxDone);
+var pr=document.getElementById(_ids.progress);
+var tm=document.getElementById(_ids.timer);
+var bu=document.getElementById(_ids.btnUnlock);
+var dn=document.getElementById(_ids.btnDownload);
+if(bt)bt.classList.remove("hi");
+if(bh)bh.classList.remove("hi");
+if(bk)bk.classList.add("hi");
+if(bd)bd.classList.add("hi");
+if(pr)pr.style.width="0";
+if(tm)tm.textContent="5";
+if(bu)bu.classList.remove("hi");
+if(dn)dn.classList.add("hi");
+o.classList.add("sh");
 }
 
-if(btnDownload){
-  btnDownload.onclick = function(){
-    var o = document.getElementById("overlay");
-    if(o) o.classList.remove("show");
-    if(pendingUrl){
-      window.open(pendingUrl,"_blank");
-      pendingUrl = null;
-    }
-  };
-}
-
-buildLinks();
+_bl();
 })();
 </script>
 </body>

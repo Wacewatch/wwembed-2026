@@ -118,30 +118,34 @@ export function ApiManager() {
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Pattern URL Film</Label>
+                  <Label>
+                    Pattern URL Film <span className="text-muted-foreground text-xs">(optionnel)</span>
+                  </Label>
                   <Input
                     value={formData.url_pattern_movie}
                     onChange={(e) => setFormData({ ...formData, url_pattern_movie: e.target.value })}
                     placeholder="https://vidsrc.xyz/embed/movie/{tmdb_id}"
-                    required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Placeholders: <code className="bg-secondary px-1 rounded">{"{tmdb_id}"}</code>
+                    Placeholders: <code className="bg-secondary px-1 rounded">{"{tmdb_id}"}</code> — Laissez vide pour
+                    ne pas utiliser cette API pour les films
                   </p>
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Pattern URL Série</Label>
+                  <Label>
+                    Pattern URL Série <span className="text-muted-foreground text-xs">(optionnel)</span>
+                  </Label>
                   <Input
                     value={formData.url_pattern_tv}
                     onChange={(e) => setFormData({ ...formData, url_pattern_tv: e.target.value })}
                     placeholder="https://vidsrc.xyz/embed/tv/{tmdb_id}/{season}/{episode}"
-                    required
                   />
                   <p className="text-xs text-muted-foreground">
                     Placeholders: <code className="bg-secondary px-1 rounded">{"{tmdb_id}"}</code>{" "}
                     <code className="bg-secondary px-1 rounded">{"{season}"}</code>{" "}
-                    <code className="bg-secondary px-1 rounded">{"{episode}"}</code>
+                    <code className="bg-secondary px-1 rounded">{"{episode}"}</code> — Laissez vide pour ne pas utiliser
+                    cette API pour les séries
                   </p>
                 </div>
 

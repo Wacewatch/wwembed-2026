@@ -3,13 +3,15 @@
 import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { EmbedUrls } from "@/components/embed-urls"
+import { DigitalEmbedUrls } from "@/components/digital-embed-urls"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getPosterUrl, getBackdropUrl, getStillUrl, type TMDBSearchResult } from "@/lib/tmdb"
 import { AddLinkModal } from "@/components/add-link-modal"
-import { Plus } from "lucide-react"
+import { AddDigitalContentModal } from "@/components/add-digital-content-modal"
+import { Plus, Book, Music, Monitor, Gamepad2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import type {
   StreamingLink,
@@ -18,6 +20,8 @@ import type {
   TMDBTVShow,
   TMDBEpisode,
   LiveTVChannel,
+  DigitalContent,
+  DigitalContentType,
 } from "@/lib/types"
 
 interface MediaResult {
@@ -30,10 +34,14 @@ interface MediaResult {
   episodeNumber?: number | null
 }
 
-export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<"media" | "live">("media")
+interface DigitalResult {
+  content: DigitalContent
+  links: any[]
+}
 
-  // Media search states
+export default function HomePage() {
+  const [activeTab, setActiveTab] = useState<"media" | "live" | "digital">("media")
+
   const [searchMode, setSearchMode] = useState<"id" | "title">("id")
   const [tmdbId, setTmdbId] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
@@ -47,18 +55,28 @@ export default function HomePage() {
   const [result, setResult] = useState<MediaResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Live TV states
   const [channels, setChannels] = useState<LiveTVChannel[]>([])
   const [channelSearch, setChannelSearch] = useState("")
   const [selectedChannel, setSelectedChannel] = useState<LiveTVChannel | null>(null)
   const [loadingChannels, setLoadingChannels] = useState(false)
 
-  // Fetch live channels
+  const [digitalContentType, setDigitalContentType] = useState<DigitalContentType>("ebook")
+  const [digitalContents, setDigitalContents] = useState<DigitalContent[]>([])
+  const [digitalSearch, setDigitalSearch] = useState("")
+  const [selectedDigital, setSelectedDigital] = useState<DigitalContent | null>(null)
+  const [loadingDigital, setLoadingDigital] = useState(false)
+
   useEffect(() => {
     if (activeTab === "live") {
       fetchChannels()
     }
   }, [activeTab])
+
+  useEffect(() => {
+    if (activeTab === "digital") {
+      fetchDigitalContent()
+    }
+  }, [activeTab, digitalContentType])
 
   const fetchChannels = async () => {
     setLoadingChannels(true)
@@ -75,6 +93,25 @@ export default function HomePage() {
       console.error("Error fetching channels:", e)
     } finally {
       setLoadingChannels(false)
+    }
+  }
+
+  const fetchDigitalContent = async () => {
+    setLoadingDigital(true)
+    try {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from("digital_content")
+        .select("*")
+        .eq("content_type", digitalContentType)
+        .eq("is_active", true)
+        .eq("status", "approved")
+        .order("title")
+      setDigitalContents(data || [])
+    } catch (e) {
+      console.error("Error fetching digital content:", e)
+    } finally {
+      setLoadingDigital(false)
     }
   }
 
@@ -179,6 +216,12 @@ export default function HomePage() {
       ch.country.toLowerCase().includes(channelSearch.toLowerCase()),
   )
 
+  const filteredDigitalContents = digitalContents.filter(
+    (c) =>
+      c.title.toLowerCase().includes(digitalSearch.toLowerCase()) ||
+      (c.author && c.author.toLowerCase().includes(digitalSearch.toLowerCase())),
+  )
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -197,10 +240,11 @@ export default function HomePage() {
         {/* Search Section */}
         <div className="max-w-3xl mx-auto mb-12">
           <div className="bg-card rounded-lg border border-border p-6">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "media" | "live")}>
-              <TabsList className="grid w-full grid-cols-2 mb-6">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "media" | "live" | "digital")}>
+              <TabsList className="grid w-full grid-cols-3 mb-6">
                 <TabsTrigger value="media">Films & Series</TabsTrigger>
                 <TabsTrigger value="live">TV Live</TabsTrigger>
+                <TabsTrigger value="digital">Digital</TabsTrigger>
               </TabsList>
 
               <TabsContent value="media" className="space-y-4">
@@ -378,6 +422,120 @@ export default function HomePage() {
                   </div>
                 )}
               </TabsContent>
+
+              <TabsContent value="digital" className="space-y-4">
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    variant={digitalContentType === "ebook" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setDigitalContentType("ebook")
+                      setSelectedDigital(null)
+                    }}
+                    className="gap-2"
+                  >
+                    <Book className="w-4 h-4" />
+                    Ebooks
+                  </Button>
+                  <Button
+                    variant={digitalContentType === "music" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setDigitalContentType("music")
+                      setSelectedDigital(null)
+                    }}
+                    className="gap-2"
+                  >
+                    <Music className="w-4 h-4" />
+                    Musique
+                  </Button>
+                  <Button
+                    variant={digitalContentType === "software" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setDigitalContentType("software")
+                      setSelectedDigital(null)
+                    }}
+                    className="gap-2"
+                  >
+                    <Monitor className="w-4 h-4" />
+                    Logiciels
+                  </Button>
+                  <Button
+                    variant={digitalContentType === "game" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setDigitalContentType("game")
+                      setSelectedDigital(null)
+                    }}
+                    className="gap-2"
+                  >
+                    <Gamepad2 className="w-4 h-4" />
+                    Jeux
+                  </Button>
+                </div>
+
+                <div className="flex gap-3">
+                  <Input
+                    placeholder="Rechercher par titre ou auteur..."
+                    value={digitalSearch}
+                    onChange={(e) => setDigitalSearch(e.target.value)}
+                    className="flex-1"
+                  />
+                  <AddDigitalContentModal
+                    buttonVariant="outline"
+                    buttonText="Ajouter"
+                    onSuccess={fetchDigitalContent}
+                  />
+                </div>
+
+                {loadingDigital ? (
+                  <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+                ) : filteredDigitalContents.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {digitalContents.length === 0 ? "Aucun contenu disponible" : "Aucun resultat"}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-72 overflow-y-auto">
+                    {filteredDigitalContents.map((content) => (
+                      <button
+                        key={content.id}
+                        onClick={() => setSelectedDigital(content)}
+                        className={`p-3 rounded-lg border transition-all text-left ${
+                          selectedDigital?.id === content.id
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        {content.cover_url ? (
+                          <img
+                            src={content.cover_url || "/placeholder.svg"}
+                            alt={content.title}
+                            className="w-full h-20 object-cover rounded mb-2"
+                          />
+                        ) : (
+                          <div className="w-full h-20 bg-secondary rounded mb-2 flex items-center justify-content-center">
+                            {digitalContentType === "ebook" && (
+                              <Book className="w-8 h-8 text-muted-foreground mx-auto" />
+                            )}
+                            {digitalContentType === "music" && (
+                              <Music className="w-8 h-8 text-muted-foreground mx-auto" />
+                            )}
+                            {digitalContentType === "software" && (
+                              <Monitor className="w-8 h-8 text-muted-foreground mx-auto" />
+                            )}
+                            {digitalContentType === "game" && (
+                              <Gamepad2 className="w-8 h-8 text-muted-foreground mx-auto" />
+                            )}
+                          </div>
+                        )}
+                        <p className="text-sm font-medium truncate">{content.title}</p>
+                        {content.author && <p className="text-xs text-muted-foreground truncate">{content.author}</p>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
             </Tabs>
           </div>
         </div>
@@ -498,6 +656,94 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Digital Content Results Section */}
+        {activeTab === "digital" && selectedDigital && (
+          <div className="space-y-6">
+            {/* Digital Content Info */}
+            <div className="bg-card rounded-lg border border-border p-6">
+              <div className="flex gap-4">
+                {selectedDigital.cover_url ? (
+                  <img
+                    src={selectedDigital.cover_url || "/placeholder.svg"}
+                    alt={selectedDigital.title}
+                    className="w-24 h-32 object-cover rounded"
+                  />
+                ) : (
+                  <div className="w-24 h-32 bg-secondary rounded flex items-center justify-center">
+                    {digitalContentType === "ebook" && <Book className="w-10 h-10 text-muted-foreground" />}
+                    {digitalContentType === "music" && <Music className="w-10 h-10 text-muted-foreground" />}
+                    {digitalContentType === "software" && <Monitor className="w-10 h-10 text-muted-foreground" />}
+                    {digitalContentType === "game" && <Gamepad2 className="w-10 h-10 text-muted-foreground" />}
+                  </div>
+                )}
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold">{selectedDigital.title}</h2>
+                  {selectedDigital.author && <p className="text-muted-foreground">{selectedDigital.author}</p>}
+                  {selectedDigital.version && (
+                    <p className="text-sm text-muted-foreground">Version: {selectedDigital.version}</p>
+                  )}
+                  {selectedDigital.description && (
+                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{selectedDigital.description}</p>
+                  )}
+                  <span className="inline-block mt-2 bg-primary/20 text-primary text-xs px-2 py-1 rounded capitalize">
+                    {digitalContentType}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Digital Embed URLs */}
+            <DigitalEmbedUrls
+              wwId={selectedDigital.ww_id}
+              contentType={selectedDigital.content_type}
+              title={selectedDigital.title}
+            />
+
+            {/* Digital Content Preview */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Show player preview only for ebook and music */}
+              {(digitalContentType === "ebook" || digitalContentType === "music") && (
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <span className="text-primary">●</span>{" "}
+                    {digitalContentType === "ebook" ? "Lecteur Ebook" : "Lecteur Audio"}
+                  </h3>
+                  <div
+                    className={`bg-black rounded-lg overflow-hidden ${digitalContentType === "music" ? "h-[400px]" : "aspect-video"}`}
+                  >
+                    <iframe
+                      src={
+                        digitalContentType === "ebook"
+                          ? `/api/v1/ebook/${selectedDigital.ww_id}`
+                          : `/api/v1/music/${selectedDigital.ww_id}`
+                      }
+                      className="w-full h-full border-0"
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    />
+                  </div>
+                </div>
+              )}
+              <div className={digitalContentType === "ebook" || digitalContentType === "music" ? "" : "md:col-span-2"}>
+                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <span className="text-primary">↓</span> Téléchargements
+                </h3>
+                <div
+                  className={`bg-muted rounded-lg overflow-hidden ${digitalContentType === "ebook" || digitalContentType === "music" ? "aspect-video" : "h-[400px]"}`}
+                >
+                  <iframe src={`/api/v1/download/${selectedDigital.ww_id}`} className="w-full h-full border-0" />
+                </div>
+              </div>
+            </div>
+
+            <AddDigitalContentModal
+              buttonVariant="outline"
+              buttonText="Ajouter un lien"
+              onSuccess={fetchDigitalContent}
+            />
           </div>
         )}
       </main>

@@ -158,3 +158,40 @@ export interface LiveTVSource {
   submitted_by: string | null
   created_at: string
 }
+
+export type DigitalContentType = "ebook" | "music" | "software" | "game"
+
+export interface DigitalContent {
+  id: string
+  ww_id: string
+  content_type: DigitalContentType
+  title: string
+  description: string | null
+  cover_url: string | null
+  author: string | null
+  version: string | null
+  file_size: string | null
+  created_at: string
+  updated_at: string
+  submitted_by: string | null
+  is_active: boolean
+  status: "pending" | "approved" | "rejected"
+}
+
+export interface DigitalDownloadLink {
+  id: string
+  content_id: string
+  ww_id: string
+  source_name: string
+  source_url: string
+  reader_url: string | null
+  link_type: "direct" | "torrent" | "magnet" | "stream"
+  quality: string | null
+  file_format: string | null
+  file_size: string | null
+  language: string
+  is_active: boolean
+  status: "pending" | "approved" | "rejected"
+  submitted_by: string | null
+  created_at: string
+}

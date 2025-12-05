@@ -10,6 +10,7 @@ import { StatsViewer } from "./stats-viewer"
 import { AdsManager } from "./ads-manager"
 import { PendingLinksManager } from "./pending-links-manager"
 import { LiveTVManager } from "./live-tv-manager"
+import { DigitalContentManager } from "./digital-content-manager"
 
 export function AdminTabs() {
   const [activeTab, setActiveTab] = useState("pending")
@@ -21,8 +22,9 @@ export function AdminTabs() {
         <TabsTrigger value="apis">APIs Tiers</TabsTrigger>
         <TabsTrigger value="streaming">Liens Streaming</TabsTrigger>
         <TabsTrigger value="download">Liens Download</TabsTrigger>
+        <TabsTrigger value="digital">Digital</TabsTrigger>
         <TabsTrigger value="livetv">TV Live</TabsTrigger>
-        <TabsTrigger value="ads">Publicités</TabsTrigger>
+        <TabsTrigger value="ads">Publicites</TabsTrigger>
         <TabsTrigger value="users">Utilisateurs</TabsTrigger>
         <TabsTrigger value="stats">Statistiques</TabsTrigger>
       </TabsList>
@@ -41,6 +43,10 @@ export function AdminTabs() {
 
       <TabsContent value="download">
         <DownloadLinksManager />
+      </TabsContent>
+
+      <TabsContent value="digital">
+        <DigitalContentManager />
       </TabsContent>
 
       <TabsContent value="livetv">

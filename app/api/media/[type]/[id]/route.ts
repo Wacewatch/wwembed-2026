@@ -66,35 +66,46 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     .eq("is_active", true)
     .order("priority", { ascending: true })
 
-  const autoStreamingLinks = (apis || []).map((api) => {
-    let url = api.url_pattern.replace("{tmdb_id}", String(tmdbId)).replace("{media_type}", mediaType)
+  const autoStreamingLinks = (apis || [])
+    .filter((api) => {
+      if (mediaType === "movie") {
+        // Only include if there's a movie pattern
+        return !!(api.url_pattern_movie || api.url_pattern)
+      } else {
+        // Only include if there's a TV pattern
+        return !!api.url_pattern_tv
+      }
+    })
+    .map((api) => {
+      let url: string
+      if (mediaType === "movie") {
+        url = (api.url_pattern_movie || api.url_pattern || "").replace("{tmdb_id}", String(tmdbId))
+      } else {
+        url = (api.url_pattern_tv || api.url_pattern || "")
+          .replace("{tmdb_id}", String(tmdbId))
+          .replace("{season}", seasonNumber !== null ? String(seasonNumber) : "1")
+          .replace("{episode}", episodeNumber !== null ? String(episodeNumber) : "1")
+          .replace("{season_number}", seasonNumber !== null ? String(seasonNumber) : "1")
+          .replace("{episode_number}", episodeNumber !== null ? String(episodeNumber) : "1")
+      }
 
-    // Replace season/episode placeholders
-    if (mediaType === "tv") {
-      url = url
-        .replace("{season}", seasonNumber !== null ? String(seasonNumber) : "1")
-        .replace("{episode}", episodeNumber !== null ? String(episodeNumber) : "1")
-        .replace("{season_number}", seasonNumber !== null ? String(seasonNumber) : "1")
-        .replace("{episode_number}", episodeNumber !== null ? String(episodeNumber) : "1")
-    }
-
-    return {
-      id: `auto-${api.id}`,
-      tmdb_id: tmdbId,
-      media_type: mediaType,
-      ww_id: wwId,
-      source_name: api.name,
-      source_url: url,
-      quality: "HD",
-      language: "multi",
-      is_auto_generated: true,
-      is_verified: false,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      season_number: seasonNumber,
-      episode_number: episodeNumber,
-    }
-  })
+      return {
+        id: `auto-${api.id}`,
+        tmdb_id: tmdbId,
+        media_type: mediaType,
+        ww_id: wwId,
+        source_name: api.name,
+        source_url: url,
+        quality: "HD",
+        language: "multi",
+        is_auto_generated: true,
+        is_verified: false,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        season_number: seasonNumber,
+        episode_number: episodeNumber,
+      }
+    })
 
   // Combine all streaming links
   const streamingLinks = [...autoStreamingLinks, ...(userStreamingLinks || [])]

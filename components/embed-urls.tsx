@@ -1,19 +1,23 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 interface EmbedUrlsProps {
   wwId: string
-  baseUrl: string
   mediaType?: "movie" | "tv"
   seasonNumber?: number | null
   episodeNumber?: number | null
 }
 
-export function EmbedUrls({ wwId, baseUrl, mediaType, seasonNumber, episodeNumber }: EmbedUrlsProps) {
+export function EmbedUrls({ wwId, mediaType, seasonNumber, episodeNumber }: EmbedUrlsProps) {
   const [copied, setCopied] = useState<string | null>(null)
+  const [baseUrl, setBaseUrl] = useState("")
+
+  useEffect(() => {
+    setBaseUrl(window.location.origin)
+  }, [])
 
   const streamingUrl = `${baseUrl}/api/v1/streaming/${wwId}`
   const downloadUrl = `${baseUrl}/api/v1/download/${wwId}`
@@ -39,8 +43,13 @@ export function EmbedUrls({ wwId, baseUrl, mediaType, seasonNumber, episodeNumbe
         <div className="space-y-2">
           <label className="text-sm font-medium text-muted-foreground">URL Lecteur Streaming (HTML)</label>
           <div className="flex gap-2">
-            <Input value={streamingUrl} readOnly className="font-mono text-xs" />
-            <Button variant="secondary" size="sm" onClick={() => copyToClipboard(streamingUrl, "streaming")}>
+            <Input value={baseUrl ? streamingUrl : "Chargement..."} readOnly className="font-mono text-xs" />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => copyToClipboard(streamingUrl, "streaming")}
+              disabled={!baseUrl}
+            >
               {copied === "streaming" ? "Copié!" : "Copier"}
             </Button>
           </div>
@@ -49,8 +58,13 @@ export function EmbedUrls({ wwId, baseUrl, mediaType, seasonNumber, episodeNumbe
         <div className="space-y-2">
           <label className="text-sm font-medium text-muted-foreground">URL Téléchargement (HTML)</label>
           <div className="flex gap-2">
-            <Input value={downloadUrl} readOnly className="font-mono text-xs" />
-            <Button variant="secondary" size="sm" onClick={() => copyToClipboard(downloadUrl, "download")}>
+            <Input value={baseUrl ? downloadUrl : "Chargement..."} readOnly className="font-mono text-xs" />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => copyToClipboard(downloadUrl, "download")}
+              disabled={!baseUrl}
+            >
               {copied === "download" ? "Copié!" : "Copier"}
             </Button>
           </div>

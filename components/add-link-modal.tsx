@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
 import { generateWWId } from "@/lib/tmdb"
-import { Plus, Search, Loader2, Tv } from "lucide-react"
+import { Plus, Search, Loader2, Tv, Book, Music, Gamepad2, Package } from "lucide-react"
 import type { LiveTVChannel } from "@/lib/types"
 
 const LIVE_TV_CATEGORIES = [
@@ -23,6 +24,13 @@ const LIVE_TV_CATEGORIES = [
   { value: "documentary", label: "Documentaire" },
   { value: "cinema", label: "Cinema" },
   { value: "other", label: "Autre" },
+]
+
+const DIGITAL_CONTENT_TYPES = [
+  { value: "ebook", label: "Ebook", icon: Book },
+  { value: "music", label: "Musique", icon: Music },
+  { value: "software", label: "Logiciel", icon: Package },
+  { value: "game", label: "Jeu", icon: Gamepad2 },
 ]
 
 interface AddLinkModalProps {
@@ -61,7 +69,7 @@ export function AddLinkModal({
   const [userRole, setUserRole] = useState<"admin" | "uploader" | "member">("member")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
-  const [mainTab, setMainTab] = useState<"media" | "livetv">("media")
+  const [mainTab, setMainTab] = useState<"media" | "livetv" | "digital">("media")
   const [liveTvMode, setLiveTvMode] = useState<"new" | "existing">("new")
   const [existingChannels, setExistingChannels] = useState<LiveTVChannel[]>([])
   const [selectedChannelId, setSelectedChannelId] = useState<string>("")
@@ -108,6 +116,24 @@ export function AddLinkModal({
     source_name: "",
     stream_url: "",
     quality: "HD",
+  })
+
+  const [digitalContentType, setDigitalContentType] = useState<"ebook" | "music" | "software" | "game">("ebook")
+  const [digitalContentData, setDigitalContentData] = useState({
+    title: "",
+    author: "",
+    description: "",
+    cover_url: "",
+    version: "",
+  })
+  const [digitalLinkData, setDigitalLinkData] = useState({
+    source_name: "",
+    download_url: "",
+    reader_url: "",
+    file_format: "",
+    file_size: "",
+    quality: "",
+    language: "fr",
   })
 
   const isPrefilled = !!prefilledTmdbId
@@ -198,6 +224,23 @@ export function AddLinkModal({
           stream_url: "",
           quality: "HD",
         })
+        setDigitalContentType("ebook")
+        setDigitalContentData({
+          title: "",
+          author: "",
+          description: "",
+          cover_url: "",
+          version: "",
+        })
+        setDigitalLinkData({
+          source_name: "",
+          download_url: "",
+          reader_url: "",
+          file_format: "",
+          file_size: "",
+          quality: "",
+          language: "fr",
+        })
       }
     }
   }, [
@@ -264,6 +307,19 @@ export function AddLinkModal({
 
   const getLinkStatus = () => {
     return userRole === "admin" || userRole === "uploader" ? "approved" : "pending"
+  }
+
+  const generateDigitalWWId = () => {
+    const prefix =
+      digitalContentType === "ebook"
+        ? "ww-ebook"
+        : digitalContentType === "music"
+          ? "ww-music"
+          : digitalContentType === "software"
+            ? "ww-soft"
+            : "ww-game"
+    const randomId = Math.floor(100000 + Math.random() * 900000)
+    return `${prefix}-${randomId}`
   }
 
   const handleStreamingSubmit = async (e: React.FormEvent) => {
@@ -420,7 +476,12 @@ export function AddLinkModal({
 
   const handleLiveTvSourceSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!userId || !selectedChannelId) return
+    if (!userId) return
+    const channelId = prefilledChannel?.id || selectedChannelId
+    if (!channelId) {
+      setError("Veuillez selectionner une chaine")
+      return
+    }
 
     setLoading(true)
     setError(null)
@@ -430,11 +491,10 @@ export function AddLinkModal({
     const status = getLinkStatus()
 
     const { error: insertError } = await supabase.from("live_tv_sources").insert({
-      channel_id: selectedChannelId,
+      channel_id: channelId,
       source_name: liveTvSourceData.source_name,
       stream_url: liveTvSourceData.stream_url,
       quality: liveTvSourceData.quality,
-      is_active: true,
       submitted_by: userId,
       status: status,
     })
@@ -459,11 +519,139 @@ export function AddLinkModal({
     setLoading(false)
   }
 
-  const filteredChannels = existingChannels.filter((ch) =>
-    ch.channel_name.toLowerCase().includes(channelSearchQuery.toLowerCase()),
+  const handleDigitalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!userId) return
+
+    if (!digitalContentData.title) {
+      setError("Le titre est requis")
+      return
+    }
+
+    if (!digitalLinkData.source_name || !digitalLinkData.download_url) {
+      setError("Le nom de la source et l'URL de telechargement sont requis")
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    const supabase = createClient()
+    const status = getLinkStatus()
+    const wwId = generateDigitalWWId()
+
+    // First create the digital content
+    const { data: contentData, error: contentError } = await supabase
+      .from("digital_content")
+      .insert({
+        ww_id: wwId,
+        content_type: digitalContentType,
+        title: digitalContentData.title,
+        author: digitalContentData.author || null,
+        description: digitalContentData.description || null,
+        cover_url: digitalContentData.cover_url || null,
+        version: digitalContentData.version || null,
+        submitted_by: userId,
+        status: status,
+        is_active: true,
+      })
+      .select()
+      .single()
+
+    if (contentError) {
+      setError(contentError.message)
+      setLoading(false)
+      return
+    }
+
+    // Then create the download link
+    const { error: linkError } = await supabase.from("digital_download_links").insert({
+      content_id: contentData.id,
+      ww_id: wwId,
+      source_name: digitalLinkData.source_name,
+      source_url: digitalLinkData.download_url,
+      reader_url: digitalLinkData.reader_url || null,
+      file_format: digitalLinkData.file_format || null,
+      file_size: digitalLinkData.file_size || null,
+      quality: digitalLinkData.quality || null,
+      language: digitalLinkData.language,
+      submitted_by: userId,
+      status: status,
+      is_active: true,
+    })
+
+    if (linkError) {
+      setError(linkError.message)
+    } else {
+      const typeLabel =
+        digitalContentType === "ebook"
+          ? "Ebook"
+          : digitalContentType === "music"
+            ? "Musique"
+            : digitalContentType === "software"
+              ? "Logiciel"
+              : "Jeu"
+      const message =
+        status === "pending" ? `${typeLabel} soumis - En attente de validation` : `${typeLabel} ajoute avec succes!`
+      setSuccess(message)
+      setDigitalContentData({
+        title: "",
+        author: "",
+        description: "",
+        cover_url: "",
+        version: "",
+      })
+      setDigitalLinkData({
+        source_name: "",
+        download_url: "",
+        reader_url: "",
+        file_format: "",
+        file_size: "",
+        quality: "",
+        language: "fr",
+      })
+      setTimeout(() => {
+        setOpen(false)
+        setSuccess(null)
+        onSuccess?.()
+      }, 1500)
+    }
+    setLoading(false)
+  }
+
+  const filteredChannels = existingChannels.filter((c) =>
+    c.channel_name.toLowerCase().includes(channelSearchQuery.toLowerCase()),
   )
 
-  const selectedChannel = prefilledChannel || existingChannels.find((ch) => ch.id === selectedChannelId)
+  const getAuthorLabel = () => {
+    switch (digitalContentType) {
+      case "ebook":
+        return "Auteur"
+      case "music":
+        return "Artiste"
+      case "software":
+      case "game":
+        return "Developpeur"
+      default:
+        return "Auteur"
+    }
+  }
+
+  const getFormatSuggestions = () => {
+    switch (digitalContentType) {
+      case "ebook":
+        return "PDF, EPUB, MOBI"
+      case "music":
+        return "MP3, FLAC, WAV"
+      case "software":
+        return "EXE, DMG, ZIP"
+      case "game":
+        return "ISO, ZIP, EXE"
+      default:
+        return ""
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -475,31 +663,26 @@ export function AddLinkModal({
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {isChannelPrefilled ? `Ajouter une source a ${prefilledChannel?.channel_name}` : "Ajouter un lien"}
-          </DialogTitle>
+          <DialogTitle>Ajouter un lien</DialogTitle>
         </DialogHeader>
 
         {!isAuthenticated ? (
-          <div className="py-8 text-center">
+          <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">Vous devez etre connecte pour ajouter un lien</p>
-            <Button asChild>
-              <a href="/auth/login">Se connecter</a>
-            </Button>
+            <Button onClick={() => (window.location.href = "/auth/login")}>Se connecter</Button>
           </div>
         ) : (
           <div className="space-y-6">
-            {userRole === "member" && (
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 text-sm text-yellow-500">
-                En tant que membre, vos liens seront soumis a validation par un administrateur.
-              </div>
-            )}
-
+            {/* Main Type Selection */}
             {!isPrefilled && !isChannelPrefilled && (
-              <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "media" | "livetv")}>
+              <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "media" | "livetv" | "digital")}>
                 <TabsList className="w-full">
                   <TabsTrigger value="media" className="flex-1">
                     Film / Serie
+                  </TabsTrigger>
+                  <TabsTrigger value="digital" className="flex-1">
+                    <Book className="w-4 h-4 mr-2" />
+                    Digital
                   </TabsTrigger>
                   <TabsTrigger value="livetv" className="flex-1">
                     <Tv className="w-4 h-4 mr-2" />
@@ -794,6 +977,188 @@ export function AddLinkModal({
               </>
             )}
 
+            {mainTab === "digital" && !isChannelPrefilled && !isPrefilled && (
+              <div className="space-y-6">
+                {/* Content Type Selection */}
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold">1. Type de contenu</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {DIGITAL_CONTENT_TYPES.map((type) => {
+                      const Icon = type.icon
+                      return (
+                        <Button
+                          key={type.value}
+                          type="button"
+                          variant={digitalContentType === type.value ? "default" : "outline"}
+                          className="flex flex-col h-20 gap-1"
+                          onClick={() => setDigitalContentType(type.value as typeof digitalContentType)}
+                        >
+                          <Icon className="w-5 h-5" />
+                          <span className="text-xs">{type.label}</span>
+                        </Button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Content Info */}
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold">2. Informations du contenu</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Titre *</Label>
+                      <Input
+                        placeholder="Titre du contenu"
+                        value={digitalContentData.title}
+                        onChange={(e) => setDigitalContentData({ ...digitalContentData, title: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{getAuthorLabel()}</Label>
+                      <Input
+                        placeholder={getAuthorLabel()}
+                        value={digitalContentData.author}
+                        onChange={(e) => setDigitalContentData({ ...digitalContentData, author: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Textarea
+                      placeholder="Description du contenu (optionnel)"
+                      value={digitalContentData.description}
+                      onChange={(e) => setDigitalContentData({ ...digitalContentData, description: e.target.value })}
+                      rows={2}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>URL de la couverture</Label>
+                      <Input
+                        placeholder="https://..."
+                        value={digitalContentData.cover_url}
+                        onChange={(e) => setDigitalContentData({ ...digitalContentData, cover_url: e.target.value })}
+                        type="url"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Version</Label>
+                      <Input
+                        placeholder="Ex: 1.0, 2024"
+                        value={digitalContentData.version}
+                        onChange={(e) => setDigitalContentData({ ...digitalContentData, version: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Link Info */}
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold">3. Lien de telechargement</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Nom de la source *</Label>
+                      <Input
+                        placeholder="Ex: Mega, 1fichier"
+                        value={digitalLinkData.source_name}
+                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, source_name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Format</Label>
+                      <Input
+                        placeholder={getFormatSuggestions()}
+                        value={digitalLinkData.file_format}
+                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, file_format: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>URL de telechargement *</Label>
+                    <Input
+                      placeholder="https://..."
+                      value={digitalLinkData.download_url}
+                      onChange={(e) => setDigitalLinkData({ ...digitalLinkData, download_url: e.target.value })}
+                      type="url"
+                      required
+                    />
+                  </div>
+                  {/* Show reader URL only for ebook and music */}
+                  {(digitalContentType === "ebook" || digitalContentType === "music") && (
+                    <div className="space-y-2">
+                      <Label>
+                        URL de lecture {digitalContentType === "ebook" ? "(lecteur PDF)" : "(lecteur audio)"}
+                      </Label>
+                      <Input
+                        placeholder="https://... (optionnel, pour la lecture en ligne)"
+                        value={digitalLinkData.reader_url}
+                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, reader_url: e.target.value })}
+                        type="url"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {digitalContentType === "ebook"
+                          ? "URL pour lire le PDF en ligne (sera affiche dans le lecteur)"
+                          : "URL du fichier audio pour l'ecoute en ligne"}
+                      </p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Taille</Label>
+                      <Input
+                        placeholder="100 MB"
+                        value={digitalLinkData.file_size}
+                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, file_size: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Qualite</Label>
+                      <Input
+                        placeholder={digitalContentType === "music" ? "320kbps" : "HD"}
+                        value={digitalLinkData.quality}
+                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, quality: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Langue</Label>
+                      <Select
+                        value={digitalLinkData.language}
+                        onValueChange={(v) => setDigitalLinkData({ ...digitalLinkData, language: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="fr">Francais</SelectItem>
+                          <SelectItem value="en">Anglais</SelectItem>
+                          <SelectItem value="multi">Multi</SelectItem>
+                          <SelectItem value="other">Autre</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {success && <p className="text-sm text-green-500">{success}</p>}
+                {error && <p className="text-sm text-red-500">{error}</p>}
+                <Button type="button" className="w-full" disabled={loading} onClick={handleDigitalSubmit}>
+                  {loading
+                    ? "Ajout en cours..."
+                    : `Ajouter le ${
+                        digitalContentType === "ebook"
+                          ? "ebook"
+                          : digitalContentType === "music"
+                            ? "morceau"
+                            : digitalContentType === "software"
+                              ? "logiciel"
+                              : "jeu"
+                      }`}
+                </Button>
+              </div>
+            )}
+
             {/* Live TV Tab Content */}
             {(mainTab === "livetv" || isChannelPrefilled) && (
               <div className="space-y-4">
@@ -857,9 +1222,9 @@ export function AddLinkModal({
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>URL du flux (m3u8, etc.)</Label>
+                      <Label>URL du flux</Label>
                       <Input
-                        placeholder="https://..."
+                        placeholder="https://... ou m3u8"
                         value={liveTvData.stream_url}
                         onChange={(e) => setLiveTvData({ ...liveTvData, stream_url: e.target.value })}
                         required
@@ -868,21 +1233,39 @@ export function AddLinkModal({
                     <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label>Pays</Label>
-                        <Input
-                          placeholder="fr"
+                        <Select
                           value={liveTvData.country}
-                          onChange={(e) => setLiveTvData({ ...liveTvData, country: e.target.value })}
-                          maxLength={5}
-                        />
+                          onValueChange={(v) => setLiveTvData({ ...liveTvData, country: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="fr">France</SelectItem>
+                            <SelectItem value="be">Belgique</SelectItem>
+                            <SelectItem value="ch">Suisse</SelectItem>
+                            <SelectItem value="ca">Canada</SelectItem>
+                            <SelectItem value="us">USA</SelectItem>
+                            <SelectItem value="uk">UK</SelectItem>
+                            <SelectItem value="other">Autre</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <Label>Langue</Label>
-                        <Input
-                          placeholder="fr"
+                        <Select
                           value={liveTvData.language}
-                          onChange={(e) => setLiveTvData({ ...liveTvData, language: e.target.value })}
-                          maxLength={5}
-                        />
+                          onValueChange={(v) => setLiveTvData({ ...liveTvData, language: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="fr">Francais</SelectItem>
+                            <SelectItem value="en">Anglais</SelectItem>
+                            <SelectItem value="multi">Multi</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <Label>Qualite</Label>
@@ -915,51 +1298,40 @@ export function AddLinkModal({
                         <div className="space-y-2">
                           <Label>Rechercher une chaine</Label>
                           <Input
-                            placeholder="Nom de la chaine..."
+                            placeholder="Rechercher..."
                             value={channelSearchQuery}
                             onChange={(e) => setChannelSearchQuery(e.target.value)}
                           />
                         </div>
-                        <div className="max-h-48 overflow-y-auto space-y-2">
+                        <div className="max-h-40 overflow-y-auto border rounded-md">
                           {filteredChannels.map((channel) => (
                             <button
                               key={channel.id}
                               type="button"
-                              onClick={() => setSelectedChannelId(channel.id)}
-                              className={`w-full p-3 rounded-lg border text-left transition-all flex items-center gap-3 ${
-                                selectedChannelId === channel.id
-                                  ? "border-primary bg-primary/10"
-                                  : "border-border hover:border-primary/50"
+                              className={`w-full flex items-center gap-3 p-2 hover:bg-secondary/50 text-left ${
+                                selectedChannelId === channel.id ? "bg-secondary" : ""
                               }`}
+                              onClick={() => setSelectedChannelId(channel.id)}
                             >
-                              {channel.channel_logo ? (
+                              {channel.channel_logo && (
                                 <img
                                   src={channel.channel_logo || "/placeholder.svg"}
                                   alt={channel.channel_name}
-                                  className="w-10 h-10 object-contain rounded bg-muted"
+                                  className="w-8 h-8 object-contain"
                                 />
-                              ) : (
-                                <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
-                                  <Tv className="w-5 h-5 text-muted-foreground" />
-                                </div>
                               )}
-                              <div>
-                                <p className="font-medium">{channel.channel_name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {channel.category} - {channel.country}
-                                </p>
-                              </div>
+                              <span>{channel.channel_name}</span>
                             </button>
                           ))}
+                          {filteredChannels.length === 0 && (
+                            <p className="text-center py-4 text-muted-foreground">Aucune chaine trouvee</p>
+                          )}
                         </div>
                       </>
                     )}
 
-                    {selectedChannel && (
-                      <form onSubmit={handleLiveTvSourceSubmit} className="space-y-4 mt-4 pt-4 border-t border-border">
-                        <p className="text-sm text-muted-foreground">
-                          Ajouter une source a: <strong>{selectedChannel.channel_name}</strong>
-                        </p>
+                    {(selectedChannelId || isChannelPrefilled) && (
+                      <form onSubmit={handleLiveTvSourceSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>Nom de la source</Label>
@@ -993,7 +1365,7 @@ export function AddLinkModal({
                         <div className="space-y-2">
                           <Label>URL du flux</Label>
                           <Input
-                            placeholder="https://..."
+                            placeholder="https://... ou m3u8"
                             value={liveTvSourceData.stream_url}
                             onChange={(e) => setLiveTvSourceData({ ...liveTvSourceData, stream_url: e.target.value })}
                             required
@@ -1002,7 +1374,7 @@ export function AddLinkModal({
                         {success && <p className="text-sm text-green-500">{success}</p>}
                         {error && <p className="text-sm text-red-500">{error}</p>}
                         <Button type="submit" className="w-full" disabled={loading}>
-                          {loading ? "Ajout en cours..." : "Ajouter la source TV"}
+                          {loading ? "Ajout en cours..." : "Ajouter la source"}
                         </Button>
                       </form>
                     )}
