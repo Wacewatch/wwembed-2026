@@ -78,6 +78,8 @@ export async function GET(request: NextRequest, { params }: { params: { wwId: st
           .replace(/{media_type}/g, "movie")
           .replace(/{season}/g, "")
           .replace(/{episode}/g, "")
+          .replace(/\/+$/g, "") // Remove trailing slashes
+          .replace(/\/\/+/g, "/") // Replace multiple slashes with single slash
       } else {
         const pattern = api.url_pattern_tv || api.url_pattern || ""
         url = pattern
