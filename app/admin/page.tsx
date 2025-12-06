@@ -34,6 +34,11 @@ export default async function AdminPage() {
     { count: approvedStreaming },
     { count: approvedDownload },
     { data: adsData },
+    { count: totalEbooks },
+    { count: totalMusic },
+    { count: totalSoftware },
+    { count: totalGames },
+    { count: totalDigitalLinks },
   ] = await Promise.all([
     supabase.from("embed_views").select("*", { count: "exact", head: true }),
     supabase.from("link_clicks").select("*", { count: "exact", head: true }),
@@ -48,6 +53,15 @@ export default async function AdminPage() {
     supabase.from("streaming_links").select("*", { count: "exact", head: true }).eq("status", "approved"),
     supabase.from("download_links").select("*", { count: "exact", head: true }).eq("status", "approved"),
     supabase.from("ads").select("click_count"),
+    // Digital content counts
+    supabase
+      .from("digital_content")
+      .select("*", { count: "exact", head: true })
+      .eq("content_type", "ebook"),
+    supabase.from("digital_content").select("*", { count: "exact", head: true }).eq("content_type", "music"),
+    supabase.from("digital_content").select("*", { count: "exact", head: true }).eq("content_type", "software"),
+    supabase.from("digital_content").select("*", { count: "exact", head: true }).eq("content_type", "game"),
+    supabase.from("digital_download_links").select("*", { count: "exact", head: true }),
   ])
 
   // Calculate total ad clicks
@@ -64,6 +78,12 @@ export default async function AdminPage() {
     pendingLinks: (pendingStreaming || 0) + (pendingDownload || 0) + (pendingLiveTv || 0),
     approvedLinks: (approvedStreaming || 0) + (approvedDownload || 0),
     totalAdClicks,
+    // Digital content stats
+    totalEbooks: totalEbooks || 0,
+    totalMusic: totalMusic || 0,
+    totalSoftware: totalSoftware || 0,
+    totalGames: totalGames || 0,
+    totalDigitalLinks: totalDigitalLinks || 0,
   }
 
   return (
@@ -72,7 +92,9 @@ export default async function AdminPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Administration</h1>
-          <p className="text-muted-foreground mt-1">Gérez les APIs, liens, chaînes TV et utilisateurs</p>
+          <p className="text-muted-foreground mt-1">
+            Gérez les APIs, liens, chaînes TV, contenus digitaux et utilisateurs
+          </p>
         </div>
 
         <AdminStats stats={stats} />

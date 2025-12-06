@@ -1,9 +1,13 @@
 "use client"
 
+import { useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { AddLinkModal } from "@/components/add-link-modal"
+import { ProfileSettings } from "@/components/dashboard/profile-settings"
 import {
   Play,
   Download,
@@ -17,6 +21,9 @@ import {
   Music,
   Gamepad2,
   Package,
+  Settings,
+  ArrowUpCircle,
+  Loader2,
 } from "lucide-react"
 import type {
   Profile,
@@ -116,6 +123,52 @@ export function DashboardContent({
   digitalLinks,
   stats,
 }: DashboardContentProps) {
+  const [requestingUploader, setRequestingUploader] = useState(false)
+  const [uploaderRequestResult, setUploaderRequestResult] = useState<{ success: boolean; message: string } | null>(null)
+
+  const supabase = createClient()
+
+  // Calculate conditions for uploader request
+  const totalApprovedLinks =
+    stats.verifiedStreaming + stats.verifiedDownload + stats.verifiedLiveTv + stats.verifiedDigital
+  const accountAge = Math.floor((Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24))
+  const canRequestUploader = profile.role === "member" && totalApprovedLinks >= 500 && accountAge >= 30
+  const showUploaderSection = profile.role === "member"
+
+  async function handleRequestUploader() {
+    setRequestingUploader(true)
+    setUploaderRequestResult(null)
+
+    try {
+      // Check conditions again
+      if (totalApprovedLinks < 500) {
+        setUploaderRequestResult({
+          success: false,
+          message: `Vous avez ${totalApprovedLinks}/500 liens validés requis`,
+        })
+        setRequestingUploader(false)
+        return
+      }
+      if (accountAge < 30) {
+        setUploaderRequestResult({ success: false, message: `Votre compte a ${accountAge}/30 jours requis` })
+        setRequestingUploader(false)
+        return
+      }
+
+      // Update profile role
+      const { error } = await supabase.from("profiles").update({ role: "uploader" }).eq("id", profile.id)
+
+      if (error) throw error
+
+      setUploaderRequestResult({ success: true, message: "Félicitations ! Vous êtes maintenant Uploader !" })
+      setTimeout(() => window.location.reload(), 2000)
+    } catch (err: any) {
+      setUploaderRequestResult({ success: false, message: err.message || "Une erreur est survenue" })
+    }
+
+    setRequestingUploader(false)
+  }
+
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
@@ -136,6 +189,91 @@ export function DashboardContent({
           buttonClassName="bg-gradient-to-r from-primary to-teal-400 hover:from-primary/90 hover:to-teal-400/90"
         />
       </div>
+
+      {showUploaderSection && (
+        <Card className={`border-2 ${canRequestUploader ? "border-amber-500/50 bg-amber-500/5" : "border-border"}`}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ArrowUpCircle className={`w-5 h-5 ${canRequestUploader ? "text-amber-500" : "text-muted-foreground"}`} />
+              Devenir Uploader
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              Remplissez les conditions suivantes pour obtenir le grade Uploader et débloquer des fonctionnalités
+              avancées.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 mb-4">
+              <div
+                className={`p-4 rounded-lg border ${totalApprovedLinks >= 500 ? "border-green-500/50 bg-green-500/10" : "border-border"}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Liens validés</span>
+                  {totalApprovedLinks >= 500 ? (
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <Clock className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div
+                  className={`text-2xl font-bold mt-1 ${totalApprovedLinks >= 500 ? "text-green-500" : "text-foreground"}`}
+                >
+                  {totalApprovedLinks} / 500
+                </div>
+                <div className="h-2 bg-muted rounded-full mt-2 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${totalApprovedLinks >= 500 ? "bg-green-500" : "bg-amber-500"}`}
+                    style={{ width: `${Math.min(100, (totalApprovedLinks / 500) * 100)}%` }}
+                  />
+                </div>
+              </div>
+              <div
+                className={`p-4 rounded-lg border ${accountAge >= 30 ? "border-green-500/50 bg-green-500/10" : "border-border"}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Ancienneté du compte</span>
+                  {accountAge >= 30 ? (
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <Clock className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div className={`text-2xl font-bold mt-1 ${accountAge >= 30 ? "text-green-500" : "text-foreground"}`}>
+                  {accountAge} / 30 jours
+                </div>
+                <div className="h-2 bg-muted rounded-full mt-2 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${accountAge >= 30 ? "bg-green-500" : "bg-amber-500"}`}
+                    style={{ width: `${Math.min(100, (accountAge / 30) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            <Button
+              onClick={handleRequestUploader}
+              disabled={!canRequestUploader || requestingUploader}
+              className={canRequestUploader ? "bg-amber-500 hover:bg-amber-600" : ""}
+            >
+              {requestingUploader ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Vérification...
+                </>
+              ) : (
+                <>
+                  <ArrowUpCircle className="w-4 h-4 mr-2" />
+                  Demander le grade Uploader
+                </>
+              )}
+            </Button>
+            {uploaderRequestResult && (
+              <p className={`mt-3 text-sm ${uploaderRequestResult.success ? "text-green-500" : "text-red-500"}`}>
+                {uploaderRequestResult.message}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
         <Card className="bg-card border-border">
@@ -205,47 +343,37 @@ export function DashboardContent({
         </Card>
       </div>
 
-      <Card className="bg-gradient-to-r from-primary/10 to-teal-500/10 border-primary/20">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <TrendingUp className="w-10 h-10 text-primary" />
-            <div>
-              <p className="text-lg font-semibold text-foreground">Resume de votre activite</p>
-              <p className="text-sm text-muted-foreground">
-                Vous avez soumis {stats.totalStreaming + stats.totalDownload + stats.totalLiveTv + stats.totalDigital}{" "}
-                liens au total.{" "}
-                {stats.pendingCount > 0 && (
-                  <span className="text-yellow-500">{stats.pendingCount} en attente de validation.</span>
-                )}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Links Tables */}
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle>Mes liens soumis</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="streaming">
-            <TabsList className="mb-4 flex-wrap h-auto">
-              <TabsTrigger value="streaming">
-                <Play className="w-4 h-4 mr-2" />
-                Streaming ({streamingLinks.length})
+          <Tabs defaultValue="streaming" className="w-full">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="streaming" className="flex items-center gap-2">
+                <Play className="h-4 w-4" />
+                <span className="hidden sm:inline">Streaming</span>
               </TabsTrigger>
-              <TabsTrigger value="download">
-                <Download className="w-4 h-4 mr-2" />
-                Telechargement ({downloadLinks.length})
+              <TabsTrigger value="download" className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Download</span>
               </TabsTrigger>
-              <TabsTrigger value="digital">
-                <Book className="w-4 h-4 mr-2" />
-                Digital ({digitalContents.length})
+              <TabsTrigger value="livetv" className="flex items-center gap-2">
+                <Tv className="h-4 w-4" />
+                <span className="hidden sm:inline">Live TV</span>
               </TabsTrigger>
-              <TabsTrigger value="livetv">
-                <Tv className="w-4 h-4 mr-2" />
-                TV Live ({liveTvChannels.length + liveTvSources.length})
+              <TabsTrigger value="digital" className="flex items-center gap-2">
+                <Book className="h-4 w-4" />
+                <span className="hidden sm:inline">Digital</span>
+              </TabsTrigger>
+              <TabsTrigger value="add" className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                <span className="hidden sm:inline">Ajouter</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Profil</span>
               </TabsTrigger>
             </TabsList>
 
@@ -480,6 +608,18 @@ export function DashboardContent({
                   )}
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="add">
+              <div className="py-8 text-center">
+                <AddLinkModal onSuccess={() => window.location.reload()} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="settings">
+              <div className="py-4">
+                <ProfileSettings userId={profile.id} username={profile.username || ""} />
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>

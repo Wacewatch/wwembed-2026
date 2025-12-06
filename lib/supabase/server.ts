@@ -13,7 +13,8 @@ export async function createClient() {
         try {
           cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
         } catch {
-          // Server Component - ignore
+          // The "setAll" method was called from a Server Component.
+          // This can be ignored if you have proxy refreshing user sessions.
         }
       },
     },

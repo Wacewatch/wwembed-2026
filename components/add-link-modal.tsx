@@ -2,17 +2,18 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
-import { generateWWId } from "@/lib/tmdb"
-import { Plus, Search, Loader2, Tv, Book, Music, Gamepad2, Package } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import { Plus, Search, Loader2, Tv, Book, Music, Gamepad2, Package, Trash2 } from "lucide-react"
 import type { LiveTVChannel } from "@/lib/types"
+import { generateWWId } from "@/lib/tmdb"
 
 const LIVE_TV_CATEGORIES = [
   { value: "general", label: "Generaliste" },
@@ -47,6 +48,15 @@ interface AddLinkModalProps {
   buttonClassName?: string
   buttonIcon?: React.ReactNode
   onSuccess?: () => void
+  // Props for specific modes
+  tmdbId?: string // For download mode
+  mediaType?: "movie" | "tv" // For download mode
+  seasonNumber?: string | null // For download mode
+  episodeNumber?: string | null // For download mode
+  trigger?: React.ReactNode // Custom trigger element
+  mode?: "streaming" | "download" | "livetv" | "digital" // Default is streaming
+  digitalContentId?: string // For digital content mode
+  digitalWwId?: string // For digital content mode
 }
 
 export function AddLinkModal({
@@ -63,6 +73,14 @@ export function AddLinkModal({
   buttonClassName,
   buttonIcon,
   onSuccess,
+  tmdbId: propTmdbId, // Renamed to avoid conflict with state
+  mediaType: propMediaType, // Renamed to avoid conflict with state
+  seasonNumber: initialSeasonNumber, // Renamed to avoid conflict with state
+  episodeNumber: initialEpisodeNumber, // Renamed to avoid conflict with state
+  trigger,
+  mode = "streaming",
+  digitalContentId,
+  digitalWwId,
 }: AddLinkModalProps) {
   const [open, setOpen] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
@@ -76,16 +94,17 @@ export function AddLinkModal({
   const [channelSearchQuery, setChannelSearchQuery] = useState("")
 
   // Media selection state
-  const [tmdbId, setTmdbId] = useState("")
-  const [mediaType, setMediaType] = useState<"movie" | "tv">("movie")
-  const [seasonNumber, setSeasonNumber] = useState("")
-  const [episodeNumber, setEpisodeNumber] = useState("")
+  const [tmdbId, setTmdbId] = useState(propTmdbId || "")
+  const [mediaType, setMediaType] = useState<"movie" | "tv">(propMediaType || "movie")
+  const [seasonNumber, setSeasonNumber] = useState(initialSeasonNumber || "")
+  const [episodeNumber, setEpisodeNumber] = useState(initialEpisodeNumber || "")
   const [mediaInfo, setMediaInfo] = useState<{ title: string; poster: string; seasons?: number } | null>(null)
   const [searchLoading, setSearchLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Streaming state
   const [streamingData, setStreamingData] = useState({
     source_name: "",
     source_url: "",
@@ -93,6 +112,7 @@ export function AddLinkModal({
     language: "multi",
   })
 
+  // Download state
   const [downloadData, setDownloadData] = useState({
     source_name: "",
     source_url: "",
@@ -100,8 +120,16 @@ export function AddLinkModal({
     quality: "HD",
     file_size: "",
     language: "multi",
+    release_name: "",
+    codec_video: "",
+    codec_audio: "",
+    resolution: "",
+    subtitle: "",
+    nfo: "",
+    has_audio_description: false,
   })
 
+  // Live TV state
   const [liveTvData, setLiveTvData] = useState({
     channel_name: "",
     channel_logo: "",
@@ -118,6 +146,7 @@ export function AddLinkModal({
     quality: "HD",
   })
 
+  // Digital content state
   const [digitalContentType, setDigitalContentType] = useState<"ebook" | "music" | "software" | "game">("ebook")
   const [digitalContentData, setDigitalContentData] = useState({
     title: "",
@@ -135,6 +164,29 @@ export function AddLinkModal({
     quality: "",
     language: "fr",
   })
+
+  // Download mode specific states
+  const [bulkMode, setBulkMode] = useState(false)
+  const [fullSeasonMode, setFullSeasonMode] = useState(false)
+  const [bulkUrls, setBulkUrls] = useState("")
+  const [startEpisode, setStartEpisode] = useState("1")
+  const [downloadLinks, setDownloadLinks] = useState([
+    {
+      source_name: "",
+      source_url: "",
+      link_type: "direct" as "direct" | "torrent" | "magnet",
+      quality: "HD",
+      file_size: "",
+      language: "multi",
+      release_name: "",
+      codec_video: "",
+      codec_audio: "",
+      resolution: "",
+      subtitle: "",
+      nfo: "",
+      has_audio_description: false,
+    },
+  ])
 
   const isPrefilled = !!prefilledTmdbId
   const isChannelPrefilled = !!prefilledChannel
@@ -241,6 +293,28 @@ export function AddLinkModal({
           quality: "",
           language: "fr",
         })
+        // Reset download specific states
+        setBulkMode(false)
+        setFullSeasonMode(false)
+        setBulkUrls("")
+        setStartEpisode("1")
+        setDownloadLinks([
+          {
+            source_name: "",
+            source_url: "",
+            link_type: "direct",
+            quality: "HD",
+            file_size: "",
+            language: "multi",
+            release_name: "",
+            codec_video: "",
+            codec_audio: "",
+            resolution: "",
+            subtitle: "",
+            nfo: "",
+            has_audio_description: false,
+          },
+        ])
       }
     }
   }, [
@@ -369,6 +443,39 @@ export function AddLinkModal({
     setLoading(false)
   }
 
+  const addDownloadLink = () => {
+    setDownloadLinks([
+      ...downloadLinks,
+      {
+        source_name: downloadLinks[0]?.source_name || "",
+        source_url: "",
+        link_type: downloadLinks[0]?.link_type || "direct",
+        quality: downloadLinks[0]?.quality || "HD",
+        file_size: "",
+        language: downloadLinks[0]?.language || "multi",
+        release_name: "",
+        codec_video: downloadLinks[0]?.codec_video || "",
+        codec_audio: downloadLinks[0]?.codec_audio || "",
+        resolution: downloadLinks[0]?.resolution || "",
+        subtitle: downloadLinks[0]?.subtitle || "",
+        nfo: "",
+        has_audio_description: downloadLinks[0]?.has_audio_description || false,
+      },
+    ])
+  }
+
+  const removeDownloadLink = (index: number) => {
+    if (downloadLinks.length > 1) {
+      setDownloadLinks(downloadLinks.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateDownloadLink = (index: number, field: string, value: any) => {
+    const updated = [...downloadLinks]
+    updated[index] = { ...updated[index], [field]: value }
+    setDownloadLinks(updated)
+  }
+
   const handleDownloadSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!mediaInfo || !userId) return
@@ -378,52 +485,175 @@ export function AddLinkModal({
     setSuccess(null)
 
     const supabase = createClient()
-    const wwId = getCurrentWWId()
-    const season = seasonNumber ? Number.parseInt(seasonNumber, 10) : null
-    const episode = episodeNumber ? Number.parseInt(episodeNumber, 10) : null
     const status = getLinkStatus()
 
-    const { error: insertError } = await supabase.from("download_links").insert({
-      tmdb_id: Number.parseInt(tmdbId, 10),
-      media_type: mediaType,
-      ww_id: wwId,
-      source_name: downloadData.source_name,
-      source_url: downloadData.source_url,
-      link_type: downloadData.link_type,
-      quality: downloadData.quality,
-      file_size: downloadData.file_size || null,
-      language: downloadData.language,
-      season_number: season,
-      episode_number: episode,
-      is_auto_generated: false,
-      submitted_by: userId,
-      is_verified: false,
-      is_active: true,
-      status: status,
-    })
+    try {
+      // Mode bulk: une URL par ligne pour chaque épisode
+      if (bulkMode && mediaType === "tv" && seasonNumber) {
+        const urls = bulkUrls.split("\n").filter((url) => url.trim())
+        if (urls.length === 0) {
+          setError("Veuillez entrer au moins une URL")
+          setLoading(false)
+          return
+        }
 
-    if (insertError) {
-      setError(insertError.message)
-    } else {
-      const message =
-        status === "pending"
-          ? "Lien telechargement soumis - En attente de validation"
-          : "Lien telechargement ajoute avec succes!"
-      setSuccess(message)
-      setDownloadData({
-        source_name: "",
-        source_url: "",
-        link_type: "direct",
-        quality: "HD",
-        file_size: "",
-        language: "multi",
-      })
-      setTimeout(() => {
-        setOpen(false)
-        setSuccess(null)
-        onSuccess?.()
-      }, 1500)
+        const startEp = Number.parseInt(startEpisode, 10) || 1
+        const insertData = urls.map((url, index) => {
+          const episodeNum = startEp + index
+          const wwId = `ww${tmdbId}s${seasonNumber}e${episodeNum}`
+          return {
+            tmdb_id: Number.parseInt(tmdbId, 10),
+            media_type: mediaType,
+            ww_id: wwId,
+            source_name: downloadLinks[0].source_name,
+            source_url: url.trim(),
+            link_type: downloadLinks[0].link_type,
+            quality: downloadLinks[0].quality,
+            file_size: downloadLinks[0].file_size || null,
+            language: downloadLinks[0].language,
+            season_number: Number.parseInt(seasonNumber, 10),
+            episode_number: episodeNum,
+            is_auto_generated: false,
+            submitted_by: userId,
+            is_verified: false,
+            is_active: true,
+            status: status,
+            release_name: downloadLinks[0].release_name || null,
+            codec_video: downloadLinks[0].codec_video || null,
+            codec_audio: downloadLinks[0].codec_audio || null,
+            resolution: downloadLinks[0].resolution || null,
+            subtitle: downloadLinks[0].subtitle || null,
+            nfo: downloadLinks[0].nfo || null,
+            has_audio_description: downloadLinks[0].has_audio_description,
+          }
+        })
+
+        const { error: insertError } = await supabase.from("download_links").insert(insertData)
+
+        if (insertError) {
+          setError(insertError.message)
+        } else {
+          setSuccess(`${urls.length} liens ajoutés avec succès!`)
+          setBulkUrls("")
+          setTimeout(() => {
+            setOpen(false)
+            setSuccess(null)
+            onSuccess?.()
+          }, 1500)
+        }
+      }
+      // Mode saison complète
+      else if (fullSeasonMode && mediaType === "tv" && seasonNumber) {
+        const wwId = `ww${tmdbId}s${seasonNumber}`
+        const insertData = downloadLinks.map((link) => ({
+          tmdb_id: Number.parseInt(tmdbId, 10),
+          media_type: mediaType,
+          ww_id: wwId,
+          source_name: link.source_name,
+          source_url: link.source_url,
+          link_type: link.link_type,
+          quality: link.quality,
+          file_size: link.file_size || null,
+          language: link.language,
+          season_number: Number.parseInt(seasonNumber, 10),
+          episode_number: null, // null = saison complète
+          is_auto_generated: false,
+          submitted_by: userId,
+          is_verified: false,
+          is_active: true,
+          status: status,
+          release_name: link.release_name || null,
+          codec_video: link.codec_video || null,
+          codec_audio: link.codec_audio || null,
+          resolution: link.resolution || null,
+          subtitle: link.subtitle || null,
+          nfo: link.nfo || null,
+          has_audio_description: link.has_audio_description,
+        }))
+
+        const { error: insertError } = await supabase.from("download_links").insert(insertData)
+
+        if (insertError) {
+          setError(insertError.message)
+        } else {
+          setSuccess(`${downloadLinks.length} lien(s) saison complète ajouté(s)!`)
+          setTimeout(() => {
+            setOpen(false)
+            setSuccess(null)
+            onSuccess?.()
+          }, 1500)
+        }
+      }
+      // Mode normal: plusieurs liens
+      else {
+        const season = seasonNumber ? Number.parseInt(seasonNumber, 10) : null
+        const episode = episodeNumber ? Number.parseInt(episodeNumber, 10) : null
+        const wwId = getCurrentWWId()
+
+        const insertData = downloadLinks.map((link) => ({
+          tmdb_id: Number.parseInt(tmdbId, 10),
+          media_type: mediaType,
+          ww_id: wwId,
+          source_name: link.source_name,
+          source_url: link.source_url,
+          link_type: link.link_type,
+          quality: link.quality,
+          file_size: link.file_size || null,
+          language: link.language,
+          season_number: season,
+          episode_number: episode,
+          is_auto_generated: false,
+          submitted_by: userId,
+          is_verified: false,
+          is_active: true,
+          status: status,
+          release_name: link.release_name || null,
+          codec_video: link.codec_video || null,
+          codec_audio: link.codec_audio || null,
+          resolution: link.resolution || null,
+          subtitle: link.subtitle || null,
+          nfo: link.nfo || null,
+          has_audio_description: link.has_audio_description,
+        }))
+
+        const { error: insertError } = await supabase.from("download_links").insert(insertData)
+
+        if (insertError) {
+          setError(insertError.message)
+        } else {
+          const message =
+            status === "pending"
+              ? `${downloadLinks.length} lien(s) soumis - En attente de validation`
+              : `${downloadLinks.length} lien(s) ajouté(s) avec succès!`
+          setSuccess(message)
+          setDownloadLinks([
+            {
+              source_name: "",
+              source_url: "",
+              link_type: "direct",
+              quality: "HD",
+              file_size: "",
+              language: "multi",
+              release_name: "",
+              codec_video: "",
+              codec_audio: "",
+              resolution: "",
+              subtitle: "",
+              nfo: "",
+              has_audio_description: false,
+            },
+          ])
+          setTimeout(() => {
+            setOpen(false)
+            setSuccess(null)
+            onSuccess?.()
+          }, 1500)
+        }
+      }
+    } catch (err) {
+      setError("Erreur lors de l'ajout des liens")
     }
+
     setLoading(false)
   }
 
@@ -655,13 +885,17 @@ export function AddLinkModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant={buttonVariant} className={buttonClassName}>
-          {buttonIcon || <Plus className="w-4 h-4 mr-2" />}
-          {buttonText}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      {trigger ? (
+        trigger
+      ) : (
+        <DialogTrigger asChild>
+          <Button variant={buttonVariant} className={buttonClassName}>
+            {buttonIcon || <Plus className="w-4 h-4 mr-2" />}
+            {buttonText}
+          </Button>
+        </DialogTrigger>
+      )}
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Ajouter un lien</DialogTitle>
         </DialogHeader>
@@ -673,8 +907,8 @@ export function AddLinkModal({
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Main Type Selection */}
-            {!isPrefilled && !isChannelPrefilled && (
+            {/* Main Type Selection - Only show if not in a specific mode and not prefilled */}
+            {mode === "streaming" && !isPrefilled && !isChannelPrefilled && (
               <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "media" | "livetv" | "digital")}>
                 <TabsList className="w-full">
                   <TabsTrigger value="media" className="flex-1">
@@ -693,10 +927,10 @@ export function AddLinkModal({
             )}
 
             {/* Media Tab Content */}
-            {mainTab === "media" && !isChannelPrefilled && (
+            {(mainTab === "media" || mode === "download" || mode === "streaming") && !isChannelPrefilled && (
               <>
-                {/* Media Selection - only if not prefilled */}
-                {!isPrefilled && (
+                {/* Media Selection - only if not prefilled and in streaming/download mode */}
+                {!(isPrefilled || mode === "download") && (
                   <div className="space-y-4">
                     <Label className="text-base font-semibold">1. Selectionner le media</Label>
                     <div className="flex flex-wrap gap-3">
@@ -767,217 +1001,791 @@ export function AddLinkModal({
                       </div>
                     </div>
 
-                    {mediaType === "tv" && !isPrefilled && (
-                      <div className="flex gap-3 items-end flex-wrap">
-                        <div className="space-y-2">
-                          <Label>Saison</Label>
-                          <Input
-                            placeholder="N"
-                            value={seasonNumber}
-                            onChange={(e) => setSeasonNumber(e.target.value)}
-                            type="number"
-                            min="0"
-                            className="w-20"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Episode</Label>
-                          <Input
-                            placeholder="N"
-                            value={episodeNumber}
-                            onChange={(e) => setEpisodeNumber(e.target.value)}
-                            type="number"
-                            min="1"
-                            className="w-20"
-                            disabled={!seasonNumber}
-                          />
-                        </div>
-                        <p className="text-xs text-muted-foreground pb-2">Optionnel pour un episode specifique</p>
-                      </div>
-                    )}
-
-                    {/* Link Type Tabs */}
-                    <div className="space-y-4">
-                      <Label className="text-base font-semibold">2. Type de lien</Label>
-                      <Tabs defaultValue="streaming">
-                        <TabsList className="w-full">
-                          <TabsTrigger value="streaming" className="flex-1">
-                            Streaming
-                          </TabsTrigger>
-                          <TabsTrigger value="download" className="flex-1">
-                            Telechargement
-                          </TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="streaming" className="space-y-4 mt-4">
-                          <form onSubmit={handleStreamingSubmit} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                    {/* Mode Download Specifics */}
+                    {mode === "download" && (
+                      <>
+                        {mediaType === "tv" && (
+                          <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                            <div className="flex items-center gap-4">
                               <div className="space-y-2">
-                                <Label>Nom de la source</Label>
+                                <Label>Saison</Label>
                                 <Input
-                                  placeholder="Ex: VidCloud"
-                                  value={streamingData.source_name}
-                                  onChange={(e) => setStreamingData({ ...streamingData, source_name: e.target.value })}
-                                  required
+                                  placeholder="N°"
+                                  value={seasonNumber}
+                                  onChange={(e) => setSeasonNumber(e.target.value)}
+                                  type="number"
+                                  min="0"
+                                  className="w-20"
                                 />
                               </div>
-                              <div className="space-y-2">
-                                <Label>Qualite</Label>
-                                <Select
-                                  value={streamingData.quality}
-                                  onValueChange={(v) => setStreamingData({ ...streamingData, quality: v })}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="CAM">CAM</SelectItem>
-                                    <SelectItem value="TS">TS</SelectItem>
-                                    <SelectItem value="SD">SD</SelectItem>
-                                    <SelectItem value="HD">HD</SelectItem>
-                                    <SelectItem value="FHD">FHD (1080p)</SelectItem>
-                                    <SelectItem value="4K">4K</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                              {!fullSeasonMode && !bulkMode && (
+                                <div className="space-y-2">
+                                  <Label>Episode</Label>
+                                  <Input
+                                    placeholder="N°"
+                                    value={episodeNumber}
+                                    onChange={(e) => setEpisodeNumber(e.target.value)}
+                                    type="number"
+                                    min="1"
+                                    className="w-20"
+                                    disabled={!seasonNumber}
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Options spéciales pour séries */}
+                            <div className="flex flex-wrap gap-4">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="fullSeason"
+                                  checked={fullSeasonMode}
+                                  onCheckedChange={(checked) => {
+                                    setFullSeasonMode(!!checked)
+                                    if (checked) {
+                                      setBulkMode(false)
+                                      setEpisodeNumber("")
+                                    }
+                                  }}
+                                  disabled={!seasonNumber}
+                                />
+                                <label htmlFor="fullSeason" className="text-sm font-medium">
+                                  Saison complète
+                                </label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="bulkMode"
+                                  checked={bulkMode}
+                                  onCheckedChange={(checked) => {
+                                    setBulkMode(!!checked)
+                                    if (checked) {
+                                      setFullSeasonMode(false)
+                                      setEpisodeNumber("")
+                                    }
+                                  }}
+                                  disabled={!seasonNumber}
+                                />
+                                <label htmlFor="bulkMode" className="text-sm font-medium">
+                                  Mode multi-épisodes (1 URL par ligne)
+                                </label>
                               </div>
                             </div>
+
+                            {bulkMode && (
+                              <div className="space-y-2">
+                                <Label>Épisode de départ</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={startEpisode}
+                                  onChange={(e) => setStartEpisode(e.target.value)}
+                                  className="w-24"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                  Le premier lien sera l'épisode {startEpisode}, le suivant l'épisode{" "}
+                                  {Number.parseInt(startEpisode) + 1}, etc.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <form onSubmit={handleDownloadSubmit} className="space-y-4">
+                          {/* Infos communes pour tous les liens */}
+                          <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label>URL du lecteur (iframe)</Label>
+                              <Label>Nom de la source</Label>
                               <Input
-                                placeholder="https://..."
-                                value={streamingData.source_url}
-                                onChange={(e) => setStreamingData({ ...streamingData, source_url: e.target.value })}
-                                type="url"
+                                placeholder="Ex: 1fichier"
+                                value={downloadLinks[0].source_name}
+                                onChange={(e) => updateDownloadLink(0, "source_name", e.target.value)}
                                 required
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>Langue</Label>
+                              <Label>Type de lien</Label>
                               <Select
-                                value={streamingData.language}
-                                onValueChange={(v) => setStreamingData({ ...streamingData, language: v })}
+                                value={downloadLinks[0].link_type}
+                                onValueChange={(v) => updateDownloadLink(0, "link_type", v)}
                               >
                                 <SelectTrigger>
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="vf">VF (Francais)</SelectItem>
-                                  <SelectItem value="vostfr">VOSTFR</SelectItem>
-                                  <SelectItem value="vo">VO</SelectItem>
-                                  <SelectItem value="multi">Multi</SelectItem>
+                                  <SelectItem value="direct">Direct</SelectItem>
+                                  <SelectItem value="torrent">Torrent</SelectItem>
+                                  <SelectItem value="magnet">Magnet</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
-                            {success && <p className="text-sm text-green-500">{success}</p>}
-                            {error && <p className="text-sm text-red-500">{error}</p>}
-                            <Button type="submit" className="w-full" disabled={loading}>
-                              {loading ? "Ajout en cours..." : "Ajouter le lien streaming"}
-                            </Button>
-                          </form>
-                        </TabsContent>
+                          </div>
 
-                        <TabsContent value="download" className="space-y-4 mt-4">
-                          <form onSubmit={handleDownloadSubmit} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label>Nom de la source</Label>
-                                <Input
-                                  placeholder="Ex: 1fichier"
-                                  value={downloadData.source_name}
-                                  onChange={(e) => setDownloadData({ ...downloadData, source_name: e.target.value })}
-                                  required
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Type de lien</Label>
-                                <Select
-                                  value={downloadData.link_type}
-                                  onValueChange={(v) =>
-                                    setDownloadData({
-                                      ...downloadData,
-                                      link_type: v as "direct" | "torrent" | "magnet",
-                                    })
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="direct">Direct</SelectItem>
-                                    <SelectItem value="torrent">Torrent</SelectItem>
-                                    <SelectItem value="magnet">Magnet</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
+                          {/* Mode bulk: textarea pour les URLs */}
+                          {bulkMode ? (
                             <div className="space-y-2">
-                              <Label>URL du telechargement</Label>
-                              <Input
-                                placeholder="https://..."
-                                value={downloadData.source_url}
-                                onChange={(e) => setDownloadData({ ...downloadData, source_url: e.target.value })}
+                              <Label>URLs (une par ligne)</Label>
+                              <Textarea
+                                placeholder="https://exemple.com/episode1&#10;https://exemple.com/episode2&#10;https://exemple.com/episode3"
+                                value={bulkUrls}
+                                onChange={(e) => setBulkUrls(e.target.value)}
+                                rows={8}
                                 required
                               />
+                              <p className="text-xs text-muted-foreground">
+                                {bulkUrls.split("\n").filter((u) => u.trim()).length} URL(s) détectée(s)
+                              </p>
                             </div>
-                            <div className="grid grid-cols-3 gap-4">
-                              <div className="space-y-2">
-                                <Label>Qualite</Label>
-                                <Select
-                                  value={downloadData.quality}
-                                  onValueChange={(v) => setDownloadData({ ...downloadData, quality: v })}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="SD">SD</SelectItem>
-                                    <SelectItem value="HD">HD</SelectItem>
-                                    <SelectItem value="FHD">FHD</SelectItem>
-                                    <SelectItem value="4K">4K</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                          ) : (
+                            /* Mode normal: liste de liens */
+                            <div className="space-y-4">
+                              {downloadLinks.map((link, index) => (
+                                <div key={index} className="p-4 border rounded-lg space-y-4 relative">
+                                  {downloadLinks.length > 1 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="absolute top-2 right-2 h-8 w-8 text-destructive"
+                                      onClick={() => removeDownloadLink(index)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+
+                                  <div className="space-y-2">
+                                    <Label>URL du téléchargement {downloadLinks.length > 1 && `#${index + 1}`}</Label>
+                                    <Input
+                                      placeholder="https://..."
+                                      value={link.source_url}
+                                      onChange={(e) => updateDownloadLink(index, "source_url", e.target.value)}
+                                      required
+                                    />
+                                  </div>
+
+                                  <div className="grid grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                      <Label>Qualité</Label>
+                                      <Select
+                                        value={link.quality}
+                                        onValueChange={(v) => updateDownloadLink(index, "quality", v)}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="SD">SD</SelectItem>
+                                          <SelectItem value="HD">HD</SelectItem>
+                                          <SelectItem value="FHD">FHD</SelectItem>
+                                          <SelectItem value="4K">4K</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Taille</Label>
+                                      <Input
+                                        placeholder="1.5 GB"
+                                        value={link.file_size}
+                                        onChange={(e) => updateDownloadLink(index, "file_size", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Langue</Label>
+                                      <Input
+                                        placeholder="Ex: VF, VOSTFR, Multi"
+                                        value={link.language}
+                                        onChange={(e) => updateDownloadLink(index, "language", e.target.value)}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label>Nom de la release</Label>
+                                      <Input
+                                        placeholder="Ex: The.Movie.2023.1080p.BluRay.x265-GROUP"
+                                        value={link.release_name}
+                                        onChange={(e) => updateDownloadLink(index, "release_name", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Resolution</Label>
+                                      <Select
+                                        value={link.resolution}
+                                        onValueChange={(v) => updateDownloadLink(index, "resolution", v)}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Sélectionner" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="480p">480p</SelectItem>
+                                          <SelectItem value="720p">720p</SelectItem>
+                                          <SelectItem value="1080p">1080p</SelectItem>
+                                          <SelectItem value="2160p">2160p (4K)</SelectItem>
+                                          <SelectItem value="4320p">4320p (8K)</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label>Codec Video</Label>
+                                      <Select
+                                        value={link.codec_video}
+                                        onValueChange={(v) => updateDownloadLink(index, "codec_video", v)}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Sélectionner" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="x264">x264</SelectItem>
+                                          <SelectItem value="x265">x265 / HEVC</SelectItem>
+                                          <SelectItem value="AV1">AV1</SelectItem>
+                                          <SelectItem value="VP9">VP9</SelectItem>
+                                          <SelectItem value="MPEG-4">MPEG-4</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Codec Audio</Label>
+                                      <Select
+                                        value={link.codec_audio}
+                                        onValueChange={(v) => updateDownloadLink(index, "codec_audio", v)}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Sélectionner" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="AAC">AAC</SelectItem>
+                                          <SelectItem value="AC3">AC3 / Dolby Digital</SelectItem>
+                                          <SelectItem value="DTS">DTS</SelectItem>
+                                          <SelectItem value="DTS-HD MA">DTS-HD MA</SelectItem>
+                                          <SelectItem value="TrueHD">TrueHD</SelectItem>
+                                          <SelectItem value="Atmos">Dolby Atmos</SelectItem>
+                                          <SelectItem value="FLAC">FLAC</SelectItem>
+                                          <SelectItem value="MP3">MP3</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label>Sous-titres</Label>
+                                      <Input
+                                        placeholder="Ex: FR, EN, Multi"
+                                        value={link.subtitle}
+                                        onChange={(e) => updateDownloadLink(index, "subtitle", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="flex items-center space-x-2 pt-6">
+                                      <Checkbox
+                                        id={`ad-${index}`}
+                                        checked={link.has_audio_description}
+                                        onCheckedChange={(checked) =>
+                                          updateDownloadLink(index, "has_audio_description", !!checked)
+                                        }
+                                      />
+                                      <label htmlFor={`ad-${index}`} className="text-sm font-medium">
+                                        Audio Description (AD)
+                                      </label>
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <Label>NFO (optionnel)</Label>
+                                    <Textarea
+                                      placeholder="Coller le contenu du fichier NFO ici..."
+                                      value={link.nfo}
+                                      onChange={(e) => updateDownloadLink(index, "nfo", e.target.value)}
+                                      rows={2}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+
+                              {/* Bouton pour ajouter un lien */}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full bg-transparent"
+                                onClick={addDownloadLink}
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Ajouter un autre lien
+                              </Button>
+                            </div>
+                          )}
+
+                          {success && <p className="text-sm text-green-500">{success}</p>}
+                          {error && <p className="text-sm text-red-500">{error}</p>}
+
+                          <Button type="submit" className="w-full" disabled={loading}>
+                            {loading
+                              ? "Ajout en cours..."
+                              : bulkMode
+                                ? `Ajouter ${bulkUrls.split("\n").filter((u) => u.trim()).length} liens`
+                                : `Ajouter ${downloadLinks.length} lien(s)`}
+                          </Button>
+                        </form>
+                      </>
+                    )}
+
+                    {/* Link Type Tabs - Only show if not in download mode */}
+                    {mode !== "download" && (
+                      <div className="space-y-4">
+                        <Label className="text-base font-semibold">2. Type de lien</Label>
+                        <Tabs defaultValue="streaming">
+                          <TabsList className="w-full">
+                            <TabsTrigger value="streaming" className="flex-1">
+                              Streaming
+                            </TabsTrigger>
+                            <TabsTrigger value="download" className="flex-1">
+                              Telechargement
+                            </TabsTrigger>
+                          </TabsList>
+
+                          <TabsContent value="streaming" className="space-y-4 mt-4">
+                            <form onSubmit={handleStreamingSubmit} className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label>Nom de la source</Label>
+                                  <Input
+                                    placeholder="Ex: VidCloud"
+                                    value={streamingData.source_name}
+                                    onChange={(e) =>
+                                      setStreamingData({ ...streamingData, source_name: e.target.value })
+                                    }
+                                    required
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Qualite</Label>
+                                  <Select
+                                    value={streamingData.quality}
+                                    onValueChange={(v) => setStreamingData({ ...streamingData, quality: v })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="CAM">CAM</SelectItem>
+                                      <SelectItem value="TS">TS</SelectItem>
+                                      <SelectItem value="SD">SD</SelectItem>
+                                      <SelectItem value="HD">HD</SelectItem>
+                                      <SelectItem value="FHD">FHD (1080p)</SelectItem>
+                                      <SelectItem value="4K">4K</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                               </div>
                               <div className="space-y-2">
-                                <Label>Taille (opt.)</Label>
+                                <Label>URL du lecteur (iframe)</Label>
                                 <Input
-                                  placeholder="1.5 GB"
-                                  value={downloadData.file_size}
-                                  onChange={(e) => setDownloadData({ ...downloadData, file_size: e.target.value })}
+                                  placeholder="https://..."
+                                  value={streamingData.source_url}
+                                  onChange={(e) => setStreamingData({ ...streamingData, source_url: e.target.value })}
+                                  type="url"
+                                  required
                                 />
                               </div>
                               <div className="space-y-2">
                                 <Label>Langue</Label>
                                 <Select
-                                  value={downloadData.language}
-                                  onValueChange={(v) => setDownloadData({ ...downloadData, language: v })}
+                                  value={streamingData.language}
+                                  onValueChange={(v) => setStreamingData({ ...streamingData, language: v })}
                                 >
                                   <SelectTrigger>
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="vf">VF</SelectItem>
+                                    <SelectItem value="vf">VF (Francais)</SelectItem>
                                     <SelectItem value="vostfr">VOSTFR</SelectItem>
                                     <SelectItem value="vo">VO</SelectItem>
                                     <SelectItem value="multi">Multi</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
-                            </div>
-                            {success && <p className="text-sm text-green-500">{success}</p>}
-                            {error && <p className="text-sm text-red-500">{error}</p>}
-                            <Button type="submit" className="w-full" disabled={loading}>
-                              {loading ? "Ajout en cours..." : "Ajouter le lien telechargement"}
-                            </Button>
-                          </form>
-                        </TabsContent>
-                      </Tabs>
-                    </div>
+                              {success && <p className="text-sm text-green-500">{success}</p>}
+                              {error && <p className="text-sm text-red-500">{error}</p>}
+                              <Button type="submit" className="w-full" disabled={loading}>
+                                {loading ? "Ajout en cours..." : "Ajouter le lien streaming"}
+                              </Button>
+                            </form>
+                          </TabsContent>
+
+                          <TabsContent value="download" className="space-y-4 mt-4">
+                            {mediaType === "tv" && (
+                              <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                                <div className="flex items-center gap-4">
+                                  <div className="space-y-2">
+                                    <Label>Saison</Label>
+                                    <Input
+                                      placeholder="N°"
+                                      value={seasonNumber}
+                                      onChange={(e) => setSeasonNumber(e.target.value)}
+                                      type="number"
+                                      min="0"
+                                      className="w-20"
+                                    />
+                                  </div>
+                                  {!fullSeasonMode && !bulkMode && (
+                                    <div className="space-y-2">
+                                      <Label>Episode</Label>
+                                      <Input
+                                        placeholder="N°"
+                                        value={episodeNumber}
+                                        onChange={(e) => setEpisodeNumber(e.target.value)}
+                                        type="number"
+                                        min="1"
+                                        className="w-20"
+                                        disabled={!seasonNumber}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-wrap gap-4">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id="fullSeasonTab"
+                                      checked={fullSeasonMode}
+                                      onCheckedChange={(checked) => {
+                                        setFullSeasonMode(!!checked)
+                                        if (checked) {
+                                          setBulkMode(false)
+                                          setEpisodeNumber("")
+                                        }
+                                      }}
+                                      disabled={!seasonNumber}
+                                    />
+                                    <label htmlFor="fullSeasonTab" className="text-sm font-medium">
+                                      Saison complète
+                                    </label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id="bulkModeTab"
+                                      checked={bulkMode}
+                                      onCheckedChange={(checked) => {
+                                        setBulkMode(!!checked)
+                                        if (checked) {
+                                          setFullSeasonMode(false)
+                                          setEpisodeNumber("")
+                                        }
+                                      }}
+                                      disabled={!seasonNumber}
+                                    />
+                                    <label htmlFor="bulkModeTab" className="text-sm font-medium">
+                                      Mode multi-épisodes (1 URL par ligne)
+                                    </label>
+                                  </div>
+                                </div>
+
+                                {bulkMode && (
+                                  <div className="space-y-2">
+                                    <Label>Épisode de départ</Label>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      value={startEpisode}
+                                      onChange={(e) => setStartEpisode(e.target.value)}
+                                      className="w-24"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                      Le premier lien sera E{startEpisode.padStart(2, "0")}, le suivant E
+                                      {String(Number.parseInt(startEpisode) + 1).padStart(2, "0")}, etc.
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <form onSubmit={handleDownloadSubmit} className="space-y-4">
+                              {/* Infos communes */}
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label>Nom de la source</Label>
+                                  <Input
+                                    placeholder="Ex: 1fichier"
+                                    value={downloadLinks[0].source_name}
+                                    onChange={(e) => updateDownloadLink(0, "source_name", e.target.value)}
+                                    required
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Type de lien</Label>
+                                  <Select
+                                    value={downloadLinks[0].link_type}
+                                    onValueChange={(v) => updateDownloadLink(0, "link_type", v)}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="direct">Direct</SelectItem>
+                                      <SelectItem value="torrent">Torrent</SelectItem>
+                                      <SelectItem value="magnet">Magnet</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              {bulkMode ? (
+                                <div className="space-y-4">
+                                  <div className="space-y-2">
+                                    <Label>URLs (une par ligne)</Label>
+                                    <Textarea
+                                      placeholder={
+                                        "https://exemple.com/episode1\nhttps://exemple.com/episode2\nhttps://exemple.com/episode3"
+                                      }
+                                      value={bulkUrls}
+                                      onChange={(e) => setBulkUrls(e.target.value)}
+                                      rows={8}
+                                      required
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                      {bulkUrls.split("\n").filter((u) => u.trim()).length} URL(s) détectée(s)
+                                    </p>
+                                  </div>
+                                  {/* Infos communes pour le mode bulk */}
+                                  <div className="grid grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                      <Label>Qualité</Label>
+                                      <Select
+                                        value={downloadLinks[0].quality}
+                                        onValueChange={(v) => updateDownloadLink(0, "quality", v)}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="SD">SD</SelectItem>
+                                          <SelectItem value="HD">HD</SelectItem>
+                                          <SelectItem value="FHD">FHD</SelectItem>
+                                          <SelectItem value="4K">4K</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Langue</Label>
+                                      <Select
+                                        value={downloadLinks[0].language}
+                                        onValueChange={(v) => updateDownloadLink(0, "language", v)}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="vf">VF</SelectItem>
+                                          <SelectItem value="vostfr">VOSTFR</SelectItem>
+                                          <SelectItem value="vo">VO</SelectItem>
+                                          <SelectItem value="multi">Multi</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Resolution</Label>
+                                      <Input
+                                        placeholder="Ex: 1080p"
+                                        value={downloadLinks[0].resolution}
+                                        onChange={(e) => updateDownloadLink(0, "resolution", e.target.value)}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label>Codec Video</Label>
+                                      <Input
+                                        placeholder="Ex: x264, x265"
+                                        value={downloadLinks[0].codec_video}
+                                        onChange={(e) => updateDownloadLink(0, "codec_video", e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Codec Audio</Label>
+                                      <Input
+                                        placeholder="Ex: AAC, DTS"
+                                        value={downloadLinks[0].codec_audio}
+                                        onChange={(e) => updateDownloadLink(0, "codec_audio", e.target.value)}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                /* Mode normal: liste de liens avec bouton ajouter */
+                                <div className="space-y-4">
+                                  {downloadLinks.map((link, index) => (
+                                    <div key={index} className="p-4 border rounded-lg space-y-4 relative">
+                                      {downloadLinks.length > 1 && (
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon"
+                                          className="absolute top-2 right-2 h-8 w-8 text-destructive"
+                                          onClick={() => removeDownloadLink(index)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      )}
+
+                                      {downloadLinks.length > 1 && (
+                                        <p className="text-sm font-medium text-muted-foreground">Lien #{index + 1}</p>
+                                      )}
+
+                                      <div className="space-y-2">
+                                        <Label>URL du téléchargement</Label>
+                                        <Input
+                                          placeholder="https://..."
+                                          value={link.source_url}
+                                          onChange={(e) => updateDownloadLink(index, "source_url", e.target.value)}
+                                          required
+                                        />
+                                      </div>
+
+                                      <div className="grid grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                          <Label>Qualité</Label>
+                                          <Select
+                                            value={link.quality}
+                                            onValueChange={(v) => updateDownloadLink(index, "quality", v)}
+                                          >
+                                            <SelectTrigger>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="SD">SD</SelectItem>
+                                              <SelectItem value="HD">HD</SelectItem>
+                                              <SelectItem value="FHD">FHD</SelectItem>
+                                              <SelectItem value="4K">4K</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label>Taille</Label>
+                                          <Input
+                                            placeholder="1.5 GB"
+                                            value={link.file_size}
+                                            onChange={(e) => updateDownloadLink(index, "file_size", e.target.value)}
+                                          />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label>Langue</Label>
+                                          <Input
+                                            placeholder="Ex: VF, VOSTFR, Multi"
+                                            value={link.language}
+                                            onChange={(e) => updateDownloadLink(index, "language", e.target.value)}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <Label>Nom de la release</Label>
+                                          <Input
+                                            placeholder="Ex: Movie.2023.1080p.BluRay"
+                                            value={link.release_name}
+                                            onChange={(e) => updateDownloadLink(index, "release_name", e.target.value)}
+                                          />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label>Codec Video</Label>
+                                          <Input
+                                            placeholder="Ex: x264, x265, AV1"
+                                            value={link.codec_video}
+                                            onChange={(e) => updateDownloadLink(index, "codec_video", e.target.value)}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <Label>Codec Audio</Label>
+                                          <Input
+                                            placeholder="Ex: DTS-HD MA, AC3"
+                                            value={link.codec_audio}
+                                            onChange={(e) => updateDownloadLink(index, "codec_audio", e.target.value)}
+                                          />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label>Resolution</Label>
+                                          <Input
+                                            placeholder="Ex: 1080p, 2160p"
+                                            value={link.resolution}
+                                            onChange={(e) => updateDownloadLink(index, "resolution", e.target.value)}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <Label>Sous-titres</Label>
+                                          <Input
+                                            placeholder="Ex: FR, EN, Multi"
+                                            value={link.subtitle}
+                                            onChange={(e) => updateDownloadLink(index, "subtitle", e.target.value)}
+                                          />
+                                        </div>
+                                        <div className="flex items-center space-x-2 pt-6">
+                                          <Checkbox
+                                            id={`audioDesc-${index}`}
+                                            checked={link.has_audio_description}
+                                            onCheckedChange={(checked) =>
+                                              updateDownloadLink(index, "has_audio_description", !!checked)
+                                            }
+                                          />
+                                          <label htmlFor={`audioDesc-${index}`} className="text-sm font-medium">
+                                            Audio Description (AD)
+                                          </label>
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-2">
+                                        <Label>NFO (optionnel)</Label>
+                                        <Textarea
+                                          placeholder="Coller le contenu NFO..."
+                                          value={link.nfo}
+                                          onChange={(e) => updateDownloadLink(index, "nfo", e.target.value)}
+                                          rows={2}
+                                        />
+                                      </div>
+                                    </div>
+                                  ))}
+
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full bg-transparent"
+                                    onClick={addDownloadLink}
+                                  >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Ajouter un autre lien
+                                  </Button>
+                                </div>
+                              )}
+
+                              {success && <p className="text-sm text-green-500">{success}</p>}
+                              {error && <p className="text-sm text-red-500">{error}</p>}
+
+                              <Button type="submit" className="w-full" disabled={loading}>
+                                {loading
+                                  ? "Ajout en cours..."
+                                  : bulkMode
+                                    ? `Ajouter ${bulkUrls.split("\n").filter((u) => u.trim()).length} liens`
+                                    : `Ajouter ${downloadLinks.length} lien(s)`}
+                              </Button>
+                            </form>
+                          </TabsContent>
+                        </Tabs>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
             )}
 
-            {mainTab === "digital" && !isChannelPrefilled && !isPrefilled && (
+            {mainTab === "digital" && !isChannelPrefilled && !isPrefilled && mode === "digital" && (
               <div className="space-y-6">
                 {/* Content Type Selection */}
                 <div className="space-y-4">
@@ -1160,9 +1968,9 @@ export function AddLinkModal({
             )}
 
             {/* Live TV Tab Content */}
-            {(mainTab === "livetv" || isChannelPrefilled) && (
+            {(mainTab === "livetv" || isChannelPrefilled || mode === "livetv") && (
               <div className="space-y-4">
-                {!isChannelPrefilled && (
+                {!isChannelPrefilled && mode !== "livetv" && (
                   <div className="flex gap-2 mb-4">
                     <Button
                       variant={liveTvMode === "new" ? "default" : "outline"}
@@ -1181,7 +1989,7 @@ export function AddLinkModal({
                   </div>
                 )}
 
-                {liveTvMode === "new" && !isChannelPrefilled ? (
+                {liveTvMode === "new" && !isChannelPrefilled && mode !== "livetv" ? (
                   <form onSubmit={handleLiveTvSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -1293,7 +2101,7 @@ export function AddLinkModal({
                   </form>
                 ) : (
                   <div className="space-y-4">
-                    {!isChannelPrefilled && (
+                    {!isChannelPrefilled && mode !== "livetv" && (
                       <>
                         <div className="space-y-2">
                           <Label>Rechercher une chaine</Label>

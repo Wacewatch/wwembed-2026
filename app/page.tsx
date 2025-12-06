@@ -13,6 +13,7 @@ import { AddLinkModal } from "@/components/add-link-modal"
 import { AddDigitalContentModal } from "@/components/add-digital-content-modal"
 import { Plus, Book, Music, Monitor, Gamepad2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { PlatformStats } from "@/components/platform-stats"
 import type {
   StreamingLink,
   DownloadLink as DLLink,
@@ -749,8 +750,14 @@ export default function HomePage() {
       </main>
 
       <footer className="border-t border-border py-6 mt-12">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-sm text-muted-foreground">
+        <div className="container mx-auto px-4">
+          {/* Platform stats section above footer text */}
+          <div className="mb-8">
+            <h3 className="text-center text-lg font-semibold text-foreground mb-4">Statistiques de la Plateforme</h3>
+            <PlatformStats />
+          </div>
+
+          <p className="text-sm text-muted-foreground text-center">
             <span className="text-primary font-semibold">WW</span>Embed par{" "}
             <a href="https://wavewatch.xyz" className="text-primary hover:underline">
               wavewatch.xyz
