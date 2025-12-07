@@ -11,7 +11,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/client"
-import { Plus, Search, Loader2, Tv, Book, Music, Gamepad2, Package, Trash2 } from "lucide-react"
+import {
+  Plus,
+  Search,
+  Loader2,
+  Tv,
+  Book,
+  Music,
+  Gamepad2,
+  Package,
+  Trash2,
+  Film,
+  Download,
+  Sparkles,
+} from "lucide-react"
 import type { LiveTVChannel } from "@/lib/types"
 import { generateWWId } from "@/lib/tmdb"
 
@@ -87,7 +100,13 @@ export function AddLinkModal({
   const [userRole, setUserRole] = useState<"admin" | "uploader" | "member">("member")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
-  const [mainTab, setMainTab] = useState<"media" | "livetv" | "digital">("media")
+  const getInitialMainTab = () => {
+    if (mode === "livetv") return "livetv"
+    if (mode === "digital") return "digital"
+    return "media"
+  }
+
+  const [mainTab, setMainTab] = useState<"media" | "livetv" | "digital">(getInitialMainTab())
   const [liveTvMode, setLiveTvMode] = useState<"new" | "existing">("new")
   const [existingChannels, setExistingChannels] = useState<LiveTVChannel[]>([])
   const [selectedChannelId, setSelectedChannelId] = useState<string>("")
@@ -251,8 +270,13 @@ export function AddLinkModal({
           })
         }
       } else {
-        // Reset all state when opening without prefilled data
-        setMainTab("media")
+        if (mode === "livetv") {
+          setMainTab("livetv")
+        } else if (mode === "digital") {
+          setMainTab("digital")
+        } else {
+          setMainTab("media")
+        }
         setLiveTvMode("new")
         setTmdbId("")
         setMediaType("movie")
@@ -319,6 +343,7 @@ export function AddLinkModal({
     }
   }, [
     open,
+    mode,
     prefilledTmdbId,
     prefilledMediaType,
     prefilledTitle,
@@ -886,7 +911,9 @@ export function AddLinkModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger ? (
-        trigger
+        <DialogTrigger asChild onClick={() => setOpen(true)}>
+          {trigger}
+        </DialogTrigger>
       ) : (
         <DialogTrigger asChild>
           <Button variant={buttonVariant} className={buttonClassName}>
@@ -895,44 +922,69 @@ export function AddLinkModal({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-zinc-950 border-zinc-800">
         <DialogHeader>
-          <DialogTitle>Ajouter un lien</DialogTitle>
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            {mode === "livetv"
+              ? "Ajouter une chaine TV"
+              : mode === "digital"
+                ? "Ajouter un contenu digital"
+                : "Ajouter un lien"}
+          </DialogTitle>
         </DialogHeader>
 
         {!isAuthenticated ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground mb-4">Vous devez etre connecte pour ajouter un lien</p>
-            <Button onClick={() => (window.location.href = "/auth/login")}>Se connecter</Button>
+          <div className="text-center py-12 space-y-4">
+            <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mx-auto">
+              <Plus className="w-8 h-8 text-zinc-500" />
+            </div>
+            <p className="text-zinc-400">Vous devez etre connecte pour ajouter un lien</p>
+            <Button onClick={() => (window.location.href = "/auth/login")} className="bg-primary hover:bg-primary/90">
+              Se connecter
+            </Button>
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Main Type Selection - Only show if not in a specific mode and not prefilled */}
             {mode === "streaming" && !isPrefilled && !isChannelPrefilled && (
               <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "media" | "livetv" | "digital")}>
-                <TabsList className="w-full">
-                  <TabsTrigger value="media" className="flex-1">
+                <TabsList className="w-full bg-zinc-900 border border-zinc-800 p-1">
+                  <TabsTrigger
+                    value="media"
+                    className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-white"
+                  >
+                    <Film className="w-4 h-4 mr-2" />
                     Film / Serie
                   </TabsTrigger>
-                  <TabsTrigger value="digital" className="flex-1">
-                    <Book className="w-4 h-4 mr-2" />
-                    Digital
-                  </TabsTrigger>
-                  <TabsTrigger value="livetv" className="flex-1">
+                  <TabsTrigger
+                    value="livetv"
+                    className="flex-1 data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                  >
                     <Tv className="w-4 h-4 mr-2" />
                     TV Live
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="digital"
+                    className="flex-1 data-[state=active]:bg-amber-600 data-[state=active]:text-white"
+                  >
+                    <Book className="w-4 h-4 mr-2" />
+                    Digital
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
             )}
 
-            {/* Media Tab Content */}
-            {(mainTab === "media" || mode === "download" || mode === "streaming") && !isChannelPrefilled && (
+            {mainTab === "media" && (mode === "streaming" || mode === "download") && !isChannelPrefilled && (
               <>
-                {/* Media Selection - only if not prefilled and in streaming/download mode */}
+                {/* Media Selection - only if not prefilled and not in download mode */}
                 {!(isPrefilled || mode === "download") && (
-                  <div className="space-y-4">
-                    <Label className="text-base font-semibold">1. Selectionner le media</Label>
+                  <div className="space-y-4 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800">
+                    <Label className="text-base font-semibold flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                        1
+                      </div>
+                      Selectionner le media
+                    </Label>
                     <div className="flex flex-wrap gap-3">
                       <Input
                         placeholder="ID TMDB"
@@ -940,7 +992,7 @@ export function AddLinkModal({
                         onChange={(e) => setTmdbId(e.target.value)}
                         onKeyDown={handleSearchKeyDown}
                         type="number"
-                        className="flex-1 min-w-[120px]"
+                        className="flex-1 min-w-[120px] bg-zinc-900 border-zinc-700 focus:border-primary"
                       />
                       <Select
                         value={mediaType}
@@ -953,10 +1005,10 @@ export function AddLinkModal({
                           setMediaInfo(null)
                         }}
                       >
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-32 bg-zinc-900 border-zinc-700">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-zinc-900 border-zinc-700">
                           <SelectItem value="movie">Film</SelectItem>
                           <SelectItem value="tv">Serie</SelectItem>
                         </SelectContent>
@@ -965,7 +1017,7 @@ export function AddLinkModal({
                         type="button"
                         onClick={fetchMediaInfo}
                         disabled={searchLoading || !tmdbId}
-                        variant="secondary"
+                        className="bg-zinc-800 hover:bg-zinc-700 text-white"
                       >
                         {searchLoading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -977,27 +1029,25 @@ export function AddLinkModal({
                         )}
                       </Button>
                     </div>
-                    {error && !mediaInfo && <p className="text-sm text-red-500">{error}</p>}
+                    {error && !mediaInfo && <p className="text-sm text-red-400">{error}</p>}
                   </div>
                 )}
 
                 {/* Media Info */}
                 {mediaInfo && (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-4 p-4 bg-secondary/50 rounded-lg">
+                    <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-primary/10 to-cyan-500/10 rounded-xl border border-primary/20">
                       {mediaInfo.poster && (
                         <img
                           src={mediaInfo.poster || "/placeholder.svg"}
                           alt={mediaInfo.title}
-                          className="w-16 h-24 object-cover rounded"
+                          className="w-16 h-24 object-cover rounded-lg shadow-lg"
                         />
                       )}
                       <div>
-                        <p className="font-semibold text-foreground">{mediaInfo.title}</p>
-                        <p className="text-sm text-muted-foreground">WW ID: {getCurrentWWId()}</p>
-                        {mediaInfo.seasons && (
-                          <p className="text-xs text-muted-foreground">{mediaInfo.seasons} saison(s)</p>
-                        )}
+                        <p className="font-bold text-lg text-foreground">{mediaInfo.title}</p>
+                        <p className="text-sm text-primary font-mono">WW ID: {getCurrentWWId()}</p>
+                        {mediaInfo.seasons && <p className="text-xs text-zinc-400">{mediaInfo.seasons} saison(s)</p>}
                       </div>
                     </div>
 
@@ -1005,7 +1055,7 @@ export function AddLinkModal({
                     {mode === "download" && (
                       <>
                         {mediaType === "tv" && (
-                          <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="space-y-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-800">
                             <div className="flex items-center gap-4">
                               <div className="space-y-2">
                                 <Label>Saison</Label>
@@ -1015,7 +1065,7 @@ export function AddLinkModal({
                                   onChange={(e) => setSeasonNumber(e.target.value)}
                                   type="number"
                                   min="0"
-                                  className="w-20"
+                                  className="w-20 bg-zinc-900 border-zinc-700 focus:border-primary"
                                 />
                               </div>
                               {!fullSeasonMode && !bulkMode && (
@@ -1027,7 +1077,7 @@ export function AddLinkModal({
                                     onChange={(e) => setEpisodeNumber(e.target.value)}
                                     type="number"
                                     min="1"
-                                    className="w-20"
+                                    className="w-20 bg-zinc-900 border-zinc-700 focus:border-primary"
                                     disabled={!seasonNumber}
                                   />
                                 </div>
@@ -1080,9 +1130,9 @@ export function AddLinkModal({
                                   min="1"
                                   value={startEpisode}
                                   onChange={(e) => setStartEpisode(e.target.value)}
-                                  className="w-24"
+                                  className="w-24 bg-zinc-900 border-zinc-700 focus:border-primary"
                                 />
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-zinc-400">
                                   Le premier lien sera l'épisode {startEpisode}, le suivant l'épisode{" "}
                                   {Number.parseInt(startEpisode) + 1}, etc.
                                 </p>
@@ -1091,7 +1141,10 @@ export function AddLinkModal({
                           </div>
                         )}
 
-                        <form onSubmit={handleDownloadSubmit} className="space-y-4">
+                        <form
+                          onSubmit={handleDownloadSubmit}
+                          className="space-y-4 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800"
+                        >
                           {/* Infos communes pour tous les liens */}
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
@@ -1101,6 +1154,7 @@ export function AddLinkModal({
                                 value={downloadLinks[0].source_name}
                                 onChange={(e) => updateDownloadLink(0, "source_name", e.target.value)}
                                 required
+                                className="bg-zinc-900 border-zinc-700 focus:border-primary"
                               />
                             </div>
                             <div className="space-y-2">
@@ -1109,10 +1163,10 @@ export function AddLinkModal({
                                 value={downloadLinks[0].link_type}
                                 onValueChange={(v) => updateDownloadLink(0, "link_type", v)}
                               >
-                                <SelectTrigger>
+                                <SelectTrigger className="bg-zinc-900 border-zinc-700">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-zinc-900 border-zinc-700">
                                   <SelectItem value="direct">Direct</SelectItem>
                                   <SelectItem value="torrent">Torrent</SelectItem>
                                   <SelectItem value="magnet">Magnet</SelectItem>
@@ -1131,8 +1185,9 @@ export function AddLinkModal({
                                 onChange={(e) => setBulkUrls(e.target.value)}
                                 rows={8}
                                 required
+                                className="bg-zinc-900 border-zinc-700 focus:border-primary"
                               />
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-xs text-zinc-400">
                                 {bulkUrls.split("\n").filter((u) => u.trim()).length} URL(s) détectée(s)
                               </p>
                             </div>
@@ -1140,17 +1195,21 @@ export function AddLinkModal({
                             /* Mode normal: liste de liens */
                             <div className="space-y-4">
                               {downloadLinks.map((link, index) => (
-                                <div key={index} className="p-4 border rounded-lg space-y-4 relative">
+                                <div key={index} className="p-4 border rounded-xl bg-zinc-900 space-y-4 relative">
                                   {downloadLinks.length > 1 && (
                                     <Button
                                       type="button"
                                       variant="ghost"
                                       size="icon"
-                                      className="absolute top-2 right-2 h-8 w-8 text-destructive"
+                                      className="absolute top-2 right-2 h-8 w-8 text-red-500 hover:text-red-400"
                                       onClick={() => removeDownloadLink(index)}
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
+                                  )}
+
+                                  {downloadLinks.length > 1 && (
+                                    <p className="text-sm font-medium text-zinc-400">Lien #{index + 1}</p>
                                   )}
 
                                   <div className="space-y-2">
@@ -1160,6 +1219,7 @@ export function AddLinkModal({
                                       value={link.source_url}
                                       onChange={(e) => updateDownloadLink(index, "source_url", e.target.value)}
                                       required
+                                      className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                     />
                                   </div>
 
@@ -1170,10 +1230,10 @@ export function AddLinkModal({
                                         value={link.quality}
                                         onValueChange={(v) => updateDownloadLink(index, "quality", v)}
                                       >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="bg-zinc-950 border-zinc-800">
                                           <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="bg-zinc-950 border-zinc-800">
                                           <SelectItem value="SD">SD</SelectItem>
                                           <SelectItem value="HD">HD</SelectItem>
                                           <SelectItem value="FHD">FHD</SelectItem>
@@ -1187,6 +1247,7 @@ export function AddLinkModal({
                                         placeholder="1.5 GB"
                                         value={link.file_size}
                                         onChange={(e) => updateDownloadLink(index, "file_size", e.target.value)}
+                                        className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                       />
                                     </div>
                                     <div className="space-y-2">
@@ -1195,6 +1256,7 @@ export function AddLinkModal({
                                         placeholder="Ex: VF, VOSTFR, Multi"
                                         value={link.language}
                                         onChange={(e) => updateDownloadLink(index, "language", e.target.value)}
+                                        className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                       />
                                     </div>
                                   </div>
@@ -1206,6 +1268,7 @@ export function AddLinkModal({
                                         placeholder="Ex: The.Movie.2023.1080p.BluRay.x265-GROUP"
                                         value={link.release_name}
                                         onChange={(e) => updateDownloadLink(index, "release_name", e.target.value)}
+                                        className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                       />
                                     </div>
                                     <div className="space-y-2">
@@ -1214,10 +1277,10 @@ export function AddLinkModal({
                                         value={link.resolution}
                                         onValueChange={(v) => updateDownloadLink(index, "resolution", v)}
                                       >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="bg-zinc-950 border-zinc-800">
                                           <SelectValue placeholder="Sélectionner" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="bg-zinc-950 border-zinc-800">
                                           <SelectItem value="480p">480p</SelectItem>
                                           <SelectItem value="720p">720p</SelectItem>
                                           <SelectItem value="1080p">1080p</SelectItem>
@@ -1235,10 +1298,10 @@ export function AddLinkModal({
                                         value={link.codec_video}
                                         onValueChange={(v) => updateDownloadLink(index, "codec_video", v)}
                                       >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="bg-zinc-950 border-zinc-800">
                                           <SelectValue placeholder="Sélectionner" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="bg-zinc-950 border-zinc-800">
                                           <SelectItem value="x264">x264</SelectItem>
                                           <SelectItem value="x265">x265 / HEVC</SelectItem>
                                           <SelectItem value="AV1">AV1</SelectItem>
@@ -1253,10 +1316,10 @@ export function AddLinkModal({
                                         value={link.codec_audio}
                                         onValueChange={(v) => updateDownloadLink(index, "codec_audio", v)}
                                       >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="bg-zinc-950 border-zinc-800">
                                           <SelectValue placeholder="Sélectionner" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="bg-zinc-950 border-zinc-800">
                                           <SelectItem value="AAC">AAC</SelectItem>
                                           <SelectItem value="AC3">AC3 / Dolby Digital</SelectItem>
                                           <SelectItem value="DTS">DTS</SelectItem>
@@ -1277,6 +1340,7 @@ export function AddLinkModal({
                                         placeholder="Ex: FR, EN, Multi"
                                         value={link.subtitle}
                                         onChange={(e) => updateDownloadLink(index, "subtitle", e.target.value)}
+                                        className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                       />
                                     </div>
                                     <div className="flex items-center space-x-2 pt-6">
@@ -1300,6 +1364,7 @@ export function AddLinkModal({
                                       value={link.nfo}
                                       onChange={(e) => updateDownloadLink(index, "nfo", e.target.value)}
                                       rows={2}
+                                      className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                     />
                                   </div>
                                 </div>
@@ -1309,7 +1374,7 @@ export function AddLinkModal({
                               <Button
                                 type="button"
                                 variant="outline"
-                                className="w-full bg-transparent"
+                                className="w-full bg-transparent border-zinc-700 hover:bg-zinc-900/50"
                                 onClick={addDownloadLink}
                               >
                                 <Plus className="h-4 w-4 mr-2" />
@@ -1318,10 +1383,10 @@ export function AddLinkModal({
                             </div>
                           )}
 
-                          {success && <p className="text-sm text-green-500">{success}</p>}
-                          {error && <p className="text-sm text-red-500">{error}</p>}
+                          {success && <p className="text-sm text-green-400">{success}</p>}
+                          {error && <p className="text-sm text-red-400">{error}</p>}
 
-                          <Button type="submit" className="w-full" disabled={loading}>
+                          <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
                             {loading
                               ? "Ajout en cours..."
                               : bulkMode
@@ -1334,20 +1399,36 @@ export function AddLinkModal({
 
                     {/* Link Type Tabs - Only show if not in download mode */}
                     {mode !== "download" && (
-                      <div className="space-y-4">
-                        <Label className="text-base font-semibold">2. Type de lien</Label>
+                      <div className="space-y-4 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800">
+                        <Label className="text-base font-semibold flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                            2
+                          </div>
+                          Type de lien
+                        </Label>
                         <Tabs defaultValue="streaming">
-                          <TabsList className="w-full">
-                            <TabsTrigger value="streaming" className="flex-1">
+                          <TabsList className="w-full bg-zinc-900 border border-zinc-800 p-1">
+                            <TabsTrigger
+                              value="streaming"
+                              className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-white"
+                            >
+                              <Sparkles className="w-4 h-4 mr-2" />
                               Streaming
                             </TabsTrigger>
-                            <TabsTrigger value="download" className="flex-1">
+                            <TabsTrigger
+                              value="download"
+                              className="flex-1 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                            >
+                              <Download className="w-4 h-4 mr-2" />
                               Telechargement
                             </TabsTrigger>
                           </TabsList>
 
                           <TabsContent value="streaming" className="space-y-4 mt-4">
-                            <form onSubmit={handleStreamingSubmit} className="space-y-4">
+                            <form
+                              onSubmit={handleStreamingSubmit}
+                              className="space-y-4 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800"
+                            >
                               <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                   <Label>Nom de la source</Label>
@@ -1358,6 +1439,7 @@ export function AddLinkModal({
                                       setStreamingData({ ...streamingData, source_name: e.target.value })
                                     }
                                     required
+                                    className="bg-zinc-900 border-zinc-700 focus:border-primary"
                                   />
                                 </div>
                                 <div className="space-y-2">
@@ -1366,10 +1448,10 @@ export function AddLinkModal({
                                     value={streamingData.quality}
                                     onValueChange={(v) => setStreamingData({ ...streamingData, quality: v })}
                                   >
-                                    <SelectTrigger>
+                                    <SelectTrigger className="bg-zinc-900 border-zinc-700">
                                       <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-zinc-900 border-zinc-700">
                                       <SelectItem value="CAM">CAM</SelectItem>
                                       <SelectItem value="TS">TS</SelectItem>
                                       <SelectItem value="SD">SD</SelectItem>
@@ -1388,6 +1470,7 @@ export function AddLinkModal({
                                   onChange={(e) => setStreamingData({ ...streamingData, source_url: e.target.value })}
                                   type="url"
                                   required
+                                  className="bg-zinc-900 border-zinc-700 focus:border-primary"
                                 />
                               </div>
                               <div className="space-y-2">
@@ -1396,10 +1479,10 @@ export function AddLinkModal({
                                   value={streamingData.language}
                                   onValueChange={(v) => setStreamingData({ ...streamingData, language: v })}
                                 >
-                                  <SelectTrigger>
+                                  <SelectTrigger className="bg-zinc-900 border-zinc-700">
                                     <SelectValue />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="bg-zinc-900 border-zinc-700">
                                     <SelectItem value="vf">VF (Francais)</SelectItem>
                                     <SelectItem value="vostfr">VOSTFR</SelectItem>
                                     <SelectItem value="vo">VO</SelectItem>
@@ -1407,9 +1490,13 @@ export function AddLinkModal({
                                   </SelectContent>
                                 </Select>
                               </div>
-                              {success && <p className="text-sm text-green-500">{success}</p>}
-                              {error && <p className="text-sm text-red-500">{error}</p>}
-                              <Button type="submit" className="w-full" disabled={loading}>
+                              {success && <p className="text-sm text-green-400">{success}</p>}
+                              {error && <p className="text-sm text-red-400">{error}</p>}
+                              <Button
+                                type="submit"
+                                className="w-full bg-primary hover:bg-primary/90"
+                                disabled={loading}
+                              >
                                 {loading ? "Ajout en cours..." : "Ajouter le lien streaming"}
                               </Button>
                             </form>
@@ -1417,7 +1504,7 @@ export function AddLinkModal({
 
                           <TabsContent value="download" className="space-y-4 mt-4">
                             {mediaType === "tv" && (
-                              <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                              <div className="space-y-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-800">
                                 <div className="flex items-center gap-4">
                                   <div className="space-y-2">
                                     <Label>Saison</Label>
@@ -1427,7 +1514,7 @@ export function AddLinkModal({
                                       onChange={(e) => setSeasonNumber(e.target.value)}
                                       type="number"
                                       min="0"
-                                      className="w-20"
+                                      className="w-20 bg-zinc-900 border-zinc-700 focus:border-primary"
                                     />
                                   </div>
                                   {!fullSeasonMode && !bulkMode && (
@@ -1439,7 +1526,7 @@ export function AddLinkModal({
                                         onChange={(e) => setEpisodeNumber(e.target.value)}
                                         type="number"
                                         min="1"
-                                        className="w-20"
+                                        className="w-20 bg-zinc-900 border-zinc-700 focus:border-primary"
                                         disabled={!seasonNumber}
                                       />
                                     </div>
@@ -1491,9 +1578,9 @@ export function AddLinkModal({
                                       min="1"
                                       value={startEpisode}
                                       onChange={(e) => setStartEpisode(e.target.value)}
-                                      className="w-24"
+                                      className="w-24 bg-zinc-900 border-zinc-700 focus:border-primary"
                                     />
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-xs text-zinc-400">
                                       Le premier lien sera E{startEpisode.padStart(2, "0")}, le suivant E
                                       {String(Number.parseInt(startEpisode) + 1).padStart(2, "0")}, etc.
                                     </p>
@@ -1502,7 +1589,10 @@ export function AddLinkModal({
                               </div>
                             )}
 
-                            <form onSubmit={handleDownloadSubmit} className="space-y-4">
+                            <form
+                              onSubmit={handleDownloadSubmit}
+                              className="space-y-4 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800"
+                            >
                               {/* Infos communes */}
                               <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -1512,6 +1602,7 @@ export function AddLinkModal({
                                     value={downloadLinks[0].source_name}
                                     onChange={(e) => updateDownloadLink(0, "source_name", e.target.value)}
                                     required
+                                    className="bg-zinc-900 border-zinc-700 focus:border-primary"
                                   />
                                 </div>
                                 <div className="space-y-2">
@@ -1520,10 +1611,10 @@ export function AddLinkModal({
                                     value={downloadLinks[0].link_type}
                                     onValueChange={(v) => updateDownloadLink(0, "link_type", v)}
                                   >
-                                    <SelectTrigger>
+                                    <SelectTrigger className="bg-zinc-900 border-zinc-700">
                                       <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-zinc-900 border-zinc-700">
                                       <SelectItem value="direct">Direct</SelectItem>
                                       <SelectItem value="torrent">Torrent</SelectItem>
                                       <SelectItem value="magnet">Magnet</SelectItem>
@@ -1544,8 +1635,9 @@ export function AddLinkModal({
                                       onChange={(e) => setBulkUrls(e.target.value)}
                                       rows={8}
                                       required
+                                      className="bg-zinc-900 border-zinc-700 focus:border-primary"
                                     />
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-xs text-zinc-400">
                                       {bulkUrls.split("\n").filter((u) => u.trim()).length} URL(s) détectée(s)
                                     </p>
                                   </div>
@@ -1557,10 +1649,10 @@ export function AddLinkModal({
                                         value={downloadLinks[0].quality}
                                         onValueChange={(v) => updateDownloadLink(0, "quality", v)}
                                       >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="bg-zinc-900 border-zinc-700">
                                           <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="bg-zinc-900 border-zinc-700">
                                           <SelectItem value="SD">SD</SelectItem>
                                           <SelectItem value="HD">HD</SelectItem>
                                           <SelectItem value="FHD">FHD</SelectItem>
@@ -1574,10 +1666,10 @@ export function AddLinkModal({
                                         value={downloadLinks[0].language}
                                         onValueChange={(v) => updateDownloadLink(0, "language", v)}
                                       >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="bg-zinc-900 border-zinc-700">
                                           <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="bg-zinc-900 border-zinc-700">
                                           <SelectItem value="vf">VF</SelectItem>
                                           <SelectItem value="vostfr">VOSTFR</SelectItem>
                                           <SelectItem value="vo">VO</SelectItem>
@@ -1591,6 +1683,7 @@ export function AddLinkModal({
                                         placeholder="Ex: 1080p"
                                         value={downloadLinks[0].resolution}
                                         onChange={(e) => updateDownloadLink(0, "resolution", e.target.value)}
+                                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
                                       />
                                     </div>
                                   </div>
@@ -1601,14 +1694,16 @@ export function AddLinkModal({
                                         placeholder="Ex: x264, x265"
                                         value={downloadLinks[0].codec_video}
                                         onChange={(e) => updateDownloadLink(0, "codec_video", e.target.value)}
+                                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
                                       />
                                     </div>
                                     <div className="space-y-2">
                                       <Label>Codec Audio</Label>
                                       <Input
-                                        placeholder="Ex: AAC, DTS"
+                                        placeholder="Ex: DTS, AC3"
                                         value={downloadLinks[0].codec_audio}
                                         onChange={(e) => updateDownloadLink(0, "codec_audio", e.target.value)}
+                                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
                                       />
                                     </div>
                                   </div>
@@ -1617,13 +1712,13 @@ export function AddLinkModal({
                                 /* Mode normal: liste de liens avec bouton ajouter */
                                 <div className="space-y-4">
                                   {downloadLinks.map((link, index) => (
-                                    <div key={index} className="p-4 border rounded-lg space-y-4 relative">
+                                    <div key={index} className="p-4 border rounded-xl bg-zinc-900 space-y-4 relative">
                                       {downloadLinks.length > 1 && (
                                         <Button
                                           type="button"
                                           variant="ghost"
                                           size="icon"
-                                          className="absolute top-2 right-2 h-8 w-8 text-destructive"
+                                          className="absolute top-2 right-2 h-8 w-8 text-red-500 hover:text-red-400"
                                           onClick={() => removeDownloadLink(index)}
                                         >
                                           <Trash2 className="h-4 w-4" />
@@ -1631,7 +1726,7 @@ export function AddLinkModal({
                                       )}
 
                                       {downloadLinks.length > 1 && (
-                                        <p className="text-sm font-medium text-muted-foreground">Lien #{index + 1}</p>
+                                        <p className="text-sm font-medium text-zinc-400">Lien #{index + 1}</p>
                                       )}
 
                                       <div className="space-y-2">
@@ -1641,6 +1736,7 @@ export function AddLinkModal({
                                           value={link.source_url}
                                           onChange={(e) => updateDownloadLink(index, "source_url", e.target.value)}
                                           required
+                                          className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                         />
                                       </div>
 
@@ -1651,10 +1747,10 @@ export function AddLinkModal({
                                             value={link.quality}
                                             onValueChange={(v) => updateDownloadLink(index, "quality", v)}
                                           >
-                                            <SelectTrigger>
+                                            <SelectTrigger className="bg-zinc-950 border-zinc-800">
                                               <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent>
+                                            <SelectContent className="bg-zinc-950 border-zinc-800">
                                               <SelectItem value="SD">SD</SelectItem>
                                               <SelectItem value="HD">HD</SelectItem>
                                               <SelectItem value="FHD">FHD</SelectItem>
@@ -1668,6 +1764,7 @@ export function AddLinkModal({
                                             placeholder="1.5 GB"
                                             value={link.file_size}
                                             onChange={(e) => updateDownloadLink(index, "file_size", e.target.value)}
+                                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                           />
                                         </div>
                                         <div className="space-y-2">
@@ -1676,6 +1773,7 @@ export function AddLinkModal({
                                             placeholder="Ex: VF, VOSTFR, Multi"
                                             value={link.language}
                                             onChange={(e) => updateDownloadLink(index, "language", e.target.value)}
+                                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                           />
                                         </div>
                                       </div>
@@ -1687,6 +1785,7 @@ export function AddLinkModal({
                                             placeholder="Ex: Movie.2023.1080p.BluRay"
                                             value={link.release_name}
                                             onChange={(e) => updateDownloadLink(index, "release_name", e.target.value)}
+                                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                           />
                                         </div>
                                         <div className="space-y-2">
@@ -1695,6 +1794,7 @@ export function AddLinkModal({
                                             placeholder="Ex: x264, x265, AV1"
                                             value={link.codec_video}
                                             onChange={(e) => updateDownloadLink(index, "codec_video", e.target.value)}
+                                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                           />
                                         </div>
                                       </div>
@@ -1706,6 +1806,7 @@ export function AddLinkModal({
                                             placeholder="Ex: DTS-HD MA, AC3"
                                             value={link.codec_audio}
                                             onChange={(e) => updateDownloadLink(index, "codec_audio", e.target.value)}
+                                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                           />
                                         </div>
                                         <div className="space-y-2">
@@ -1714,6 +1815,7 @@ export function AddLinkModal({
                                             placeholder="Ex: 1080p, 2160p"
                                             value={link.resolution}
                                             onChange={(e) => updateDownloadLink(index, "resolution", e.target.value)}
+                                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                           />
                                         </div>
                                       </div>
@@ -1725,6 +1827,7 @@ export function AddLinkModal({
                                             placeholder="Ex: FR, EN, Multi"
                                             value={link.subtitle}
                                             onChange={(e) => updateDownloadLink(index, "subtitle", e.target.value)}
+                                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                           />
                                         </div>
                                         <div className="flex items-center space-x-2 pt-6">
@@ -1748,6 +1851,7 @@ export function AddLinkModal({
                                           value={link.nfo}
                                           onChange={(e) => updateDownloadLink(index, "nfo", e.target.value)}
                                           rows={2}
+                                          className="bg-zinc-950 border-zinc-800 focus:border-primary"
                                         />
                                       </div>
                                     </div>
@@ -1756,7 +1860,7 @@ export function AddLinkModal({
                                   <Button
                                     type="button"
                                     variant="outline"
-                                    className="w-full bg-transparent"
+                                    className="w-full bg-transparent border-zinc-700 hover:bg-zinc-900/50"
                                     onClick={addDownloadLink}
                                   >
                                     <Plus className="h-4 w-4 mr-2" />
@@ -1765,10 +1869,14 @@ export function AddLinkModal({
                                 </div>
                               )}
 
-                              {success && <p className="text-sm text-green-500">{success}</p>}
-                              {error && <p className="text-sm text-red-500">{error}</p>}
+                              {success && <p className="text-sm text-green-400">{success}</p>}
+                              {error && <p className="text-sm text-red-400">{error}</p>}
 
-                              <Button type="submit" className="w-full" disabled={loading}>
+                              <Button
+                                type="submit"
+                                className="w-full bg-primary hover:bg-primary/90"
+                                disabled={loading}
+                              >
                                 {loading
                                   ? "Ajout en cours..."
                                   : bulkMode
@@ -1785,196 +1893,14 @@ export function AddLinkModal({
               </>
             )}
 
-            {mainTab === "digital" && !isChannelPrefilled && !isPrefilled && mode === "digital" && (
-              <div className="space-y-6">
-                {/* Content Type Selection */}
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold">1. Type de contenu</Label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {DIGITAL_CONTENT_TYPES.map((type) => {
-                      const Icon = type.icon
-                      return (
-                        <Button
-                          key={type.value}
-                          type="button"
-                          variant={digitalContentType === type.value ? "default" : "outline"}
-                          className="flex flex-col h-20 gap-1"
-                          onClick={() => setDigitalContentType(type.value as typeof digitalContentType)}
-                        >
-                          <Icon className="w-5 h-5" />
-                          <span className="text-xs">{type.label}</span>
-                        </Button>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* Content Info */}
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold">2. Informations du contenu</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Titre *</Label>
-                      <Input
-                        placeholder="Titre du contenu"
-                        value={digitalContentData.title}
-                        onChange={(e) => setDigitalContentData({ ...digitalContentData, title: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{getAuthorLabel()}</Label>
-                      <Input
-                        placeholder={getAuthorLabel()}
-                        value={digitalContentData.author}
-                        onChange={(e) => setDigitalContentData({ ...digitalContentData, author: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Textarea
-                      placeholder="Description du contenu (optionnel)"
-                      value={digitalContentData.description}
-                      onChange={(e) => setDigitalContentData({ ...digitalContentData, description: e.target.value })}
-                      rows={2}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>URL de la couverture</Label>
-                      <Input
-                        placeholder="https://..."
-                        value={digitalContentData.cover_url}
-                        onChange={(e) => setDigitalContentData({ ...digitalContentData, cover_url: e.target.value })}
-                        type="url"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Version</Label>
-                      <Input
-                        placeholder="Ex: 1.0, 2024"
-                        value={digitalContentData.version}
-                        onChange={(e) => setDigitalContentData({ ...digitalContentData, version: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Link Info */}
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold">3. Lien de telechargement</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Nom de la source *</Label>
-                      <Input
-                        placeholder="Ex: Mega, 1fichier"
-                        value={digitalLinkData.source_name}
-                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, source_name: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Format</Label>
-                      <Input
-                        placeholder={getFormatSuggestions()}
-                        value={digitalLinkData.file_format}
-                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, file_format: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>URL de telechargement *</Label>
-                    <Input
-                      placeholder="https://..."
-                      value={digitalLinkData.download_url}
-                      onChange={(e) => setDigitalLinkData({ ...digitalLinkData, download_url: e.target.value })}
-                      type="url"
-                      required
-                    />
-                  </div>
-                  {/* Show reader URL only for ebook and music */}
-                  {(digitalContentType === "ebook" || digitalContentType === "music") && (
-                    <div className="space-y-2">
-                      <Label>
-                        URL de lecture {digitalContentType === "ebook" ? "(lecteur PDF)" : "(lecteur audio)"}
-                      </Label>
-                      <Input
-                        placeholder="https://... (optionnel, pour la lecture en ligne)"
-                        value={digitalLinkData.reader_url}
-                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, reader_url: e.target.value })}
-                        type="url"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {digitalContentType === "ebook"
-                          ? "URL pour lire le PDF en ligne (sera affiche dans le lecteur)"
-                          : "URL du fichier audio pour l'ecoute en ligne"}
-                      </p>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Taille</Label>
-                      <Input
-                        placeholder="100 MB"
-                        value={digitalLinkData.file_size}
-                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, file_size: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Qualite</Label>
-                      <Input
-                        placeholder={digitalContentType === "music" ? "320kbps" : "HD"}
-                        value={digitalLinkData.quality}
-                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, quality: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Langue</Label>
-                      <Select
-                        value={digitalLinkData.language}
-                        onValueChange={(v) => setDigitalLinkData({ ...digitalLinkData, language: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="fr">Francais</SelectItem>
-                          <SelectItem value="en">Anglais</SelectItem>
-                          <SelectItem value="multi">Multi</SelectItem>
-                          <SelectItem value="other">Autre</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                {success && <p className="text-sm text-green-500">{success}</p>}
-                {error && <p className="text-sm text-red-500">{error}</p>}
-                <Button type="button" className="w-full" disabled={loading} onClick={handleDigitalSubmit}>
-                  {loading
-                    ? "Ajout en cours..."
-                    : `Ajouter le ${
-                        digitalContentType === "ebook"
-                          ? "ebook"
-                          : digitalContentType === "music"
-                            ? "morceau"
-                            : digitalContentType === "software"
-                              ? "logiciel"
-                              : "jeu"
-                      }`}
-                </Button>
-              </div>
-            )}
-
-            {/* Live TV Tab Content */}
-            {(mainTab === "livetv" || isChannelPrefilled || mode === "livetv") && (
-              <div className="space-y-4">
+            {(mainTab === "livetv" || mode === "livetv") && (
+              <div className="space-y-6 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800">
                 {!isChannelPrefilled && mode !== "livetv" && (
                   <div className="flex gap-2 mb-4">
                     <Button
                       variant={liveTvMode === "new" ? "default" : "outline"}
                       size="sm"
+                      className="data-[state=active]:bg-primary data-[state=active]:text-white"
                       onClick={() => setLiveTvMode("new")}
                     >
                       Nouvelle chaine
@@ -1982,6 +1908,7 @@ export function AddLinkModal({
                     <Button
                       variant={liveTvMode === "existing" ? "default" : "outline"}
                       size="sm"
+                      className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
                       onClick={() => setLiveTvMode("existing")}
                     >
                       Ajouter une source
@@ -1999,6 +1926,7 @@ export function AddLinkModal({
                           value={liveTvData.channel_name}
                           onChange={(e) => setLiveTvData({ ...liveTvData, channel_name: e.target.value })}
                           required
+                          className="bg-zinc-900 border-zinc-700 focus:border-primary"
                         />
                       </div>
                       <div className="space-y-2">
@@ -2007,10 +1935,10 @@ export function AddLinkModal({
                           value={liveTvData.category}
                           onValueChange={(v) => setLiveTvData({ ...liveTvData, category: v })}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-zinc-900 border-zinc-700">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-zinc-900 border-zinc-700">
                             {LIVE_TV_CATEGORIES.map((cat) => (
                               <SelectItem key={cat.value} value={cat.value}>
                                 {cat.label}
@@ -2027,6 +1955,7 @@ export function AddLinkModal({
                         value={liveTvData.channel_logo}
                         onChange={(e) => setLiveTvData({ ...liveTvData, channel_logo: e.target.value })}
                         type="url"
+                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
                       />
                     </div>
                     <div className="space-y-2">
@@ -2036,6 +1965,7 @@ export function AddLinkModal({
                         value={liveTvData.stream_url}
                         onChange={(e) => setLiveTvData({ ...liveTvData, stream_url: e.target.value })}
                         required
+                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
                       />
                     </div>
                     <div className="grid grid-cols-3 gap-4">
@@ -2045,10 +1975,10 @@ export function AddLinkModal({
                           value={liveTvData.country}
                           onValueChange={(v) => setLiveTvData({ ...liveTvData, country: v })}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-zinc-900 border-zinc-700">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-zinc-900 border-zinc-700">
                             <SelectItem value="fr">France</SelectItem>
                             <SelectItem value="be">Belgique</SelectItem>
                             <SelectItem value="ch">Suisse</SelectItem>
@@ -2065,10 +1995,10 @@ export function AddLinkModal({
                           value={liveTvData.language}
                           onValueChange={(v) => setLiveTvData({ ...liveTvData, language: v })}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-zinc-900 border-zinc-700">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-zinc-900 border-zinc-700">
                             <SelectItem value="fr">Francais</SelectItem>
                             <SelectItem value="en">Anglais</SelectItem>
                             <SelectItem value="multi">Multi</SelectItem>
@@ -2081,10 +2011,10 @@ export function AddLinkModal({
                           value={liveTvData.quality}
                           onValueChange={(v) => setLiveTvData({ ...liveTvData, quality: v })}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-zinc-900 border-zinc-700">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-zinc-900 border-zinc-700">
                             <SelectItem value="SD">SD</SelectItem>
                             <SelectItem value="HD">HD</SelectItem>
                             <SelectItem value="FHD">FHD</SelectItem>
@@ -2093,9 +2023,9 @@ export function AddLinkModal({
                         </Select>
                       </div>
                     </div>
-                    {success && <p className="text-sm text-green-500">{success}</p>}
-                    {error && <p className="text-sm text-red-500">{error}</p>}
-                    <Button type="submit" className="w-full" disabled={loading}>
+                    {success && <p className="text-sm text-green-400">{success}</p>}
+                    {error && <p className="text-sm text-red-400">{error}</p>}
+                    <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
                       {loading ? "Ajout en cours..." : "Ajouter la chaine TV"}
                     </Button>
                   </form>
@@ -2109,15 +2039,18 @@ export function AddLinkModal({
                             placeholder="Rechercher..."
                             value={channelSearchQuery}
                             onChange={(e) => setChannelSearchQuery(e.target.value)}
+                            className="bg-zinc-900 border-zinc-700 focus:border-primary"
                           />
                         </div>
-                        <div className="max-h-40 overflow-y-auto border rounded-md">
+                        <div className="max-h-40 overflow-y-auto border border-zinc-800 rounded-md bg-zinc-900/50">
                           {filteredChannels.map((channel) => (
                             <button
                               key={channel.id}
                               type="button"
-                              className={`w-full flex items-center gap-3 p-2 hover:bg-secondary/50 text-left ${
-                                selectedChannelId === channel.id ? "bg-secondary" : ""
+                              className={`w-full flex items-center gap-3 p-2 text-left transition-colors ${
+                                selectedChannelId === channel.id
+                                  ? "bg-primary/20 hover:bg-primary/30 text-primary"
+                                  : "hover:bg-zinc-800"
                               }`}
                               onClick={() => setSelectedChannelId(channel.id)}
                             >
@@ -2132,7 +2065,7 @@ export function AddLinkModal({
                             </button>
                           ))}
                           {filteredChannels.length === 0 && (
-                            <p className="text-center py-4 text-muted-foreground">Aucune chaine trouvee</p>
+                            <p className="text-center py-4 text-zinc-400">Aucune chaine trouvee</p>
                           )}
                         </div>
                       </>
@@ -2150,6 +2083,7 @@ export function AddLinkModal({
                                 setLiveTvSourceData({ ...liveTvSourceData, source_name: e.target.value })
                               }
                               required
+                              className="bg-zinc-900 border-zinc-700 focus:border-primary"
                             />
                           </div>
                           <div className="space-y-2">
@@ -2158,10 +2092,10 @@ export function AddLinkModal({
                               value={liveTvSourceData.quality}
                               onValueChange={(v) => setLiveTvSourceData({ ...liveTvSourceData, quality: v })}
                             >
-                              <SelectTrigger>
+                              <SelectTrigger className="bg-zinc-900 border-zinc-700">
                                 <SelectValue />
                               </SelectTrigger>
-                              <SelectContent>
+                              <SelectContent className="bg-zinc-900 border-zinc-700">
                                 <SelectItem value="SD">SD</SelectItem>
                                 <SelectItem value="HD">HD</SelectItem>
                                 <SelectItem value="FHD">FHD</SelectItem>
@@ -2177,17 +2111,235 @@ export function AddLinkModal({
                             value={liveTvSourceData.stream_url}
                             onChange={(e) => setLiveTvSourceData({ ...liveTvSourceData, stream_url: e.target.value })}
                             required
+                            className="bg-zinc-900 border-zinc-700 focus:border-primary"
                           />
                         </div>
-                        {success && <p className="text-sm text-green-500">{success}</p>}
-                        {error && <p className="text-sm text-red-500">{error}</p>}
-                        <Button type="submit" className="w-full" disabled={loading}>
+                        {success && <p className="text-sm text-green-400">{success}</p>}
+                        {error && <p className="text-sm text-red-400">{error}</p>}
+                        <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
                           {loading ? "Ajout en cours..." : "Ajouter la source"}
                         </Button>
                       </form>
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {(mainTab === "digital" || mode === "digital") && (
+              <div className="space-y-6 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800">
+                {/* Content Type Selection */}
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-amber-600/20 flex items-center justify-center text-xs font-bold text-amber-600">
+                      1
+                    </div>
+                    Type de contenu
+                  </Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {DIGITAL_CONTENT_TYPES.map((type) => {
+                      const Icon = type.icon
+                      return (
+                        <Button
+                          key={type.value}
+                          type="button"
+                          variant={digitalContentType === type.value ? "default" : "outline"}
+                          className={`flex flex-col h-20 gap-1 transition-colors ${
+                            digitalContentType === type.value
+                              ? "bg-amber-600 text-white hover:bg-amber-500"
+                              : "bg-zinc-900 border-zinc-700 hover:bg-zinc-800"
+                          }`}
+                          onClick={() => setDigitalContentType(type.value as typeof digitalContentType)}
+                        >
+                          <Icon className="w-5 h-5" />
+                          <span className="text-xs">{type.label}</span>
+                        </Button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Content Info */}
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                      2
+                    </div>
+                    Informations du contenu
+                  </Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Titre *</Label>
+                      <Input
+                        placeholder="Titre du contenu"
+                        value={digitalContentData.title}
+                        onChange={(e) => setDigitalContentData({ ...digitalContentData, title: e.target.value })}
+                        required
+                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{getAuthorLabel()}</Label>
+                      <Input
+                        placeholder={getAuthorLabel()}
+                        value={digitalContentData.author}
+                        onChange={(e) => setDigitalContentData({ ...digitalContentData, author: e.target.value })}
+                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Textarea
+                      placeholder="Description du contenu (optionnel)"
+                      value={digitalContentData.description}
+                      onChange={(e) => setDigitalContentData({ ...digitalContentData, description: e.target.value })}
+                      rows={2}
+                      className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>URL de la couverture</Label>
+                      <Input
+                        placeholder="https://..."
+                        value={digitalContentData.cover_url}
+                        onChange={(e) => setDigitalContentData({ ...digitalContentData, cover_url: e.target.value })}
+                        type="url"
+                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Version</Label>
+                      <Input
+                        placeholder="Ex: 1.0, 2024"
+                        value={digitalContentData.version}
+                        onChange={(e) => setDigitalContentData({ ...digitalContentData, version: e.target.value })}
+                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Link Info */}
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center text-xs font-bold text-blue-600">
+                      3
+                    </div>
+                    Lien de telechargement
+                  </Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Nom de la source *</Label>
+                      <Input
+                        placeholder="Ex: Mega, 1fichier"
+                        value={digitalLinkData.source_name}
+                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, source_name: e.target.value })}
+                        required
+                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Format</Label>
+                      <Input
+                        placeholder={getFormatSuggestions()}
+                        value={digitalLinkData.file_format}
+                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, file_format: e.target.value })}
+                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>URL de telechargement *</Label>
+                    <Input
+                      placeholder="https://..."
+                      value={digitalLinkData.download_url}
+                      onChange={(e) => setDigitalLinkData({ ...digitalLinkData, download_url: e.target.value })}
+                      type="url"
+                      required
+                      className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                    />
+                  </div>
+                  {/* Show reader URL only for ebook and music */}
+                  {(digitalContentType === "ebook" || digitalContentType === "music") && (
+                    <div className="space-y-2">
+                      <Label>
+                        URL de lecture {digitalContentType === "ebook" ? "(lecteur PDF)" : "(lecteur audio)"}
+                      </Label>
+                      <Input
+                        placeholder="https://... (optionnel, pour la lecture en ligne)"
+                        value={digitalLinkData.reader_url}
+                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, reader_url: e.target.value })}
+                        type="url"
+                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                      />
+                      <p className="text-xs text-zinc-400">
+                        {digitalContentType === "ebook"
+                          ? "URL pour lire le PDF en ligne (sera affiche dans le lecteur)"
+                          : "URL du fichier audio pour l'ecoute en ligne"}
+                      </p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Taille</Label>
+                      <Input
+                        placeholder="100 MB"
+                        value={digitalLinkData.file_size}
+                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, file_size: e.target.value })}
+                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Qualite</Label>
+                      <Input
+                        placeholder={digitalContentType === "music" ? "320kbps" : "HD"}
+                        value={digitalLinkData.quality}
+                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, quality: e.target.value })}
+                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Langue</Label>
+                      <Select
+                        value={digitalLinkData.language}
+                        onValueChange={(v) => setDigitalLinkData({ ...digitalLinkData, language: v })}
+                      >
+                        <SelectTrigger className="bg-zinc-900 border-zinc-700">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-zinc-700">
+                          <SelectItem value="fr">Francais</SelectItem>
+                          <SelectItem value="en">Anglais</SelectItem>
+                          <SelectItem value="multi">Multi</SelectItem>
+                          <SelectItem value="other">Autre</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {success && <p className="text-sm text-green-400">{success}</p>}
+                {error && <p className="text-sm text-red-400">{error}</p>}
+                <Button
+                  type="button"
+                  className="w-full bg-primary hover:bg-primary/90"
+                  disabled={loading}
+                  onClick={handleDigitalSubmit}
+                >
+                  {loading
+                    ? "Ajout en cours..."
+                    : `Ajouter le ${
+                        digitalContentType === "ebook"
+                          ? "ebook"
+                          : digitalContentType === "music"
+                            ? "morceau"
+                            : digitalContentType === "software"
+                              ? "logiciel"
+                              : "jeu"
+                      }`}
+                </Button>
               </div>
             )}
           </div>

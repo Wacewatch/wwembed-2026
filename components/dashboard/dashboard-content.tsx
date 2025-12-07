@@ -300,7 +300,7 @@ export function DashboardContent({
       if (totalApprovedLinks < 500) {
         setUploaderRequestResult({
           success: false,
-          message: `Vous avez ${totalApprovedLinks}/500 liens validés requis`,
+          message: `Vous avez ${totalApprovedLinks}/500 liens valides requis`,
         })
         setRequestingUploader(false)
         return
@@ -567,7 +567,7 @@ export function DashboardContent({
             <TabsContent value="overview" className="mt-0 space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Recent Activity */}
-                <Card className="border-border">
+                <Card className="border-zinc-800 bg-zinc-900/50">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-primary" />
@@ -579,7 +579,7 @@ export function DashboardContent({
                       {[...streamingLinks, ...downloadLinks].slice(0, 5).map((link, i) => (
                         <div
                           key={link.id}
-                          className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+                          className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0"
                         >
                           <div className="flex items-center gap-3">
                             <div
@@ -609,7 +609,7 @@ export function DashboardContent({
                 </Card>
 
                 {/* Quick Stats */}
-                <Card className="border-border">
+                <Card className="border-zinc-800 bg-zinc-900/50">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                       <BarChart3 className="w-4 h-4 text-primary" />
@@ -631,9 +631,9 @@ export function DashboardContent({
                           %
                         </span>
                       </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-emerald-500 rounded-full"
+                          className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full"
                           style={{
                             width: `${
                               stats.totalStreaming + stats.totalDownload > 0
@@ -646,13 +646,13 @@ export function DashboardContent({
                           }}
                         />
                       </div>
-                      <Separator />
+                      <Separator className="bg-zinc-800" />
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                        <div className="text-center p-3 rounded-xl bg-zinc-800/50 border border-zinc-700">
                           <p className="text-2xl font-bold text-primary">{stats.totalViews}</p>
                           <p className="text-xs text-muted-foreground">Vues totales</p>
                         </div>
-                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                        <div className="text-center p-3 rounded-xl bg-zinc-800/50 border border-zinc-700">
                           <p className="text-2xl font-bold text-amber-500">{stats.pendingCount}</p>
                           <p className="text-xs text-muted-foreground">En attente</p>
                         </div>
@@ -661,49 +661,6 @@ export function DashboardContent({
                   </CardContent>
                 </Card>
               </div>
-
-              {/* Quick Actions */}
-              <Card className="border-border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Actions rapides</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <AddLinkModal
-                      onSuccess={() => window.location.reload()}
-                      buttonVariant="outline"
-                      buttonClassName="h-auto py-4 flex-col gap-2 w-full"
-                      buttonIcon={<Play className="w-5 h-5 text-primary" />}
-                      buttonText="Streaming"
-                      mode="streaming"
-                    />
-                    <AddLinkModal
-                      onSuccess={() => window.location.reload()}
-                      buttonVariant="outline"
-                      buttonClassName="h-auto py-4 flex-col gap-2 w-full"
-                      buttonIcon={<Download className="w-5 h-5 text-blue-500" />}
-                      buttonText="Download"
-                      mode="download"
-                    />
-                    <AddLinkModal
-                      onSuccess={() => window.location.reload()}
-                      buttonVariant="outline"
-                      buttonClassName="h-auto py-4 flex-col gap-2 w-full"
-                      buttonIcon={<Tv className="w-5 h-5 text-purple-500" />}
-                      buttonText="TV Live"
-                      mode="livetv"
-                    />
-                    <AddLinkModal
-                      onSuccess={() => window.location.reload()}
-                      buttonVariant="outline"
-                      buttonClassName="h-auto py-4 flex-col gap-2 w-full"
-                      buttonIcon={<Book className="w-5 h-5 text-amber-500" />}
-                      buttonText="Digital"
-                      mode="digital"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
 
             {/* Streaming Tab */}
