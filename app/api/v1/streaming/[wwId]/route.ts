@@ -138,390 +138,369 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       user_agent: request.headers.get("user-agent"),
     })
 
-    const sourcesJson = JSON.stringify(allSources).replace(/'/g, "\\'")
+    const sourcesJson = JSON.stringify(allSources).replace(/'/g, "\\'").replace(/"/g, '\\"')
 
     const ids = {
-      overlay: generateRandomId("m"),
-      player: generateRandomId("p"),
-      sources: generateRandomId("s"),
-      timer: generateRandomId("t"),
-      progress: generateRandomId("g"),
-      btnUnlock: generateRandomId("u"),
-      btnPlay: generateRandomId("y"),
+      overlay: generateRandomId("ov"),
+      player: generateRandomId("pl"),
+      srcGrid: generateRandomId("sg"),
+      srcModal: generateRandomId("sm"),
+      srcBtn: generateRandomId("sb"),
+      srcLabel: generateRandomId("sl"),
+      timer: generateRandomId("tm"),
+      progress: generateRandomId("pr"),
+      btnContinue: generateRandomId("bc"),
+      btnPlay: generateRandomId("bp"),
+      step1: generateRandomId("s1"),
+      step2: generateRandomId("s2"),
+      step3: generateRandomId("s3"),
       boxTime: generateRandomId("bt"),
       boxHelp: generateRandomId("bh"),
       boxThanks: generateRandomId("bk"),
       boxDone: generateRandomId("bd"),
-      step1: generateRandomId("s1"),
-      step2: generateRandomId("s2"),
-      step3: generateRandomId("s3"),
-      srcModal: generateRandomId("sm"),
-      srcBtn: generateRandomId("sb"),
-      srcLabel: generateRandomId("sl"),
-      header: generateRandomId("hd"),
     }
 
     const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>${title} - WWEmbed</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0a0a0f;color:#fff;height:100%;overflow:hidden}
+html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-serif;background:#0a0a0f;color:#fff}
 
-/* Main container */
-.player-wrap{width:100%;height:100%;display:flex;flex-direction:column}
+.wrap{display:flex;flex-direction:column;height:100%}
 
-/* Header bar */
-.header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:linear-gradient(180deg,#12121a 0%,#0a0a0f 100%);border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0}
-.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:#fff}
-.logo svg{width:24px;height:24px}
-.logo span{background:linear-gradient(135deg,#a855f7,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.title{font-size:13px;font-weight:600;color:#e0e0e0;text-align:center;flex:1;margin:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.header-right{display:flex;align-items:center;gap:8px}
+/* Header */
+.hdr{display:flex;align-items:center;padding:10px 14px;background:linear-gradient(180deg,#151520 0%,#0d0d14 100%);border-bottom:1px solid rgba(255,255,255,0.06);gap:12px}
+.logo{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px}
+.logo svg{width:22px;height:22px;color:#8b5cf6}
+.logo b{background:linear-gradient(135deg,#a855f7,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.ttl{flex:1;font-size:13px;font-weight:600;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
 
-/* Source dropdown button */
-.src-btn{display:flex;align-items:center;gap:8px;padding:8px 14px;background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s}
+/* Source button */
+.src-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
 .src-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,0.4)}
-.src-btn svg{width:16px;height:16px}
-.src-btn .label{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.src-btn .arrow{transition:transform 0.2s}
-.src-btn.open .arrow{transform:rotate(180deg)}
+.src-btn svg{width:14px;height:14px}
+.src-btn .lbl{max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src-btn .arr{transition:transform .2s}
+.src-btn.open .arr{transform:rotate(180deg)}
 
-/* Report button */
-.report-btn{padding:8px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:8px;color:#fff;cursor:pointer;transition:all 0.2s}
-.report-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(239,68,68,0.4)}
-.report-btn svg{width:16px;height:16px;display:block}
+.rpt-btn{padding:7px;background:#ef4444;border:none;border-radius:8px;color:#fff;cursor:pointer}
+.rpt-btn svg{width:14px;height:14px;display:block}
 
-/* Video frame */
-.video-frame{flex:1;position:relative;background:#000;min-height:0}
-.video-frame iframe{width:100%;height:100%;border:none;position:absolute;inset:0}
-.no-source{display:flex;align-items:center;justify-content:center;height:100%;color:#666;font-size:14px;flex-direction:column;gap:8px}
-.no-source svg{width:48px;height:48px;opacity:0.3}
+/* Player */
+.player{flex:1;background:#000;position:relative;min-height:0}
+.player iframe{width:100%;height:100%;border:none;position:absolute;inset:0}
+.no-src{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#555;gap:8px}
+.no-src svg{width:48px;height:48px;opacity:.4}
 
 /* Source Modal */
-.src-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:flex-start;justify-content:center;z-index:1000;padding:20px;overflow-y:auto;backdrop-filter:blur(8px)}
-.src-modal.show{display:flex}
-.src-modal-content{background:linear-gradient(180deg,#1a1a2e 0%,#12121a 100%);border-radius:16px;width:100%;max-width:800px;margin:auto;border:1px solid rgba(255,255,255,0.1);box-shadow:0 25px 50px rgba(0,0,0,0.5)}
-.src-modal-header{padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:space-between}
-.src-modal-title{font-size:20px;font-weight:700;background:linear-gradient(135deg,#a855f7,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.src-modal-sub{font-size:13px;color:#888;margin-top:4px}
-.src-modal-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
-.src-modal-close:hover{background:rgba(255,255,255,0.2);transform:rotate(90deg)}
-.src-modal-close svg{width:20px;height:20px}
-.src-modal-body{padding:20px 24px;max-height:60vh;overflow-y:auto}
-.src-modal-body::-webkit-scrollbar{width:6px}
-.src-modal-body::-webkit-scrollbar-track{background:#12121a}
-.src-modal-body::-webkit-scrollbar-thumb{background:#3a3a5a;border-radius:3px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:100;padding:16px;backdrop-filter:blur(6px)}
+.modal.show{display:flex}
+.modal-box{background:linear-gradient(180deg,#1a1a28 0%,#12121c 100%);border-radius:14px;width:100%;max-width:720px;max-height:85vh;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,0.08)}
+.modal-hdr{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between}
+.modal-ttl{font-size:18px;font-weight:700;background:linear-gradient(135deg,#a855f7,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.modal-sub{font-size:12px;color:#888;margin-top:2px}
+.modal-close{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:rgba(255,255,255,0.2)}
+.modal-close svg{width:18px;height:18px}
+.modal-body{padding:16px 20px;overflow-y:auto;flex:1}
+.modal-body::-webkit-scrollbar{width:5px}
+.modal-body::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
 
 /* Source grid */
-.src-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-@media(max-width:600px){.src-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:400px){.src-grid{grid-template-columns:1fr}}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:380px){.grid{grid-template-columns:1fr}}
 
 /* Source card */
-.src-card{background:linear-gradient(135deg,#1e1e2e 0%,#16162a 100%);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
-.src-card:hover{border-color:rgba(139,92,246,0.5);transform:translateY(-2px);box-shadow:0 8px 24px rgba(139,92,246,0.2)}
-.src-card.active{border-color:#8b5cf6;background:linear-gradient(135deg,#2d1f4e 0%,#1a1a2e 100%)}
-.src-card-icon{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
-.src-card-icon svg{width:24px;height:24px;color:#fff}
-.src-card-badge{position:absolute;top:12px;right:12px;padding:4px 8px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:6px;font-size:10px;font-weight:700;color:#fff}
-.src-card-name{font-size:14px;font-weight:600;color:#fff;margin-bottom:8px}
-.src-card-tags{display:flex;flex-wrap:wrap;gap:6px}
-.src-tag{padding:4px 8px;border-radius:6px;font-size:10px;font-weight:600;text-transform:uppercase}
-.src-tag.lang{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
-.src-tag.vostfr{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff}
-.src-tag.multi{background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff}
+.card{background:linear-gradient(135deg,#1e1e2c 0%,#16162a 100%);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px;cursor:pointer;transition:all .2s;position:relative}
+.card:hover{border-color:rgba(139,92,246,0.4);transform:translateY(-2px)}
+.card.act{border-color:#8b5cf6;background:linear-gradient(135deg,#2a1f4a 0%,#1a1a2e 100%)}
+.card-icon{width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.card-icon svg{width:20px;height:20px;color:#fff}
+.card-badge{position:absolute;top:10px;right:10px;padding:3px 7px;background:#22c55e;border-radius:5px;font-size:9px;font-weight:700}
+.card-name{font-size:13px;font-weight:600;margin-bottom:6px}
+.card-tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{padding:3px 6px;border-radius:4px;font-size:9px;font-weight:600;text-transform:uppercase}
+.tag-vf{background:#3b82f6}
+.tag-vost{background:#f97316}
+.tag-multi{background:#a855f7}
+.tag-vo{background:#6b7280}
 
-/* Ad Modal */
-.ad-modal{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:flex;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px);overflow-y:auto}
-.ad-modal.hidden{display:none}
-.ad-content{background:rgba(255,255,255,0.98);border-radius:16px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
-.ad-content h2{color:#1a1a2e;margin-bottom:8px;font-size:20px;font-weight:700}
-.ad-sub{color:#6b7280;font-size:13px;margin-bottom:20px}
-.steps{display:flex;justify-content:center;gap:10px;margin-bottom:20px}
-.step{width:12px;height:12px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
-.step.active{background:linear-gradient(135deg,#667eea,#764ba2);transform:scale(1.2)}
+/* Ad overlay */
+.ad-ov{position:fixed;inset:0;background:linear-gradient(135deg,rgba(99,102,241,.95),rgba(139,92,246,.95),rgba(236,72,153,.95));display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
+.ad-ov.hide{display:none}
+.ad-box{background:#fff;border-radius:14px;padding:24px;max-width:380px;width:100%;text-align:center}
+.ad-box h2{color:#1a1a2e;font-size:18px;margin-bottom:6px}
+.ad-box .sub{color:#6b7280;font-size:12px;margin-bottom:16px}
+.steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
+.step{width:10px;height:10px;border-radius:50%;background:#e5e7eb;transition:all .3s}
+.step.act{background:linear-gradient(135deg,#6366f1,#8b5cf6);transform:scale(1.2)}
 .step.done{background:#10b981}
-.info-box{border-radius:12px;padding:14px;margin:10px 0;text-align:left;display:flex;align-items:flex-start;gap:12px}
-.info-box svg{flex-shrink:0;width:20px;height:20px}
-.info-box b{display:block;font-size:14px;margin-bottom:2px}
-.info-box span{font-size:12px;opacity:0.8}
-.box-warn{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
-.box-heart{background:linear-gradient(135deg,#fce7f3,#fbcfe8);border:1px solid #ec4899;color:#9d174d}
-.box-time{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #8b5cf6;color:#5b21b6}
-.box-done{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
-.progress-bar{height:6px;background:#e5e7eb;border-radius:3px;margin:16px 0;overflow:hidden}
-.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2,#ec4899);transition:width 0.3s;border-radius:3px}
-.btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:10px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
-.btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.15)}
-.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.info{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
+.info svg{flex-shrink:0;width:18px;height:18px}
+.info b{display:block;font-size:13px;margin-bottom:2px}
+.info span{font-size:11px;opacity:.8}
+.info-warn{background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
+.info-heart{background:#fce7f3;border:1px solid #ec4899;color:#9d174d}
+.info-time{background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6}
+.info-ok{background:#d1fae5;border:1px solid #10b981;color:#065f46}
+.pbar{height:5px;background:#e5e7eb;border-radius:3px;margin:14px 0;overflow:hidden}
+.pbar-fill{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899);transition:width .3s}
+.btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;text-transform:uppercase;transition:all .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
 .btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
-.hidden{display:none!important}
-.pub-tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;margin-left:8px;font-weight:600}
-.footer-text{margin-top:16px;font-size:11px;color:#9ca3af}
-.footer-text a{color:#667eea;text-decoration:none;font-weight:500}
+.hide{display:none!important}
+.pub{background:#ef4444;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px}
+.foot{margin-top:14px;font-size:10px;color:#9ca3af}
+.foot a{color:#6366f1;text-decoration:none}
 
-/* Mobile optimizations */
 @media(max-width:480px){
-.header{padding:8px 12px}
-.logo{font-size:12px}
-.logo svg{width:20px;height:20px}
-.title{font-size:11px}
+.hdr{padding:8px 10px}
+.logo{font-size:11px}
+.ttl{font-size:11px}
 .src-btn{padding:6px 10px;font-size:11px}
-.src-btn .label{max-width:80px}
-.report-btn{padding:6px}
-.src-modal-content{border-radius:12px}
-.src-modal-header{padding:16px}
-.src-modal-title{font-size:18px}
-.src-modal-body{padding:16px}
-.src-card{padding:12px}
-.src-card-icon{width:40px;height:40px}
-.src-card-icon svg{width:20px;height:20px}
-.src-card-name{font-size:13px}
-.ad-content{padding:20px}
+.src-btn .lbl{max-width:70px}
+.modal-box{border-radius:10px}
+.modal-hdr{padding:12px 16px}
+.modal-ttl{font-size:16px}
+.modal-body{padding:12px 16px}
+.card{padding:10px}
+.card-icon{width:36px;height:36px}
+.ad-box{padding:18px}
 }
 </style>
 </head>
 <body>
-<div class="player-wrap">
-  <!-- Header -->
-  <div class="header" id="${ids.header}">
-    <div class="logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-        <circle cx="12" cy="12" r="3"/>
-      </svg>
-      <span>WWEMBED</span>
-    </div>
-    <div class="title">${title}</div>
-    <div class="header-right">
-      <button class="src-btn" id="${ids.srcBtn}" onclick="toggleSrcModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7"/>
-          <rect x="14" y="3" width="7" height="7"/>
-          <rect x="14" y="14" width="7" height="7"/>
-          <rect x="3" y="14" width="7" height="7"/>
-        </svg>
-        <span class="label" id="${ids.srcLabel}">Sources</span>
-        <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-      </button>
-      <button class="report-btn" title="Signaler un problème">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-      </button>
-    </div>
-  </div>
+<!-- Ad Overlay -->
+${
+  hasAds
+    ? `
+<div class="ad-ov" id="${ids.overlay}">
+<div class="ad-box">
+<h2>Votre vidéo est prête</h2>
+<p class="sub">Une dernière étape pour accéder au contenu</p>
+<div class="steps">
+<div class="step act" id="${ids.step1}"></div>
+<div class="step" id="${ids.step2}"></div>
+<div class="step" id="${ids.step3}"></div>
+</div>
+<div class="info info-warn">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+<div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
+</div>
+<div class="info info-heart" id="${ids.boxHelp}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+<div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
+</div>
+<div class="info info-time" id="${ids.boxTime}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+<div><b>Temps restant: <span id="${ids.timer}">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div>
+</div>
+<div class="info info-ok hide" id="${ids.boxThanks}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+<div><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div>
+</div>
+<div class="info info-ok hide" id="${ids.boxDone}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+<div><b>Tout est prêt !</b><span>Cliquez pour lancer la lecture</span></div>
+</div>
+<div class="pbar"><div class="pbar-fill" id="${ids.progress}"></div></div>
+<button class="btn btn-primary" id="${ids.btnContinue}">Continuer<span class="pub">PUB</span></button>
+<button class="btn btn-success hide" id="${ids.btnPlay}">Lancer la vidéo</button>
+<div class="foot">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
+</div>
+</div>
+`
+    : ""
+}
 
-  <!-- Video frame -->
-  <div class="video-frame" id="${ids.player}">
-    <div class="no-source">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-        <polygon points="5 3 19 12 5 21 5 3"/>
-      </svg>
-      <span>Chargement...</span>
-    </div>
-  </div>
+<!-- Main Player -->
+<div class="wrap">
+<div class="hdr">
+<div class="logo">
+<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+<b>WWEMBED</b>
+</div>
+<div class="ttl">${title}</div>
+<button class="src-btn" id="${ids.srcBtn}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+<span class="lbl" id="${ids.srcLabel}">Sources</span>
+<svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg>
+</button>
+<button class="rpt-btn" title="Signaler">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+</button>
+</div>
+<div class="player" id="${ids.player}">
+<div class="no-src">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+<span>Chargement...</span>
+</div>
+</div>
 </div>
 
-<!-- Source selection modal -->
-<div class="src-modal" id="${ids.srcModal}">
-  <div class="src-modal-content">
-    <div class="src-modal-header">
-      <div>
-        <div class="src-modal-title">Choisissez votre source</div>
-        <div class="src-modal-sub">Sélectionnez un serveur pour commencer la lecture</div>
-      </div>
-      <button class="src-modal-close" onclick="toggleSrcModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>
-    <div class="src-modal-body">
-      <div class="src-grid" id="${ids.sources}"></div>
-    </div>
-  </div>
+<!-- Source Modal -->
+<div class="modal" id="${ids.srcModal}">
+<div class="modal-box">
+<div class="modal-hdr">
+<div>
+<div class="modal-ttl">Choisissez votre source</div>
+<div class="modal-sub">Sélectionnez un serveur pour commencer la lecture</div>
+</div>
+<button class="modal-close" id="closeModal">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+</button>
+</div>
+<div class="modal-body">
+<div class="grid" id="${ids.srcGrid}"></div>
+</div>
+</div>
 </div>
 
 <script>
 (function(){
-var sources=${sourcesJson};
+var sources=JSON.parse("${sourcesJson}");
 var adUrl="${adUrl}";
 var adId="${adId}";
 var hasAds=${hasAds};
-var currentIdx=0;
-var ids=${JSON.stringify(ids)};
-var adShown=false;
+var idx=0;
+var started=false;
 
-window.toggleSrcModal=function(){
-  var modal=document.getElementById(ids.srcModal);
-  var btn=document.getElementById(ids.srcBtn);
-  if(modal.classList.contains('show')){
-    modal.classList.remove('show');
-    btn.classList.remove('open');
-  }else{
-    modal.classList.add('show');
-    btn.classList.add('open');
-  }
-};
+var $=function(id){return document.getElementById(id)};
 
-function buildSources(){
-  var grid=document.getElementById(ids.sources);
-  if(!grid)return;
-  
-  if(sources.length===0){
-    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:#666">Aucune source disponible</div>';
-    document.getElementById(ids.player).innerHTML='<div class="no-source"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="48" height="48"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Aucune source disponible</span></div>';
-    return;
-  }
-  
-  grid.innerHTML='';
-  for(var i=0;i<sources.length;i++){
-    var s=sources[i];
-    var card=document.createElement('div');
-    card.className='src-card'+(i===currentIdx?' active':'');
-    card.setAttribute('data-idx',i);
-    
-    var lang=(s.language||'VO').toUpperCase();
-    var langClass='lang';
-    if(lang.includes('VOST'))langClass='vostfr';
-    else if(lang.includes('MULTI'))langClass='multi';
-    
-    card.innerHTML='<div class="src-card-badge">'+(s.quality||'HD')+'</div>'+
-      '<div class="src-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>'+
-      '<div class="src-card-name">'+s.name+'</div>'+
-      '<div class="src-card-tags"><span class="src-tag '+langClass+'">'+lang+'</span></div>';
-    
-    card.onclick=function(){
-      var idx=parseInt(this.getAttribute('data-idx'));
-      selectSource(idx);
-    };
-    
-    grid.appendChild(card);
-  }
+function getTagClass(lang){
+var l=(lang||'').toUpperCase();
+if(l.includes('VF')||l.includes('FRAN'))return 'tag-vf';
+if(l.includes('VOST'))return 'tag-vost';
+if(l.includes('MULTI'))return 'tag-multi';
+return 'tag-vo';
 }
 
-function selectSource(idx){
-  currentIdx=idx;
-  var cards=document.querySelectorAll('.src-card');
-  for(var i=0;i<cards.length;i++){
-    cards[i].classList.remove('active');
-    if(parseInt(cards[i].getAttribute('data-idx'))===idx){
-      cards[i].classList.add('active');
-    }
-  }
-  
-  // Update button label
-  var label=document.getElementById(ids.srcLabel);
-  if(label&&sources[idx]){
-    var lang=(sources[idx].language||'VO').toUpperCase();
-    label.textContent=sources[idx].name+' ['+lang+']';
-  }
-  
-  toggleSrcModal();
-  loadPlayer();
+function buildGrid(){
+var grid=$("${ids.srcGrid}");
+if(!grid)return;
+if(sources.length===0){
+grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px;color:#666">Aucune source disponible</div>';
+return;
+}
+grid.innerHTML='';
+for(var i=0;i<sources.length;i++){
+var s=sources[i];
+var card=document.createElement('div');
+card.className='card'+(i===idx?' act':'');
+card.setAttribute('data-i',i);
+var lang=(s.language||'VO').toUpperCase();
+card.innerHTML='<div class="card-badge">'+(s.quality||'HD')+'</div>'+
+'<div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>'+
+'<div class="card-name">'+s.name+'</div>'+
+'<div class="card-tags"><span class="tag '+getTagClass(lang)+'">'+lang+'</span></div>';
+card.onclick=function(){selectSource(parseInt(this.getAttribute('data-i')))};
+grid.appendChild(card);
+}
+}
+
+function selectSource(i){
+idx=i;
+var cards=document.querySelectorAll('.card');
+for(var j=0;j<cards.length;j++){
+cards[j].classList.remove('act');
+if(parseInt(cards[j].getAttribute('data-i'))===i)cards[j].classList.add('act');
+}
+var lbl=$("${ids.srcLabel}");
+if(lbl&&sources[i]){
+var lang=(sources[i].language||'VO').toUpperCase();
+lbl.textContent=sources[i].name+' ['+lang+']';
+}
+toggleModal();
+loadPlayer();
+}
+
+function toggleModal(){
+var m=$("${ids.srcModal}");
+var b=$("${ids.srcBtn}");
+if(m.classList.contains('show')){m.classList.remove('show');b.classList.remove('open')}
+else{m.classList.add('show');b.classList.add('open')}
 }
 
 function loadPlayer(){
-  var player=document.getElementById(ids.player);
-  if(!player||sources.length===0)return;
-  
-  var iframe=document.createElement('iframe');
-  iframe.src=sources[currentIdx].url;
-  iframe.setAttribute('allowfullscreen','true');
-  iframe.setAttribute('allow','accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture');
-  player.innerHTML='';
-  player.appendChild(iframe);
+var p=$("${ids.player}");
+if(!p||sources.length===0)return;
+var src=sources[idx];
+if(!src||!src.url){
+p.innerHTML='<div class="no-src"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="48" height="48"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Source indisponible</span></div>';
+return;
+}
+var iframe=document.createElement('iframe');
+iframe.src=src.url;
+iframe.setAttribute('allowfullscreen','true');
+iframe.setAttribute('allow','accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture');
+p.innerHTML='';
+p.appendChild(iframe);
 }
 
 function startPlayer(){
-  var overlay=document.getElementById(ids.overlay);
-  if(overlay)overlay.classList.add('hidden');
-  buildSources();
-  if(sources.length>0){
-    var label=document.getElementById(ids.srcLabel);
-    if(label){
-      var lang=(sources[0].language||'VO').toUpperCase();
-      label.textContent=sources[0].name+' ['+lang+']';
-    }
-    loadPlayer();
-  }
+if(started)return;
+started=true;
+var ov=$("${ids.overlay}");
+if(ov)ov.classList.add('hide');
+buildGrid();
+if(sources.length>0){
+var lbl=$("${ids.srcLabel}");
+if(lbl){
+var lang=(sources[0].language||'VO').toUpperCase();
+lbl.textContent=sources[0].name+' ['+lang+']';
+}
+loadPlayer();
+}
 }
 
-function showAdModal(){
-  if(!hasAds||!adUrl||adShown){startPlayer();return;}
-  
-  var overlay=document.createElement('div');
-  overlay.className='ad-modal';
-  overlay.id=ids.overlay;
-  
-  overlay.innerHTML='<div class="ad-content">'+
-    '<h2>Votre vidéo est prête</h2>'+
-    '<p class="ad-sub">Une dernière étape pour accéder au contenu</p>'+
-    '<div class="steps"><div class="step active" id="'+ids.step1+'"></div><div class="step" id="'+ids.step2+'"></div><div class="step" id="'+ids.step3+'"></div></div>'+
-    '<div class="info-box box-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div></div>'+
-    '<div class="info-box box-heart" id="'+ids.boxHelp+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div></div>'+
-    '<div class="info-box box-time" id="'+ids.boxTime+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><div><b>Temps restant: <span id="'+ids.timer+'">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div></div>'+
-    '<div class="info-box box-done hidden" id="'+ids.boxThanks+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><div><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div></div>'+
-    '<div class="info-box box-done hidden" id="'+ids.boxDone+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><div><b>Tout est prêt !</b><span>Cliquez pour lancer la lecture</span></div></div>'+
-    '<div class="progress-bar"><div class="progress-fill" id="'+ids.progress+'"></div></div>'+
-    '<button class="btn btn-primary" id="'+ids.btnUnlock+'">Continuer<span class="pub-tag">PUB</span></button>'+
-    '<button class="btn btn-success hidden" id="'+ids.btnPlay+'">Lancer la vidéo</button>'+
-    '<div class="footer-text">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>'+
-  '</div>';
-  
-  document.body.appendChild(overlay);
-  
-  document.getElementById(ids.btnUnlock).onclick=function(){
-    var xhr=new XMLHttpRequest();
-    xhr.open('POST','/api/ads/click',true);
-    xhr.setRequestHeader('Content-Type','application/json');
-    xhr.send(JSON.stringify({adId:adId}));
-    window.open(adUrl,'_blank');
-    
-    this.classList.add('hidden');
-    document.getElementById(ids.step1).classList.remove('active');
-    document.getElementById(ids.step1).classList.add('done');
-    document.getElementById(ids.step2).classList.add('active');
-    
-    var sec=3,prog=0;
-    var iv=setInterval(function(){
-      sec--;prog+=33.33;
-      var timer=document.getElementById(ids.timer);
-      var pbar=document.getElementById(ids.progress);
-      if(timer)timer.textContent=sec+' seconde'+(sec>1?'s':'');
-      if(pbar)pbar.style.width=Math.min(prog,100)+'%';
-      if(sec<=0){
-        clearInterval(iv);
-        document.getElementById(ids.step2).classList.remove('active');
-        document.getElementById(ids.step2).classList.add('done');
-        document.getElementById(ids.step3).classList.add('active');
-        document.getElementById(ids.boxTime).classList.add('hidden');
-        document.getElementById(ids.boxHelp).classList.add('hidden');
-        document.getElementById(ids.boxThanks).classList.remove('hidden');
-        document.getElementById(ids.boxDone).classList.remove('hidden');
-        document.getElementById(ids.progress).style.width='100%';
-        document.getElementById(ids.btnPlay).classList.remove('hidden');
-      }
-    },1000);
-  };
-  
-  document.getElementById(ids.btnPlay).onclick=function(){
-    adShown=true;
-    startPlayer();
-  };
-}
+// Event listeners
+$("${ids.srcBtn}").onclick=toggleModal;
+document.getElementById("closeModal").onclick=toggleModal;
+$("${ids.srcModal}").onclick=function(e){if(e.target===this)toggleModal()};
 
-showAdModal();
+if(hasAds&&adUrl){
+var btnC=$("${ids.btnContinue}");
+var btnP=$("${ids.btnPlay}");
+if(btnC){
+btnC.onclick=function(){
+fetch('/api/ads/click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adId:adId})}).catch(function(){});
+window.open(adUrl,'_blank');
+this.classList.add('hide');
+$("${ids.step1}").classList.remove('act');
+$("${ids.step1}").classList.add('done');
+$("${ids.step2}").classList.add('act');
+var sec=3,prog=0;
+var iv=setInterval(function(){
+sec--;prog+=33.33;
+var tm=$("${ids.timer}");
+var pr=$("${ids.progress}");
+if(tm)tm.textContent=sec+' seconde'+(sec>1?'s':'');
+if(pr)pr.style.width=Math.min(prog,100)+'%';
+if(sec<=0){
+clearInterval(iv);
+$("${ids.step2}").classList.remove('act');
+$("${ids.step2}").classList.add('done');
+$("${ids.step3}").classList.add('act');
+$("${ids.boxTime}").classList.add('hide');
+$("${ids.boxHelp}").classList.add('hide');
+$("${ids.boxThanks}").classList.remove('hide');
+$("${ids.boxDone}").classList.remove('hide');
+$("${ids.progress}").style.width='100%';
+btnP.classList.remove('hide');
+}
+},1000);
+};
+}
+if(btnP){btnP.onclick=startPlayer}
+}else{
+startPlayer();
+}
 })();
 </script>
 </body>
