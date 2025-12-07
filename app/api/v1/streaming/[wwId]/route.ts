@@ -1,14 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { parseWWId, getMovieDetails, getTVDetails, getEpisodeDetails } from "@/lib/tmdb"
+import { Buffer } from "buffer"
 
 function generateRandomId(prefix = "x"): string {
   return prefix + Math.random().toString(36).substring(2, 10)
 }
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
   try {
-    const { wwId } = await params
+    const { wwId } = params
 
     if (!wwId) {
       return NextResponse.json({ error: "Missing WW ID" }, { status: 400 })
@@ -138,7 +139,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       user_agent: request.headers.get("user-agent"),
     })
 
-    const sourcesJson = JSON.stringify(allSources).replace(/'/g, "\\'").replace(/"/g, '\\"')
+    const sourcesJsonRaw = JSON.stringify(allSources)
+    const sourcesBase64 = Buffer.from(sourcesJsonRaw).toString("base64")
 
     const ids = {
       overlay: generateRandomId("ov"),
@@ -355,7 +357,7 @@ ${
 <script>
 (function(){
 try{
-var sources=JSON.parse("${sourcesJson}");
+var sources=JSON.parse(atob("${sourcesBase64}"));
 var adUrl="${adUrl}";
 var adId="${adId}";
 var hasAds=${hasAds};
@@ -504,7 +506,6 @@ if(prg)prg.style.width='100%';
 if(btnP)btnP.classList.remove('hide');
 }
 },1000);
-});
 }
 if(btnP)btnP.addEventListener('click',startPlayer);
 }else{

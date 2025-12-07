@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { Buffer } from "buffer"
 
 function generateRandomId(prefix = "x"): string {
   return prefix + Math.random().toString(36).substring(2, 10)
@@ -90,8 +91,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       user_agent: request.headers.get("user-agent"),
     })
 
-    const sourcesJson = JSON.stringify(allSources).replace(/'/g, "\\'").replace(/"/g, '\\"')
-    const channelName = (channel.channel_name || "Live TV").replace(/"/g, '\\"')
+    const sourcesBase64 = Buffer.from(JSON.stringify(allSources)).toString("base64")
+    const channelName = channel.channel_name || "Live TV"
     const channelLogo = channel.channel_logo || ""
 
     const ids = {
@@ -161,6 +162,8 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 .modal-close:hover{background:rgba(255,255,255,0.2)}
 .modal-close svg{width:18px;height:18px}
 .modal-body{padding:16px 20px;overflow-y:auto;flex:1}
+.modal-body::-webkit-scrollbar{width:5px}
+.modal-body::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
 
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 @media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
@@ -168,7 +171,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 
 .card{background:linear-gradient(135deg,#1e1e2c 0%,#16162a 100%);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px;cursor:pointer;transition:all .2s;position:relative}
 .card:hover{border-color:rgba(239,68,68,0.4);transform:translateY(-2px)}
-.card.act{border-color:#ef4444;background:linear-gradient(135deg,#2a1f1f 0%,#1a1a2e 100%)}
+.card.act{border-color:#ef4444;background:linear-gradient(135deg,#3a1f1f 0%,#1a1a2e 100%)}
 .card-icon{width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg,#ef4444,#f97316);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
 .card-icon svg{width:20px;height:20px;color:#fff}
 .card-badge{position:absolute;top:10px;right:10px;padding:3px 7px;background:#22c55e;border-radius:5px;font-size:9px;font-weight:700}
@@ -204,7 +207,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 .btn-primary{background:linear-gradient(135deg,#ef4444,#f97316);color:#fff}
 .btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
 .hide{display:none!important}
-.pub{background:#6366f1;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px}
+.pub{background:#dc2626;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px}
 .foot{margin-top:14px;font-size:10px;color:#9ca3af}
 .foot a{color:#ef4444;text-decoration:none}
 
@@ -214,6 +217,12 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 .ttl{font-size:11px}
 .src-btn{padding:6px 10px;font-size:11px}
 .src-btn .lbl{max-width:70px}
+.modal-box{border-radius:10px}
+.modal-hdr{padding:12px 16px}
+.modal-ttl{font-size:16px}
+.modal-body{padding:12px 16px}
+.card{padding:10px}
+.card-icon{width:36px;height:36px}
 .ad-box{padding:18px}
 }
 </style>
@@ -264,13 +273,13 @@ ${
 <div class="wrap">
 <div class="hdr">
 <div class="logo">
-<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-<b>LIVE</b>
+<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+<b>WWEMBED</b>
 </div>
 <div class="ttl">
 ${channelLogo ? `<img src="${channelLogo}" alt="">` : ""}
-${channelName}
-<span class="live-badge">EN DIRECT</span>
+<span>${channelName}</span>
+<span class="live-badge">LIVE</span>
 </div>
 <button class="src-btn" id="${ids.srcBtn}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -283,7 +292,7 @@ ${channelName}
 </div>
 <div class="player" id="${ids.player}">
 <div class="no-src">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
 <span>Chargement...</span>
 </div>
 </div>
@@ -294,7 +303,7 @@ ${channelName}
 <div class="modal-hdr">
 <div>
 <div class="modal-ttl">Choisissez votre source</div>
-<div class="modal-sub">Sélectionnez un serveur pour commencer la lecture</div>
+<div class="modal-sub">Sélectionnez un serveur pour regarder en direct</div>
 </div>
 <button class="modal-close" id="closeModal">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -309,13 +318,13 @@ ${channelName}
 <script>
 (function(){
 try{
-var sources=JSON.parse("${sourcesJson}");
+var sources=JSON.parse(atob("${sourcesBase64}"));
 var adUrl="${adUrl}";
 var adId="${adId}";
 var hasAds=${hasAds};
 var idx=0;
 var started=false;
-var hlsPlayer=null;
+var hls=null;
 
 function $(id){return document.getElementById(id)}
 
@@ -343,7 +352,7 @@ card.className='card'+(index===idx?' act':'');
 card.setAttribute('data-i',index);
 var lang=(s.language||'VO').toUpperCase();
 card.innerHTML='<div class="card-badge">'+(s.quality||'HD')+'</div>'+
-'<div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>'+
+'<div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg></div>'+
 '<div class="card-name">'+s.name+'</div>'+
 '<div class="card-tags"><span class="tag '+getTagClass(lang)+'">'+lang+'</span></div>';
 card.onclick=function(){selectSource(index)};
@@ -389,30 +398,31 @@ if(!src||!src.url){
 p.innerHTML='<div class="no-src"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="48" height="48"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Source indisponible</span></div>';
 return;
 }
-if(hlsPlayer){hlsPlayer.destroy();hlsPlayer=null}
+
 var url=src.url;
-if(url.includes('.m3u8')){
+p.innerHTML='';
+
+if(url.includes('.m3u8')||url.includes('m3u8')){
 var video=document.createElement('video');
 video.controls=true;
 video.autoplay=true;
-video.style.cssText='width:100%;height:100%;background:#000';
-p.innerHTML='';
+video.style.cssText='width:100%;height:100%;position:absolute;inset:0;background:#000';
 p.appendChild(video);
 if(Hls.isSupported()){
-hlsPlayer=new Hls();
-hlsPlayer.loadSource(url);
-hlsPlayer.attachMedia(video);
-hlsPlayer.on(Hls.Events.MANIFEST_PARSED,function(){video.play()});
+if(hls)hls.destroy();
+hls=new Hls();
+hls.loadSource(url);
+hls.attachMedia(video);
+hls.on(Hls.Events.MANIFEST_PARSED,function(){video.play()});
 }else if(video.canPlayType('application/vnd.apple.mpegurl')){
 video.src=url;
-video.play();
+video.addEventListener('loadedmetadata',function(){video.play()});
 }
 }else{
 var iframe=document.createElement('iframe');
 iframe.src=url;
 iframe.setAttribute('allowfullscreen','true');
 iframe.setAttribute('allow','accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture');
-p.innerHTML='';
 p.appendChild(iframe);
 }
 }
