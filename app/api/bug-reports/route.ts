@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +13,15 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient()
+
+    let userId = null
+    try {
+      const supabaseAuth = await createClient()
+      const {
+        data: { user },
+      } = await supabaseAuth.auth.getUser()
+      userId = user?.id || null
+    } catch {}
 
     const { error } = await supabase.from("bug_reports").insert({
       ww_id: wwId,
@@ -27,6 +37,7 @@ export async function POST(request: NextRequest) {
       reporter_ip: request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown",
       user_agent: request.headers.get("user-agent"),
       referrer: request.headers.get("referer"),
+      user_id: userId,
     })
 
     if (error) {

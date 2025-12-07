@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -24,6 +24,7 @@ import {
   Settings,
   ArrowUpCircle,
   Loader2,
+  Bug,
 } from "lucide-react"
 import type {
   Profile,
@@ -45,6 +46,18 @@ interface DownloadLinkWithViews extends DownloadLink {
 
 interface DigitalContentWithViews extends DigitalContent {
   view_count: number
+}
+
+interface BugReport {
+  id: string
+  ww_id: string
+  title: string
+  source_name: string
+  message: string
+  status: "pending" | "fixed" | "impossible"
+  admin_note?: string
+  embed_type: string
+  created_at: string
 }
 
 interface DashboardContentProps {
@@ -113,6 +126,34 @@ function getDigitalTypeIcon(type: string) {
   }
 }
 
+function getBugStatusBadge(status: string) {
+  switch (status) {
+    case "fixed":
+      return (
+        <Badge className="bg-green-500/20 text-green-500">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Corrige
+        </Badge>
+      )
+    case "pending":
+      return (
+        <Badge className="bg-yellow-500/20 text-yellow-500">
+          <Clock className="w-3 h-3 mr-1" />
+          En attente
+        </Badge>
+      )
+    case "impossible":
+      return (
+        <Badge className="bg-red-500/20 text-red-500">
+          <XCircle className="w-3 h-3 mr-1" />
+          Impossible
+        </Badge>
+      )
+    default:
+      return <Badge variant="outline">{status}</Badge>
+  }
+}
+
 export function DashboardContent({
   profile,
   streamingLinks,
@@ -125,22 +166,39 @@ export function DashboardContent({
 }: DashboardContentProps) {
   const [requestingUploader, setRequestingUploader] = useState(false)
   const [uploaderRequestResult, setUploaderRequestResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [bugReports, setBugReports] = useState<BugReport[]>([])
+  const [loadingBugReports, setLoadingBugReports] = useState(false)
 
   const supabase = createClient()
 
-  // Calculate conditions for uploader request
   const totalApprovedLinks =
     stats.verifiedStreaming + stats.verifiedDownload + stats.verifiedLiveTv + stats.verifiedDigital
   const accountAge = Math.floor((Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24))
   const canRequestUploader = profile.role === "member" && totalApprovedLinks >= 500 && accountAge >= 30
   const showUploaderSection = profile.role === "member"
 
+  useEffect(() => {
+    async function fetchBugReports() {
+      setLoadingBugReports(true)
+      try {
+        const res = await fetch(`/api/bug-reports/user`)
+        if (res.ok) {
+          const data = await res.json()
+          setBugReports(data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch bug reports:", error)
+      }
+      setLoadingBugReports(false)
+    }
+    fetchBugReports()
+  }, [])
+
   async function handleRequestUploader() {
     setRequestingUploader(true)
     setUploaderRequestResult(null)
 
     try {
-      // Check conditions again
       if (totalApprovedLinks < 500) {
         setUploaderRequestResult({
           success: false,
@@ -155,7 +213,6 @@ export function DashboardContent({
         return
       }
 
-      // Update profile role
       const { error } = await supabase.from("profiles").update({ role: "uploader" }).eq("id", profile.id)
 
       if (error) throw error
@@ -171,7 +228,6 @@ export function DashboardContent({
 
   return (
     <div className="space-y-8">
-      {/* Welcome Section */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
@@ -343,14 +399,13 @@ export function DashboardContent({
         </Card>
       </div>
 
-      {/* Links Tables */}
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle>Mes liens soumis</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="streaming" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="streaming" className="flex items-center gap-2">
                 <Play className="h-4 w-4" />
                 <span className="hidden sm:inline">Streaming</span>
@@ -366,6 +421,10 @@ export function DashboardContent({
               <TabsTrigger value="digital" className="flex items-center gap-2">
                 <Book className="h-4 w-4" />
                 <span className="hidden sm:inline">Digital</span>
+              </TabsTrigger>
+              <TabsTrigger value="bugs" className="flex items-center gap-2">
+                <Bug className="h-4 w-4" />
+                <span className="hidden sm:inline">Rapports</span>
               </TabsTrigger>
               <TabsTrigger value="add" className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
@@ -606,6 +665,64 @@ export function DashboardContent({
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="bugs">
+              {loadingBugReports ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : bugReports.length === 0 ? (
+                <div className="text-center py-8">
+                  <Bug className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">Aucun rapport de bug soumis</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Utilisez le bouton rouge dans les lecteurs pour signaler un probleme
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">WW ID</th>
+                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Titre</th>
+                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Source</th>
+                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Type</th>
+                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Message</th>
+                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Statut</th>
+                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bugReports.map((report) => (
+                        <tr key={report.id} className="border-b border-border/50 hover:bg-muted/50">
+                          <td className="py-3 px-2 font-mono text-xs text-primary">{report.ww_id}</td>
+                          <td className="py-3 px-2 font-medium max-w-[150px] truncate">{report.title || "-"}</td>
+                          <td className="py-3 px-2">{report.source_name || "-"}</td>
+                          <td className="py-3 px-2">
+                            <Badge variant="outline">{report.embed_type}</Badge>
+                          </td>
+                          <td className="py-3 px-2 max-w-[200px]">
+                            <p className="truncate text-muted-foreground" title={report.message}>
+                              {report.message}
+                            </p>
+                            {report.admin_note && (
+                              <p className="text-xs text-amber-500 mt-1 truncate" title={report.admin_note}>
+                                Admin: {report.admin_note}
+                              </p>
+                            )}
+                          </td>
+                          <td className="py-3 px-2">{getBugStatusBadge(report.status)}</td>
+                          <td className="py-3 px-2 text-muted-foreground">
+                            {new Date(report.created_at).toLocaleDateString("fr-FR")}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </TabsContent>
