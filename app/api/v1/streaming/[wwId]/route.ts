@@ -2,9 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { parseWWId, getMovieDetails, getTVDetails, getEpisodeDetails } from "@/lib/tmdb"
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
   try {
-    const { wwId } = await params
+    const { wwId } = params
     if (!wwId) return NextResponse.json({ error: "Missing WW ID" }, { status: 400 })
 
     const parsed = parseWWId(wwId)
@@ -158,23 +158,20 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .rpt-form button:hover{background:#dc2626}
 .rpt-form button:disabled{opacity:0.5;cursor:not-allowed}
 .rpt-success{color:#10b981;text-align:center;padding:20px}
-.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px;backdrop-filter:blur(8px)}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px;backdrop-filter:blur(8px)}
 .mo.sh{display:flex}
 .mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
-.mc h2{color:#1a1a2e;margin-bottom:8px;font-size:18px;font-weight:700}
-.mc-sub{color:#6b7280;font-size:13px;margin-bottom:16px}
-.ad-counter{background:#667eea;color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block;margin-bottom:12px}
-.steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
-.step{width:10px;height:10px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
-.step.active{background:linear-gradient(135deg,#667eea,#764ba2);transform:scale(1.2)}
-.step.done{background:#10b981}
+.hd{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.ti{font-size:20px;font-weight:700;color:#00d4aa;margin-bottom:10px}
+.st{font-size:14px;color:#ccc;margin-bottom:20px}
+.ad-count{font-size:12px;color:#9ca3af;margin-bottom:20px}
+.bxs{display:flex;flex-direction:column;gap:10px}
 .bx{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
 .bx b{display:block;font-size:13px;margin-bottom:2px}
 .bx span{font-size:11px;opacity:0.8;display:block}
-.bw{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
-.bh{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #8b5cf6;color:#5b21b6}
-.bi{background:linear-gradient(135deg,#fef3c7,#fed7aa);border:1px solid #f97316;color:#9a3412}
-.bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
+.by{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
+.bg{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #8b5cf6;color:#5b21b6}
+.bd{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
 .pb{height:5px;background:#e5e7eb;border-radius:3px;margin:14px 0;overflow:hidden}
 .pf{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2);transition:width 0.3s;border-radius:3px}
 .bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
@@ -189,19 +186,20 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <body>
 <div class="mo" id="adOverlay">
 <div class="mc">
-<h2>Accéder au contenu</h2>
-<div class="mc-sub">Une dernière étape pour regarder</div>
-<div class="ad-counter" id="adCounter">Pub 1/1</div>
-<div class="steps"><div class="step active" id="step1"></div><div class="step" id="step2"></div><div class="step" id="step3"></div></div>
-<div class="bx bw"><div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div></div>
-<div class="bx bh" id="boxHelp"><div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div></div>
-<div class="bx bi" id="boxTime"><div><b>Temps restant: <span id="timer">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div></div>
-<div class="bx bo hi" id="boxThanks"><div><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div></div>
-<div class="bx bo hi" id="boxDone"><div><b>Tout est prêt !</b><span>Cliquez pour lancer le lecteur</span></div></div>
+<div class="hd">
+<div class="ti">Votre vidéo est prête</div>
+<div class="st">Une dernière étape pour accéder au contenu</div>
+${hasAds ? `<div class="ad-count" id="adCounter">${ads.length} pub(s) à ouvrir</div>` : ""}
+</div>
+<div class="bxs">
+<div class="bx bo" id="boxHelp"><div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div></div>
+<div class="bx by" id="boxThanks"><div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div></div>
+<div class="bx bg hi" id="boxTime"><div><b>Temps restant:</b><span id="timer">3</span><span>seconde(s)</span><span>Fermez les fenêtres publicitaires</span></div></div>
+<div class="bx bd hi" id="boxDone"><div><b>Tout est prêt !</b><span>Cliquez pour lancer le lecteur</span></div></div>
+</div>
 <div class="pb"><div class="pf" id="progress"></div></div>
-<button class="bt bp" id="btnUnlock">Continuer<span class="tg">PUB</span></button>
+<button class="bt bp" id="btnUnlock">Débloquer (${ads.length} pub${ads.length > 1 ? "s" : ""})<span class="tg">PUB</span></button>
 <button class="bt bn hi" id="btnPlay">Lancer le lecteur</button>
-<button class="bt bp hi" id="btnNext">Pub suivante<span class="tg">PUB</span></button>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
 </div>
@@ -250,7 +248,6 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 var _src=${sourcesJson};
 var _ads=${adsJson};
 var _hasAds=${hasAds};
-var _adIndex=0;
 var _idx=0;
 var _started=false;
 var _wwId="${wwId}";
@@ -322,43 +319,17 @@ loadPlayer();
 }
 }
 
-function updateAdCounter(){
-var el=$("adCounter");
-if(el)el.textContent="Pub "+(_adIndex+1)+"/"+_ads.length;
+function openAllAds(){
+for(var i=0;i<_ads.length;i++){
+window.open(_ads[i].url,"_blank");
 }
-
-function resetAdUI(){
 var s1=$("step1"),s2=$("step2"),s3=$("step3");
 var boxHelp=$("boxHelp"),boxTime=$("boxTime"),boxThanks=$("boxThanks"),boxDone=$("boxDone");
-var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
+var btnUnlock=$("btnUnlock"),btnPlay=$("btnPlay");
 var tmEl=$("timer"),prEl=$("progress");
-if(s1){s1.classList.add("active");s1.classList.remove("done");}
-if(s2){s2.classList.remove("active");s2.classList.remove("done");}
-if(s3){s3.classList.remove("active");s3.classList.remove("done");}
-if(boxHelp)boxHelp.classList.remove("hi");
-if(boxTime)boxTime.classList.remove("hi");
-if(boxThanks)boxThanks.classList.add("hi");
-if(boxDone)boxDone.classList.add("hi");
-if(btnUnlock)btnUnlock.classList.remove("hi");
-if(btnNext)btnNext.classList.add("hi");
-if(btnPlay)btnPlay.classList.add("hi");
-if(tmEl)tmEl.textContent="3";
-if(prEl)prEl.style.width="0%";
-updateAdCounter();
-}
-
-function processAd(){
-var ad=_ads[_adIndex];
-if(!ad)return startPlayer();
-window.open(ad.url,"_blank");
-var s1=$("step1"),s2=$("step2"),s3=$("step3");
-var boxHelp=$("boxHelp"),boxTime=$("boxTime"),boxThanks=$("boxThanks"),boxDone=$("boxDone");
-var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
-var tmEl=$("timer"),prEl=$("progress");
-if(s1){s1.classList.remove("active");s1.classList.add("done");}
-if(s2)s2.classList.add("active");
 if(boxHelp)boxHelp.classList.add("hi");
-if(boxThanks)boxThanks.classList.remove("hi");
+if(boxThanks)boxThanks.classList.add("hi");
+if(boxTime)boxTime.classList.remove("hi");
 if(btnUnlock)btnUnlock.classList.add("hi");
 var tm=3;
 var iv=setInterval(function(){
@@ -367,69 +338,42 @@ if(tmEl)tmEl.textContent=tm;
 if(prEl)prEl.style.width=((3-tm)/3*100)+"%";
 if(tm<=0){
 clearInterval(iv);
-if(s2){s2.classList.remove("active");s2.classList.add("done");}
-if(s3)s3.classList.add("active");
 if(boxTime)boxTime.classList.add("hi");
 if(boxDone)boxDone.classList.remove("hi");
-if(_adIndex<_ads.length-1){
-if(btnNext)btnNext.classList.remove("hi");
-}else{
 if(btnPlay)btnPlay.classList.remove("hi");
-}
 }
 },1000);
 }
 
-var srcBtn=$("srcBtn");
-var closeModal=$("closeModal");
-var srcModal=$("srcModal");
+var srcBtn=$("srcBtn"),closeModal=$("closeModal"),srcModal=$("srcModal");
 if(srcBtn)srcBtn.onclick=function(){toggleModal("srcModal")};
 if(closeModal)closeModal.onclick=function(){toggleModal("srcModal")};
 if(srcModal)srcModal.onclick=function(e){if(e.target===srcModal)toggleModal("srcModal");};
 
-var rptBtn=$("rptBtn");
-var rptModal=$("rptModal");
-var rptClose=$("rptClose");
-var rptSubmit=$("rptSubmit");
-var rptMsg=$("rptMsg");
-var rptForm=$("rptForm");
-var rptSuccess=$("rptSuccess");
+var rptBtn=$("rptBtn"),rptModal=$("rptModal"),rptClose=$("rptClose"),rptSubmit=$("rptSubmit"),rptMsg=$("rptMsg"),rptForm=$("rptForm"),rptSuccess=$("rptSuccess");
 if(rptBtn)rptBtn.onclick=function(){toggleModal("rptModal")};
 if(rptClose)rptClose.onclick=function(){toggleModal("rptModal")};
 if(rptModal)rptModal.onclick=function(e){if(e.target===rptModal)toggleModal("rptModal");};
 if(rptSubmit)rptSubmit.onclick=function(){
-  var msg=rptMsg.value.trim();
-  if(!msg){alert("Veuillez décrire le problème");return}
-  rptSubmit.disabled=true;
-  rptSubmit.textContent="Envoi...";
-  var currentSource=_src[_idx]||{};
-  fetch("/api/bug-reports",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({wwId:_wwId,mediaType:_mediaType,tmdbId:_tmdbId,seasonNumber:_seasonNumber,episodeNumber:_episodeNumber,title:_title,sourceName:currentSource.name||"",sourceUrl:currentSource.url||"",message:msg,embedType:"streaming"})
-  }).then(function(r){return r.json()}).then(function(){
-    rptForm.classList.add("hi");
-    rptSuccess.classList.remove("hi");
-    setTimeout(function(){toggleModal("rptModal");rptForm.classList.remove("hi");rptSuccess.classList.add("hi");rptMsg.value="";rptSubmit.disabled=false;rptSubmit.textContent="Envoyer le signalement"},2000);
-  }).catch(function(){alert("Erreur lors de l'envoi");rptSubmit.disabled=false;rptSubmit.textContent="Envoyer le signalement";});
+var msg=rptMsg?rptMsg.value:"";
+if(!msg.trim())return alert("Veuillez décrire le problème");
+var srcName=_src&&_src[_idx]?_src[_idx].name:"";
+fetch("/api/bug-reports",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({ww_id:_wwId,title:_title,media_type:_mediaType,tmdb_id:_tmdbId,source_name:srcName,message:msg,season_number:_seasonNumber,episode_number:_episodeNumber})
+}).then(function(){
+if(rptForm)rptForm.classList.add("hi");
+if(rptSuccess)rptSuccess.classList.remove("hi");
+setTimeout(function(){toggleModal("rptModal");},2000);
+});
 };
 
-if(_hasAds&&_ads.length>0){
-var ov=$("adOverlay");
-if(ov)ov.classList.add("sh");
-updateAdCounter();
-var btnUnlock=$("btnUnlock");
-var btnNext=$("btnNext");
-var btnPlay=$("btnPlay");
-if(btnUnlock)btnUnlock.onclick=processAd;
-if(btnNext)btnNext.onclick=function(){
-_adIndex++;
-resetAdUI();
-};
+var btnUnlock=$("btnUnlock"),btnPlay=$("btnPlay");
+if(btnUnlock)btnUnlock.onclick=function(){if(_hasAds&&_ads.length)openAllAds();else startPlayer();};
 if(btnPlay)btnPlay.onclick=startPlayer;
-}else{
-startPlayer();
-}
+
+if(!_hasAds||!_ads.length)startPlayer();
 })();
 </script>
 </body>
