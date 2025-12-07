@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
   try {
-    const { wwId } = params
+    const { wwId } = await params
     const match = wwId.match(/^ww-live-(.+)$/i)
     if (!match) return new NextResponse("Invalid WW ID format", { status: 400 })
 

@@ -2,9 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { parseWWId, getMovieDetails, getTVDetails, getEpisodeDetails } from "@/lib/tmdb"
 
-export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
   try {
-    const { wwId } = params
+    const { wwId } = await params
     if (!wwId) return NextResponse.json({ error: "Missing WW ID" }, { status: 400 })
 
     const parsed = parseWWId(wwId)
