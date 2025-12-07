@@ -75,12 +75,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       user_agent: request.headers.get("user-agent"),
     })
 
-    const sourcesJson = JSON.stringify(allSources).replace(/'/g, "\\'").replace(/</g, "\\u003c")
+    const sourcesJson = JSON.stringify(allSources).replace(/</g, "\\u003c")
     const channelName = channel.channel_name || "Live TV"
     const channelLogo = channel.channel_logo || ""
 
-    const html = `<!DOCTYPE html><html lang="fr"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${channelName} - WWEmbed Live</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
@@ -100,7 +103,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .player iframe,.player video{width:100%;height:100%;border:none;position:absolute;inset:0;background:#000}
 .no-src{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#555;gap:8px}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
-.modal.show{display:flex}
+.modal.sh{display:flex}
 .modal-box{background:#1a1a28;border-radius:14px;width:100%;max-width:720px;max-height:85vh;display:flex;flex-direction:column;border:1px solid #333}
 .modal-hdr{padding:16px 20px;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center}
 .modal-ttl{font-size:18px;font-weight:700;color:#ef4444}
@@ -118,43 +121,54 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .card-name{font-size:13px;font-weight:600;margin-bottom:6px}
 .card-tags{display:flex;gap:4px}
 .tag{padding:3px 6px;border-radius:4px;font-size:9px;font-weight:600}
-.tag-vf{background:#3b82f6;color:#fff}.tag-vost{background:#f97316;color:#fff}.tag-multi{background:#a855f7;color:#fff}.tag-vo{background:#6b7280;color:#fff}
-.ad-ov{position:fixed;inset:0;background:linear-gradient(135deg,#ef4444,#f97316,#eab308);display:none;align-items:center;justify-content:center;z-index:200;padding:16px}
-.ad-ov.show{display:flex}
-.ad-box{background:#fff;border-radius:14px;padding:24px;max-width:380px;width:100%;text-align:center;color:#1a1a2e}
-.ad-box h2{font-size:18px;margin-bottom:6px}
-.ad-box .sub{color:#666;font-size:12px;margin-bottom:16px}
+.tag-vf{background:#3b82f6;color:#fff}
+.tag-vost{background:#f97316;color:#fff}
+.tag-multi{background:#a855f7;color:#fff}
+.tag-vo{background:#6b7280;color:#fff}
+.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(239,68,68,0.95) 0%,rgba(249,115,22,0.95) 50%,rgba(234,179,8,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px;backdrop-filter:blur(8px)}
+.mo.sh{display:flex}
+.mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
+.mc h2{color:#1a1a2e;margin-bottom:8px;font-size:18px;font-weight:700}
+.mc-sub{color:#6b7280;font-size:13px;margin-bottom:16px}
 .steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
-.step{width:10px;height:10px;border-radius:50%;background:#e5e7eb}
-.step.act{background:#ef4444;transform:scale(1.2)}
+.step{width:10px;height:10px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
+.step.active{background:linear-gradient(135deg,#ef4444,#f97316);transform:scale(1.2)}
 .step.done{background:#10b981}
-.info{border-radius:10px;padding:12px;margin:8px 0;text-align:left}
-.info b{display:block;font-size:13px;margin-bottom:2px}
-.info span{font-size:11px;opacity:.8}
-.info-warn{background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
-.info-heart{background:#fce7f3;border:1px solid #ec4899;color:#9d174d}
-.info-time{background:#fef3c7;border:1px solid #f97316;color:#9a3412}
-.info-ok{background:#d1fae5;border:1px solid #10b981;color:#065f46}
-.pbar{height:5px;background:#e5e7eb;border-radius:3px;margin:14px 0;overflow:hidden}
-.pbar-fill{height:100%;width:0;background:linear-gradient(90deg,#ef4444,#eab308);transition:width .3s}
-.btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
-.btn-primary{background:linear-gradient(135deg,#ef4444,#f97316);color:#fff}
-.btn-success{background:#10b981;color:#fff}
-.hide{display:none!important}
-.pub{background:#dc2626;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px}
-</style></head><body>
-<div class="ad-ov" id="adOv"><div class="ad-box">
-<h2>Votre chaîne est prête</h2><p class="sub">Une dernière étape pour accéder au direct</p>
-<div class="steps"><div class="step act" id="s1"></div><div class="step" id="s2"></div><div class="step" id="s3"></div></div>
-<div class="info info-warn"><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
-<div class="info info-heart" id="boxHelp"><b>Soutenez le service</b><span>Votre clic nous aide à rester en ligne</span></div>
-<div class="info info-time" id="boxTime"><b>Temps restant: <span id="timer">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div>
-<div class="info info-ok hide" id="boxThanks"><b>Merci !</b><span>Vous aidez à maintenir le service</span></div>
-<div class="info info-ok hide" id="boxDone"><b>Prêt !</b><span>Cliquez pour lancer le direct</span></div>
-<div class="pbar"><div class="pbar-fill" id="progress"></div></div>
-<button class="btn btn-primary" id="btnContinue">Continuer<span class="pub">PUB</span></button>
-<button class="btn btn-success hide" id="btnPlay">Lancer le direct</button>
-</div></div>
+.bx{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
+.bx b{display:block;font-size:13px;margin-bottom:2px}
+.bx span{font-size:11px;opacity:0.8;display:block}
+.bw{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
+.bh{background:linear-gradient(135deg,#fce7f3,#fbcfe8);border:1px solid #ec4899;color:#9d174d}
+.bi{background:linear-gradient(135deg,#fef3c7,#fed7aa);border:1px solid #f97316;color:#9a3412}
+.bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
+.pb{height:5px;background:#e5e7eb;border-radius:3px;margin:14px 0;overflow:hidden}
+.pf{height:100%;width:0;background:linear-gradient(90deg,#ef4444,#f97316,#eab308);transition:width 0.3s;border-radius:3px}
+.bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
+.bp{background:linear-gradient(135deg,#ef4444,#f97316);color:#fff}
+.bn{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+.hi{display:none}
+.cf{margin-top:12px;font-size:10px;color:#9ca3af}
+.cf a{color:#ef4444;text-decoration:none}
+.tg{background:#dc2626;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="mo" id="adOverlay">
+<div class="mc">
+<h2>Votre chaîne est prête</h2>
+<div class="mc-sub">Une dernière étape pour accéder au direct</div>
+<div class="steps"><div class="step active" id="step1"></div><div class="step" id="step2"></div><div class="step" id="step3"></div></div>
+<div class="bx bw"><div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div></div>
+<div class="bx bh" id="boxHelp"><div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div></div>
+<div class="bx bi" id="boxTime"><div><b>Temps restant: <span id="timer">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div></div>
+<div class="bx bo hi" id="boxThanks"><div><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div></div>
+<div class="bx bo hi" id="boxDone"><div><b>Tout est prêt !</b><span>Cliquez pour lancer le direct</span></div></div>
+<div class="pb"><div class="pf" id="progress"></div></div>
+<button class="bt bp" id="btnUnlock">Continuer<span class="tg">PUB</span></button>
+<button class="bt bn hi" id="btnPlay">Lancer le direct</button>
+<div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
+</div>
+</div>
 <div class="wrap">
 <div class="hdr">
 <div class="logo">📺 WWEMBED</div>
@@ -164,42 +178,169 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 </div>
 <div class="player" id="player"><div class="no-src">Chargement...</div></div>
 </div>
-<div class="modal" id="srcModal"><div class="modal-box">
-<div class="modal-hdr"><div><div class="modal-ttl">Choisissez votre source</div><div class="modal-sub">Sélectionnez un serveur</div></div>
-<button class="modal-close" id="closeModal">×</button></div>
+<div class="modal" id="srcModal">
+<div class="modal-box">
+<div class="modal-hdr">
+<div><div class="modal-ttl">Choisissez votre source</div><div class="modal-sub">Sélectionnez un serveur</div></div>
+<button class="modal-close" id="closeModal">×</button>
+</div>
 <div class="modal-body"><div class="grid" id="srcGrid"></div></div>
-</div></div>
+</div>
+</div>
 <script>
 (function(){
-var sources=${sourcesJson};
-var adUrl="${adUrl}";
-var hasAds=${hasAds};
-var idx=0,started=false,hls=null;
-function $(id){return document.getElementById(id)}
-function tagClass(l){l=(l||"").toUpperCase();if(l.indexOf("VF")>=0)return"tag-vf";if(l.indexOf("VOST")>=0)return"tag-vost";if(l.indexOf("MULTI")>=0)return"tag-multi";return"tag-vo"}
-function buildGrid(){var g=$("srcGrid");if(!g)return;if(!sources.length){g.innerHTML="<div style='grid-column:1/-1;text-align:center;padding:30px;color:#666'>Aucune source</div>";return}
-g.innerHTML="";sources.forEach(function(s,i){var d=document.createElement("div");d.className="card"+(i===idx?" act":"");d.innerHTML="<div class='card-badge'>"+(s.quality||"HD")+"</div><div class='card-icon'>📺</div><div class='card-name'>"+s.name+"</div><div class='card-tags'><span class='tag "+tagClass(s.language)+"'>"+(s.language||"VO").toUpperCase()+"</span></div>";
-d.onclick=function(){idx=i;document.querySelectorAll(".card").forEach(function(c,j){c.classList.toggle("act",j===i)});$("srcLabel").textContent=s.name;toggleModal();loadPlayer()};g.appendChild(d)})}
-function toggleModal(){var m=$("srcModal");if(m)m.classList.toggle("show")}
-function loadPlayer(){var p=$("player");if(!p||!sources.length)return;var s=sources[idx];if(!s||!s.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";return}
-var url=s.url;p.innerHTML="";
-if(url.indexOf(".m3u8")>=0){var v=document.createElement("video");v.controls=true;v.autoplay=true;v.style.cssText="width:100%;height:100%;position:absolute;inset:0;background:#000";p.appendChild(v);
-if(typeof Hls!=="undefined"&&Hls.isSupported()){if(hls)hls.destroy();hls=new Hls();hls.loadSource(url);hls.attachMedia(v);hls.on(Hls.Events.MANIFEST_PARSED,function(){v.play().catch(function(){})})
-}else if(v.canPlayType("application/vnd.apple.mpegurl")){v.src=url;v.addEventListener("loadedmetadata",function(){v.play().catch(function(){})})}
-}else{var f=document.createElement("iframe");f.src=url;f.allowFullscreen=true;f.allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture";p.appendChild(f)}}
-function start(){if(started)return;started=true;var ov=$("adOv");if(ov)ov.classList.remove("show");buildGrid();if(sources.length){$("srcLabel").textContent=sources[0].name;loadPlayer()}}
-$("srcBtn").onclick=toggleModal;
-$("closeModal").onclick=toggleModal;
-$("srcModal").onclick=function(e){if(e.target===$("srcModal"))toggleModal()};
-if(hasAds&&adUrl){
-$("adOv").classList.add("show");
+var _src=${sourcesJson};
+var _adUrl="${adUrl}";
+var _hasAds=${hasAds};
+var _idx=0;
+var _started=false;
+var _hls=null;
+
+function $(id){return document.getElementById(id);}
+
+function tagClass(l){
+l=(l||"").toUpperCase();
+if(l.indexOf("VF")>=0||l.indexOf("FRENCH")>=0||l.indexOf("FRANÇAIS")>=0)return"tag-vf";
+if(l.indexOf("VOST")>=0)return"tag-vost";
+if(l.indexOf("MULTI")>=0)return"tag-multi";
+return"tag-vo";
+}
+
+function buildGrid(){
+var g=$("srcGrid");
+if(!g)return;
+if(!_src||!_src.length){
+g.innerHTML="<div style='grid-column:1/-1;text-align:center;padding:30px;color:#666'>Aucune source disponible</div>";
+return;
+}
+g.innerHTML="";
+for(var i=0;i<_src.length;i++){
+(function(index){
+var s=_src[index];
+var d=document.createElement("div");
+d.className="card"+(index===_idx?" act":"");
+d.innerHTML="<div class='card-badge'>"+(s.quality||"HD")+"</div><div class='card-icon'>📺</div><div class='card-name'>"+s.name+"</div><div class='card-tags'><span class='tag "+tagClass(s.language)+"'>"+(s.language||"VO").toUpperCase()+"</span></div>";
+d.onclick=function(){
+_idx=index;
+var cards=document.querySelectorAll(".card");
+for(var j=0;j<cards.length;j++){cards[j].classList.toggle("act",j===index);}
+$("srcLabel").textContent=s.name;
+toggleModal();
+loadPlayer();
+};
+g.appendChild(d);
+})(i);
+}
+}
+
+function toggleModal(){
+var m=$("srcModal");
+if(m)m.classList.toggle("sh");
+}
+
+function loadPlayer(){
+var p=$("player");
+if(!p||!_src||!_src.length)return;
+var s=_src[_idx];
+if(!s||!s.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";return;}
+var url=s.url;
+p.innerHTML="";
+if(url.indexOf(".m3u8")>=0){
+var v=document.createElement("video");
+v.controls=true;
+v.autoplay=true;
+v.style.cssText="width:100%;height:100%;position:absolute;inset:0;background:#000";
+p.appendChild(v);
+if(typeof Hls!=="undefined"&&Hls.isSupported()){
+if(_hls)_hls.destroy();
+_hls=new Hls();
+_hls.loadSource(url);
+_hls.attachMedia(v);
+_hls.on(Hls.Events.MANIFEST_PARSED,function(){v.play().catch(function(){});});
+}else if(v.canPlayType("application/vnd.apple.mpegurl")){
+v.src=url;
+v.addEventListener("loadedmetadata",function(){v.play().catch(function(){});});
+}
+}else{
+var f=document.createElement("iframe");
+f.src=url;
+f.allowFullscreen=true;
+f.allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture";
+p.appendChild(f);
+}
+}
+
+function startPlayer(){
+if(_started)return;
+_started=true;
+var ov=$("adOverlay");
+if(ov)ov.classList.remove("sh");
+buildGrid();
+if(_src&&_src.length){
+$("srcLabel").textContent=_src[0].name;
+loadPlayer();
+}
+}
+
+var srcBtn=$("srcBtn");
+var closeModal=$("closeModal");
+var srcModal=$("srcModal");
+
+if(srcBtn)srcBtn.onclick=toggleModal;
+if(closeModal)closeModal.onclick=toggleModal;
+if(srcModal)srcModal.onclick=function(e){if(e.target===srcModal)toggleModal();};
+
+if(_hasAds&&_adUrl){
+var ov=$("adOverlay");
+if(ov)ov.classList.add("sh");
+
+var btnUnlock=$("btnUnlock");
+var btnPlay=$("btnPlay");
+var tmEl=$("timer");
+var prEl=$("progress");
+var s1=$("step1");
+var s2=$("step2");
+var s3=$("step3");
+var boxHelp=$("boxHelp");
+var boxTime=$("boxTime");
+var boxThanks=$("boxThanks");
+var boxDone=$("boxDone");
+
+if(btnUnlock){
+btnUnlock.onclick=function(){
+window.open(_adUrl,"_blank");
+if(s1){s1.classList.remove("active");s1.classList.add("done");}
+if(s2)s2.classList.add("active");
+if(boxHelp)boxHelp.classList.add("hi");
+if(boxThanks)boxThanks.classList.remove("hi");
+btnUnlock.classList.add("hi");
 var tm=3;
-$("btnContinue").onclick=function(){window.open(adUrl,"_blank");$("s1").className="step done";$("s2").className="step act";$("boxHelp").classList.add("hide");$("boxThanks").classList.remove("hide");
-var iv=setInterval(function(){tm--;$("timer").textContent=tm;$("progress").style.width=((3-tm)/3*100)+"%";if(tm<=0){clearInterval(iv);$("s2").className="step done";$("s3").className="step act";$("boxTime").classList.add("hide");$("boxDone").classList.remove("hide");$("btnContinue").classList.add("hide");$("btnPlay").classList.remove("hide")}},1000)};
-$("btnPlay").onclick=start;
-}else{start()}
+var iv=setInterval(function(){
+tm--;
+if(tmEl)tmEl.textContent=tm;
+if(prEl)prEl.style.width=((3-tm)/3*100)+"%";
+if(tm<=0){
+clearInterval(iv);
+if(s2){s2.classList.remove("active");s2.classList.add("done");}
+if(s3)s3.classList.add("active");
+if(boxTime)boxTime.classList.add("hi");
+if(boxDone)boxDone.classList.remove("hi");
+if(btnPlay)btnPlay.classList.remove("hi");
+}
+},1000);
+};
+}
+
+if(btnPlay){
+btnPlay.onclick=startPlayer;
+}
+}else{
+startPlayer();
+}
 })();
-</script></body></html>`
+</script>
+</body>
+</html>`
 
     return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } })
   } catch (error) {
