@@ -476,19 +476,12 @@ export default function HomePage() {
                   </Button>
                 </div>
 
-                <div className="flex gap-3">
-                  <Input
-                    placeholder="Rechercher par titre ou auteur..."
-                    value={digitalSearch}
-                    onChange={(e) => setDigitalSearch(e.target.value)}
-                    className="flex-1"
-                  />
-                  <AddDigitalContentModal
-                    buttonVariant="outline"
-                    buttonText="Ajouter"
-                    onSuccess={fetchDigitalContent}
-                  />
-                </div>
+                <Input
+                  placeholder="Rechercher par titre ou auteur..."
+                  value={digitalSearch}
+                  onChange={(e) => setDigitalSearch(e.target.value)}
+                  className="flex-1"
+                />
 
                 {loadingDigital ? (
                   <div className="text-center py-8 text-muted-foreground">Chargement...</div>

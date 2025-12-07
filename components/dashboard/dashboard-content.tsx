@@ -1014,7 +1014,7 @@ export function DashboardContent({
                   <p className="text-muted-foreground">Choisissez le type de contenu que vous souhaitez ajouter</p>
                 </div>
 
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid sm:grid-cols-3 gap-4">
                   <AddLinkModal
                     onSuccess={() => window.location.reload()}
                     trigger={
@@ -1029,22 +1029,6 @@ export function DashboardContent({
                       </Card>
                     }
                     mode="streaming"
-                  />
-
-                  <AddLinkModal
-                    onSuccess={() => window.location.reload()}
-                    trigger={
-                      <Card className="cursor-pointer hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group">
-                        <CardContent className="pt-6 text-center">
-                          <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-500/20 transition-colors">
-                            <Download className="w-7 h-7 text-blue-500" />
-                          </div>
-                          <h3 className="font-semibold mb-1">Download</h3>
-                          <p className="text-sm text-muted-foreground">Telechargement</p>
-                        </CardContent>
-                      </Card>
-                    }
-                    mode="download"
                   />
 
                   <AddLinkModal
