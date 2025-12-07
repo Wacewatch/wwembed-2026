@@ -108,6 +108,11 @@ export function AddLinkModal({
 
   const [mainTab, setMainTab] = useState<"media" | "livetv" | "digital">(getInitialMainTab())
   const [liveTvMode, setLiveTvMode] = useState<"new" | "existing">("new")
+  const [digitalMode, setDigitalMode] = useState<"new" | "existing">("new")
+  const [existingDigitalContents, setExistingDigitalContents] = useState<any[]>([])
+  const [selectedDigitalContentId, setSelectedDigitalContentId] = useState<string>("")
+  const [digitalSearchQuery, setDigitalSearchQuery] = useState("")
+  // </CHANGE>
   const [existingChannels, setExistingChannels] = useState<LiveTVChannel[]>([])
   const [selectedChannelId, setSelectedChannelId] = useState<string>("")
   const [channelSearchQuery, setChannelSearchQuery] = useState("")
@@ -235,20 +240,28 @@ export function AddLinkModal({
     }
   }, [open])
 
+  // Fetch existing channels for Live TV
   useEffect(() => {
-    const fetchChannels = async () => {
-      if (open && mainTab === "livetv" && liveTvMode === "existing") {
+    if (open && (mainTab === "livetv" || mode === "livetv")) {
+      const fetchChannels = async () => {
         const supabase = createClient()
-        const { data } = await supabase
-          .from("live_tv_channels")
-          .select("*")
-          .eq("status", "approved")
-          .order("channel_name")
-        setExistingChannels(data || [])
+        const { data } = await supabase.from("live_tv_channels").select("*").order("channel_name")
+        if (data) setExistingChannels(data)
       }
+      fetchChannels()
     }
-    fetchChannels()
-  }, [open, mainTab, liveTvMode])
+  }, [open, mainTab, mode])
+
+  useEffect(() => {
+    if (open && (mainTab === "digital" || mode === "digital")) {
+      const fetchDigitalContents = async () => {
+        const supabase = createClient()
+        const { data } = await supabase.from("digital_contents").select("*").order("title")
+        if (data) setExistingDigitalContents(data)
+      }
+      fetchDigitalContents()
+    }
+  }, [open, mainTab, mode])
 
   useEffect(() => {
     if (open) {
@@ -300,6 +313,8 @@ export function AddLinkModal({
           stream_url: "",
           quality: "HD",
         })
+        // Reset digital states if not prefilled
+        setDigitalMode("new")
         setDigitalContentType("ebook")
         setDigitalContentData({
           title: "",
@@ -317,6 +332,7 @@ export function AddLinkModal({
           quality: "",
           language: "fr",
         })
+        // </CHANGE>
         // Reset download specific states
         setBulkMode(false)
         setFullSeasonMode(false)
@@ -774,15 +790,77 @@ export function AddLinkModal({
     setLoading(false)
   }
 
-  const handleDigitalSubmit = async (e: React.FormEvent) => {
+  const handleDigitalLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!userId) return
 
+    if (!selectedDigitalContentId) {
+      setError("Veuillez selectionner un contenu")
+      return
+    }
+
+    if (!digitalLinkData.source_name || !digitalLinkData.download_url) {
+      setError("Le nom de la source et l'URL sont requis")
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    const supabase = createClient()
+    const status = getLinkStatus()
+
+    const { error: linkError } = await supabase.from("digital_links").insert({
+      content_id: selectedDigitalContentId,
+      source_name: digitalLinkData.source_name,
+      download_url: digitalLinkData.download_url,
+      reader_url: digitalLinkData.reader_url || null,
+      file_format: digitalLinkData.file_format || null,
+      file_size: digitalLinkData.file_size || null,
+      quality: digitalLinkData.quality || null,
+      language: digitalLinkData.language,
+      submitted_by: userId,
+      status: status,
+    })
+
+    if (linkError) {
+      setError(linkError.message)
+    } else {
+      const message = status === "pending" ? "Lien soumis - En attente de validation" : "Lien ajoute avec succes!"
+      setSuccess(message)
+      setDigitalLinkData({
+        source_name: "",
+        download_url: "",
+        reader_url: "",
+        file_format: "",
+        file_size: "",
+        quality: "",
+        language: "fr",
+      })
+      setSelectedDigitalContentId("")
+      setTimeout(() => {
+        setOpen(false)
+        setSuccess(null)
+        onSuccess?.()
+      }, 1500)
+    }
+    setLoading(false)
+  }
+
+  const handleDigitalSubmit = async () => {
+    // Check if digital content info is filled (only if not adding a link to existing content)
     if (!digitalContentData.title) {
       setError("Le titre est requis")
       return
     }
 
+    // Handle the case where we are adding a link to an existing digital content
+    if (digitalMode === "existing" && selectedDigitalContentId) {
+      return handleDigitalLinkSubmit(new Event("submit") as React.FormEvent)
+    }
+
+    // Proceed with creating new digital content and its link
     if (!digitalLinkData.source_name || !digitalLinkData.download_url) {
       setError("Le nom de la source et l'URL de telechargement sont requis")
       return
@@ -798,7 +876,7 @@ export function AddLinkModal({
 
     // First create the digital content
     const { data: contentData, error: contentError } = await supabase
-      .from("digital_content")
+      .from("digital_contents")
       .insert({
         ww_id: wwId,
         content_type: digitalContentType,
@@ -878,6 +956,14 @@ export function AddLinkModal({
   const filteredChannels = existingChannels.filter((c) =>
     c.channel_name.toLowerCase().includes(channelSearchQuery.toLowerCase()),
   )
+
+  // Filter digital content
+  const filteredDigitalContents = existingDigitalContents.filter(
+    (content) =>
+      content.title.toLowerCase().includes(digitalSearchQuery.toLowerCase()) &&
+      content.content_type === digitalContentType,
+  )
+  // </CHANGE>
 
   const getAuthorLabel = () => {
     switch (digitalContentType) {
@@ -2128,7 +2214,37 @@ export function AddLinkModal({
 
             {(mainTab === "digital" || mode === "digital") && (
               <div className="space-y-6 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800">
-                {/* Content Type Selection */}
+                <div className="flex gap-2 mb-4">
+                  <Button
+                    variant={digitalMode === "new" ? "default" : "outline"}
+                    size="sm"
+                    className={
+                      digitalMode === "new"
+                        ? "bg-amber-600 hover:bg-amber-500 text-white"
+                        : "bg-zinc-900 border-zinc-700 hover:bg-zinc-800"
+                    }
+                    onClick={() => setDigitalMode("new")}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nouveau contenu
+                  </Button>
+                  <Button
+                    variant={digitalMode === "existing" ? "default" : "outline"}
+                    size="sm"
+                    className={
+                      digitalMode === "existing"
+                        ? "bg-purple-600 hover:bg-purple-500 text-white"
+                        : "bg-zinc-900 border-zinc-700 hover:bg-zinc-800"
+                    }
+                    onClick={() => setDigitalMode("existing")}
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Ajouter un lien
+                  </Button>
+                </div>
+                {/* </CHANGE> */}
+
+                {/* Content Type Selection - Always visible */}
                 <div className="space-y-4">
                   <Label className="text-base font-semibold flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-amber-600/20 flex items-center justify-center text-xs font-bold text-amber-600">
@@ -2149,7 +2265,10 @@ export function AddLinkModal({
                               ? "bg-amber-600 text-white hover:bg-amber-500"
                               : "bg-zinc-900 border-zinc-700 hover:bg-zinc-800"
                           }`}
-                          onClick={() => setDigitalContentType(type.value as typeof digitalContentType)}
+                          onClick={() => {
+                            setDigitalContentType(type.value as typeof digitalContentType)
+                            setSelectedDigitalContentId("")
+                          }}
                         >
                           <Icon className="w-5 h-5" />
                           <span className="text-xs">{type.label}</span>
@@ -2159,187 +2278,361 @@ export function AddLinkModal({
                   </div>
                 </div>
 
-                {/* Content Info */}
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                      2
-                    </div>
-                    Informations du contenu
-                  </Label>
-                  <div className="grid grid-cols-2 gap-4">
+                {digitalMode === "existing" ? (
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Titre *</Label>
-                      <Input
-                        placeholder="Titre du contenu"
-                        value={digitalContentData.title}
-                        onChange={(e) => setDigitalContentData({ ...digitalContentData, title: e.target.value })}
-                        required
-                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{getAuthorLabel()}</Label>
-                      <Input
-                        placeholder={getAuthorLabel()}
-                        value={digitalContentData.author}
-                        onChange={(e) => setDigitalContentData({ ...digitalContentData, author: e.target.value })}
-                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Textarea
-                      placeholder="Description du contenu (optionnel)"
-                      value={digitalContentData.description}
-                      onChange={(e) => setDigitalContentData({ ...digitalContentData, description: e.target.value })}
-                      rows={2}
-                      className="bg-zinc-900 border-zinc-700 focus:border-primary"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>URL de la couverture</Label>
-                      <Input
-                        placeholder="https://..."
-                        value={digitalContentData.cover_url}
-                        onChange={(e) => setDigitalContentData({ ...digitalContentData, cover_url: e.target.value })}
-                        type="url"
-                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Version</Label>
-                      <Input
-                        placeholder="Ex: 1.0, 2024"
-                        value={digitalContentData.version}
-                        onChange={(e) => setDigitalContentData({ ...digitalContentData, version: e.target.value })}
-                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Link Info */}
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center text-xs font-bold text-blue-600">
-                      3
-                    </div>
-                    Lien de telechargement
-                  </Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Nom de la source *</Label>
-                      <Input
-                        placeholder="Ex: Mega, 1fichier"
-                        value={digitalLinkData.source_name}
-                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, source_name: e.target.value })}
-                        required
-                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Format</Label>
-                      <Input
-                        placeholder={getFormatSuggestions()}
-                        value={digitalLinkData.file_format}
-                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, file_format: e.target.value })}
-                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>URL de telechargement *</Label>
-                    <Input
-                      placeholder="https://..."
-                      value={digitalLinkData.download_url}
-                      onChange={(e) => setDigitalLinkData({ ...digitalLinkData, download_url: e.target.value })}
-                      type="url"
-                      required
-                      className="bg-zinc-900 border-zinc-700 focus:border-primary"
-                    />
-                  </div>
-                  {/* Show reader URL only for ebook and music */}
-                  {(digitalContentType === "ebook" || digitalContentType === "music") && (
-                    <div className="space-y-2">
-                      <Label>
-                        URL de lecture {digitalContentType === "ebook" ? "(lecteur PDF)" : "(lecteur audio)"}
+                      <Label className="text-base font-semibold flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-purple-600/20 flex items-center justify-center text-xs font-bold text-purple-600">
+                          2
+                        </div>
+                        Selectionner un contenu existant
                       </Label>
                       <Input
-                        placeholder="https://... (optionnel, pour la lecture en ligne)"
-                        value={digitalLinkData.reader_url}
-                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, reader_url: e.target.value })}
-                        type="url"
-                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
-                      />
-                      <p className="text-xs text-zinc-400">
-                        {digitalContentType === "ebook"
-                          ? "URL pour lire le PDF en ligne (sera affiche dans le lecteur)"
-                          : "URL du fichier audio pour l'ecoute en ligne"}
-                      </p>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Taille</Label>
-                      <Input
-                        placeholder="100 MB"
-                        value={digitalLinkData.file_size}
-                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, file_size: e.target.value })}
-                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                        placeholder="Rechercher un contenu..."
+                        value={digitalSearchQuery}
+                        onChange={(e) => setDigitalSearchQuery(e.target.value)}
+                        className="bg-zinc-950 border-zinc-800 focus:border-purple-500"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Qualite</Label>
-                      <Input
-                        placeholder={digitalContentType === "music" ? "320kbps" : "HD"}
-                        value={digitalLinkData.quality}
-                        onChange={(e) => setDigitalLinkData({ ...digitalLinkData, quality: e.target.value })}
-                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Langue</Label>
-                      <Select
-                        value={digitalLinkData.language}
-                        onValueChange={(v) => setDigitalLinkData({ ...digitalLinkData, language: v })}
-                      >
-                        <SelectTrigger className="bg-zinc-900 border-zinc-700">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-700">
-                          <SelectItem value="fr">Francais</SelectItem>
-                          <SelectItem value="en">Anglais</SelectItem>
-                          <SelectItem value="multi">Multi</SelectItem>
-                          <SelectItem value="other">Autre</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
 
-                {success && <p className="text-sm text-green-400">{success}</p>}
-                {error && <p className="text-sm text-red-400">{error}</p>}
-                <Button
-                  type="button"
-                  className="w-full bg-primary hover:bg-primary/90"
-                  disabled={loading}
-                  onClick={handleDigitalSubmit}
-                >
-                  {loading
-                    ? "Ajout en cours..."
-                    : `Ajouter le ${
-                        digitalContentType === "ebook"
-                          ? "ebook"
-                          : digitalContentType === "music"
-                            ? "morceau"
-                            : digitalContentType === "software"
-                              ? "logiciel"
-                              : "jeu"
-                      }`}
-                </Button>
+                    <div className="max-h-48 overflow-y-auto border border-zinc-800 rounded-lg bg-zinc-950/50">
+                      {filteredDigitalContents.length > 0 ? (
+                        filteredDigitalContents.map((content) => (
+                          <button
+                            key={content.id}
+                            type="button"
+                            className={`w-full flex items-center gap-3 p-3 text-left transition-all border-b border-zinc-800/50 last:border-0 ${
+                              selectedDigitalContentId === content.id
+                                ? "bg-purple-600/20 text-purple-400"
+                                : "hover:bg-zinc-800/50"
+                            }`}
+                            onClick={() => setSelectedDigitalContentId(content.id)}
+                          >
+                            {content.cover_url ? (
+                              <img
+                                src={content.cover_url || "/placeholder.svg"}
+                                alt={content.title}
+                                className="w-10 h-14 object-cover rounded"
+                              />
+                            ) : (
+                              <div className="w-10 h-14 bg-zinc-800 rounded flex items-center justify-center">
+                                {digitalContentType === "ebook" && <Book className="w-5 h-5 text-zinc-500" />}
+                                {digitalContentType === "music" && <Music className="w-5 h-5 text-zinc-500" />}
+                                {digitalContentType === "software" && <Package className="w-5 h-5 text-zinc-500" />}
+                                {digitalContentType === "game" && <Gamepad2 className="w-5 h-5 text-zinc-500" />}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{content.title}</p>
+                              {content.author && <p className="text-xs text-zinc-400 truncate">{content.author}</p>}
+                            </div>
+                            {selectedDigitalContentId === content.id && (
+                              <div className="w-2 h-2 rounded-full bg-purple-500" />
+                            )}
+                          </button>
+                        ))
+                      ) : (
+                        <p className="text-center py-6 text-zinc-500">
+                          Aucun contenu de type "
+                          {DIGITAL_CONTENT_TYPES.find((t) => t.value === digitalContentType)?.label}" trouve
+                        </p>
+                      )}
+                    </div>
+
+                    {selectedDigitalContentId && (
+                      <form onSubmit={handleDigitalLinkSubmit} className="space-y-4 mt-4 pt-4 border-t border-zinc-800">
+                        <Label className="text-base font-semibold flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center text-xs font-bold text-blue-600">
+                            3
+                          </div>
+                          Informations du lien
+                        </Label>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Nom de la source *</Label>
+                            <Input
+                              placeholder="Ex: Mega, 1fichier"
+                              value={digitalLinkData.source_name}
+                              onChange={(e) => setDigitalLinkData({ ...digitalLinkData, source_name: e.target.value })}
+                              required
+                              className="bg-zinc-950 border-zinc-800 focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Format</Label>
+                            <Input
+                              placeholder={getFormatSuggestions()}
+                              value={digitalLinkData.file_format}
+                              onChange={(e) => setDigitalLinkData({ ...digitalLinkData, file_format: e.target.value })}
+                              className="bg-zinc-950 border-zinc-800 focus:border-blue-500"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>URL de telechargement *</Label>
+                          <Input
+                            placeholder="https://..."
+                            value={digitalLinkData.download_url}
+                            onChange={(e) => setDigitalLinkData({ ...digitalLinkData, download_url: e.target.value })}
+                            type="url"
+                            required
+                            className="bg-zinc-950 border-zinc-800 focus:border-blue-500"
+                          />
+                        </div>
+
+                        {(digitalContentType === "ebook" || digitalContentType === "music") && (
+                          <div className="space-y-2">
+                            <Label>
+                              URL de lecture {digitalContentType === "ebook" ? "(lecteur PDF)" : "(lecteur audio)"}
+                            </Label>
+                            <Input
+                              placeholder="https://... (optionnel)"
+                              value={digitalLinkData.reader_url}
+                              onChange={(e) => setDigitalLinkData({ ...digitalLinkData, reader_url: e.target.value })}
+                              type="url"
+                              className="bg-zinc-950 border-zinc-800 focus:border-blue-500"
+                            />
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label>Taille</Label>
+                            <Input
+                              placeholder="100 MB"
+                              value={digitalLinkData.file_size}
+                              onChange={(e) => setDigitalLinkData({ ...digitalLinkData, file_size: e.target.value })}
+                              className="bg-zinc-950 border-zinc-800 focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Qualite</Label>
+                            <Input
+                              placeholder={digitalContentType === "music" ? "320kbps" : "HD"}
+                              value={digitalLinkData.quality}
+                              onChange={(e) => setDigitalLinkData({ ...digitalLinkData, quality: e.target.value })}
+                              className="bg-zinc-950 border-zinc-800 focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Langue</Label>
+                            <Select
+                              value={digitalLinkData.language}
+                              onValueChange={(v) => setDigitalLinkData({ ...digitalLinkData, language: v })}
+                            >
+                              <SelectTrigger className="bg-zinc-950 border-zinc-800">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-zinc-900 border-zinc-700">
+                                <SelectItem value="fr">Francais</SelectItem>
+                                <SelectItem value="en">Anglais</SelectItem>
+                                <SelectItem value="multi">Multi</SelectItem>
+                                <SelectItem value="other">Autre</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        {success && <p className="text-sm text-green-400">{success}</p>}
+                        {error && <p className="text-sm text-red-400">{error}</p>}
+
+                        <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-500" disabled={loading}>
+                          {loading ? "Ajout en cours..." : "Ajouter le lien"}
+                        </Button>
+                      </form>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {/* Content Info - Only for new content */}
+                    <div className="space-y-4">
+                      <Label className="text-base font-semibold flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                          2
+                        </div>
+                        Informations du contenu
+                      </Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Titre *</Label>
+                          <Input
+                            placeholder="Titre du contenu"
+                            value={digitalContentData.title}
+                            onChange={(e) => setDigitalContentData({ ...digitalContentData, title: e.target.value })}
+                            required
+                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{getAuthorLabel()}</Label>
+                          <Input
+                            placeholder={getAuthorLabel()}
+                            value={digitalContentData.author}
+                            onChange={(e) => setDigitalContentData({ ...digitalContentData, author: e.target.value })}
+                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Description</Label>
+                        <Textarea
+                          placeholder="Description du contenu (optionnel)"
+                          value={digitalContentData.description}
+                          onChange={(e) =>
+                            setDigitalContentData({ ...digitalContentData, description: e.target.value })
+                          }
+                          rows={2}
+                          className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>URL de la couverture</Label>
+                          <Input
+                            placeholder="https://..."
+                            value={digitalContentData.cover_url}
+                            onChange={(e) =>
+                              setDigitalContentData({ ...digitalContentData, cover_url: e.target.value })
+                            }
+                            type="url"
+                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Version</Label>
+                          <Input
+                            placeholder="Ex: 1.0, 2024"
+                            value={digitalContentData.version}
+                            onChange={(e) => setDigitalContentData({ ...digitalContentData, version: e.target.value })}
+                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Link Info */}
+                    <div className="space-y-4">
+                      <Label className="text-base font-semibold flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center text-xs font-bold text-blue-600">
+                          3
+                        </div>
+                        Lien de telechargement
+                      </Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Nom de la source *</Label>
+                          <Input
+                            placeholder="Ex: Mega, 1fichier"
+                            value={digitalLinkData.source_name}
+                            onChange={(e) => setDigitalLinkData({ ...digitalLinkData, source_name: e.target.value })}
+                            required
+                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Format</Label>
+                          <Input
+                            placeholder={getFormatSuggestions()}
+                            value={digitalLinkData.file_format}
+                            onChange={(e) => setDigitalLinkData({ ...digitalLinkData, file_format: e.target.value })}
+                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>URL de telechargement *</Label>
+                        <Input
+                          placeholder="https://..."
+                          value={digitalLinkData.download_url}
+                          onChange={(e) => setDigitalLinkData({ ...digitalLinkData, download_url: e.target.value })}
+                          type="url"
+                          required
+                          className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                        />
+                      </div>
+                      {(digitalContentType === "ebook" || digitalContentType === "music") && (
+                        <div className="space-y-2">
+                          <Label>
+                            URL de lecture {digitalContentType === "ebook" ? "(lecteur PDF)" : "(lecteur audio)"}
+                          </Label>
+                          <Input
+                            placeholder="https://... (optionnel, pour la lecture en ligne)"
+                            value={digitalLinkData.reader_url}
+                            onChange={(e) => setDigitalLinkData({ ...digitalLinkData, reader_url: e.target.value })}
+                            type="url"
+                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                          />
+                          <p className="text-xs text-zinc-500">
+                            {digitalContentType === "ebook"
+                              ? "URL pour lire le PDF en ligne"
+                              : "URL du fichier audio pour l'ecoute en ligne"}
+                          </p>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Taille</Label>
+                          <Input
+                            placeholder="100 MB"
+                            value={digitalLinkData.file_size}
+                            onChange={(e) => setDigitalLinkData({ ...digitalLinkData, file_size: e.target.value })}
+                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Qualite</Label>
+                          <Input
+                            placeholder={digitalContentType === "music" ? "320kbps" : "HD"}
+                            value={digitalLinkData.quality}
+                            onChange={(e) => setDigitalLinkData({ ...digitalLinkData, quality: e.target.value })}
+                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Langue</Label>
+                          <Select
+                            value={digitalLinkData.language}
+                            onValueChange={(v) => setDigitalLinkData({ ...digitalLinkData, language: v })}
+                          >
+                            <SelectTrigger className="bg-zinc-950 border-zinc-800">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-zinc-900 border-zinc-700">
+                              <SelectItem value="fr">Francais</SelectItem>
+                              <SelectItem value="en">Anglais</SelectItem>
+                              <SelectItem value="multi">Multi</SelectItem>
+                              <SelectItem value="other">Autre</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {success && <p className="text-sm text-green-400">{success}</p>}
+                    {error && <p className="text-sm text-red-400">{error}</p>}
+                    <Button
+                      type="button"
+                      className="w-full bg-amber-600 hover:bg-amber-500"
+                      disabled={loading}
+                      onClick={handleDigitalSubmit}
+                    >
+                      {loading
+                        ? "Ajout en cours..."
+                        : `Ajouter le ${
+                            digitalContentType === "ebook"
+                              ? "ebook"
+                              : digitalContentType === "music"
+                                ? "morceau"
+                                : digitalContentType === "software"
+                                  ? "logiciel"
+                                  : "jeu"
+                          }`}
+                    </Button>
+                  </>
+                )}
+                {/* </CHANGE> */}
               </div>
             )}
           </div>
