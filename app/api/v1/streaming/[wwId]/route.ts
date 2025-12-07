@@ -7,9 +7,9 @@ function generateRandomId(prefix = "x"): string {
   return prefix + Math.random().toString(36).substring(2, 10)
 }
 
-export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
   try {
-    const { wwId } = params
+    const { wwId } = await params
 
     if (!wwId) {
       return NextResponse.json({ error: "Missing WW ID" }, { status: 400 })

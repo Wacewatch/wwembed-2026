@@ -115,23 +115,63 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       boxDone: generateRandomId("bd"),
     }
 
+    // Build ad overlay HTML separately for clarity
+    const adOverlayHtml = hasAds
+      ? `
+<div class="ad-ov" id="${ids.overlay}">
+  <div class="ad-box">
+    <h2>Votre chaîne est prête</h2>
+    <p class="sub">Une dernière étape pour accéder au direct</p>
+    <div class="steps">
+      <div class="step act" id="${ids.step1}"></div>
+      <div class="step" id="${ids.step2}"></div>
+      <div class="step" id="${ids.step3}"></div>
+    </div>
+    <div class="info info-warn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
+    </div>
+    <div class="info info-heart" id="${ids.boxHelp}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+      <div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
+    </div>
+    <div class="info info-time" id="${ids.boxTime}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      <div><b>Temps restant: <span id="${ids.timer}">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div>
+    </div>
+    <div class="info info-ok hidden" id="${ids.boxThanks}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+      <div><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div>
+    </div>
+    <div class="info info-ok hidden" id="${ids.boxDone}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+      <div><b>Tout est prêt !</b><span>Cliquez pour lancer le direct</span></div>
+    </div>
+    <div class="pbar"><div class="pbar-fill" id="${ids.progress}"></div></div>
+    <button class="btn btn-primary" id="${ids.btnContinue}">Continuer<span class="pub">PUB</span></button>
+    <button class="btn btn-success hidden" id="${ids.btnPlay}">Lancer le direct</button>
+    <div class="foot">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
+  </div>
+</div>`
+      : ""
+
     const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>${channelName} - WWEmbed Live</title>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"><\/script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-serif;background:#0a0a0f;color:#fff}
+.hidden{display:none!important}
 
 .wrap{display:flex;flex-direction:column;height:100%}
-
 .hdr{display:flex;align-items:center;padding:10px 14px;background:linear-gradient(180deg,#151520 0%,#0d0d14 100%);border-bottom:1px solid rgba(255,255,255,0.06);gap:12px}
 .logo{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px}
 .logo svg{width:22px;height:22px;color:#ef4444}
-.logo b{background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo b{background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .ttl{flex:1;font-size:13px;font-weight:600;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px}
 .ttl img{width:24px;height:24px;border-radius:4px;object-fit:contain;background:#fff}
 .live-badge{background:#ef4444;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;animation:pulse 2s infinite}
@@ -156,7 +196,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 .modal.show{display:flex}
 .modal-box{background:linear-gradient(180deg,#1a1a28 0%,#12121c 100%);border-radius:14px;width:100%;max-width:720px;max-height:85vh;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,0.08)}
 .modal-hdr{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between}
-.modal-ttl{font-size:18px;font-weight:700;background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.modal-ttl{font-size:18px;font-weight:700;background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .modal-sub{font-size:12px;color:#888;margin-top:2px}
 .modal-close{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .modal-close:hover{background:rgba(255,255,255,0.2)}
@@ -184,7 +224,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 .tag-vo{background:#6b7280}
 
 .ad-ov{position:fixed;inset:0;background:linear-gradient(135deg,rgba(239,68,68,.95),rgba(249,115,22,.95),rgba(234,179,8,.95));display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
-.ad-ov.hide{display:none}
+.ad-ov.hidden{display:none}
 .ad-box{background:#fff;border-radius:14px;padding:24px;max-width:380px;width:100%;text-align:center}
 .ad-box h2{color:#1a1a2e;font-size:18px;margin-bottom:6px}
 .ad-box .sub{color:#6b7280;font-size:12px;margin-bottom:16px}
@@ -206,7 +246,6 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 .btn:hover{transform:translateY(-2px)}
 .btn-primary{background:linear-gradient(135deg,#ef4444,#f97316);color:#fff}
 .btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
-.hide{display:none!important}
 .pub{background:#dc2626;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px}
 .foot{margin-top:14px;font-size:10px;color:#9ca3af}
 .foot a{color:#ef4444;text-decoration:none}
@@ -228,52 +267,11 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 </style>
 </head>
 <body>
-${
-  hasAds
-    ? `
-<div class="ad-ov" id="${ids.overlay}">
-<div class="ad-box">
-<h2>Votre chaîne est prête</h2>
-<p class="sub">Une dernière étape pour accéder au direct</p>
-<div class="steps">
-<div class="step act" id="${ids.step1}"></div>
-<div class="step" id="${ids.step2}"></div>
-<div class="step" id="${ids.step3}"></div>
-</div>
-<div class="info info-warn">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-<div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
-</div>
-<div class="info info-heart" id="${ids.boxHelp}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-<div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
-</div>
-<div class="info info-time" id="${ids.boxTime}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-<div><b>Temps restant: <span id="${ids.timer}">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div>
-</div>
-<div class="info info-ok hide" id="${ids.boxThanks}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-<div><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div>
-</div>
-<div class="info info-ok hide" id="${ids.boxDone}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-<div><b>Tout est prêt !</b><span>Cliquez pour lancer le direct</span></div>
-</div>
-<div class="pbar"><div class="pbar-fill" id="${ids.progress}"></div></div>
-<button class="btn btn-primary" id="${ids.btnContinue}">Continuer<span class="pub">PUB</span></button>
-<button class="btn btn-success hide" id="${ids.btnPlay}">Lancer le direct</button>
-<div class="foot">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
-</div>
-</div>
-`
-    : ""
-}
-
+${adOverlayHtml}
 <div class="wrap">
 <div class="hdr">
 <div class="logo">
-<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2" fill="none" stroke="currentColor" stroke-width="2"></polyline></svg>
 <b>WWEMBED</b>
 </div>
 <div class="ttl">
@@ -282,17 +280,17 @@ ${channelLogo ? `<img src="${channelLogo}" alt="">` : ""}
 <span class="live-badge">LIVE</span>
 </div>
 <button class="src-btn" id="${ids.srcBtn}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
 <span class="lbl" id="${ids.srcLabel}">Sources</span>
-<svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg>
+<svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 12 15 18 9"></polyline></svg>
 </button>
 <button class="rpt-btn" title="Signaler">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
 </button>
 </div>
 <div class="player" id="${ids.player}">
 <div class="no-src">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
 <span>Chargement...</span>
 </div>
 </div>
@@ -306,7 +304,7 @@ ${channelLogo ? `<img src="${channelLogo}" alt="">` : ""}
 <div class="modal-sub">Sélectionnez un serveur pour regarder en direct</div>
 </div>
 <button class="modal-close" id="closeModal">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 </button>
 </div>
 <div class="modal-body">
@@ -317,8 +315,7 @@ ${channelLogo ? `<img src="${channelLogo}" alt="">` : ""}
 
 <script>
 (function(){
-try{
-var sources=JSON.parse(atob("${sourcesBase64}"));
+var sources=[];
 var adUrl="${adUrl}";
 var adId="${adId}";
 var hasAds=${hasAds};
@@ -326,52 +323,63 @@ var idx=0;
 var started=false;
 var hls=null;
 
+try{
+sources=JSON.parse(atob("${sourcesBase64}"));
+}catch(e){
+console.error("Parse error:",e);
+sources=[];
+}
+
 function $(id){return document.getElementById(id)}
 
 function getTagClass(lang){
-var l=(lang||'').toUpperCase();
-if(l.includes('VF')||l.includes('FRAN'))return 'tag-vf';
-if(l.includes('VOST'))return 'tag-vost';
-if(l.includes('MULTI'))return 'tag-multi';
-return 'tag-vo';
+var l=(lang||"").toUpperCase();
+if(l.indexOf("VF")>=0||l.indexOf("FRAN")>=0)return "tag-vf";
+if(l.indexOf("VOST")>=0)return "tag-vost";
+if(l.indexOf("MULTI")>=0)return "tag-multi";
+return "tag-vo";
 }
 
 function buildGrid(){
 var grid=$("${ids.srcGrid}");
 if(!grid)return;
 if(sources.length===0){
-grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px;color:#666">Aucune source disponible</div>';
+grid.innerHTML="<div style='grid-column:1/-1;text-align:center;padding:30px;color:#666'>Aucune source disponible</div>";
 return;
 }
-grid.innerHTML='';
+var html="";
 for(var i=0;i<sources.length;i++){
-(function(index){
-var s=sources[index];
-var card=document.createElement('div');
-card.className='card'+(index===idx?' act':'');
-card.setAttribute('data-i',index);
-var lang=(s.language||'VO').toUpperCase();
-card.innerHTML='<div class="card-badge">'+(s.quality||'HD')+'</div>'+
-'<div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg></div>'+
-'<div class="card-name">'+s.name+'</div>'+
-'<div class="card-tags"><span class="tag '+getTagClass(lang)+'">'+lang+'</span></div>';
-card.onclick=function(){selectSource(index)};
-grid.appendChild(card);
-})(i);
+var s=sources[i];
+var lang=(s.language||"VO").toUpperCase();
+html+="<div class='card"+(i===idx?" act":"")+"' data-i='"+i+"'>"+
+"<div class='card-badge'>"+(s.quality||"HD")+"</div>"+
+"<div class='card-icon'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><rect x='2' y='7' width='20' height='15' rx='2' ry='2'></rect><polyline points='17 2 12 7 7 2'></polyline></svg></div>"+
+"<div class='card-name'>"+s.name+"</div>"+
+"<div class='card-tags'><span class='tag "+getTagClass(lang)+"'>"+lang+"</span></div>"+
+"</div>";
+}
+grid.innerHTML=html;
+var cards=grid.querySelectorAll(".card");
+for(var j=0;j<cards.length;j++){
+(function(card){
+card.onclick=function(){
+selectSource(parseInt(card.getAttribute("data-i")));
+};
+})(cards[j]);
 }
 }
 
 function selectSource(i){
 idx=i;
-var cards=document.querySelectorAll('.card');
+var cards=document.querySelectorAll(".card");
 for(var j=0;j<cards.length;j++){
-cards[j].classList.remove('act');
-if(parseInt(cards[j].getAttribute('data-i'))===i)cards[j].classList.add('act');
+cards[j].classList.remove("act");
+if(parseInt(cards[j].getAttribute("data-i"))===i)cards[j].classList.add("act");
 }
 var lbl=$("${ids.srcLabel}");
 if(lbl&&sources[i]){
-var lang=(sources[i].language||'VO').toUpperCase();
-lbl.textContent=sources[i].name+' ['+lang+']';
+var lang=(sources[i].language||"VO").toUpperCase();
+lbl.textContent=sources[i].name+" ["+lang+"]";
 }
 toggleModal();
 loadPlayer();
@@ -381,12 +389,12 @@ function toggleModal(){
 var m=$("${ids.srcModal}");
 var b=$("${ids.srcBtn}");
 if(!m)return;
-if(m.classList.contains('show')){
-m.classList.remove('show');
-if(b)b.classList.remove('open');
+if(m.classList.contains("show")){
+m.classList.remove("show");
+if(b)b.classList.remove("open");
 }else{
-m.classList.add('show');
-if(b)b.classList.add('open');
+m.classList.add("show");
+if(b)b.classList.add("open");
 }
 }
 
@@ -395,34 +403,32 @@ var p=$("${ids.player}");
 if(!p||sources.length===0)return;
 var src=sources[idx];
 if(!src||!src.url){
-p.innerHTML='<div class="no-src"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="48" height="48"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Source indisponible</span></div>';
+p.innerHTML="<div class='no-src'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1' width='48' height='48'><circle cx='12' cy='12' r='10'></circle><line x1='12' y1='8' x2='12' y2='12'></line><line x1='12' y1='16' x2='12.01' y2='16'></line></svg><span>Source indisponible</span></div>";
 return;
 }
-
 var url=src.url;
-p.innerHTML='';
-
-if(url.includes('.m3u8')||url.includes('m3u8')){
-var video=document.createElement('video');
+p.innerHTML="";
+if(url.indexOf(".m3u8")>=0){
+var video=document.createElement("video");
 video.controls=true;
 video.autoplay=true;
-video.style.cssText='width:100%;height:100%;position:absolute;inset:0;background:#000';
+video.style.cssText="width:100%;height:100%;position:absolute;inset:0;background:#000";
 p.appendChild(video);
-if(Hls.isSupported()){
+if(typeof Hls!=="undefined"&&Hls.isSupported()){
 if(hls)hls.destroy();
 hls=new Hls();
 hls.loadSource(url);
 hls.attachMedia(video);
-hls.on(Hls.Events.MANIFEST_PARSED,function(){video.play()});
-}else if(video.canPlayType('application/vnd.apple.mpegurl')){
+hls.on(Hls.Events.MANIFEST_PARSED,function(){video.play().catch(function(){})});
+}else if(video.canPlayType("application/vnd.apple.mpegurl")){
 video.src=url;
-video.addEventListener('loadedmetadata',function(){video.play()});
+video.addEventListener("loadedmetadata",function(){video.play().catch(function(){})});
 }
 }else{
-var iframe=document.createElement('iframe');
+var iframe=document.createElement("iframe");
 iframe.src=url;
-iframe.setAttribute('allowfullscreen','true');
-iframe.setAttribute('allow','accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture');
+iframe.setAttribute("allowfullscreen","true");
+iframe.setAttribute("allow","accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture");
 p.appendChild(iframe);
 }
 }
@@ -431,75 +437,73 @@ function startPlayer(){
 if(started)return;
 started=true;
 var ov=$("${ids.overlay}");
-if(ov)ov.classList.add('hide');
+if(ov)ov.classList.add("hidden");
 buildGrid();
 if(sources.length>0){
 var lbl=$("${ids.srcLabel}");
 if(lbl){
-var lang=(sources[0].language||'VO').toUpperCase();
-lbl.textContent=sources[0].name+' ['+lang+']';
+var lang=(sources[0].language||"VO").toUpperCase();
+lbl.textContent=sources[0].name+" ["+lang+"]";
 }
 loadPlayer();
 }
 }
 
 var srcBtn=$("${ids.srcBtn}");
-var closeModalBtn=document.getElementById("closeModal");
+var closeModalBtn=$("closeModal");
 var srcModal=$("${ids.srcModal}");
 
-if(srcBtn)srcBtn.addEventListener('click',toggleModal);
-if(closeModalBtn)closeModalBtn.addEventListener('click',toggleModal);
-if(srcModal)srcModal.addEventListener('click',function(e){if(e.target===srcModal)toggleModal()});
+if(srcBtn)srcBtn.onclick=toggleModal;
+if(closeModalBtn)closeModalBtn.onclick=toggleModal;
+if(srcModal)srcModal.onclick=function(e){if(e.target===srcModal)toggleModal()};
 
 if(hasAds&&adUrl){
 var btnC=$("${ids.btnContinue}");
 var btnP=$("${ids.btnPlay}");
 if(btnC){
-btnC.addEventListener('click',function(){
-fetch('/api/ads/click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adId:adId})}).catch(function(){});
-window.open(adUrl,'_blank');
-btnC.classList.add('hide');
+btnC.onclick=function(){
+fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:adId})}).catch(function(){});
+window.open(adUrl,"_blank");
+btnC.classList.add("hidden");
 var s1=$("${ids.step1}");
 var s2=$("${ids.step2}");
 var s3=$("${ids.step3}");
-if(s1){s1.classList.remove('act');s1.classList.add('done');}
-if(s2)s2.classList.add('act');
-var sec=3,prog=0;
+if(s1){s1.classList.remove("act");s1.classList.add("done");}
+if(s2)s2.classList.add("act");
+var sec=3;
+var prog=0;
 var iv=setInterval(function(){
-sec--;prog+=33.33;
+sec--;
+prog+=33.33;
 var tm=$("${ids.timer}");
 var pr=$("${ids.progress}");
-if(tm)tm.textContent=sec+' seconde'+(sec>1?'s':'');
-if(pr)pr.style.width=Math.min(prog,100)+'%';
+if(tm)tm.textContent=sec+" seconde"+(sec>1?"s":"");
+if(pr)pr.style.width=Math.min(prog,100)+"%";
 if(sec<=0){
 clearInterval(iv);
-if(s2){s2.classList.remove('act');s2.classList.add('done');}
-if(s3)s3.classList.add('act');
+if(s2){s2.classList.remove("act");s2.classList.add("done");}
+if(s3)s3.classList.add("act");
 var bt=$("${ids.boxTime}");
 var bh=$("${ids.boxHelp}");
 var bk=$("${ids.boxThanks}");
 var bd=$("${ids.boxDone}");
+if(bt)bt.classList.add("hidden");
+if(bh)bh.classList.add("hidden");
+if(bk)bk.classList.remove("hidden");
+if(bd)bd.classList.remove("hidden");
 var prg=$("${ids.progress}");
-if(bt)bt.classList.add('hide');
-if(bh)bh.classList.add('hide');
-if(bk)bk.classList.remove('hide');
-if(bd)bd.classList.remove('hide');
-if(prg)prg.style.width='100%';
-if(btnP)btnP.classList.remove('hide');
+if(prg)prg.style.width="100%";
+if(btnP)btnP.classList.remove("hidden");
 }
 },1000);
-});
+};
 }
-if(btnP)btnP.addEventListener('click',startPlayer);
+if(btnP)btnP.onclick=startPlayer;
 }else{
 startPlayer();
 }
-}catch(e){
-console.error('Player error:',e);
-document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#0a0a0f;color:#fff;flex-direction:column;gap:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Erreur de chargement</span></div>';
-}
 })();
-</script>
+<\/script>
 </body>
 </html>`
 
