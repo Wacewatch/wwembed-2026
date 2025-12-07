@@ -112,7 +112,6 @@ export function AddLinkModal({
   const [existingDigitalContents, setExistingDigitalContents] = useState<any[]>([])
   const [selectedDigitalContentId, setSelectedDigitalContentId] = useState<string>("")
   const [digitalSearchQuery, setDigitalSearchQuery] = useState("")
-  // </CHANGE>
   const [existingChannels, setExistingChannels] = useState<LiveTVChannel[]>([])
   const [selectedChannelId, setSelectedChannelId] = useState<string>("")
   const [channelSearchQuery, setChannelSearchQuery] = useState("")
@@ -252,12 +251,18 @@ export function AddLinkModal({
     }
   }, [open, mainTab, mode])
 
+  // Fetch existing digital contents for Digital mode
   useEffect(() => {
     if (open && (mainTab === "digital" || mode === "digital")) {
       const fetchDigitalContents = async () => {
         const supabase = createClient()
-        const { data } = await supabase.from("digital_contents").select("*").order("title")
-        if (data) setExistingDigitalContents(data)
+        const { data, error } = await supabase.from("digital_content").select("*").order("title")
+        if (error) {
+          console.error("[v0] Error fetching digital content:", error)
+        }
+        if (data) {
+          setExistingDigitalContents(data)
+        }
       }
       fetchDigitalContents()
     }
@@ -332,7 +337,6 @@ export function AddLinkModal({
           quality: "",
           language: "fr",
         })
-        // </CHANGE>
         // Reset download specific states
         setBulkMode(false)
         setFullSeasonMode(false)
@@ -876,7 +880,7 @@ export function AddLinkModal({
 
     // First create the digital content
     const { data: contentData, error: contentError } = await supabase
-      .from("digital_contents")
+      .from("digital_content")
       .insert({
         ww_id: wwId,
         content_type: digitalContentType,
@@ -963,7 +967,6 @@ export function AddLinkModal({
       content.title.toLowerCase().includes(digitalSearchQuery.toLowerCase()) &&
       content.content_type === digitalContentType,
   )
-  // </CHANGE>
 
   const getAuthorLabel = () => {
     switch (digitalContentType) {
@@ -1060,7 +1063,7 @@ export function AddLinkModal({
               </Tabs>
             )}
 
-            {mainTab === "media" && (mode === "streaming" || mode === "download") && !isChannelPrefilled && (
+            {(mainTab === "media" || mode === "streaming" || mode === "download") && !isChannelPrefilled && (
               <>
                 {/* Media Selection - only if not prefilled and not in download mode */}
                 {!(isPrefilled || mode === "download") && (
@@ -2242,8 +2245,6 @@ export function AddLinkModal({
                     Ajouter un lien
                   </Button>
                 </div>
-                {/* </CHANGE> */}
-
                 {/* Content Type Selection - Always visible */}
                 <div className="space-y-4">
                   <Label className="text-base font-semibold flex items-center gap-2">
@@ -2394,6 +2395,11 @@ export function AddLinkModal({
                               type="url"
                               className="bg-zinc-950 border-zinc-800 focus:border-blue-500"
                             />
+                            <p className="text-xs text-zinc-500">
+                              {digitalContentType === "ebook"
+                                ? "URL pour lire le PDF en ligne"
+                                : "URL du fichier audio pour l'ecoute en ligne"}
+                            </p>
                           </div>
                         )}
 
@@ -2632,7 +2638,6 @@ export function AddLinkModal({
                     </Button>
                   </>
                 )}
-                {/* </CHANGE> */}
               </div>
             )}
           </div>
