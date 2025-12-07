@@ -6,181 +6,170 @@ function generateRandomId(prefix = "x"): string {
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
-  const { wwId } = await params
+  try {
+    const { wwId } = await params
 
-  const match = wwId.match(/^ww-live-(.+)$/i)
-  if (!match) {
-    return new NextResponse("Invalid WW ID format. Expected: ww-live-{channelId}", { status: 400 })
-  }
+    const match = wwId.match(/^ww-live-(.+)$/i)
+    if (!match) {
+      return new NextResponse("Invalid WW ID format. Expected: ww-live-{channelId}", { status: 400 })
+    }
 
-  const channelIdPart = match[1]
-  const supabase = createAdminClient()
+    const channelIdPart = match[1]
+    const supabase = createAdminClient()
 
-  // Try exact UUID match first
-  let channel = null
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    let channel = null
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-  if (uuidRegex.test(channelIdPart)) {
-    const { data } = await supabase
-      .from("live_tv_channels")
+    if (uuidRegex.test(channelIdPart)) {
+      const { data } = await supabase
+        .from("live_tv_channels")
+        .select("*")
+        .eq("id", channelIdPart)
+        .eq("is_active", true)
+        .eq("status", "approved")
+        .single()
+      channel = data
+    }
+
+    if (!channel) {
+      const { data } = await supabase
+        .from("live_tv_channels")
+        .select("*")
+        .ilike("id", channelIdPart + "%")
+        .eq("is_active", true)
+        .eq("status", "approved")
+        .single()
+      channel = data
+    }
+
+    if (!channel) {
+      return new NextResponse(`Channel not found for ID: ${channelIdPart}`, { status: 404 })
+    }
+
+    const { data: sources } = await supabase
+      .from("live_tv_sources")
       .select("*")
-      .eq("id", channelIdPart)
+      .eq("channel_id", channel.id)
       .eq("is_active", true)
       .eq("status", "approved")
-      .single()
-    channel = data
-  }
 
-  if (!channel) {
-    const { data } = await supabase
-      .from("live_tv_channels")
-      .select("*")
-      .ilike("id", channelIdPart + "%")
-      .eq("is_active", true)
-      .eq("status", "approved")
-      .single()
-    channel = data
-  }
+    const allSources =
+      sources && sources.length > 0
+        ? sources.map((s, i) => ({
+            name: s.source_name || "Source #" + (i + 1),
+            url: s.stream_url,
+            quality: s.quality || "HD",
+            language: s.language || "VO",
+          }))
+        : channel.stream_url
+          ? [
+              {
+                name: "Source #1",
+                url: channel.stream_url,
+                quality: channel.quality || "HD",
+                language: channel.language || "VO",
+              },
+            ]
+          : []
 
-  if (!channel) {
-    return new NextResponse(`Channel not found for ID: ${channelIdPart}`, { status: 404 })
-  }
+    if (allSources.length === 0) {
+      return new NextResponse("No sources available for this channel", { status: 404 })
+    }
 
-  // Get sources
-  const { data: sources } = await supabase
-    .from("live_tv_sources")
-    .select("*")
-    .eq("channel_id", channel.id)
-    .eq("is_active", true)
-    .eq("status", "approved")
+    const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
 
-  const allSources =
-    sources && sources.length > 0
-      ? sources.map((s, i) => ({
-          name: s.source_name || "Source #" + (i + 1),
-          url: s.stream_url,
-          quality: s.quality || "HD",
-          language: s.language || "VO",
-        }))
-      : channel.stream_url
-        ? [
-            {
-              name: "Source #1",
-              url: channel.stream_url,
-              quality: channel.quality || "HD",
-              language: channel.language || "VO",
-            },
-          ]
-        : []
+    const hasAds = ads && ads.length > 0
+    const adUrl = hasAds ? ads[0].ad_url : ""
+    const adId = hasAds ? ads[0].id : ""
 
-  if (allSources.length === 0) {
-    return new NextResponse("No sources available for this channel", { status: 404 })
-  }
+    await supabase.from("embed_views").insert({
+      ww_id: wwId,
+      media_type: "live",
+      embed_type: "live",
+      referrer: request.headers.get("referer"),
+      user_agent: request.headers.get("user-agent"),
+    })
 
-  // Get ads
-  const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
+    const sourcesJson = JSON.stringify(allSources).replace(/'/g, "\\'").replace(/"/g, '\\"')
+    const channelName = (channel.channel_name || "Live TV").replace(/"/g, '\\"')
+    const channelLogo = channel.channel_logo || ""
 
-  const hasAds = ads && ads.length > 0
-  const adUrl = hasAds ? ads[0].ad_url : ""
-  const adId = hasAds ? ads[0].id : ""
+    const ids = {
+      overlay: generateRandomId("ov"),
+      player: generateRandomId("pl"),
+      srcGrid: generateRandomId("sg"),
+      srcModal: generateRandomId("sm"),
+      srcBtn: generateRandomId("sb"),
+      srcLabel: generateRandomId("sl"),
+      timer: generateRandomId("tm"),
+      progress: generateRandomId("pr"),
+      btnContinue: generateRandomId("bc"),
+      btnPlay: generateRandomId("bp"),
+      step1: generateRandomId("s1"),
+      step2: generateRandomId("s2"),
+      step3: generateRandomId("s3"),
+      boxTime: generateRandomId("bt"),
+      boxHelp: generateRandomId("bh"),
+      boxThanks: generateRandomId("bk"),
+      boxDone: generateRandomId("bd"),
+    }
 
-  // Log view
-  await supabase.from("embed_views").insert({
-    ww_id: wwId,
-    media_type: "live",
-    embed_type: "live",
-    referrer: request.headers.get("referer"),
-    user_agent: request.headers.get("user-agent"),
-  })
-
-  const sourcesJson = JSON.stringify(allSources).replace(/'/g, "\\'").replace(/"/g, '\\"')
-  const channelName = (channel.channel_name || "Live TV").replace(/"/g, '\\"')
-  const channelLogo = channel.channel_logo || ""
-
-  const ids = {
-    overlay: generateRandomId("ov"),
-    player: generateRandomId("pl"),
-    srcGrid: generateRandomId("sg"),
-    srcModal: generateRandomId("sm"),
-    srcBtn: generateRandomId("sb"),
-    srcLabel: generateRandomId("sl"),
-    timer: generateRandomId("tm"),
-    progress: generateRandomId("pr"),
-    btnContinue: generateRandomId("bc"),
-    btnPlay: generateRandomId("bp"),
-    step1: generateRandomId("s1"),
-    step2: generateRandomId("s2"),
-    step3: generateRandomId("s3"),
-    boxTime: generateRandomId("bt"),
-    boxHelp: generateRandomId("bh"),
-    boxThanks: generateRandomId("bk"),
-    boxDone: generateRandomId("bd"),
-  }
-
-  const html = `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>${channelName} - WWEmbed Live</title>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-serif;background:#0a0a0f;color:#fff}
 
 .wrap{display:flex;flex-direction:column;height:100%}
 
-/* Header */
 .hdr{display:flex;align-items:center;padding:10px 14px;background:linear-gradient(180deg,#151520 0%,#0d0d14 100%);border-bottom:1px solid rgba(255,255,255,0.06);gap:12px}
-.logo-img{width:32px;height:32px;border-radius:6px;object-fit:contain;background:rgba(255,255,255,0.1)}
 .logo{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px}
-.logo svg{width:22px;height:22px;color:#14b8a6}
-.logo b{background:linear-gradient(135deg,#14b8a6,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.ttl{flex:1;font-size:13px;font-weight:600;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
-.live-badge{background:#ef4444;color:#fff;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;animation:pulse 2s infinite}
+.logo svg{width:22px;height:22px;color:#ef4444}
+.logo b{background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.ttl{flex:1;font-size:13px;font-weight:600;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px}
+.ttl img{width:24px;height:24px;border-radius:4px;object-fit:contain;background:#fff}
+.live-badge{background:#ef4444;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
 
-/* Source button */
-.src-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;background:linear-gradient(135deg,#14b8a6,#06b6d4);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
-.src-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(20,184,166,0.4)}
+.src-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;background:linear-gradient(135deg,#ef4444,#f97316);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.src-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(239,68,68,0.4)}
 .src-btn svg{width:14px;height:14px}
 .src-btn .lbl{max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .src-btn .arr{transition:transform .2s}
 .src-btn.open .arr{transform:rotate(180deg)}
 
-.rpt-btn{padding:7px;background:#ef4444;border:none;border-radius:8px;color:#fff;cursor:pointer}
+.rpt-btn{padding:7px;background:#6366f1;border:none;border-radius:8px;color:#fff;cursor:pointer}
 .rpt-btn svg{width:14px;height:14px;display:block}
 
-/* Player */
 .player{flex:1;background:#000;position:relative;min-height:0}
-.player video,.player iframe{width:100%;height:100%;border:none;position:absolute;inset:0}
+.player iframe,.player video{width:100%;height:100%;border:none;position:absolute;inset:0;background:#000}
 .no-src{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#555;gap:8px}
 .no-src svg{width:48px;height:48px;opacity:.4}
 
-/* Source Modal */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:100;padding:16px;backdrop-filter:blur(6px)}
 .modal.show{display:flex}
 .modal-box{background:linear-gradient(180deg,#1a1a28 0%,#12121c 100%);border-radius:14px;width:100%;max-width:720px;max-height:85vh;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,0.08)}
 .modal-hdr{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between}
-.modal-ttl{font-size:18px;font-weight:700;background:linear-gradient(135deg,#14b8a6,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.modal-ttl{font-size:18px;font-weight:700;background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .modal-sub{font-size:12px;color:#888;margin-top:2px}
 .modal-close{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .modal-close:hover{background:rgba(255,255,255,0.2)}
 .modal-close svg{width:18px;height:18px}
 .modal-body{padding:16px 20px;overflow-y:auto;flex:1}
-.modal-body::-webkit-scrollbar{width:5px}
-.modal-body::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
 
-/* Source grid */
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 @media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:380px){.grid{grid-template-columns:1fr}}
 
-/* Source card */
 .card{background:linear-gradient(135deg,#1e1e2c 0%,#16162a 100%);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px;cursor:pointer;transition:all .2s;position:relative}
-.card:hover{border-color:rgba(20,184,166,0.4);transform:translateY(-2px)}
-.card.act{border-color:#14b8a6;background:linear-gradient(135deg,#1a2f2c 0%,#1a1a2e 100%)}
-.card-icon{width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg,#14b8a6,#06b6d4);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.card:hover{border-color:rgba(239,68,68,0.4);transform:translateY(-2px)}
+.card.act{border-color:#ef4444;background:linear-gradient(135deg,#2a1f1f 0%,#1a1a2e 100%)}
+.card-icon{width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg,#ef4444,#f97316);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
 .card-icon svg{width:20px;height:20px;color:#fff}
 .card-badge{position:absolute;top:10px;right:10px;padding:3px 7px;background:#22c55e;border-radius:5px;font-size:9px;font-weight:700}
 .card-name{font-size:13px;font-weight:600;margin-bottom:6px}
@@ -191,15 +180,14 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 .tag-multi{background:#a855f7}
 .tag-vo{background:#6b7280}
 
-/* Ad overlay */
-.ad-ov{position:fixed;inset:0;background:linear-gradient(135deg,rgba(20,184,166,.95),rgba(6,182,212,.95),rgba(59,130,246,.95));display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
+.ad-ov{position:fixed;inset:0;background:linear-gradient(135deg,rgba(239,68,68,.95),rgba(249,115,22,.95),rgba(234,179,8,.95));display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
 .ad-ov.hide{display:none}
 .ad-box{background:#fff;border-radius:14px;padding:24px;max-width:380px;width:100%;text-align:center}
 .ad-box h2{color:#1a1a2e;font-size:18px;margin-bottom:6px}
 .ad-box .sub{color:#6b7280;font-size:12px;margin-bottom:16px}
 .steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
 .step{width:10px;height:10px;border-radius:50%;background:#e5e7eb;transition:all .3s}
-.step.act{background:linear-gradient(135deg,#14b8a6,#06b6d4);transform:scale(1.2)}
+.step.act{background:linear-gradient(135deg,#ef4444,#f97316);transform:scale(1.2)}
 .step.done{background:#10b981}
 .info{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
 .info svg{flex-shrink:0;width:18px;height:18px}
@@ -207,18 +195,18 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 .info span{font-size:11px;opacity:.8}
 .info-warn{background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
 .info-heart{background:#fce7f3;border:1px solid #ec4899;color:#9d174d}
-.info-time{background:#ccfbf1;border:1px solid #14b8a6;color:#0f766e}
+.info-time{background:#fef3c7;border:1px solid #f97316;color:#9a3412}
 .info-ok{background:#d1fae5;border:1px solid #10b981;color:#065f46}
 .pbar{height:5px;background:#e5e7eb;border-radius:3px;margin:14px 0;overflow:hidden}
-.pbar-fill{height:100%;width:0;background:linear-gradient(90deg,#14b8a6,#06b6d4,#3b82f6);transition:width .3s}
+.pbar-fill{height:100%;width:0;background:linear-gradient(90deg,#ef4444,#f97316,#eab308);transition:width .3s}
 .btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;text-transform:uppercase;transition:all .2s}
 .btn:hover{transform:translateY(-2px)}
-.btn-primary{background:linear-gradient(135deg,#14b8a6,#06b6d4);color:#fff}
+.btn-primary{background:linear-gradient(135deg,#ef4444,#f97316);color:#fff}
 .btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
 .hide{display:none!important}
-.pub{background:#ef4444;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px}
+.pub{background:#6366f1;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px}
 .foot{margin-top:14px;font-size:10px;color:#9ca3af}
-.foot a{color:#14b8a6;text-decoration:none}
+.foot a{color:#ef4444;text-decoration:none}
 
 @media(max-width:480px){
 .hdr{padding:8px 10px}
@@ -226,25 +214,18 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 .ttl{font-size:11px}
 .src-btn{padding:6px 10px;font-size:11px}
 .src-btn .lbl{max-width:70px}
-.modal-box{border-radius:10px}
-.modal-hdr{padding:12px 16px}
-.modal-ttl{font-size:16px}
-.modal-body{padding:12px 16px}
-.card{padding:10px}
-.card-icon{width:36px;height:36px}
 .ad-box{padding:18px}
 }
 </style>
 </head>
 <body>
-<!-- Ad Overlay -->
 ${
   hasAds
     ? `
 <div class="ad-ov" id="${ids.overlay}">
 <div class="ad-box">
-<h2>${channelName}</h2>
-<p class="sub">Le direct est prêt - une dernière étape</p>
+<h2>Votre chaîne est prête</h2>
+<p class="sub">Une dernière étape pour accéder au direct</p>
 <div class="steps">
 <div class="step act" id="${ids.step1}"></div>
 <div class="step" id="${ids.step2}"></div>
@@ -268,11 +249,11 @@ ${
 </div>
 <div class="info info-ok hide" id="${ids.boxDone}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-<div><b>Tout est prêt !</b><span>Cliquez pour regarder en direct</span></div>
+<div><b>Tout est prêt !</b><span>Cliquez pour lancer le direct</span></div>
 </div>
 <div class="pbar"><div class="pbar-fill" id="${ids.progress}"></div></div>
 <button class="btn btn-primary" id="${ids.btnContinue}">Continuer<span class="pub">PUB</span></button>
-<button class="btn btn-success hide" id="${ids.btnPlay}">Regarder en direct</button>
+<button class="btn btn-success hide" id="${ids.btnPlay}">Lancer le direct</button>
 <div class="foot">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
 </div>
@@ -280,16 +261,17 @@ ${
     : ""
 }
 
-<!-- Main Player -->
 <div class="wrap">
 <div class="hdr">
-${channelLogo ? `<img src="${channelLogo}" alt="${channelName}" class="logo-img" onerror="this.style.display='none'">` : ""}
 <div class="logo">
-<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-<b>WWEMBED</b>
+<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+<b>LIVE</b>
 </div>
-<div class="ttl">${channelName}</div>
-<span class="live-badge">LIVE</span>
+<div class="ttl">
+${channelLogo ? `<img src="${channelLogo}" alt="">` : ""}
+${channelName}
+<span class="live-badge">EN DIRECT</span>
+</div>
 <button class="src-btn" id="${ids.srcBtn}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
 <span class="lbl" id="${ids.srcLabel}">Sources</span>
@@ -307,13 +289,12 @@ ${channelLogo ? `<img src="${channelLogo}" alt="${channelName}" class="logo-img"
 </div>
 </div>
 
-<!-- Source Modal -->
 <div class="modal" id="${ids.srcModal}">
 <div class="modal-box">
 <div class="modal-hdr">
 <div>
 <div class="modal-ttl">Choisissez votre source</div>
-<div class="modal-sub">Sélectionnez un serveur pour regarder en direct</div>
+<div class="modal-sub">Sélectionnez un serveur pour commencer la lecture</div>
 </div>
 <button class="modal-close" id="closeModal">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -327,17 +308,16 @@ ${channelLogo ? `<img src="${channelLogo}" alt="${channelName}" class="logo-img"
 
 <script>
 (function(){
+try{
 var sources=JSON.parse("${sourcesJson}");
 var adUrl="${adUrl}";
 var adId="${adId}";
 var hasAds=${hasAds};
 var idx=0;
 var started=false;
-var hls=null;
+var hlsPlayer=null;
 
-var $=function(id){return document.getElementById(id)};
-
-function isM3u8(url){return url&&url.toLowerCase().indexOf('.m3u8')!==-1}
+function $(id){return document.getElementById(id)}
 
 function getTagClass(lang){
 var l=(lang||'').toUpperCase();
@@ -356,17 +336,19 @@ return;
 }
 grid.innerHTML='';
 for(var i=0;i<sources.length;i++){
-var s=sources[i];
+(function(index){
+var s=sources[index];
 var card=document.createElement('div');
-card.className='card'+(i===idx?' act':'');
-card.setAttribute('data-i',i);
+card.className='card'+(index===idx?' act':'');
+card.setAttribute('data-i',index);
 var lang=(s.language||'VO').toUpperCase();
 card.innerHTML='<div class="card-badge">'+(s.quality||'HD')+'</div>'+
 '<div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>'+
 '<div class="card-name">'+s.name+'</div>'+
 '<div class="card-tags"><span class="tag '+getTagClass(lang)+'">'+lang+'</span></div>';
-card.onclick=function(){selectSource(parseInt(this.getAttribute('data-i')))};
+card.onclick=function(){selectSource(index)};
 grid.appendChild(card);
+})(i);
 }
 }
 
@@ -389,8 +371,14 @@ loadPlayer();
 function toggleModal(){
 var m=$("${ids.srcModal}");
 var b=$("${ids.srcBtn}");
-if(m.classList.contains('show')){m.classList.remove('show');b.classList.remove('open')}
-else{m.classList.add('show');b.classList.add('open')}
+if(!m)return;
+if(m.classList.contains('show')){
+m.classList.remove('show');
+if(b)b.classList.remove('open');
+}else{
+m.classList.add('show');
+if(b)b.classList.add('open');
+}
 }
 
 function loadPlayer(){
@@ -401,30 +389,30 @@ if(!src||!src.url){
 p.innerHTML='<div class="no-src"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="48" height="48"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Source indisponible</span></div>';
 return;
 }
-
-p.innerHTML='';
-if(hls){hls.destroy();hls=null}
-
-if(isM3u8(src.url)){
+if(hlsPlayer){hlsPlayer.destroy();hlsPlayer=null}
+var url=src.url;
+if(url.includes('.m3u8')){
 var video=document.createElement('video');
 video.controls=true;
-video.setAttribute('playsinline','');
 video.autoplay=true;
+video.style.cssText='width:100%;height:100%;background:#000';
+p.innerHTML='';
 p.appendChild(video);
-if(typeof Hls!=='undefined'&&Hls.isSupported()){
-hls=new Hls();
-hls.loadSource(src.url);
-hls.attachMedia(video);
-hls.on(Hls.Events.MANIFEST_PARSED,function(){video.play().catch(function(){})});
+if(Hls.isSupported()){
+hlsPlayer=new Hls();
+hlsPlayer.loadSource(url);
+hlsPlayer.attachMedia(video);
+hlsPlayer.on(Hls.Events.MANIFEST_PARSED,function(){video.play()});
 }else if(video.canPlayType('application/vnd.apple.mpegurl')){
-video.src=src.url;
-video.play().catch(function(){});
+video.src=url;
+video.play();
 }
 }else{
 var iframe=document.createElement('iframe');
-iframe.src=src.url;
+iframe.src=url;
 iframe.setAttribute('allowfullscreen','true');
 iframe.setAttribute('allow','accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture');
+p.innerHTML='';
 p.appendChild(iframe);
 }
 }
@@ -445,22 +433,27 @@ loadPlayer();
 }
 }
 
-// Event listeners
-$("${ids.srcBtn}").onclick=toggleModal;
-document.getElementById("closeModal").onclick=toggleModal;
-$("${ids.srcModal}").onclick=function(e){if(e.target===this)toggleModal()};
+var srcBtn=$("${ids.srcBtn}");
+var closeModalBtn=document.getElementById("closeModal");
+var srcModal=$("${ids.srcModal}");
+
+if(srcBtn)srcBtn.addEventListener('click',toggleModal);
+if(closeModalBtn)closeModalBtn.addEventListener('click',toggleModal);
+if(srcModal)srcModal.addEventListener('click',function(e){if(e.target===srcModal)toggleModal()});
 
 if(hasAds&&adUrl){
 var btnC=$("${ids.btnContinue}");
 var btnP=$("${ids.btnPlay}");
 if(btnC){
-btnC.onclick=function(){
+btnC.addEventListener('click',function(){
 fetch('/api/ads/click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adId:adId})}).catch(function(){});
 window.open(adUrl,'_blank');
-this.classList.add('hide');
-$("${ids.step1}").classList.remove('act');
-$("${ids.step1}").classList.add('done');
-$("${ids.step2}").classList.add('act');
+btnC.classList.add('hide');
+var s1=$("${ids.step1}");
+var s2=$("${ids.step2}");
+var s3=$("${ids.step3}");
+if(s1){s1.classList.remove('act');s1.classList.add('done');}
+if(s2)s2.classList.add('act');
 var sec=3,prog=0;
 var iv=setInterval(function(){
 sec--;prog+=33.33;
@@ -470,33 +463,45 @@ if(tm)tm.textContent=sec+' seconde'+(sec>1?'s':'');
 if(pr)pr.style.width=Math.min(prog,100)+'%';
 if(sec<=0){
 clearInterval(iv);
-$("${ids.step2}").classList.remove('act');
-$("${ids.step2}").classList.add('done');
-$("${ids.step3}").classList.add('act');
-$("${ids.boxTime}").classList.add('hide');
-$("${ids.boxHelp}").classList.add('hide');
-$("${ids.boxThanks}").classList.remove('hide');
-$("${ids.boxDone}").classList.remove('hide');
-$("${ids.progress}").style.width='100%';
-btnP.classList.remove('hide');
+if(s2){s2.classList.remove('act');s2.classList.add('done');}
+if(s3)s3.classList.add('act');
+var bt=$("${ids.boxTime}");
+var bh=$("${ids.boxHelp}");
+var bk=$("${ids.boxThanks}");
+var bd=$("${ids.boxDone}");
+var prg=$("${ids.progress}");
+if(bt)bt.classList.add('hide');
+if(bh)bh.classList.add('hide');
+if(bk)bk.classList.remove('hide');
+if(bd)bd.classList.remove('hide');
+if(prg)prg.style.width='100%';
+if(btnP)btnP.classList.remove('hide');
 }
 },1000);
-};
+});
 }
-if(btnP){btnP.onclick=startPlayer}
+if(btnP)btnP.addEventListener('click',startPlayer);
 }else{
 startPlayer();
 }
+}catch(e){
+console.error('Player error:',e);
+document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#0a0a0f;color:#fff;flex-direction:column;gap:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Erreur de chargement</span></div>';
+}
 })();
-<\/script>
+</script>
 </body>
 </html>`
 
-  return new NextResponse(html, {
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "X-Frame-Options": "ALLOWALL",
-      "Access-Control-Allow-Origin": "*",
-    },
-  })
+    return new NextResponse(html, {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "X-Frame-Options": "ALLOWALL",
+        "Access-Control-Allow-Origin": "*",
+      },
+    })
+  } catch (error) {
+    console.error("Live TV API error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
 }

@@ -172,14 +172,12 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 
 .wrap{display:flex;flex-direction:column;height:100%}
 
-/* Header */
 .hdr{display:flex;align-items:center;padding:10px 14px;background:linear-gradient(180deg,#151520 0%,#0d0d14 100%);border-bottom:1px solid rgba(255,255,255,0.06);gap:12px}
 .logo{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px}
 .logo svg{width:22px;height:22px;color:#8b5cf6}
 .logo b{background:linear-gradient(135deg,#a855f7,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .ttl{flex:1;font-size:13px;font-weight:600;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
 
-/* Source button */
 .src-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
 .src-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,0.4)}
 .src-btn svg{width:14px;height:14px}
@@ -190,13 +188,11 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 .rpt-btn{padding:7px;background:#ef4444;border:none;border-radius:8px;color:#fff;cursor:pointer}
 .rpt-btn svg{width:14px;height:14px;display:block}
 
-/* Player */
 .player{flex:1;background:#000;position:relative;min-height:0}
 .player iframe{width:100%;height:100%;border:none;position:absolute;inset:0}
 .no-src{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#555;gap:8px}
 .no-src svg{width:48px;height:48px;opacity:.4}
 
-/* Source Modal */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:100;padding:16px;backdrop-filter:blur(6px)}
 .modal.show{display:flex}
 .modal-box{background:linear-gradient(180deg,#1a1a28 0%,#12121c 100%);border-radius:14px;width:100%;max-width:720px;max-height:85vh;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,0.08)}
@@ -210,12 +206,10 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 .modal-body::-webkit-scrollbar{width:5px}
 .modal-body::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
 
-/* Source grid */
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 @media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:380px){.grid{grid-template-columns:1fr}}
 
-/* Source card */
 .card{background:linear-gradient(135deg,#1e1e2c 0%,#16162a 100%);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px;cursor:pointer;transition:all .2s;position:relative}
 .card:hover{border-color:rgba(139,92,246,0.4);transform:translateY(-2px)}
 .card.act{border-color:#8b5cf6;background:linear-gradient(135deg,#2a1f4a 0%,#1a1a2e 100%)}
@@ -230,7 +224,6 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 .tag-multi{background:#a855f7}
 .tag-vo{background:#6b7280}
 
-/* Ad overlay */
 .ad-ov{position:fixed;inset:0;background:linear-gradient(135deg,rgba(99,102,241,.95),rgba(139,92,246,.95),rgba(236,72,153,.95));display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
 .ad-ov.hide{display:none}
 .ad-box{background:#fff;border-radius:14px;padding:24px;max-width:380px;width:100%;text-align:center}
@@ -276,7 +269,6 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-s
 </style>
 </head>
 <body>
-<!-- Ad Overlay -->
 ${
   hasAds
     ? `
@@ -319,7 +311,6 @@ ${
     : ""
 }
 
-<!-- Main Player -->
 <div class="wrap">
 <div class="hdr">
 <div class="logo">
@@ -344,7 +335,6 @@ ${
 </div>
 </div>
 
-<!-- Source Modal -->
 <div class="modal" id="${ids.srcModal}">
 <div class="modal-box">
 <div class="modal-hdr">
@@ -364,6 +354,7 @@ ${
 
 <script>
 (function(){
+try{
 var sources=JSON.parse("${sourcesJson}");
 var adUrl="${adUrl}";
 var adId="${adId}";
@@ -371,7 +362,7 @@ var hasAds=${hasAds};
 var idx=0;
 var started=false;
 
-var $=function(id){return document.getElementById(id)};
+function $(id){return document.getElementById(id)}
 
 function getTagClass(lang){
 var l=(lang||'').toUpperCase();
@@ -390,17 +381,19 @@ return;
 }
 grid.innerHTML='';
 for(var i=0;i<sources.length;i++){
-var s=sources[i];
+(function(index){
+var s=sources[index];
 var card=document.createElement('div');
-card.className='card'+(i===idx?' act':'');
-card.setAttribute('data-i',i);
+card.className='card'+(index===idx?' act':'');
+card.setAttribute('data-i',index);
 var lang=(s.language||'VO').toUpperCase();
 card.innerHTML='<div class="card-badge">'+(s.quality||'HD')+'</div>'+
 '<div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>'+
 '<div class="card-name">'+s.name+'</div>'+
 '<div class="card-tags"><span class="tag '+getTagClass(lang)+'">'+lang+'</span></div>';
-card.onclick=function(){selectSource(parseInt(this.getAttribute('data-i')))};
+card.onclick=function(){selectSource(index)};
 grid.appendChild(card);
+})(i);
 }
 }
 
@@ -423,8 +416,14 @@ loadPlayer();
 function toggleModal(){
 var m=$("${ids.srcModal}");
 var b=$("${ids.srcBtn}");
-if(m.classList.contains('show')){m.classList.remove('show');b.classList.remove('open')}
-else{m.classList.add('show');b.classList.add('open')}
+if(!m)return;
+if(m.classList.contains('show')){
+m.classList.remove('show');
+if(b)b.classList.remove('open');
+}else{
+m.classList.add('show');
+if(b)b.classList.add('open');
+}
 }
 
 function loadPlayer(){
@@ -459,22 +458,28 @@ loadPlayer();
 }
 }
 
-// Event listeners
-$("${ids.srcBtn}").onclick=toggleModal;
-document.getElementById("closeModal").onclick=toggleModal;
-$("${ids.srcModal}").onclick=function(e){if(e.target===this)toggleModal()};
+// Setup event listeners with null checks
+var srcBtn=$("${ids.srcBtn}");
+var closeModalBtn=document.getElementById("closeModal");
+var srcModal=$("${ids.srcModal}");
+
+if(srcBtn)srcBtn.addEventListener('click',toggleModal);
+if(closeModalBtn)closeModalBtn.addEventListener('click',toggleModal);
+if(srcModal)srcModal.addEventListener('click',function(e){if(e.target===srcModal)toggleModal()});
 
 if(hasAds&&adUrl){
 var btnC=$("${ids.btnContinue}");
 var btnP=$("${ids.btnPlay}");
 if(btnC){
-btnC.onclick=function(){
+btnC.addEventListener('click',function(){
 fetch('/api/ads/click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adId:adId})}).catch(function(){});
 window.open(adUrl,'_blank');
-this.classList.add('hide');
-$("${ids.step1}").classList.remove('act');
-$("${ids.step1}").classList.add('done');
-$("${ids.step2}").classList.add('act');
+btnC.classList.add('hide');
+var s1=$("${ids.step1}");
+var s2=$("${ids.step2}");
+var s3=$("${ids.step3}");
+if(s1){s1.classList.remove('act');s1.classList.add('done');}
+if(s2)s2.classList.add('act');
 var sec=3,prog=0;
 var iv=setInterval(function(){
 sec--;prog+=33.33;
@@ -484,22 +489,30 @@ if(tm)tm.textContent=sec+' seconde'+(sec>1?'s':'');
 if(pr)pr.style.width=Math.min(prog,100)+'%';
 if(sec<=0){
 clearInterval(iv);
-$("${ids.step2}").classList.remove('act');
-$("${ids.step2}").classList.add('done');
-$("${ids.step3}").classList.add('act');
-$("${ids.boxTime}").classList.add('hide');
-$("${ids.boxHelp}").classList.add('hide');
-$("${ids.boxThanks}").classList.remove('hide');
-$("${ids.boxDone}").classList.remove('hide');
-$("${ids.progress}").style.width='100%';
-btnP.classList.remove('hide');
+if(s2){s2.classList.remove('act');s2.classList.add('done');}
+if(s3)s3.classList.add('act');
+var bt=$("${ids.boxTime}");
+var bh=$("${ids.boxHelp}");
+var bk=$("${ids.boxThanks}");
+var bd=$("${ids.boxDone}");
+var prg=$("${ids.progress}");
+if(bt)bt.classList.add('hide');
+if(bh)bh.classList.add('hide');
+if(bk)bk.classList.remove('hide');
+if(bd)bd.classList.remove('hide');
+if(prg)prg.style.width='100%';
+if(btnP)btnP.classList.remove('hide');
 }
 },1000);
-};
+});
 }
-if(btnP){btnP.onclick=startPlayer}
+if(btnP)btnP.addEventListener('click',startPlayer);
 }else{
 startPlayer();
+}
+}catch(e){
+console.error('Player error:',e);
+document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#0a0a0f;color:#fff;flex-direction:column;gap:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Erreur de chargement</span></div>';
 }
 })();
 </script>
