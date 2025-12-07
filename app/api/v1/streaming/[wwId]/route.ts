@@ -155,6 +155,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       step1: generateRandomId("s1"),
       step2: generateRandomId("s2"),
       step3: generateRandomId("s3"),
+      srcModal: generateRandomId("sm"),
+      srcBtn: generateRandomId("sb"),
+      srcLabel: generateRandomId("sl"),
+      header: generateRandomId("hd"),
     }
 
     const html = `<!DOCTYPE html>
@@ -165,221 +169,359 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 <title>${title} - WWEmbed</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{font-family:system-ui,-apple-system,sans-serif;background:#0a0f1a;color:#fff;height:100%;overflow:hidden}
-.vp{width:100%;height:100%;display:flex;flex-direction:column}
-.vf{flex:1;position:relative;background:#000;min-height:0}
-.vf iframe{width:100%;height:100%;border:none;position:absolute;inset:0}
-/* Sources modernes et compactes */
-.vs{padding:6px 8px;background:linear-gradient(180deg,#0d1526 0%,#141e30 100%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;flex-shrink:0;max-height:80px;overflow-y:auto}
-.vs::-webkit-scrollbar{width:3px;height:3px}
-.vs::-webkit-scrollbar-track{background:#0d1526}
-.vs::-webkit-scrollbar-thumb{background:#2a5a7f;border-radius:3px}
-.vb{padding:6px 12px;background:linear-gradient(135deg,#1a2a40 0%,#0d1526 100%);border:1px solid #2a4060;border-radius:20px;color:#a0c4e8;cursor:pointer;font-size:11px;white-space:nowrap;transition:all 0.2s;display:inline-flex;align-items:center;gap:5px}
-.vb:hover{background:linear-gradient(135deg,#2a4060 0%,#1a2a40 100%);border-color:#3a6090;color:#fff;transform:translateY(-1px)}
-.vb.va{background:linear-gradient(135deg,#14B8A6 0%,#0d9488 100%);border-color:#14B8A6;color:#fff;box-shadow:0 2px 8px rgba(20,184,166,0.4)}
-.vb .lang{background:rgba(255,255,255,0.15);padding:2px 6px;border-radius:10px;font-size:9px;font-weight:600;text-transform:uppercase}
-.vb.va .lang{background:rgba(255,255,255,0.25)}
-/* Modal pub */
-.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:flex;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px);overflow-y:auto}
-.mo.mh{display:none}
-.mc{background:rgba(255,255,255,0.98);border-radius:16px;padding:20px;max-width:380px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4);margin:auto;max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow-y:auto}
-.mc h2{color:#1a1a2e;margin-bottom:6px;font-size:clamp(16px,4vw,20px);font-weight:700}
-.mc-sub{color:#6b7280;font-size:clamp(11px,3vw,13px);margin-bottom:16px}
-.steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
-.step{width:10px;height:10px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
+html,body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0a0a0f;color:#fff;height:100%;overflow:hidden}
+
+/* Main container */
+.player-wrap{width:100%;height:100%;display:flex;flex-direction:column}
+
+/* Header bar */
+.header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:linear-gradient(180deg,#12121a 0%,#0a0a0f 100%);border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:#fff}
+.logo svg{width:24px;height:24px}
+.logo span{background:linear-gradient(135deg,#a855f7,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.title{font-size:13px;font-weight:600;color:#e0e0e0;text-align:center;flex:1;margin:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-right{display:flex;align-items:center;gap:8px}
+
+/* Source dropdown button */
+.src-btn{display:flex;align-items:center;gap:8px;padding:8px 14px;background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.src-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,0.4)}
+.src-btn svg{width:16px;height:16px}
+.src-btn .label{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src-btn .arrow{transition:transform 0.2s}
+.src-btn.open .arrow{transform:rotate(180deg)}
+
+/* Report button */
+.report-btn{padding:8px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:8px;color:#fff;cursor:pointer;transition:all 0.2s}
+.report-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(239,68,68,0.4)}
+.report-btn svg{width:16px;height:16px;display:block}
+
+/* Video frame */
+.video-frame{flex:1;position:relative;background:#000;min-height:0}
+.video-frame iframe{width:100%;height:100%;border:none;position:absolute;inset:0}
+.no-source{display:flex;align-items:center;justify-content:center;height:100%;color:#666;font-size:14px;flex-direction:column;gap:8px}
+.no-source svg{width:48px;height:48px;opacity:0.3}
+
+/* Source Modal */
+.src-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:flex-start;justify-content:center;z-index:1000;padding:20px;overflow-y:auto;backdrop-filter:blur(8px)}
+.src-modal.show{display:flex}
+.src-modal-content{background:linear-gradient(180deg,#1a1a2e 0%,#12121a 100%);border-radius:16px;width:100%;max-width:800px;margin:auto;border:1px solid rgba(255,255,255,0.1);box-shadow:0 25px 50px rgba(0,0,0,0.5)}
+.src-modal-header{padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:space-between}
+.src-modal-title{font-size:20px;font-weight:700;background:linear-gradient(135deg,#a855f7,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.src-modal-sub{font-size:13px;color:#888;margin-top:4px}
+.src-modal-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.src-modal-close:hover{background:rgba(255,255,255,0.2);transform:rotate(90deg)}
+.src-modal-close svg{width:20px;height:20px}
+.src-modal-body{padding:20px 24px;max-height:60vh;overflow-y:auto}
+.src-modal-body::-webkit-scrollbar{width:6px}
+.src-modal-body::-webkit-scrollbar-track{background:#12121a}
+.src-modal-body::-webkit-scrollbar-thumb{background:#3a3a5a;border-radius:3px}
+
+/* Source grid */
+.src-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:600px){.src-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:400px){.src-grid{grid-template-columns:1fr}}
+
+/* Source card */
+.src-card{background:linear-gradient(135deg,#1e1e2e 0%,#16162a 100%);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.src-card:hover{border-color:rgba(139,92,246,0.5);transform:translateY(-2px);box-shadow:0 8px 24px rgba(139,92,246,0.2)}
+.src-card.active{border-color:#8b5cf6;background:linear-gradient(135deg,#2d1f4e 0%,#1a1a2e 100%)}
+.src-card-icon{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.src-card-icon svg{width:24px;height:24px;color:#fff}
+.src-card-badge{position:absolute;top:12px;right:12px;padding:4px 8px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:6px;font-size:10px;font-weight:700;color:#fff}
+.src-card-name{font-size:14px;font-weight:600;color:#fff;margin-bottom:8px}
+.src-card-tags{display:flex;flex-wrap:wrap;gap:6px}
+.src-tag{padding:4px 8px;border-radius:6px;font-size:10px;font-weight:600;text-transform:uppercase}
+.src-tag.lang{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
+.src-tag.vostfr{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff}
+.src-tag.multi{background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff}
+
+/* Ad Modal */
+.ad-modal{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:flex;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px);overflow-y:auto}
+.ad-modal.hidden{display:none}
+.ad-content{background:rgba(255,255,255,0.98);border-radius:16px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
+.ad-content h2{color:#1a1a2e;margin-bottom:8px;font-size:20px;font-weight:700}
+.ad-sub{color:#6b7280;font-size:13px;margin-bottom:20px}
+.steps{display:flex;justify-content:center;gap:10px;margin-bottom:20px}
+.step{width:12px;height:12px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
 .step.active{background:linear-gradient(135deg,#667eea,#764ba2);transform:scale(1.2)}
 .step.done{background:#10b981}
-.bx{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
-.bx svg{flex-shrink:0;width:18px;height:18px}
-.bx-content{min-width:0}
-.bx-content b{display:block;font-size:clamp(12px,3.5vw,14px);margin-bottom:2px}
-.bx-content span{font-size:clamp(10px,2.8vw,12px);opacity:0.8;display:block}
-.bw{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
-.bh{background:linear-gradient(135deg,#fce7f3,#fbcfe8);border:1px solid #ec4899;color:#9d174d}
-.bi{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #8b5cf6;color:#5b21b6}
-.bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
-.pb{height:5px;background:#e5e7eb;border-radius:3px;margin:12px 0;overflow:hidden}
-.pf{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2,#ec4899);transition:width 0.3s;border-radius:3px}
-.bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:clamp(12px,3.5vw,14px);font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
-.bt:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.15)}
-.bt:active{transform:scale(0.98)}
-.bp{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;box-shadow:0 4px 14px rgba(102,126,234,0.4)}
-.bg{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 4px 14px rgba(16,185,129,0.4)}
-.hd{display:none}
-.ft{margin-top:12px;font-size:clamp(9px,2.5vw,11px);color:#9ca3af}
-.ft a{color:#667eea;text-decoration:none;font-weight:500}
-.tg{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;font-weight:600}
-.ns{display:flex;align-items:center;justify-content:center;height:100%;color:#888;font-size:14px}
-/* Mobile: sources en grille compacte */
+.info-box{border-radius:12px;padding:14px;margin:10px 0;text-align:left;display:flex;align-items:flex-start;gap:12px}
+.info-box svg{flex-shrink:0;width:20px;height:20px}
+.info-box b{display:block;font-size:14px;margin-bottom:2px}
+.info-box span{font-size:12px;opacity:0.8}
+.box-warn{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
+.box-heart{background:linear-gradient(135deg,#fce7f3,#fbcfe8);border:1px solid #ec4899;color:#9d174d}
+.box-time{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #8b5cf6;color:#5b21b6}
+.box-done{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
+.progress-bar{height:6px;background:#e5e7eb;border-radius:3px;margin:16px 0;overflow:hidden}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2,#ec4899);transition:width 0.3s;border-radius:3px}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:10px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+.hidden{display:none!important}
+.pub-tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;margin-left:8px;font-weight:600}
+.footer-text{margin-top:16px;font-size:11px;color:#9ca3af}
+.footer-text a{color:#667eea;text-decoration:none;font-weight:500}
+
+/* Mobile optimizations */
 @media(max-width:480px){
-.vs{padding:4px 6px;gap:4px;max-height:70px}
-.vb{padding:5px 10px;font-size:10px;border-radius:16px}
-.vb .lang{padding:1px 4px;font-size:8px}
-}
-@media(max-height:500px){
-.mc{padding:16px;border-radius:12px}
-.bx{padding:10px;margin:6px 0}
-.steps{margin-bottom:12px}
-.pb{margin:10px 0}
-.bt{padding:10px}
-.vs{max-height:60px}
+.header{padding:8px 12px}
+.logo{font-size:12px}
+.logo svg{width:20px;height:20px}
+.title{font-size:11px}
+.src-btn{padding:6px 10px;font-size:11px}
+.src-btn .label{max-width:80px}
+.report-btn{padding:6px}
+.src-modal-content{border-radius:12px}
+.src-modal-header{padding:16px}
+.src-modal-title{font-size:18px}
+.src-modal-body{padding:16px}
+.src-card{padding:12px}
+.src-card-icon{width:40px;height:40px}
+.src-card-icon svg{width:20px;height:20px}
+.src-card-name{font-size:13px}
+.ad-content{padding:20px}
 }
 </style>
 </head>
 <body>
-<div class="vp">
-<div class="vf" id="${ids.player}"></div>
-<div class="vs" id="${ids.sources}"></div>
+<div class="player-wrap">
+  <!-- Header -->
+  <div class="header" id="${ids.header}">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span>WWEMBED</span>
+    </div>
+    <div class="title">${title}</div>
+    <div class="header-right">
+      <button class="src-btn" id="${ids.srcBtn}" onclick="toggleSrcModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <span class="label" id="${ids.srcLabel}">Sources</span>
+        <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <button class="report-btn" title="Signaler un problème">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Video frame -->
+  <div class="video-frame" id="${ids.player}">
+    <div class="no-source">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+      <span>Chargement...</span>
+    </div>
+  </div>
 </div>
+
+<!-- Source selection modal -->
+<div class="src-modal" id="${ids.srcModal}">
+  <div class="src-modal-content">
+    <div class="src-modal-header">
+      <div>
+        <div class="src-modal-title">Choisissez votre source</div>
+        <div class="src-modal-sub">Sélectionnez un serveur pour commencer la lecture</div>
+      </div>
+      <button class="src-modal-close" onclick="toggleSrcModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="src-modal-body">
+      <div class="src-grid" id="${ids.sources}"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
-var _d=${sourcesJson};
-var _u="${adUrl}";
-var _i="${adId}";
-var _h=${hasAds};
-var _c=0;
-var _ids=${JSON.stringify(ids)};
+var sources=${sourcesJson};
+var adUrl="${adUrl}";
+var adId="${adId}";
+var hasAds=${hasAds};
+var currentIdx=0;
+var ids=${JSON.stringify(ids)};
+var adShown=false;
 
-function _r(t,c,p){
-var e=document.createElement(t);
-if(c)e.className=c;
-if(p)p.appendChild(e);
-return e;
-}
-
-function _bs(){
-var c=document.getElementById(_ids.sources);
-if(!c)return;
-if(_d.length===0){
-c.innerHTML='<span style="color:#5a7a8a;padding:8px">Aucune source disponible</span>';
-var p=document.getElementById(_ids.player);
-if(p)p.innerHTML='<div class="ns">Aucune source de streaming disponible</div>';
-return;
-}
-c.innerHTML="";
-for(var i=0;i<_d.length;i++){
-var b=_r("button","vb"+(i===0?" va":""),c);
-var nameSpan=_r("span",null,b);
-nameSpan.textContent=_d[i].name;
-var langSpan=_r("span","lang",b);
-langSpan.textContent=_d[i].language||"VO";
-b.setAttribute("data-idx",i);
-b.onclick=function(){
-var idx=parseInt(this.getAttribute("data-idx"));
-_c=idx;
-var all=document.querySelectorAll(".vb");
-for(var j=0;j<all.length;j++)all[j].classList.remove("va");
-this.classList.add("va");
-_li();
+window.toggleSrcModal=function(){
+  var modal=document.getElementById(ids.srcModal);
+  var btn=document.getElementById(ids.srcBtn);
+  if(modal.classList.contains('show')){
+    modal.classList.remove('show');
+    btn.classList.remove('open');
+  }else{
+    modal.classList.add('show');
+    btn.classList.add('open');
+  }
 };
+
+function buildSources(){
+  var grid=document.getElementById(ids.sources);
+  if(!grid)return;
+  
+  if(sources.length===0){
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:#666">Aucune source disponible</div>';
+    document.getElementById(ids.player).innerHTML='<div class="no-source"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="48" height="48"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Aucune source disponible</span></div>';
+    return;
+  }
+  
+  grid.innerHTML='';
+  for(var i=0;i<sources.length;i++){
+    var s=sources[i];
+    var card=document.createElement('div');
+    card.className='src-card'+(i===currentIdx?' active':'');
+    card.setAttribute('data-idx',i);
+    
+    var lang=(s.language||'VO').toUpperCase();
+    var langClass='lang';
+    if(lang.includes('VOST'))langClass='vostfr';
+    else if(lang.includes('MULTI'))langClass='multi';
+    
+    card.innerHTML='<div class="src-card-badge">'+(s.quality||'HD')+'</div>'+
+      '<div class="src-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>'+
+      '<div class="src-card-name">'+s.name+'</div>'+
+      '<div class="src-card-tags"><span class="src-tag '+langClass+'">'+lang+'</span></div>';
+    
+    card.onclick=function(){
+      var idx=parseInt(this.getAttribute('data-idx'));
+      selectSource(idx);
+    };
+    
+    grid.appendChild(card);
+  }
 }
+
+function selectSource(idx){
+  currentIdx=idx;
+  var cards=document.querySelectorAll('.src-card');
+  for(var i=0;i<cards.length;i++){
+    cards[i].classList.remove('active');
+    if(parseInt(cards[i].getAttribute('data-idx'))===idx){
+      cards[i].classList.add('active');
+    }
+  }
+  
+  // Update button label
+  var label=document.getElementById(ids.srcLabel);
+  if(label&&sources[idx]){
+    var lang=(sources[idx].language||'VO').toUpperCase();
+    label.textContent=sources[idx].name+' ['+lang+']';
+  }
+  
+  toggleSrcModal();
+  loadPlayer();
 }
 
-function _li(){
-var p=document.getElementById(_ids.player);
-if(!p||_d.length===0)return;
-var f=_r("iframe");
-f.src=_d[_c].url;
-f.setAttribute("allowfullscreen","true");
-f.setAttribute("allow","accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture");
-p.innerHTML="";
-p.appendChild(f);
+function loadPlayer(){
+  var player=document.getElementById(ids.player);
+  if(!player||sources.length===0)return;
+  
+  var iframe=document.createElement('iframe');
+  iframe.src=sources[currentIdx].url;
+  iframe.setAttribute('allowfullscreen','true');
+  iframe.setAttribute('allow','accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture');
+  player.innerHTML='';
+  player.appendChild(iframe);
 }
 
-function _sp(){
-var o=document.getElementById(_ids.overlay);
-if(o)o.classList.add("mh");
-_bs();
-_li();
+function startPlayer(){
+  var overlay=document.getElementById(ids.overlay);
+  if(overlay)overlay.classList.add('hidden');
+  buildSources();
+  if(sources.length>0){
+    var label=document.getElementById(ids.srcLabel);
+    if(label){
+      var lang=(sources[0].language||'VO').toUpperCase();
+      label.textContent=sources[0].name+' ['+lang+']';
+    }
+    loadPlayer();
+  }
 }
 
-function _cm(){
-if(!_h||!_u){_sp();return;}
-var o=_r("div","mo",document.body);
-o.id=_ids.overlay;
-var mc=_r("div","mc",o);
-var h2=_r("h2",null,mc);
-h2.textContent="Votre video est prête";
-var sub=_r("div","mc-sub",mc);
-sub.textContent="Une dernière étape pour accéder au contenu";
-
-var steps=_r("div","steps",mc);
-var s1=_r("div","step active",steps);s1.id=_ids.step1;
-var s2=_r("div","step",steps);s2.id=_ids.step2;
-var s3=_r("div","step",steps);s3.id=_ids.step3;
-
-var bw=_r("div","bx bw",mc);
-bw.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div class="bx-content"><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>';
-
-var bh=_r("div","bx bh",mc);
-bh.id=_ids.boxHelp;
-bh.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div class="bx-content"><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>';
-
-var bi=_r("div","bx bi",mc);
-bi.id=_ids.boxTime;
-bi.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><div class="bx-content"><b>Temps restant: <span id="'+_ids.timer+'">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div>';
-
-var bk=_r("div","bx bo hd",mc);
-bk.id=_ids.boxThanks;
-bk.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><div class="bx-content"><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div>';
-
-var bd=_r("div","bx bo hd",mc);
-bd.id=_ids.boxDone;
-bd.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><div class="bx-content"><b>Tout est prêt !</b><span>Cliquez pour lancer la lecture</span></div>';
-
-var pb=_r("div","pb",mc);
-var pf=_r("div","pf",pb);
-pf.id=_ids.progress;
-
-var bu=_r("button","bt bp",mc);
-bu.id=_ids.btnUnlock;
-bu.innerHTML="Continuer<span class='tg'>PUB</span>";
-
-var by=_r("button","bt bg hd",mc);
-by.id=_ids.btnPlay;
-by.textContent="Lancer la vidéo";
-
-var ft=_r("div","ft",mc);
-ft.innerHTML='Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a>';
-
-bu.onclick=function(){
-var xhr=new XMLHttpRequest();
-xhr.open("POST","/api/ads/click",true);
-xhr.setRequestHeader("Content-Type","application/json");
-xhr.send(JSON.stringify({adId:_i}));
-var w=window.open(_u,"_blank");
-bu.classList.add("hd");
-document.getElementById(_ids.step1).classList.remove("active");
-document.getElementById(_ids.step1).classList.add("done");
-document.getElementById(_ids.step2).classList.add("active");
-var s=3,pg=0;
-var iv=setInterval(function(){
-s--;pg+=33.33;
-var tm=document.getElementById(_ids.timer);
-var pr=document.getElementById(_ids.progress);
-if(tm)tm.textContent=s + " seconde" + (s>1?"s":"");
-if(pr)pr.style.width=Math.min(pg,100)+"%";
-if(s<=0){
-clearInterval(iv);
-document.getElementById(_ids.step2).classList.remove("active");
-document.getElementById(_ids.step2).classList.add("done");
-document.getElementById(_ids.step3).classList.add("active");
-var bt=document.getElementById(_ids.boxTime);
-var bh=document.getElementById(_ids.boxHelp);
-var bk=document.getElementById(_ids.boxThanks);
-var bd=document.getElementById(_ids.boxDone);
-if(bt)bt.classList.add("hd");
-if(bh)bh.classList.add("hd");
-if(bk)bk.classList.remove("hd");
-if(bd)bd.classList.remove("hd");
-if(pr)pr.style.width="100%";
-by.classList.remove("hd");
+function showAdModal(){
+  if(!hasAds||!adUrl||adShown){startPlayer();return;}
+  
+  var overlay=document.createElement('div');
+  overlay.className='ad-modal';
+  overlay.id=ids.overlay;
+  
+  overlay.innerHTML='<div class="ad-content">'+
+    '<h2>Votre vidéo est prête</h2>'+
+    '<p class="ad-sub">Une dernière étape pour accéder au contenu</p>'+
+    '<div class="steps"><div class="step active" id="'+ids.step1+'"></div><div class="step" id="'+ids.step2+'"></div><div class="step" id="'+ids.step3+'"></div></div>'+
+    '<div class="info-box box-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div></div>'+
+    '<div class="info-box box-heart" id="'+ids.boxHelp+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div></div>'+
+    '<div class="info-box box-time" id="'+ids.boxTime+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><div><b>Temps restant: <span id="'+ids.timer+'">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div></div>'+
+    '<div class="info-box box-done hidden" id="'+ids.boxThanks+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><div><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div></div>'+
+    '<div class="info-box box-done hidden" id="'+ids.boxDone+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><div><b>Tout est prêt !</b><span>Cliquez pour lancer la lecture</span></div></div>'+
+    '<div class="progress-bar"><div class="progress-fill" id="'+ids.progress+'"></div></div>'+
+    '<button class="btn btn-primary" id="'+ids.btnUnlock+'">Continuer<span class="pub-tag">PUB</span></button>'+
+    '<button class="btn btn-success hidden" id="'+ids.btnPlay+'">Lancer la vidéo</button>'+
+    '<div class="footer-text">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>'+
+  '</div>';
+  
+  document.body.appendChild(overlay);
+  
+  document.getElementById(ids.btnUnlock).onclick=function(){
+    var xhr=new XMLHttpRequest();
+    xhr.open('POST','/api/ads/click',true);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.send(JSON.stringify({adId:adId}));
+    window.open(adUrl,'_blank');
+    
+    this.classList.add('hidden');
+    document.getElementById(ids.step1).classList.remove('active');
+    document.getElementById(ids.step1).classList.add('done');
+    document.getElementById(ids.step2).classList.add('active');
+    
+    var sec=3,prog=0;
+    var iv=setInterval(function(){
+      sec--;prog+=33.33;
+      var timer=document.getElementById(ids.timer);
+      var pbar=document.getElementById(ids.progress);
+      if(timer)timer.textContent=sec+' seconde'+(sec>1?'s':'');
+      if(pbar)pbar.style.width=Math.min(prog,100)+'%';
+      if(sec<=0){
+        clearInterval(iv);
+        document.getElementById(ids.step2).classList.remove('active');
+        document.getElementById(ids.step2).classList.add('done');
+        document.getElementById(ids.step3).classList.add('active');
+        document.getElementById(ids.boxTime).classList.add('hidden');
+        document.getElementById(ids.boxHelp).classList.add('hidden');
+        document.getElementById(ids.boxThanks).classList.remove('hidden');
+        document.getElementById(ids.boxDone).classList.remove('hidden');
+        document.getElementById(ids.progress).style.width='100%';
+        document.getElementById(ids.btnPlay).classList.remove('hidden');
+      }
+    },1000);
+  };
+  
+  document.getElementById(ids.btnPlay).onclick=function(){
+    adShown=true;
+    startPlayer();
+  };
 }
-},1000);
-};
-by.onclick=function(){_sp();};
-}
-_cm();
+
+showAdModal();
 })();
 </script>
 </body>
