@@ -96,9 +96,11 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .ttl img{width:24px;height:24px;border-radius:4px;object-fit:contain;background:#fff}
 .live{background:#ef4444;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.hdr-actions{display:flex;gap:8px}
 .src-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;background:linear-gradient(135deg,#ef4444,#f97316);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
 .src-btn:hover{opacity:.9}
-.rpt{padding:7px;background:#6366f1;border:none;border-radius:8px;color:#fff;cursor:pointer}
+.rpt-btn{background:#6366f1;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.rpt-btn:hover{background:#4f46e5}
 .player{flex:1;background:#000;position:relative}
 .player iframe,.player video{width:100%;height:100%;border:none;position:absolute;inset:0;background:#000}
 .no-src{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#555;gap:8px}
@@ -125,6 +127,13 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .tag-vost{background:#f97316;color:#fff}
 .tag-multi{background:#a855f7;color:#fff}
 .tag-vo{background:#6b7280;color:#fff}
+.rpt-form{display:flex;flex-direction:column;gap:12px}
+.rpt-form textarea{width:100%;min-height:100px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:12px;color:#fff;font-size:14px;resize:vertical}
+.rpt-form textarea:focus{outline:none;border-color:#6366f1}
+.rpt-form button{background:#6366f1;color:#fff;border:none;padding:12px;border-radius:8px;font-weight:600;cursor:pointer}
+.rpt-form button:hover{background:#4f46e5}
+.rpt-form button:disabled{opacity:0.5;cursor:not-allowed}
+.rpt-success{color:#10b981;text-align:center;padding:20px}
 .mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(239,68,68,0.95) 0%,rgba(249,115,22,0.95) 50%,rgba(234,179,8,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px;backdrop-filter:blur(8px)}
 .mo.sh{display:flex}
 .mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
@@ -173,8 +182,10 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <div class="hdr">
 <div class="logo">📺 WWEMBED</div>
 <div class="ttl">${channelLogo ? `<img src="${channelLogo}" alt="">` : ""}<span>${channelName}</span><span class="live">LIVE</span></div>
+<div class="hdr-actions">
 <button class="src-btn" id="srcBtn">☰ <span id="srcLabel">Sources</span></button>
-<button class="rpt" title="Signaler">⚠</button>
+<button class="rpt-btn" id="rptBtn" title="Signaler un problème">⚠</button>
+</div>
 </div>
 <div class="player" id="player"><div class="no-src">Chargement...</div></div>
 </div>
@@ -187,6 +198,28 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <div class="modal-body"><div class="grid" id="srcGrid"></div></div>
 </div>
 </div>
+
+<div class="modal" id="rptModal">
+<div class="modal-box">
+<div class="modal-hdr">
+<div><div class="modal-ttl" style="color:#6366f1">Signaler un problème</div><div class="modal-sub">Aidez-nous à améliorer le service</div></div>
+<button class="modal-close" id="rptClose">×</button>
+</div>
+<div class="modal-body">
+<div class="rpt-form" id="rptForm">
+<p style="color:#94a3b8;font-size:13px;margin-bottom:8px">Décrivez le problème rencontré (flux ne fonctionne pas, lag, etc.)</p>
+<textarea id="rptMsg" placeholder="Décrivez le problème..."></textarea>
+<button type="button" id="rptSubmit">Envoyer le signalement</button>
+</div>
+<div class="rpt-success hi" id="rptSuccess">
+<div style="font-size:48px;margin-bottom:12px">✓</div>
+<p style="font-weight:600;margin-bottom:4px">Merci pour votre signalement !</p>
+<p style="color:#94a3b8;font-size:13px">Nous allons examiner ce problème.</p>
+</div>
+</div>
+</div>
+</div>
+
 <script>
 (function(){
 var _src=${sourcesJson};
@@ -195,6 +228,8 @@ var _hasAds=${hasAds};
 var _idx=0;
 var _started=false;
 var _hls=null;
+var _wwId="${wwId}";
+var _channelName="${channelName.replace(/"/g, '\\"')}";
 
 function $(id){return document.getElementById(id);}
 
@@ -225,7 +260,7 @@ _idx=index;
 var cards=document.querySelectorAll(".card");
 for(var j=0;j<cards.length;j++){cards[j].classList.toggle("act",j===index);}
 $("srcLabel").textContent=s.name;
-toggleModal();
+toggleModal("srcModal");
 loadPlayer();
 };
 g.appendChild(d);
@@ -233,8 +268,8 @@ g.appendChild(d);
 }
 }
 
-function toggleModal(){
-var m=$("srcModal");
+function toggleModal(id){
+var m=$(id);
 if(m)m.classList.toggle("sh");
 }
 
@@ -286,9 +321,50 @@ var srcBtn=$("srcBtn");
 var closeModal=$("closeModal");
 var srcModal=$("srcModal");
 
-if(srcBtn)srcBtn.onclick=toggleModal;
-if(closeModal)closeModal.onclick=toggleModal;
-if(srcModal)srcModal.onclick=function(e){if(e.target===srcModal)toggleModal();};
+if(srcBtn)srcBtn.onclick=function(){toggleModal("srcModal")};
+if(closeModal)closeModal.onclick=function(){toggleModal("srcModal")};
+if(srcModal)srcModal.onclick=function(e){if(e.target===srcModal)toggleModal("srcModal");};
+
+var rptBtn=$("rptBtn");
+var rptModal=$("rptModal");
+var rptClose=$("rptClose");
+var rptSubmit=$("rptSubmit");
+var rptMsg=$("rptMsg");
+var rptForm=$("rptForm");
+var rptSuccess=$("rptSuccess");
+
+if(rptBtn)rptBtn.onclick=function(){toggleModal("rptModal")};
+if(rptClose)rptClose.onclick=function(){toggleModal("rptModal")};
+if(rptModal)rptModal.onclick=function(e){if(e.target===rptModal)toggleModal("rptModal");};
+
+if(rptSubmit)rptSubmit.onclick=function(){
+  var msg=rptMsg.value.trim();
+  if(!msg){alert("Veuillez décrire le problème");return}
+  rptSubmit.disabled=true;
+  rptSubmit.textContent="Envoi...";
+  var currentSource=_src[_idx]||{};
+  fetch("/api/bug-reports",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      wwId:_wwId,
+      mediaType:"live",
+      title:_channelName,
+      sourceName:currentSource.name||"",
+      sourceUrl:currentSource.url||"",
+      message:msg,
+      embedType:"live"
+    })
+  }).then(function(r){return r.json()}).then(function(){
+    rptForm.classList.add("hi");
+    rptSuccess.classList.remove("hi");
+    setTimeout(function(){toggleModal("rptModal");rptForm.classList.remove("hi");rptSuccess.classList.add("hi");rptMsg.value="";rptSubmit.disabled=false;rptSubmit.textContent="Envoyer le signalement"},2000);
+  }).catch(function(){
+    alert("Erreur lors de l'envoi");
+    rptSubmit.disabled=false;
+    rptSubmit.textContent="Envoyer le signalement";
+  });
+};
 
 if(_hasAds&&_adUrl){
 var ov=$("adOverlay");

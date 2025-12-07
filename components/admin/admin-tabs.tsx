@@ -11,6 +11,7 @@ import { AdsManager } from "./ads-manager"
 import { PendingLinksManager } from "./pending-links-manager"
 import { LiveTVManager } from "./live-tv-manager"
 import { DigitalContentManager } from "./digital-content-manager"
+import { BugReportsManager } from "./bug-reports-manager"
 
 export function AdminTabs() {
   const [activeTab, setActiveTab] = useState("pending")
@@ -24,6 +25,7 @@ export function AdminTabs() {
         <TabsTrigger value="download">Liens Download</TabsTrigger>
         <TabsTrigger value="digital">Digital</TabsTrigger>
         <TabsTrigger value="livetv">TV Live</TabsTrigger>
+        <TabsTrigger value="bugs">Bugs</TabsTrigger>
         <TabsTrigger value="ads">Publicites</TabsTrigger>
         <TabsTrigger value="users">Utilisateurs</TabsTrigger>
         <TabsTrigger value="stats">Statistiques</TabsTrigger>
@@ -51,6 +53,10 @@ export function AdminTabs() {
 
       <TabsContent value="livetv">
         <LiveTVManager />
+      </TabsContent>
+
+      <TabsContent value="bugs">
+        <BugReportsManager />
       </TabsContent>
 
       <TabsContent value="ads">
