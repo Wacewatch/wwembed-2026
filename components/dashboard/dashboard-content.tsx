@@ -2,19 +2,19 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AddLinkModal } from "@/components/add-link-modal"
 import { ProfileSettings } from "@/components/dashboard/profile-settings"
+import { Separator } from "@/components/ui/separator"
 import {
   Play,
   Download,
   CheckCircle,
   Clock,
   XCircle,
-  TrendingUp,
   Eye,
   Tv,
   Book,
@@ -22,9 +22,19 @@ import {
   Gamepad2,
   Package,
   Settings,
-  ArrowUpCircle,
   Loader2,
   Bug,
+  Plus,
+  LayoutDashboard,
+  Link2,
+  Sparkles,
+  BarChart3,
+  Calendar,
+  Award,
+  Target,
+  Zap,
+  ChevronRight,
+  ExternalLink,
 } from "lucide-react"
 import type {
   Profile,
@@ -35,6 +45,7 @@ import type {
   DigitalContent,
   DigitalDownloadLink,
 } from "@/lib/types"
+import Link from "next/link"
 
 interface StreamingLinkWithViews extends StreamingLink {
   view_count: number
@@ -87,21 +98,21 @@ function getStatusBadge(status: string) {
   switch (status) {
     case "approved":
       return (
-        <Badge className="bg-green-500/20 text-green-500">
+        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
           <CheckCircle className="w-3 h-3 mr-1" />
           Approuve
         </Badge>
       )
     case "pending":
       return (
-        <Badge className="bg-yellow-500/20 text-yellow-500">
+        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
           <Clock className="w-3 h-3 mr-1" />
           En attente
         </Badge>
       )
     case "rejected":
       return (
-        <Badge className="bg-red-500/20 text-red-500">
+        <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
           <XCircle className="w-3 h-3 mr-1" />
           Rejete
         </Badge>
@@ -130,21 +141,21 @@ function getBugStatusBadge(status: string) {
   switch (status) {
     case "fixed":
       return (
-        <Badge className="bg-green-500/20 text-green-500">
+        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
           <CheckCircle className="w-3 h-3 mr-1" />
           Corrige
         </Badge>
       )
     case "pending":
       return (
-        <Badge className="bg-yellow-500/20 text-yellow-500">
+        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
           <Clock className="w-3 h-3 mr-1" />
           En attente
         </Badge>
       )
     case "impossible":
       return (
-        <Badge className="bg-red-500/20 text-red-500">
+        <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
           <XCircle className="w-3 h-3 mr-1" />
           Impossible
         </Badge>
@@ -152,6 +163,92 @@ function getBugStatusBadge(status: string) {
     default:
       return <Badge variant="outline">{status}</Badge>
   }
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  subValue,
+  color,
+  trend,
+}: {
+  icon: any
+  label: string
+  value: number | string
+  subValue?: string
+  color: string
+  trend?: "up" | "down" | "neutral"
+}) {
+  const colorClasses: Record<string, string> = {
+    primary: "from-primary/20 to-primary/5 border-primary/30 text-primary",
+    blue: "from-blue-500/20 to-blue-500/5 border-blue-500/30 text-blue-400",
+    purple: "from-purple-500/20 to-purple-500/5 border-purple-500/30 text-purple-400",
+    amber: "from-amber-500/20 to-amber-500/5 border-amber-500/30 text-amber-400",
+    emerald: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30 text-emerald-400",
+    orange: "from-orange-500/20 to-orange-500/5 border-orange-500/30 text-orange-400",
+    red: "from-red-500/20 to-red-500/5 border-red-500/30 text-red-400",
+    cyan: "from-cyan-500/20 to-cyan-500/5 border-cyan-500/30 text-cyan-400",
+  }
+
+  return (
+    <Card
+      className={`bg-gradient-to-br ${colorClasses[color]} border backdrop-blur-sm hover:scale-[1.02] transition-all duration-300`}
+    >
+      <CardContent className="pt-5 pb-4">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+            <p className="text-2xl font-bold">{value}</p>
+            {subValue && <p className="text-xs text-muted-foreground">{subValue}</p>}
+          </div>
+          <div className={`p-2.5 rounded-xl bg-background/50 ${colorClasses[color].split(" ")[3]}`}>
+            <Icon className="w-5 h-5" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function NavItem({
+  icon: Icon,
+  label,
+  value,
+  isActive,
+  onClick,
+  badge,
+}: {
+  icon: any
+  label: string
+  value: string
+  isActive: boolean
+  onClick: () => void
+  badge?: number
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-left transition-all ${
+        isActive
+          ? "bg-primary/10 text-primary border border-primary/20"
+          : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <Icon className={`w-5 h-5 ${isActive ? "text-primary" : ""}`} />
+        <span className="font-medium">{label}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {badge !== undefined && badge > 0 && (
+          <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+            {badge}
+          </Badge>
+        )}
+        <ChevronRight className={`w-4 h-4 transition-transform ${isActive ? "rotate-90" : ""}`} />
+      </div>
+    </button>
+  )
 }
 
 export function DashboardContent({
@@ -164,6 +261,7 @@ export function DashboardContent({
   digitalLinks,
   stats,
 }: DashboardContentProps) {
+  const [activeTab, setActiveTab] = useState("overview")
   const [requestingUploader, setRequestingUploader] = useState(false)
   const [uploaderRequestResult, setUploaderRequestResult] = useState<{ success: boolean; message: string } | null>(null)
   const [bugReports, setBugReports] = useState<BugReport[]>([])
@@ -226,80 +324,134 @@ export function DashboardContent({
     setRequestingUploader(false)
   }
 
+  const getRoleBadge = () => {
+    switch (profile.role) {
+      case "admin":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Administrateur</Badge>
+      case "uploader":
+        return <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">Uploader</Badge>
+      default:
+        return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Membre</Badge>
+    }
+  }
+
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Bienvenue, <span className="text-primary">{profile.username || profile.email}</span>
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Role:{" "}
-            <Badge variant="outline" className="ml-1">
-              {profile.role === "admin" ? "Administrateur" : profile.role === "uploader" ? "Uploader" : "Membre"}
-            </Badge>
-          </p>
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/10 via-purple-500/10 to-blue-500/10 border border-primary/20 p-6 md:p-8">
+        <div className="absolute inset-0 bg-grid-white/5" />
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-primary/25">
+                {(profile.username || profile.email)[0].toUpperCase()}
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-background flex items-center justify-center">
+                <CheckCircle className="w-3 h-3 text-white" />
+              </div>
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                {profile.username || profile.email.split("@")[0]}
+              </h1>
+              <div className="flex items-center gap-2 mt-1">
+                {getRoleBadge()}
+                <span className="text-sm text-muted-foreground">
+                  Membre depuis {new Date(profile.created_at).toLocaleDateString("fr-FR")}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <AddLinkModal
+              onSuccess={() => window.location.reload()}
+              buttonClassName="bg-gradient-to-r from-primary to-cyan-400 hover:from-primary/90 hover:to-cyan-400/90 shadow-lg shadow-primary/25"
+              buttonIcon={<Plus className="w-4 h-4 mr-2" />}
+              buttonText="Ajouter un lien"
+            />
+            {profile.username && (
+              <Link href={`/profile/${profile.username}`} target="_blank">
+                <Button variant="outline" className="gap-2 bg-transparent">
+                  <ExternalLink className="w-4 h-4" />
+                  Mon profil public
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
-        <AddLinkModal
-          onSuccess={() => window.location.reload()}
-          buttonClassName="bg-gradient-to-r from-primary to-teal-400 hover:from-primary/90 hover:to-teal-400/90"
-        />
       </div>
 
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <StatCard icon={Play} label="Streaming" value={stats.totalStreaming} color="primary" />
+        <StatCard icon={Download} label="Download" value={stats.totalDownload} color="blue" />
+        <StatCard icon={Tv} label="TV Live" value={stats.totalLiveTv} color="purple" />
+        <StatCard icon={Book} label="Digital" value={stats.totalDigital} color="amber" />
+        <StatCard icon={CheckCircle} label="Approuves" value={totalApprovedLinks} color="emerald" />
+        <StatCard icon={Clock} label="En attente" value={stats.pendingCount} color="orange" />
+        <StatCard icon={Eye} label="Vues" value={stats.totalViews.toLocaleString()} color="cyan" />
+      </div>
+
+      {/* Uploader Section */}
       {showUploaderSection && (
-        <Card className={`border-2 ${canRequestUploader ? "border-amber-500/50 bg-amber-500/5" : "border-border"}`}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ArrowUpCircle className={`w-5 h-5 ${canRequestUploader ? "text-amber-500" : "text-muted-foreground"}`} />
-              Devenir Uploader
-            </CardTitle>
+        <Card
+          className={`border-2 overflow-hidden ${canRequestUploader ? "border-amber-500/50 bg-gradient-to-r from-amber-500/10 to-orange-500/10" : "border-border"}`}
+        >
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className={`p-2.5 rounded-xl ${canRequestUploader ? "bg-amber-500/20" : "bg-muted"}`}>
+                <Award className={`w-6 h-6 ${canRequestUploader ? "text-amber-500" : "text-muted-foreground"}`} />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Devenir Uploader</CardTitle>
+                <CardDescription>Debloquez des fonctionnalites avancees</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Remplissez les conditions suivantes pour obtenir le grade Uploader et débloquer des fonctionnalités
-              avancées.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2 mb-4">
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div
-                className={`p-4 rounded-lg border ${totalApprovedLinks >= 500 ? "border-green-500/50 bg-green-500/10" : "border-border"}`}
+                className={`p-4 rounded-xl border-2 ${totalApprovedLinks >= 500 ? "border-emerald-500/50 bg-emerald-500/10" : "border-border bg-muted/30"}`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Liens validés</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Target className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Liens valides</span>
+                  </div>
                   {totalApprovedLinks >= 500 ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <CheckCircle className="w-5 h-5 text-emerald-500" />
                   ) : (
-                    <Clock className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      {Math.round((totalApprovedLinks / 500) * 100)}%
+                    </span>
                   )}
                 </div>
-                <div
-                  className={`text-2xl font-bold mt-1 ${totalApprovedLinks >= 500 ? "text-green-500" : "text-foreground"}`}
-                >
-                  {totalApprovedLinks} / 500
-                </div>
-                <div className="h-2 bg-muted rounded-full mt-2 overflow-hidden">
+                <div className="text-2xl font-bold mb-2">{totalApprovedLinks} / 500</div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${totalApprovedLinks >= 500 ? "bg-green-500" : "bg-amber-500"}`}
+                    className={`h-full rounded-full transition-all ${totalApprovedLinks >= 500 ? "bg-emerald-500" : "bg-amber-500"}`}
                     style={{ width: `${Math.min(100, (totalApprovedLinks / 500) * 100)}%` }}
                   />
                 </div>
               </div>
               <div
-                className={`p-4 rounded-lg border ${accountAge >= 30 ? "border-green-500/50 bg-green-500/10" : "border-border"}`}
+                className={`p-4 rounded-xl border-2 ${accountAge >= 30 ? "border-emerald-500/50 bg-emerald-500/10" : "border-border bg-muted/30"}`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Ancienneté du compte</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Anciennete</span>
+                  </div>
                   {accountAge >= 30 ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <CheckCircle className="w-5 h-5 text-emerald-500" />
                   ) : (
-                    <Clock className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">{Math.round((accountAge / 30) * 100)}%</span>
                   )}
                 </div>
-                <div className={`text-2xl font-bold mt-1 ${accountAge >= 30 ? "text-green-500" : "text-foreground"}`}>
-                  {accountAge} / 30 jours
-                </div>
-                <div className="h-2 bg-muted rounded-full mt-2 overflow-hidden">
+                <div className="text-2xl font-bold mb-2">{accountAge} / 30 jours</div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${accountAge >= 30 ? "bg-green-500" : "bg-amber-500"}`}
+                    className={`h-full rounded-full transition-all ${accountAge >= 30 ? "bg-emerald-500" : "bg-amber-500"}`}
                     style={{ width: `${Math.min(100, (accountAge / 30) * 100)}%` }}
                   />
                 </div>
@@ -308,22 +460,22 @@ export function DashboardContent({
             <Button
               onClick={handleRequestUploader}
               disabled={!canRequestUploader || requestingUploader}
-              className={canRequestUploader ? "bg-amber-500 hover:bg-amber-600" : ""}
+              className={`w-full sm:w-auto ${canRequestUploader ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600" : ""}`}
             >
               {requestingUploader ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Vérification...
+                  Verification...
                 </>
               ) : (
                 <>
-                  <ArrowUpCircle className="w-4 h-4 mr-2" />
+                  <Zap className="w-4 h-4 mr-2" />
                   Demander le grade Uploader
                 </>
               )}
             </Button>
             {uploaderRequestResult && (
-              <p className={`mt-3 text-sm ${uploaderRequestResult.success ? "text-green-500" : "text-red-500"}`}>
+              <p className={`text-sm ${uploaderRequestResult.success ? "text-emerald-500" : "text-red-500"}`}>
                 {uploaderRequestResult.message}
               </p>
             )}
@@ -331,145 +483,272 @@ export function DashboardContent({
         </Card>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center">
-              <Play className="w-8 h-8 text-primary mb-2" />
-              <p className="text-2xl font-bold text-primary">{stats.totalStreaming}</p>
-              <p className="text-xs text-muted-foreground">Streaming</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center">
-              <Download className="w-8 h-8 text-blue-500 mb-2" />
-              <p className="text-2xl font-bold text-blue-500">{stats.totalDownload}</p>
-              <p className="text-xs text-muted-foreground">Telechargement</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center">
-              <Tv className="w-8 h-8 text-purple-500 mb-2" />
-              <p className="text-2xl font-bold text-purple-500">{stats.totalLiveTv}</p>
-              <p className="text-xs text-muted-foreground">TV Live</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center">
-              <Book className="w-8 h-8 text-amber-500 mb-2" />
-              <p className="text-2xl font-bold text-amber-500">{stats.totalDigital}</p>
-              <p className="text-xs text-muted-foreground">Digital</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center">
-              <CheckCircle className="w-8 h-8 text-green-500 mb-2" />
-              <p className="text-2xl font-bold text-green-500">
-                {stats.verifiedStreaming + stats.verifiedDownload + stats.verifiedLiveTv + stats.verifiedDigital}
-              </p>
-              <p className="text-xs text-muted-foreground">Approuves</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center">
-              <Clock className="w-8 h-8 text-yellow-500 mb-2" />
-              <p className="text-2xl font-bold text-yellow-500">{stats.pendingCount}</p>
-              <p className="text-xs text-muted-foreground">En attente</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center">
-              <Eye className="w-8 h-8 text-orange-500 mb-2" />
-              <p className="text-2xl font-bold text-orange-500">{stats.totalViews}</p>
-              <p className="text-xs text-muted-foreground">Vues totales</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle>Mes liens soumis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="streaming" className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="streaming" className="flex items-center gap-2">
+      {/* Main Content with Tabs */}
+      <Card className="border-border overflow-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="border-b border-border bg-muted/30 p-1">
+            <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-transparent p-0">
+              <TabsTrigger
+                value="overview"
+                className="flex-1 min-w-[100px] data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                <span className="hidden sm:inline">Apercu</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="streaming"
+                className="flex-1 min-w-[100px] data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2"
+              >
                 <Play className="h-4 w-4" />
                 <span className="hidden sm:inline">Streaming</span>
+                {stats.totalStreaming > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                    {stats.totalStreaming}
+                  </Badge>
+                )}
               </TabsTrigger>
-              <TabsTrigger value="download" className="flex items-center gap-2">
+              <TabsTrigger
+                value="download"
+                className="flex-1 min-w-[100px] data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2"
+              >
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">Download</span>
+                {stats.totalDownload > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                    {stats.totalDownload}
+                  </Badge>
+                )}
               </TabsTrigger>
-              <TabsTrigger value="livetv" className="flex items-center gap-2">
+              <TabsTrigger
+                value="livetv"
+                className="flex-1 min-w-[100px] data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2"
+              >
                 <Tv className="h-4 w-4" />
-                <span className="hidden sm:inline">Live TV</span>
+                <span className="hidden sm:inline">TV</span>
               </TabsTrigger>
-              <TabsTrigger value="digital" className="flex items-center gap-2">
+              <TabsTrigger
+                value="digital"
+                className="flex-1 min-w-[100px] data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2"
+              >
                 <Book className="h-4 w-4" />
                 <span className="hidden sm:inline">Digital</span>
               </TabsTrigger>
-              <TabsTrigger value="bugs" className="flex items-center gap-2">
+              <TabsTrigger
+                value="bugs"
+                className="flex-1 min-w-[100px] data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2"
+              >
                 <Bug className="h-4 w-4" />
                 <span className="hidden sm:inline">Rapports</span>
+                {bugReports.filter((r) => r.status === "pending").length > 0 && (
+                  <Badge variant="destructive" className="ml-1 h-5 px-1.5">
+                    {bugReports.filter((r) => r.status === "pending").length}
+                  </Badge>
+                )}
               </TabsTrigger>
-              <TabsTrigger value="add" className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
+              <TabsTrigger
+                value="add"
+                className="flex-1 min-w-[100px] data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2"
+              >
+                <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Ajouter</span>
               </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-2">
+              <TabsTrigger
+                value="settings"
+                className="flex-1 min-w-[100px] data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2"
+              >
                 <Settings className="h-4 w-4" />
                 <span className="hidden sm:inline">Profil</span>
               </TabsTrigger>
             </TabsList>
+          </div>
 
-            <TabsContent value="streaming">
+          <div className="p-4 md:p-6">
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="mt-0 space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Recent Activity */}
+                <Card className="border-border">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Activite recente
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[...streamingLinks, ...downloadLinks].slice(0, 5).map((link, i) => (
+                        <div
+                          key={link.id}
+                          className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`p-2 rounded-lg ${"source_url" in link && !link.link_type ? "bg-primary/10" : "bg-blue-500/10"}`}
+                            >
+                              {"link_type" in link ? (
+                                <Download className="w-4 h-4 text-blue-500" />
+                              ) : (
+                                <Play className="w-4 h-4 text-primary" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium truncate max-w-[150px]">{link.source_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(link.created_at).toLocaleDateString("fr-FR")}
+                              </p>
+                            </div>
+                          </div>
+                          {getStatusBadge(link.status)}
+                        </div>
+                      ))}
+                      {streamingLinks.length === 0 && downloadLinks.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">Aucune activite recente</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Quick Stats */}
+                <Card className="border-border">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-primary" />
+                      Statistiques
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Taux d'approbation</span>
+                        <span className="text-sm font-bold text-emerald-500">
+                          {stats.totalStreaming + stats.totalDownload > 0
+                            ? Math.round(
+                                ((stats.verifiedStreaming + stats.verifiedDownload) /
+                                  (stats.totalStreaming + stats.totalDownload)) *
+                                  100,
+                              )
+                            : 0}
+                          %
+                        </span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full"
+                          style={{
+                            width: `${
+                              stats.totalStreaming + stats.totalDownload > 0
+                                ? (
+                                    (stats.verifiedStreaming + stats.verifiedDownload) /
+                                      (stats.totalStreaming + stats.totalDownload)
+                                  ) * 100
+                                : 0
+                            }%`,
+                          }}
+                        />
+                      </div>
+                      <Separator />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                          <p className="text-2xl font-bold text-primary">{stats.totalViews}</p>
+                          <p className="text-xs text-muted-foreground">Vues totales</p>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                          <p className="text-2xl font-bold text-amber-500">{stats.pendingCount}</p>
+                          <p className="text-xs text-muted-foreground">En attente</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Quick Actions */}
+              <Card className="border-border">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Actions rapides</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <AddLinkModal
+                      onSuccess={() => window.location.reload()}
+                      buttonVariant="outline"
+                      buttonClassName="h-auto py-4 flex-col gap-2 w-full"
+                      buttonIcon={<Play className="w-5 h-5 text-primary" />}
+                      buttonText="Streaming"
+                      mode="streaming"
+                    />
+                    <AddLinkModal
+                      onSuccess={() => window.location.reload()}
+                      buttonVariant="outline"
+                      buttonClassName="h-auto py-4 flex-col gap-2 w-full"
+                      buttonIcon={<Download className="w-5 h-5 text-blue-500" />}
+                      buttonText="Download"
+                      mode="download"
+                    />
+                    <AddLinkModal
+                      onSuccess={() => window.location.reload()}
+                      buttonVariant="outline"
+                      buttonClassName="h-auto py-4 flex-col gap-2 w-full"
+                      buttonIcon={<Tv className="w-5 h-5 text-purple-500" />}
+                      buttonText="TV Live"
+                      mode="livetv"
+                    />
+                    <AddLinkModal
+                      onSuccess={() => window.location.reload()}
+                      buttonVariant="outline"
+                      buttonClassName="h-auto py-4 flex-col gap-2 w-full"
+                      buttonIcon={<Book className="w-5 h-5 text-amber-500" />}
+                      buttonText="Digital"
+                      mode="digital"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Streaming Tab */}
+            <TabsContent value="streaming" className="mt-0">
               {streamingLinks.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">Aucun lien streaming soumis</p>
+                <div className="text-center py-12">
+                  <Play className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">Aucun lien streaming soumis</p>
+                  <AddLinkModal
+                    onSuccess={() => window.location.reload()}
+                    buttonText="Ajouter un lien streaming"
+                    mode="streaming"
+                  />
+                </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-lg border border-border">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">WW ID</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Source</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Qualite</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Langue</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Statut</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Vues</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Date</th>
+                      <tr className="bg-muted/50">
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">WW ID</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Source</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Langue</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Vues</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
                       </tr>
                     </thead>
                     <tbody>
                       {streamingLinks.map((link) => (
-                        <tr key={link.id} className="border-b border-border/50 hover:bg-muted/50">
-                          <td className="py-3 px-2 font-mono text-xs text-primary">{link.ww_id}</td>
-                          <td className="py-3 px-2">{link.source_name}</td>
-                          <td className="py-3 px-2">
+                        <tr key={link.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-4 font-mono text-xs text-primary">{link.ww_id}</td>
+                          <td className="py-3 px-4 font-medium">{link.source_name}</td>
+                          <td className="py-3 px-4">
                             <Badge variant="outline">{link.quality}</Badge>
                           </td>
-                          <td className="py-3 px-2">{link.language}</td>
-                          <td className="py-3 px-2">{getStatusBadge(link.status)}</td>
-                          <td className="py-3 px-2">
+                          <td className="py-3 px-4">{link.language}</td>
+                          <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
+                          <td className="py-3 px-4">
                             <div className="flex items-center gap-1 text-orange-500">
                               <Eye className="w-3 h-3" />
                               <span>{link.view_count}</span>
                             </div>
                           </td>
-                          <td className="py-3 px-2 text-muted-foreground">
+                          <td className="py-3 px-4 text-muted-foreground">
                             {new Date(link.created_at).toLocaleDateString("fr-FR")}
                           </td>
                         </tr>
@@ -480,42 +759,51 @@ export function DashboardContent({
               )}
             </TabsContent>
 
-            <TabsContent value="download">
+            {/* Download Tab */}
+            <TabsContent value="download" className="mt-0">
               {downloadLinks.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">Aucun lien telechargement soumis</p>
+                <div className="text-center py-12">
+                  <Download className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">Aucun lien telechargement soumis</p>
+                  <AddLinkModal
+                    onSuccess={() => window.location.reload()}
+                    buttonText="Ajouter un lien download"
+                    mode="download"
+                  />
+                </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-lg border border-border">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">WW ID</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Source</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Type</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Qualite</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Statut</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Vues</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Date</th>
+                      <tr className="bg-muted/50">
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">WW ID</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Source</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Type</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Vues</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
                       </tr>
                     </thead>
                     <tbody>
                       {downloadLinks.map((link) => (
-                        <tr key={link.id} className="border-b border-border/50 hover:bg-muted/50">
-                          <td className="py-3 px-2 font-mono text-xs text-primary">{link.ww_id}</td>
-                          <td className="py-3 px-2">{link.source_name}</td>
-                          <td className="py-3 px-2">
+                        <tr key={link.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-4 font-mono text-xs text-primary">{link.ww_id}</td>
+                          <td className="py-3 px-4 font-medium">{link.source_name}</td>
+                          <td className="py-3 px-4">
                             <Badge variant="outline">{link.link_type}</Badge>
                           </td>
-                          <td className="py-3 px-2">
+                          <td className="py-3 px-4">
                             <Badge variant="outline">{link.quality}</Badge>
                           </td>
-                          <td className="py-3 px-2">{getStatusBadge(link.status)}</td>
-                          <td className="py-3 px-2">
+                          <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
+                          <td className="py-3 px-4">
                             <div className="flex items-center gap-1 text-orange-500">
                               <Eye className="w-3 h-3" />
                               <span>{link.view_count}</span>
                             </div>
                           </td>
-                          <td className="py-3 px-2 text-muted-foreground">
+                          <td className="py-3 px-4 text-muted-foreground">
                             {new Date(link.created_at).toLocaleDateString("fr-FR")}
                           </td>
                         </tr>
@@ -526,104 +814,63 @@ export function DashboardContent({
               )}
             </TabsContent>
 
-            <TabsContent value="digital">
-              {digitalContents.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">Aucun contenu digital soumis</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Titre</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Type</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">WW ID</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Statut</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Vues</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {digitalContents.map((content) => (
-                        <tr key={content.id} className="border-b border-border/50 hover:bg-muted/50">
-                          <td className="py-3 px-2">
-                            <div className="flex items-center gap-2">
-                              {content.cover_url && (
-                                <img
-                                  src={content.cover_url || "/placeholder.svg"}
-                                  alt={content.title}
-                                  className="w-8 h-10 object-cover rounded"
-                                />
-                              )}
-                              <span className="font-medium">{content.title}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-2">
-                            <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                              {getDigitalTypeIcon(content.content_type)}
-                              {content.content_type}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-2 font-mono text-xs text-primary">{content.ww_id}</td>
-                          <td className="py-3 px-2">{getStatusBadge(content.status)}</td>
-                          <td className="py-3 px-2">
-                            <div className="flex items-center gap-1 text-orange-500">
-                              <Eye className="w-3 h-3" />
-                              <span>{content.view_count}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-2 text-muted-foreground">
-                            {new Date(content.created_at).toLocaleDateString("fr-FR")}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="livetv">
+            {/* Live TV Tab */}
+            <TabsContent value="livetv" className="mt-0">
               {liveTvChannels.length === 0 && liveTvSources.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">Aucune chaine ou source TV soumise</p>
+                <div className="text-center py-12">
+                  <Tv className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">Aucune chaine ou source TV soumise</p>
+                  <AddLinkModal
+                    onSuccess={() => window.location.reload()}
+                    buttonText="Ajouter une chaine TV"
+                    mode="livetv"
+                  />
+                </div>
               ) : (
                 <div className="space-y-6">
                   {liveTvChannels.length > 0 && (
                     <div>
-                      <h4 className="font-semibold text-foreground mb-3">Chaines creees</h4>
-                      <div className="overflow-x-auto">
+                      <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Tv className="w-4 h-4 text-purple-500" />
+                        Chaines creees ({liveTvChannels.length})
+                      </h4>
+                      <div className="overflow-x-auto rounded-lg border border-border">
                         <table className="w-full text-sm">
                           <thead>
-                            <tr className="border-b border-border">
-                              <th className="text-left py-3 px-2 text-muted-foreground font-medium">Chaine</th>
-                              <th className="text-left py-3 px-2 text-muted-foreground font-medium">Categorie</th>
-                              <th className="text-left py-3 px-2 text-muted-foreground font-medium">Pays</th>
-                              <th className="text-left py-3 px-2 text-muted-foreground font-medium">Qualite</th>
-                              <th className="text-left py-3 px-2 text-muted-foreground font-medium">Statut</th>
-                              <th className="text-left py-3 px-2 text-muted-foreground font-medium">Date</th>
+                            <tr className="bg-muted/50">
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Chaine</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Categorie</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Pays</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
                             </tr>
                           </thead>
                           <tbody>
                             {liveTvChannels.map((channel) => (
-                              <tr key={channel.id} className="border-b border-border/50 hover:bg-muted/50">
-                                <td className="py-3 px-2">
+                              <tr
+                                key={channel.id}
+                                className="border-t border-border hover:bg-muted/30 transition-colors"
+                              >
+                                <td className="py-3 px-4">
                                   <div className="flex items-center gap-2">
                                     {channel.channel_logo && (
                                       <img
                                         src={channel.channel_logo || "/placeholder.svg"}
                                         alt={channel.channel_name}
-                                        className="w-8 h-8 object-contain"
+                                        className="w-8 h-8 object-contain rounded"
                                       />
                                     )}
                                     <span className="font-medium">{channel.channel_name}</span>
                                   </div>
                                 </td>
-                                <td className="py-3 px-2">{channel.category}</td>
-                                <td className="py-3 px-2">{channel.country}</td>
-                                <td className="py-3 px-2">
+                                <td className="py-3 px-4">{channel.category}</td>
+                                <td className="py-3 px-4">{channel.country}</td>
+                                <td className="py-3 px-4">
                                   <Badge variant="outline">{channel.quality}</Badge>
                                 </td>
-                                <td className="py-3 px-2">{getStatusBadge(channel.status)}</td>
-                                <td className="py-3 px-2 text-muted-foreground">
+                                <td className="py-3 px-4">{getStatusBadge(channel.status)}</td>
+                                <td className="py-3 px-4 text-muted-foreground">
                                   {new Date(channel.created_at).toLocaleDateString("fr-FR")}
                                 </td>
                               </tr>
@@ -636,26 +883,32 @@ export function DashboardContent({
 
                   {liveTvSources.length > 0 && (
                     <div>
-                      <h4 className="font-semibold text-foreground mb-3">Sources ajoutees</h4>
-                      <div className="overflow-x-auto">
+                      <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Link2 className="w-4 h-4 text-purple-500" />
+                        Sources ajoutees ({liveTvSources.length})
+                      </h4>
+                      <div className="overflow-x-auto rounded-lg border border-border">
                         <table className="w-full text-sm">
                           <thead>
-                            <tr className="border-b border-border">
-                              <th className="text-left py-3 px-2 text-muted-foreground font-medium">Source</th>
-                              <th className="text-left py-3 px-2 text-muted-foreground font-medium">Qualite</th>
-                              <th className="text-left py-3 px-2 text-muted-foreground font-medium">Statut</th>
-                              <th className="text-left py-3 px-2 text-muted-foreground font-medium">Date</th>
+                            <tr className="bg-muted/50">
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Source</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
                             </tr>
                           </thead>
                           <tbody>
                             {liveTvSources.map((source) => (
-                              <tr key={source.id} className="border-b border-border/50 hover:bg-muted/50">
-                                <td className="py-3 px-2 font-medium">{source.source_name}</td>
-                                <td className="py-3 px-2">
+                              <tr
+                                key={source.id}
+                                className="border-t border-border hover:bg-muted/30 transition-colors"
+                              >
+                                <td className="py-3 px-4 font-medium">{source.source_name}</td>
+                                <td className="py-3 px-4">
                                   <Badge variant="outline">{source.quality}</Badge>
                                 </td>
-                                <td className="py-3 px-2">{getStatusBadge(source.status)}</td>
-                                <td className="py-3 px-2 text-muted-foreground">
+                                <td className="py-3 px-4">{getStatusBadge(source.status)}</td>
+                                <td className="py-3 px-4 text-muted-foreground">
                                   {new Date(source.created_at).toLocaleDateString("fr-FR")}
                                 </td>
                               </tr>
@@ -669,43 +922,109 @@ export function DashboardContent({
               )}
             </TabsContent>
 
-            <TabsContent value="bugs">
+            {/* Digital Tab */}
+            <TabsContent value="digital" className="mt-0">
+              {digitalContents.length === 0 ? (
+                <div className="text-center py-12">
+                  <Book className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">Aucun contenu digital soumis</p>
+                  <AddLinkModal
+                    onSuccess={() => window.location.reload()}
+                    buttonText="Ajouter un contenu digital"
+                    mode="digital"
+                  />
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border border-border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-muted/50">
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Titre</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Type</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">WW ID</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Vues</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {digitalContents.map((content) => (
+                        <tr key={content.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              {content.cover_url && (
+                                <img
+                                  src={content.cover_url || "/placeholder.svg"}
+                                  alt={content.title}
+                                  className="w-8 h-10 object-cover rounded"
+                                />
+                              )}
+                              <span className="font-medium">{content.title}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                              {getDigitalTypeIcon(content.content_type)}
+                              {content.content_type}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 font-mono text-xs text-primary">{content.ww_id}</td>
+                          <td className="py-3 px-4">{getStatusBadge(content.status)}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1 text-orange-500">
+                              <Eye className="w-3 h-3" />
+                              <span>{content.view_count}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {new Date(content.created_at).toLocaleDateString("fr-FR")}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Bug Reports Tab */}
+            <TabsContent value="bugs" className="mt-0">
               {loadingBugReports ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                 </div>
               ) : bugReports.length === 0 ? (
-                <div className="text-center py-8">
-                  <Bug className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <div className="text-center py-12">
+                  <Bug className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">Aucun rapport de bug soumis</p>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-sm text-muted-foreground mt-2">
                     Utilisez le bouton rouge dans les lecteurs pour signaler un probleme
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-lg border border-border">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">WW ID</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Titre</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Source</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Type</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Message</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Statut</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Date</th>
+                      <tr className="bg-muted/50">
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">WW ID</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Titre</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Source</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Type</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Message</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
                       </tr>
                     </thead>
                     <tbody>
                       {bugReports.map((report) => (
-                        <tr key={report.id} className="border-b border-border/50 hover:bg-muted/50">
-                          <td className="py-3 px-2 font-mono text-xs text-primary">{report.ww_id}</td>
-                          <td className="py-3 px-2 font-medium max-w-[150px] truncate">{report.title || "-"}</td>
-                          <td className="py-3 px-2">{report.source_name || "-"}</td>
-                          <td className="py-3 px-2">
+                        <tr key={report.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-4 font-mono text-xs text-primary">{report.ww_id}</td>
+                          <td className="py-3 px-4 font-medium max-w-[150px] truncate">{report.title || "-"}</td>
+                          <td className="py-3 px-4">{report.source_name || "-"}</td>
+                          <td className="py-3 px-4">
                             <Badge variant="outline">{report.embed_type}</Badge>
                           </td>
-                          <td className="py-3 px-2 max-w-[200px]">
+                          <td className="py-3 px-4 max-w-[200px]">
                             <p className="truncate text-muted-foreground" title={report.message}>
                               {report.message}
                             </p>
@@ -715,8 +1034,8 @@ export function DashboardContent({
                               </p>
                             )}
                           </td>
-                          <td className="py-3 px-2">{getBugStatusBadge(report.status)}</td>
-                          <td className="py-3 px-2 text-muted-foreground">
+                          <td className="py-3 px-4">{getBugStatusBadge(report.status)}</td>
+                          <td className="py-3 px-4 text-muted-foreground">
                             {new Date(report.created_at).toLocaleDateString("fr-FR")}
                           </td>
                         </tr>
@@ -727,19 +1046,91 @@ export function DashboardContent({
               )}
             </TabsContent>
 
-            <TabsContent value="add">
-              <div className="py-8 text-center">
-                <AddLinkModal onSuccess={() => window.location.reload()} />
+            {/* Add Tab - Same as main page */}
+            <TabsContent value="add" className="mt-0">
+              <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-cyan-400 mb-4">
+                    <Plus className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold mb-2">Ajouter un nouveau lien</h2>
+                  <p className="text-muted-foreground">Choisissez le type de contenu que vous souhaitez ajouter</p>
+                </div>
+
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <AddLinkModal
+                    onSuccess={() => window.location.reload()}
+                    trigger={
+                      <Card className="cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group">
+                        <CardContent className="pt-6 text-center">
+                          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors">
+                            <Play className="w-7 h-7 text-primary" />
+                          </div>
+                          <h3 className="font-semibold mb-1">Streaming</h3>
+                          <p className="text-sm text-muted-foreground">Film ou Serie</p>
+                        </CardContent>
+                      </Card>
+                    }
+                    mode="streaming"
+                  />
+
+                  <AddLinkModal
+                    onSuccess={() => window.location.reload()}
+                    trigger={
+                      <Card className="cursor-pointer hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group">
+                        <CardContent className="pt-6 text-center">
+                          <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-500/20 transition-colors">
+                            <Download className="w-7 h-7 text-blue-500" />
+                          </div>
+                          <h3 className="font-semibold mb-1">Download</h3>
+                          <p className="text-sm text-muted-foreground">Telechargement</p>
+                        </CardContent>
+                      </Card>
+                    }
+                    mode="download"
+                  />
+
+                  <AddLinkModal
+                    onSuccess={() => window.location.reload()}
+                    trigger={
+                      <Card className="cursor-pointer hover:border-purple-500/50 hover:bg-purple-500/5 transition-all group">
+                        <CardContent className="pt-6 text-center">
+                          <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-500/20 transition-colors">
+                            <Tv className="w-7 h-7 text-purple-500" />
+                          </div>
+                          <h3 className="font-semibold mb-1">TV Live</h3>
+                          <p className="text-sm text-muted-foreground">Chaine en direct</p>
+                        </CardContent>
+                      </Card>
+                    }
+                    mode="livetv"
+                  />
+
+                  <AddLinkModal
+                    onSuccess={() => window.location.reload()}
+                    trigger={
+                      <Card className="cursor-pointer hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group">
+                        <CardContent className="pt-6 text-center">
+                          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-amber-500/20 transition-colors">
+                            <Book className="w-7 h-7 text-amber-500" />
+                          </div>
+                          <h3 className="font-semibold mb-1">Digital</h3>
+                          <p className="text-sm text-muted-foreground">Ebook, Musique...</p>
+                        </CardContent>
+                      </Card>
+                    }
+                    mode="digital"
+                  />
+                </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="settings">
-              <div className="py-4">
-                <ProfileSettings userId={profile.id} username={profile.username || ""} />
-              </div>
+            {/* Settings Tab */}
+            <TabsContent value="settings" className="mt-0">
+              <ProfileSettings userId={profile.id} username={profile.username || ""} />
             </TabsContent>
-          </Tabs>
-        </CardContent>
+          </div>
+        </Tabs>
       </Card>
     </div>
   )

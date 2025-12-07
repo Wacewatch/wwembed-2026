@@ -12,62 +12,125 @@ import { PendingLinksManager } from "./pending-links-manager"
 import { LiveTVManager } from "./live-tv-manager"
 import { DigitalContentManager } from "./digital-content-manager"
 import { BugReportsManager } from "./bug-reports-manager"
+import { Clock, Globe, Play, Download, Book, Tv, Bug, Megaphone, Users, BarChart3 } from "lucide-react"
 
 export function AdminTabs() {
   const [activeTab, setActiveTab] = useState("pending")
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-      <TabsList className="bg-secondary flex-wrap h-auto gap-1 p-1">
-        <TabsTrigger value="pending">En Attente</TabsTrigger>
-        <TabsTrigger value="apis">APIs Tiers</TabsTrigger>
-        <TabsTrigger value="streaming">Liens Streaming</TabsTrigger>
-        <TabsTrigger value="download">Liens Download</TabsTrigger>
-        <TabsTrigger value="digital">Digital</TabsTrigger>
-        <TabsTrigger value="livetv">TV Live</TabsTrigger>
-        <TabsTrigger value="bugs">Bugs</TabsTrigger>
-        <TabsTrigger value="ads">Publicites</TabsTrigger>
-        <TabsTrigger value="users">Utilisateurs</TabsTrigger>
-        <TabsTrigger value="stats">Statistiques</TabsTrigger>
-      </TabsList>
+      <div className="overflow-x-auto pb-2">
+        <TabsList className="bg-secondary/50 backdrop-blur-sm flex-nowrap h-auto gap-1 p-1.5 w-max min-w-full">
+          <TabsTrigger
+            value="pending"
+            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+          >
+            <Clock className="w-4 h-4" />
+            <span>En Attente</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="apis"
+            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+          >
+            <Globe className="w-4 h-4" />
+            <span>APIs</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="streaming"
+            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+          >
+            <Play className="w-4 h-4" />
+            <span>Streaming</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="download"
+            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+          >
+            <Download className="w-4 h-4" />
+            <span>Download</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="digital"
+            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+          >
+            <Book className="w-4 h-4" />
+            <span>Digital</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="livetv"
+            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+          >
+            <Tv className="w-4 h-4" />
+            <span>TV Live</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="bugs"
+            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+          >
+            <Bug className="w-4 h-4" />
+            <span>Bugs</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="ads"
+            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+          >
+            <Megaphone className="w-4 h-4" />
+            <span>Pubs</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="users"
+            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+          >
+            <Users className="w-4 h-4" />
+            <span>Users</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="stats"
+            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>Stats</span>
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
-      <TabsContent value="pending">
+      <TabsContent value="pending" className="mt-0">
         <PendingLinksManager />
       </TabsContent>
 
-      <TabsContent value="apis">
+      <TabsContent value="apis" className="mt-0">
         <ApiManager />
       </TabsContent>
 
-      <TabsContent value="streaming">
+      <TabsContent value="streaming" className="mt-0">
         <StreamingLinksManager />
       </TabsContent>
 
-      <TabsContent value="download">
+      <TabsContent value="download" className="mt-0">
         <DownloadLinksManager />
       </TabsContent>
 
-      <TabsContent value="digital">
+      <TabsContent value="digital" className="mt-0">
         <DigitalContentManager />
       </TabsContent>
 
-      <TabsContent value="livetv">
+      <TabsContent value="livetv" className="mt-0">
         <LiveTVManager />
       </TabsContent>
 
-      <TabsContent value="bugs">
+      <TabsContent value="bugs" className="mt-0">
         <BugReportsManager />
       </TabsContent>
 
-      <TabsContent value="ads">
+      <TabsContent value="ads" className="mt-0">
         <AdsManager />
       </TabsContent>
 
-      <TabsContent value="users">
+      <TabsContent value="users" className="mt-0">
         <UsersManager />
       </TabsContent>
 
-      <TabsContent value="stats">
+      <TabsContent value="stats" className="mt-0">
         <StatsViewer />
       </TabsContent>
     </Tabs>
