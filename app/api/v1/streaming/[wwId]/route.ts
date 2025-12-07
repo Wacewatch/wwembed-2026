@@ -14,8 +14,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const supabase = createAdminClient()
 
     const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
-    const hasAds = ads && ads.length > 0
-    const adUrl = hasAds ? ads[0].ad_url : ""
+    const activeAds = ads || []
+    const hasAds = activeAds.length > 0
+    const adsJson = JSON.stringify(activeAds.map((a) => ({ id: a.id, url: a.ad_url, name: a.name }))).replace(
+      /</g,
+      "\\u003c",
+    )
 
     const tmdbData = mediaType === "movie" ? await getMovieDetails(tmdbId) : await getTVDetails(tmdbId)
     let episodeData = null
@@ -159,6 +163,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
 .mc h2{color:#1a1a2e;margin-bottom:8px;font-size:18px;font-weight:700}
 .mc-sub{color:#6b7280;font-size:13px;margin-bottom:16px}
+.ad-counter{background:#667eea;color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block;margin-bottom:12px}
 .steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
 .step{width:10px;height:10px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
 .step.active{background:linear-gradient(135deg,#667eea,#764ba2);transform:scale(1.2)}
@@ -186,6 +191,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <div class="mc">
 <h2>Accéder au contenu</h2>
 <div class="mc-sub">Une dernière étape pour regarder</div>
+<div class="ad-counter" id="adCounter">Pub 1/1</div>
 <div class="steps"><div class="step active" id="step1"></div><div class="step" id="step2"></div><div class="step" id="step3"></div></div>
 <div class="bx bw"><div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div></div>
 <div class="bx bh" id="boxHelp"><div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div></div>
@@ -195,6 +201,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <div class="pb"><div class="pf" id="progress"></div></div>
 <button class="bt bp" id="btnUnlock">Continuer<span class="tg">PUB</span></button>
 <button class="bt bn hi" id="btnPlay">Lancer le lecteur</button>
+<button class="bt bp hi" id="btnNext">Pub suivante<span class="tg">PUB</span></button>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
 </div>
@@ -218,7 +225,6 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <div class="modal-body"><div class="grid" id="srcGrid"></div></div>
 </div>
 </div>
-
 <div class="modal" id="rptModal">
 <div class="modal-box">
 <div class="modal-hdr">
@@ -227,7 +233,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 </div>
 <div class="modal-body">
 <div class="rpt-form" id="rptForm">
-<p style="color:#94a3b8;font-size:13px;margin-bottom:8px">Décrivez le problème rencontré (source ne fonctionne pas, vidéo bloquée, etc.)</p>
+<p style="color:#94a3b8;font-size:13px;margin-bottom:8px">Décrivez le problème rencontré</p>
 <textarea id="rptMsg" placeholder="Décrivez le problème..."></textarea>
 <button type="button" id="rptSubmit">Envoyer le signalement</button>
 </div>
@@ -239,12 +245,12 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 </div>
 </div>
 </div>
-
 <script>
 (function(){
 var _src=${sourcesJson};
-var _adUrl="${adUrl}";
+var _ads=${adsJson};
 var _hasAds=${hasAds};
+var _adIndex=0;
 var _idx=0;
 var _started=false;
 var _wwId="${wwId}";
@@ -316,82 +322,44 @@ loadPlayer();
 }
 }
 
-var srcBtn=$("srcBtn");
-var closeModal=$("closeModal");
-var srcModal=$("srcModal");
+function updateAdCounter(){
+var el=$("adCounter");
+if(el)el.textContent="Pub "+(_adIndex+1)+"/"+_ads.length;
+}
 
-if(srcBtn)srcBtn.onclick=function(){toggleModal("srcModal")};
-if(closeModal)closeModal.onclick=function(){toggleModal("srcModal")};
-if(srcModal)srcModal.onclick=function(e){if(e.target===srcModal)toggleModal("srcModal");};
+function resetAdUI(){
+var s1=$("step1"),s2=$("step2"),s3=$("step3");
+var boxHelp=$("boxHelp"),boxTime=$("boxTime"),boxThanks=$("boxThanks"),boxDone=$("boxDone");
+var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
+var tmEl=$("timer"),prEl=$("progress");
+if(s1){s1.classList.add("active");s1.classList.remove("done");}
+if(s2){s2.classList.remove("active");s2.classList.remove("done");}
+if(s3){s3.classList.remove("active");s3.classList.remove("done");}
+if(boxHelp)boxHelp.classList.remove("hi");
+if(boxTime)boxTime.classList.remove("hi");
+if(boxThanks)boxThanks.classList.add("hi");
+if(boxDone)boxDone.classList.add("hi");
+if(btnUnlock)btnUnlock.classList.remove("hi");
+if(btnNext)btnNext.classList.add("hi");
+if(btnPlay)btnPlay.classList.add("hi");
+if(tmEl)tmEl.textContent="3";
+if(prEl)prEl.style.width="0%";
+updateAdCounter();
+}
 
-var rptBtn=$("rptBtn");
-var rptModal=$("rptModal");
-var rptClose=$("rptClose");
-var rptSubmit=$("rptSubmit");
-var rptMsg=$("rptMsg");
-var rptForm=$("rptForm");
-var rptSuccess=$("rptSuccess");
-
-if(rptBtn)rptBtn.onclick=function(){toggleModal("rptModal")};
-if(rptClose)rptClose.onclick=function(){toggleModal("rptModal")};
-if(rptModal)rptModal.onclick=function(e){if(e.target===rptModal)toggleModal("rptModal");};
-
-if(rptSubmit)rptSubmit.onclick=function(){
-  var msg=rptMsg.value.trim();
-  if(!msg){alert("Veuillez décrire le problème");return}
-  rptSubmit.disabled=true;
-  rptSubmit.textContent="Envoi...";
-  var currentSource=_src[_idx]||{};
-  fetch("/api/bug-reports",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      wwId:_wwId,
-      mediaType:_mediaType,
-      tmdbId:_tmdbId,
-      seasonNumber:_seasonNumber,
-      episodeNumber:_episodeNumber,
-      title:_title,
-      sourceName:currentSource.name||"",
-      sourceUrl:currentSource.url||"",
-      message:msg,
-      embedType:"streaming"
-    })
-  }).then(function(r){return r.json()}).then(function(){
-    rptForm.classList.add("hi");
-    rptSuccess.classList.remove("hi");
-    setTimeout(function(){toggleModal("rptModal");rptForm.classList.remove("hi");rptSuccess.classList.add("hi");rptMsg.value="";rptSubmit.disabled=false;rptSubmit.textContent="Envoyer le signalement"},2000);
-  }).catch(function(){
-    alert("Erreur lors de l'envoi");
-    rptSubmit.disabled=false;
-    rptSubmit.textContent="Envoyer le signalement";
-  });
-};
-
-if(_hasAds&&_adUrl){
-var ov=$("adOverlay");
-if(ov)ov.classList.add("sh");
-
-var btnUnlock=$("btnUnlock");
-var btnPlay=$("btnPlay");
-var tmEl=$("timer");
-var prEl=$("progress");
-var s1=$("step1");
-var s2=$("step2");
-var s3=$("step3");
-var boxHelp=$("boxHelp");
-var boxTime=$("boxTime");
-var boxThanks=$("boxThanks");
-var boxDone=$("boxDone");
-
-if(btnUnlock){
-btnUnlock.onclick=function(){
-window.open(_adUrl,"_blank");
+function processAd(){
+var ad=_ads[_adIndex];
+if(!ad)return startPlayer();
+window.open(ad.url,"_blank");
+var s1=$("step1"),s2=$("step2"),s3=$("step3");
+var boxHelp=$("boxHelp"),boxTime=$("boxTime"),boxThanks=$("boxThanks"),boxDone=$("boxDone");
+var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
+var tmEl=$("timer"),prEl=$("progress");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
 if(s2)s2.classList.add("active");
 if(boxHelp)boxHelp.classList.add("hi");
 if(boxThanks)boxThanks.classList.remove("hi");
-btnUnlock.classList.add("hi");
+if(btnUnlock)btnUnlock.classList.add("hi");
 var tm=3;
 var iv=setInterval(function(){
 tm--;
@@ -403,15 +371,62 @@ if(s2){s2.classList.remove("active");s2.classList.add("done");}
 if(s3)s3.classList.add("active");
 if(boxTime)boxTime.classList.add("hi");
 if(boxDone)boxDone.classList.remove("hi");
+if(_adIndex<_ads.length-1){
+if(btnNext)btnNext.classList.remove("hi");
+}else{
 if(btnPlay)btnPlay.classList.remove("hi");
 }
+}
 },1000);
-};
 }
 
-if(btnPlay){
-btnPlay.onclick=startPlayer;
-}
+var srcBtn=$("srcBtn");
+var closeModal=$("closeModal");
+var srcModal=$("srcModal");
+if(srcBtn)srcBtn.onclick=function(){toggleModal("srcModal")};
+if(closeModal)closeModal.onclick=function(){toggleModal("srcModal")};
+if(srcModal)srcModal.onclick=function(e){if(e.target===srcModal)toggleModal("srcModal");};
+
+var rptBtn=$("rptBtn");
+var rptModal=$("rptModal");
+var rptClose=$("rptClose");
+var rptSubmit=$("rptSubmit");
+var rptMsg=$("rptMsg");
+var rptForm=$("rptForm");
+var rptSuccess=$("rptSuccess");
+if(rptBtn)rptBtn.onclick=function(){toggleModal("rptModal")};
+if(rptClose)rptClose.onclick=function(){toggleModal("rptModal")};
+if(rptModal)rptModal.onclick=function(e){if(e.target===rptModal)toggleModal("rptModal");};
+if(rptSubmit)rptSubmit.onclick=function(){
+  var msg=rptMsg.value.trim();
+  if(!msg){alert("Veuillez décrire le problème");return}
+  rptSubmit.disabled=true;
+  rptSubmit.textContent="Envoi...";
+  var currentSource=_src[_idx]||{};
+  fetch("/api/bug-reports",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({wwId:_wwId,mediaType:_mediaType,tmdbId:_tmdbId,seasonNumber:_seasonNumber,episodeNumber:_episodeNumber,title:_title,sourceName:currentSource.name||"",sourceUrl:currentSource.url||"",message:msg,embedType:"streaming"})
+  }).then(function(r){return r.json()}).then(function(){
+    rptForm.classList.add("hi");
+    rptSuccess.classList.remove("hi");
+    setTimeout(function(){toggleModal("rptModal");rptForm.classList.remove("hi");rptSuccess.classList.add("hi");rptMsg.value="";rptSubmit.disabled=false;rptSubmit.textContent="Envoyer le signalement"},2000);
+  }).catch(function(){alert("Erreur lors de l'envoi");rptSubmit.disabled=false;rptSubmit.textContent="Envoyer le signalement";});
+};
+
+if(_hasAds&&_ads.length>0){
+var ov=$("adOverlay");
+if(ov)ov.classList.add("sh");
+updateAdCounter();
+var btnUnlock=$("btnUnlock");
+var btnNext=$("btnNext");
+var btnPlay=$("btnPlay");
+if(btnUnlock)btnUnlock.onclick=processAd;
+if(btnNext)btnNext.onclick=function(){
+_adIndex++;
+resetAdUI();
+};
+if(btnPlay)btnPlay.onclick=startPlayer;
 }else{
 startPlayer();
 }
@@ -421,8 +436,7 @@ startPlayer();
 </html>`
 
     return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } })
-  } catch (error) {
-    console.error("Streaming error:", error)
+  } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
