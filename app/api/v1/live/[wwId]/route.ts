@@ -164,35 +164,24 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .cf{margin-top:12px;font-size:10px;color:#9ca3af}
 .cf a{color:#ef4444;text-decoration:none}
 .tg{background:#f97316;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px;font-weight:600}
-.ad-ov{display:flex;flex-direction:column;height:100%}
-.ad-ov.sh{display:flex}
-.mc{background:#1a1a28;border-radius:14px;width:100%;max-width:720px;max-height:85vh;display:flex;flex-direction:column;border:1px solid #333}
-.hd{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
-.ti{font-size:18px;font-weight:700;color:#ef4444}
-.st{font-size:14px;color:#888;margin-top:8px}
-.ad-count{font-size:12px;color:#fff;margin-top:12px}
-.bxs{display:flex;flex-direction:column;align-items:center;gap:12px}
-.pb{margin-top:20px}
-.bt{margin-top:24px}
 </style>
 </head>
 <body>
-<div class="mo ad-ov${hasAds ? " sh" : ""}" id="adOverlay">
+<div class="mo" id="adOverlay">
 <div class="mc">
-<div class="hd">
-<div class="ti">Votre contenu est prêt</div>
-<div class="st">Une dernière étape pour accéder au flux</div>
-${hasAds ? `<div class="ad-count" id="adCounter">${ads.length} pub(s) à ouvrir</div>` : ""}
-</div>
-<div class="bxs">
-<div class="bx bo" id="boxHelp"><div><b>Popup requis</b><span>Autorisez les popups</span></div></div>
-<div class="bx by" id="boxThanks"><div><b>Soutenez le service</b><span>Votre clic nous aide</span></div></div>
-<div class="bx bg hi" id="boxTime"><div><b>Temps restant:</b><span id="timer">3</span><span>seconde(s)</span><span>Fermez les pubs</span></div></div>
-<div class="bx bd hi" id="boxDone"><div><b>Prêt !</b><span>Lancez le lecteur</span></div></div>
-</div>
+<h2>Accéder au direct</h2>
+<div class="mc-sub">Une dernière étape pour regarder</div>
+<div class="ad-counter" id="adCounter">Pub 1/1</div>
+<div class="steps"><div class="step active" id="step1"></div><div class="step" id="step2"></div><div class="step" id="step3"></div></div>
+<div class="bx bw"><div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div></div>
+<div class="bx bh" id="boxHelp"><div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div></div>
+<div class="bx bi" id="boxTime"><div><b>Temps restant: <span id="timer">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div></div>
+<div class="bx bo hi" id="boxThanks"><div><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div></div>
+<div class="bx bo hi" id="boxDone"><div><b>Tout est prêt !</b><span>Cliquez pour lancer le lecteur</span></div></div>
 <div class="pb"><div class="pf" id="progress"></div></div>
-<button class="bt bp" id="btnUnlock">Débloquer (${ads.length} pub${ads.length > 1 ? "s" : ""})<span class="tg">PUB</span></button>
-<button class="bt bn hi" id="btnPlay">Lancer le lecteur</button>
+<button class="bt bp" id="btnUnlock">Continuer<span class="tg">PUB</span></button>
+<button class="bt bn hi" id="btnPlay">Lancer le direct</button>
+<button class="bt bp hi" id="btnNext">Pub suivante<span class="tg">PUB</span></button>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
 </div>
@@ -237,9 +226,10 @@ ${hasAds ? `<div class="ad-count" id="adCounter">${ads.length} pub(s) à ouvrir<
 </div>
 <script>
 (function(){
-var _src=${JSON.stringify(allSources).replace(/</g, "\\u003c")};
+var _src=${sourcesJson};
 var _ads=${adsJson};
 var _hasAds=${hasAds};
+var _adIndex=0;
 var _idx=0;
 var _started=false;
 var _wwId="${wwId}";
@@ -300,16 +290,40 @@ buildGrid();
 if(_src&&_src.length){$("srcLabel").textContent=_src[0].name;loadPlayer();}
 }
 
-function openAllAds(){
-for(var i=0;i<_ads.length;i++){
-window.open(_ads[i].url,"_blank");
-}
+function updateAdCounter(){var el=$("adCounter");if(el)el.textContent="Pub "+(_adIndex+1)+"/"+_ads.length;}
+
+function resetAdUI(){
+var s1=$("step1"),s2=$("step2"),s3=$("step3");
 var boxHelp=$("boxHelp"),boxTime=$("boxTime"),boxThanks=$("boxThanks"),boxDone=$("boxDone");
-var btnUnlock=$("btnUnlock"),btnPlay=$("btnPlay");
+var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
 var tmEl=$("timer"),prEl=$("progress");
-if(boxHelp)boxHelp.classList.add("hi");
-if(boxThanks)boxThanks.classList.add("hi");
+if(s1){s1.classList.add("active");s1.classList.remove("done");}
+if(s2){s2.classList.remove("active");s2.classList.remove("done");}
+if(s3){s3.classList.remove("active");s3.classList.remove("done");}
+if(boxHelp)boxHelp.classList.remove("hi");
 if(boxTime)boxTime.classList.remove("hi");
+if(boxThanks)boxThanks.classList.add("hi");
+if(boxDone)boxDone.classList.add("hi");
+if(btnUnlock)btnUnlock.classList.remove("hi");
+if(btnNext)btnNext.classList.add("hi");
+if(btnPlay)btnPlay.classList.add("hi");
+if(tmEl)tmEl.textContent="3";
+if(prEl)prEl.style.width="0%";
+updateAdCounter();
+}
+
+function processAd(){
+var ad=_ads[_adIndex];
+if(!ad)return startPlayer();
+window.open(ad.url,"_blank");
+var s1=$("step1"),s2=$("step2"),s3=$("step3");
+var boxHelp=$("boxHelp"),boxTime=$("boxTime"),boxThanks=$("boxThanks"),boxDone=$("boxDone");
+var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
+var tmEl=$("timer"),prEl=$("progress");
+if(s1){s1.classList.remove("active");s1.classList.add("done");}
+if(s2)s2.classList.add("active");
+if(boxHelp)boxHelp.classList.add("hi");
+if(boxThanks)boxThanks.classList.remove("hi");
 if(btnUnlock)btnUnlock.classList.add("hi");
 var tm=3;
 var iv=setInterval(function(){
@@ -318,9 +332,12 @@ if(tmEl)tmEl.textContent=tm;
 if(prEl)prEl.style.width=((3-tm)/3*100)+"%";
 if(tm<=0){
 clearInterval(iv);
+if(s2){s2.classList.remove("active");s2.classList.add("done");}
+if(s3)s3.classList.add("active");
 if(boxTime)boxTime.classList.add("hi");
 if(boxDone)boxDone.classList.remove("hi");
-if(btnPlay)btnPlay.classList.remove("hi");
+if(_adIndex<_ads.length-1){if(btnNext)btnNext.classList.remove("hi");}
+else{if(btnPlay)btnPlay.classList.remove("hi");}
 }
 },1000);
 }
@@ -335,25 +352,25 @@ if(rptBtn)rptBtn.onclick=function(){toggleModal("rptModal")};
 if(rptClose)rptClose.onclick=function(){toggleModal("rptModal")};
 if(rptModal)rptModal.onclick=function(e){if(e.target===rptModal)toggleModal("rptModal");};
 if(rptSubmit)rptSubmit.onclick=function(){
-var msg=rptMsg?rptMsg.value:"";
-if(!msg.trim())return alert("Veuillez décrire le problème");
-var srcName=_src&&_src[_idx]?_src[_idx].name:"";
-fetch("/api/bug-reports",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({ww_id:_wwId,title:_channelName,media_type:"live",source_name:srcName,message:msg})
-}).then(function(){
-if(rptForm)rptForm.classList.add("hi");
-if(rptSuccess)rptSuccess.classList.remove("hi");
-setTimeout(function(){toggleModal("rptModal");},2000);
-});
+  var msg=rptMsg.value.trim();
+  if(!msg){alert("Décrivez le problème");return}
+  rptSubmit.disabled=true;rptSubmit.textContent="Envoi...";
+  var currentSource=_src[_idx]||{};
+  fetch("/api/bug-reports",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({wwId:_wwId,title:_channelName,sourceName:currentSource.name||"",sourceUrl:currentSource.url||"",message:msg,embedType:"live"})
+  }).then(function(r){return r.json()}).then(function(){
+    rptForm.classList.add("hi");rptSuccess.classList.remove("hi");
+    setTimeout(function(){toggleModal("rptModal");rptForm.classList.remove("hi");rptSuccess.classList.add("hi");rptMsg.value="";rptSubmit.disabled=false;rptSubmit.textContent="Envoyer"},2000);
+  }).catch(function(){alert("Erreur");rptSubmit.disabled=false;rptSubmit.textContent="Envoyer";});
 };
 
-var btnUnlock=$("btnUnlock"),btnPlay=$("btnPlay");
-if(btnUnlock)btnUnlock.onclick=function(){if(_hasAds&&_ads.length)openAllAds();else startPlayer();};
+if(_hasAds&&_ads.length>0){
+var ov=$("adOverlay");if(ov)ov.classList.add("sh");
+updateAdCounter();
+var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
+if(btnUnlock)btnUnlock.onclick=processAd;
+if(btnNext)btnNext.onclick=function(){_adIndex++;resetAdUI();};
 if(btnPlay)btnPlay.onclick=startPlayer;
-
-if(!_hasAds||!_ads.length)startPlayer();
+}else{startPlayer();}
 })();
 </script>
 </body>
