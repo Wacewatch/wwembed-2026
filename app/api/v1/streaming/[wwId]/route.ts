@@ -2,9 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { parseWWId, getMovieDetails, getTVDetails, getEpisodeDetails } from "@/lib/tmdb"
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
   try {
-    const { wwId } = await params
+    const { wwId } = params
     if (!wwId) return NextResponse.json({ error: "Missing WW ID" }, { status: 400 })
 
     const parsed = parseWWId(wwId)
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       user_agent: request.headers.get("user-agent"),
     })
 
-    const sourcesJson = JSON.stringify(allSources).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n")
+    const sourcesJson = JSON.stringify(allSources).replace(/'/g, "\\'").replace(/</g, "\\u003c")
 
     const html = `<!DOCTYPE html><html lang="fr"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -134,13 +134,13 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .card:hover{border-color:#8b5cf6}
 .card.act{border-color:#8b5cf6;background:#2a1f4a}
 .card-badge{position:absolute;top:10px;right:10px;padding:3px 7px;background:#22c55e;border-radius:5px;font-size:9px;font-weight:700}
-.card-icon{width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#fff}
+.card-icon{width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#fff;font-size:20px}
 .card-name{font-size:13px;font-weight:600;margin-bottom:6px}
 .card-tags{display:flex;gap:4px}
 .tag{padding:3px 6px;border-radius:4px;font-size:9px;font-weight:600}
-.tag-vf{background:#3b82f6}.tag-vost{background:#f97316}.tag-multi{background:#a855f7}.tag-vo{background:#6b7280}
-.ad-ov{position:fixed;inset:0;background:linear-gradient(135deg,#6366f1,#8b5cf6,#ec4899);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
-.ad-ov.hide{display:none}
+.tag-vf{background:#3b82f6;color:#fff}.tag-vost{background:#f97316;color:#fff}.tag-multi{background:#a855f7;color:#fff}.tag-vo{background:#6b7280;color:#fff}
+.ad-ov{position:fixed;inset:0;background:linear-gradient(135deg,#6366f1,#8b5cf6,#ec4899);display:none;align-items:center;justify-content:center;z-index:200;padding:16px}
+.ad-ov.show{display:flex}
 .ad-box{background:#fff;border-radius:14px;padding:24px;max-width:380px;width:100%;text-align:center;color:#1a1a2e}
 .ad-box h2{font-size:18px;margin-bottom:6px}
 .ad-box .sub{color:#666;font-size:12px;margin-bottom:16px}
@@ -148,7 +148,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .step{width:10px;height:10px;border-radius:50%;background:#e5e7eb}
 .step.act{background:#6366f1;transform:scale(1.2)}
 .step.done{background:#10b981}
-.info{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
+.info{border-radius:10px;padding:12px;margin:8px 0;text-align:left}
 .info b{display:block;font-size:13px;margin-bottom:2px}
 .info span{font-size:11px;opacity:.8}
 .info-warn{background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
@@ -163,25 +163,21 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .hide{display:none!important}
 .pub{background:#ef4444;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px}
 </style></head><body>
-${
-  hasAds
-    ? `<div class="ad-ov" id="adOv"><div class="ad-box">
+<div class="ad-ov" id="adOv"><div class="ad-box">
 <h2>Votre vidéo est prête</h2><p class="sub">Une dernière étape pour accéder au contenu</p>
 <div class="steps"><div class="step act" id="s1"></div><div class="step" id="s2"></div><div class="step" id="s3"></div></div>
-<div class="info info-warn"><div><b>⚠️ Popup requis</b><span>Autorisez les popups pour continuer</span></div></div>
-<div class="info info-heart" id="boxHelp"><div><b>❤️ Soutenez le service</b><span>Votre clic nous aide à rester en ligne</span></div></div>
-<div class="info info-time" id="boxTime"><div><b>⏱️ Temps restant: <span id="timer">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div></div>
-<div class="info info-ok hide" id="boxThanks"><div><b>✓ Merci !</b><span>Vous aidez à maintenir le service</span></div></div>
-<div class="info info-ok hide" id="boxDone"><div><b>▶ Prêt !</b><span>Cliquez pour lancer la lecture</span></div></div>
+<div class="info info-warn"><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
+<div class="info info-heart" id="boxHelp"><b>Soutenez le service</b><span>Votre clic nous aide à rester en ligne</span></div>
+<div class="info info-time" id="boxTime"><b>Temps restant: <span id="timer">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div>
+<div class="info info-ok hide" id="boxThanks"><b>Merci !</b><span>Vous aidez à maintenir le service</span></div>
+<div class="info info-ok hide" id="boxDone"><b>Prêt !</b><span>Cliquez pour lancer la lecture</span></div>
 <div class="pbar"><div class="pbar-fill" id="progress"></div></div>
 <button class="btn btn-primary" id="btnContinue">Continuer<span class="pub">PUB</span></button>
 <button class="btn btn-success hide" id="btnPlay">Lancer la vidéo</button>
-</div></div>`
-    : ""
-}
+</div></div>
 <div class="wrap">
 <div class="hdr">
-<div class="logo">👁 WWEMBED</div>
+<div class="logo">▶ WWEMBED</div>
 <div class="ttl">${title}</div>
 <button class="src-btn" id="srcBtn">☰ <span id="srcLabel">Sources</span></button>
 <button class="rpt" title="Signaler">⚠</button>
@@ -190,12 +186,12 @@ ${
 </div>
 <div class="modal" id="srcModal"><div class="modal-box">
 <div class="modal-hdr"><div><div class="modal-ttl">Choisissez votre source</div><div class="modal-sub">Sélectionnez un serveur</div></div>
-<button class="modal-close" id="closeModal">✕</button></div>
+<button class="modal-close" id="closeModal">×</button></div>
 <div class="modal-body"><div class="grid" id="srcGrid"></div></div>
 </div></div>
 <script>
 (function(){
-var sources=JSON.parse("${sourcesJson}");
+var sources=${sourcesJson};
 var adUrl="${adUrl}";
 var hasAds=${hasAds};
 var idx=0,started=false;
@@ -207,18 +203,19 @@ d.onclick=function(){idx=i;document.querySelectorAll(".card").forEach(function(c
 function toggleModal(){var m=$("srcModal");if(m)m.classList.toggle("show")}
 function loadPlayer(){var p=$("player");if(!p||!sources.length)return;var s=sources[idx];if(!s||!s.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";return}
 var f=document.createElement("iframe");f.src=s.url;f.allowFullscreen=true;f.allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture";p.innerHTML="";p.appendChild(f)}
-function start(){if(started)return;started=true;var ov=$("adOv");if(ov)ov.classList.add("hide");buildGrid();if(sources.length){$("srcLabel").textContent=sources[0].name;loadPlayer()}}
-$("srcBtn")&&($("srcBtn").onclick=toggleModal);
-$("closeModal")&&($("closeModal").onclick=toggleModal);
-$("srcModal")&&($("srcModal").onclick=function(e){if(e.target===$("srcModal"))toggleModal()});
+function start(){if(started)return;started=true;var ov=$("adOv");if(ov)ov.classList.remove("show");buildGrid();if(sources.length){$("srcLabel").textContent=sources[0].name;loadPlayer()}}
+$("srcBtn").onclick=toggleModal;
+$("closeModal").onclick=toggleModal;
+$("srcModal").onclick=function(e){if(e.target===$("srcModal"))toggleModal()};
 if(hasAds&&adUrl){
-var tm=3,clicked=false;
-$("btnContinue")&&($("btnContinue").onclick=function(){window.open(adUrl,"_blank");clicked=true;$("s1").className="step done";$("s2").className="step act";$("boxHelp").classList.add("hide");$("boxThanks").classList.remove("hide");
-var iv=setInterval(function(){tm--;$("timer").textContent=tm;$("progress").style.width=((3-tm)/3*100)+"%";if(tm<=0){clearInterval(iv);$("s2").className="step done";$("s3").className="step act";$("boxTime").classList.add("hide");$("boxDone").classList.remove("hide");$("btnContinue").classList.add("hide");$("btnPlay").classList.remove("hide")}},1000)});
-$("btnPlay")&&($("btnPlay").onclick=start);
+$("adOv").classList.add("show");
+var tm=3;
+$("btnContinue").onclick=function(){window.open(adUrl,"_blank");$("s1").className="step done";$("s2").className="step act";$("boxHelp").classList.add("hide");$("boxThanks").classList.remove("hide");
+var iv=setInterval(function(){tm--;$("timer").textContent=tm;$("progress").style.width=((3-tm)/3*100)+"%";if(tm<=0){clearInterval(iv);$("s2").className="step done";$("s3").className="step act";$("boxTime").classList.add("hide");$("boxDone").classList.remove("hide");$("btnContinue").classList.add("hide");$("btnPlay").classList.remove("hide")}},1000)};
+$("btnPlay").onclick=start;
 }else{start()}
 })();
-<\/script></body></html>`
+</script></body></html>`
 
     return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } })
   } catch (error) {
