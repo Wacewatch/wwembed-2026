@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
   try {
-    const { wwId } = await params
+    const { wwId } = params
     const match = wwId.match(/^ww-live-(.+)$/i)
     if (!match) return new NextResponse("Invalid WW ID format", { status: 400 })
 
@@ -93,6 +93,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const channelName = channel.channel_name || "Live TV"
     const channelLogo = channel.channel_logo || ""
     const animationDuration = Math.max(10, 100 - tickerSpeed / 2)
+
+    const host = request.headers.get("host") || "localhost:3000"
+    const protocol = host.includes("localhost") ? "http" : "https"
+    const baseUrl = `${protocol}://${host}`
 
     const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -247,6 +251,7 @@ var _idx=0;
 var _started=false;
 var _wwId="${wwId}";
 var _channelName="${channelName.replace(/"/g, '\\"')}";
+var _baseUrl="${baseUrl}";
 
 function $(id){return document.getElementById(id);}
 
@@ -287,8 +292,8 @@ if(isHls){
   var vid=document.getElementById("vid");
   var errDiv=document.getElementById("hlsError");
   
-  if(vid&&typeof Hls!=="undefined"&&Hls.isSupported()){
-    var proxyUrl="/api/hls-proxy?url="+encodeURIComponent(url);
+  if(vid && typeof Hls!=="undefined" && Hls.isSupported()){
+    var proxyUrl=_baseUrl+"/api/hls-proxy?url="+encodeURIComponent(url);
     var hls=new Hls({
       debug:false,
       enableWorker:true,
@@ -296,37 +301,34 @@ if(isHls){
       backBufferLength:90
     });
     
-    hls.on(Hls.Events.ERROR,function(event,data){
+    hls.on(Hls.Events.ERROR,function(ev,data){
       console.log("[v0] HLS Error:",data.type,data.details);
       if(data.fatal){
-        switch(data.type){
-          case Hls.ErrorTypes.NETWORK_ERROR:
-            console.log("[v0] Network error, trying direct URL...");
-            hls.destroy();
-            // Try direct URL without proxy
-            var hls2=new Hls();
-            hls2.loadSource(url);
-            hls2.attachMedia(vid);
-            hls2.on(Hls.Events.MANIFEST_PARSED,function(){vid.play().catch(function(){});});
-            hls2.on(Hls.Events.ERROR,function(e,d){
-              if(d.fatal&&errDiv){
-                errDiv.style.display="flex";
-                errDiv.textContent="Flux indisponible - Essayez une autre source";
-                vid.style.display="none";
-              }
-            });
-            break;
-          case Hls.ErrorTypes.MEDIA_ERROR:
-            console.log("[v0] Media error, trying to recover...");
-            hls.recoverMediaError();
-            break;
-          default:
-            if(errDiv){
+        if(data.type===Hls.ErrorTypes.NETWORK_ERROR){
+          console.log("[v0] Network error, trying direct URL...");
+          hls.destroy();
+          var hls2=new Hls({debug:false});
+          hls2.loadSource(url);
+          hls2.attachMedia(vid);
+          hls2.on(Hls.Events.MANIFEST_PARSED,function(){
+            vid.play().catch(function(){});
+          });
+          hls2.on(Hls.Events.ERROR,function(e2,d2){
+            if(d2.fatal && errDiv){
               errDiv.style.display="flex";
-              errDiv.textContent="Erreur de lecture - Essayez une autre source";
+              errDiv.textContent="Flux indisponible - Essayez une autre source";
               vid.style.display="none";
             }
-            break;
+          });
+        }else if(data.type===Hls.ErrorTypes.MEDIA_ERROR){
+          console.log("[v0] Media error, trying to recover...");
+          hls.recoverMediaError();
+        }else{
+          if(errDiv){
+            errDiv.style.display="flex";
+            errDiv.textContent="Erreur de lecture - Essayez une autre source";
+            vid.style.display="none";
+          }
         }
       }
     });
@@ -339,7 +341,7 @@ if(isHls){
     hls.loadSource(proxyUrl);
     hls.attachMedia(vid);
   }
-  else if(vid&&vid.canPlayType("application/vnd.apple.mpegurl")){
+  else if(vid && vid.canPlayType && vid.canPlayType("application/vnd.apple.mpegurl")){
     // Safari native HLS support
     vid.src=url;
     vid.addEventListener("loadedmetadata",function(){vid.play().catch(function(){});});
@@ -373,7 +375,7 @@ function resetAdUI(){
 var s1=$("step1"),s2=$("step2"),s3=$("step3");
 if(s1){s1.classList.add("active");s1.classList.remove("done");}
 if(s2){s2.classList.remove("active");s2.classList.remove("done");}
-if(s3){s3.classList.remove("active");s3.classList.remove("done");}
+if(s3)s3.classList.remove("active");s3.classList.remove("done");}
 $("boxHelp")&&$("boxHelp").classList.remove("hi");
 $("boxTime")&&$("boxTime").classList.remove("hi");
 $("boxThanks")&&$("boxThanks").classList.add("hi");
