@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Trash2, Plus, Copy, Tv, Eye, ChevronDown, ChevronUp, Pencil, Search } from "lucide-react"
+import { Trash2, Plus, Copy, Tv, Eye, ChevronDown, ChevronUp, Pencil, Search, Power } from "lucide-react"
 import type { LiveTVChannel, LiveTVSource } from "@/lib/types"
 
 const CATEGORIES = [
@@ -252,6 +252,12 @@ export function LiveTVManager() {
   const copyEmbedUrl = (id: string) => {
     const url = `${window.location.origin}/api/v1/live/${getWWId(id)}`
     navigator.clipboard.writeText(url)
+  }
+
+  const toggleSourceActive = async (sourceId: string, currentState: boolean) => {
+    const supabase = createClient()
+    await supabase.from("live_tv_sources").update({ is_active: !currentState }).eq("id", sourceId)
+    fetchChannels()
   }
 
   const filteredChannels = useMemo(() => {
@@ -735,6 +741,7 @@ export function LiveTVManager() {
                               <TableHead>URL</TableHead>
                               <TableHead>Qualite</TableHead>
                               <TableHead>Statut</TableHead>
+                              <TableHead>Actif</TableHead>
                               <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -756,6 +763,16 @@ export function LiveTVManager() {
                                         ? "En attente"
                                         : "Rejete"}
                                   </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    size="sm"
+                                    variant={source.is_active ? "default" : "outline"}
+                                    className={source.is_active ? "bg-green-600 hover:bg-green-700" : ""}
+                                    onClick={() => toggleSourceActive(source.id, source.is_active)}
+                                  >
+                                    <Power className="w-4 h-4" />
+                                  </Button>
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex justify-end gap-2">

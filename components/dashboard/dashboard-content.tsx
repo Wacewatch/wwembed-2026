@@ -47,6 +47,11 @@ import type {
 } from "@/lib/types"
 import Link from "next/link"
 
+interface MediaInfo {
+  title: string
+  poster: string | null
+}
+
 interface StreamingLinkWithViews extends StreamingLink {
   view_count: number
 }
@@ -262,12 +267,68 @@ export function DashboardContent({
   stats,
 }: DashboardContentProps) {
   const [activeTab, setActiveTab] = useState("overview")
+  const [mediaInfoCache, setMediaInfoCache] = useState<Record<string, MediaInfo>>({})
   const [requestingUploader, setRequestingUploader] = useState(false)
   const [uploaderRequestResult, setUploaderRequestResult] = useState<{ success: boolean; message: string } | null>(null)
   const [bugReports, setBugReports] = useState<BugReport[]>([])
   const [loadingBugReports, setLoadingBugReports] = useState(false)
 
   const supabase = createClient()
+
+  useEffect(() => {
+    const fetchMediaInfo = async () => {
+      const allLinks = [...streamingLinks, ...downloadLinks]
+      const uniqueMedia = new Map<string, { tmdb_id: number; media_type: string }>()
+
+      allLinks.forEach((link) => {
+        if (link.tmdb_id) {
+          const key = `${link.media_type}-${link.tmdb_id}`
+          if (!uniqueMedia.has(key)) {
+            uniqueMedia.set(key, { tmdb_id: link.tmdb_id, media_type: link.media_type })
+          }
+        }
+      })
+
+      const newCache: Record<string, MediaInfo> = {}
+
+      await Promise.all(
+        Array.from(uniqueMedia.entries()).map(async ([key, { tmdb_id, media_type }]) => {
+          try {
+            const res = await fetch(`/api/tmdb/${media_type}/${tmdb_id}`)
+            if (res.ok) {
+              const data = await res.json()
+              newCache[key] = {
+                title: data.title || data.name || "Sans titre",
+                poster: data.poster || null,
+              }
+            }
+          } catch (e) {
+            console.error(`Failed to fetch TMDB info for ${key}`, e)
+          }
+        }),
+      )
+
+      setMediaInfoCache(newCache)
+    }
+
+    if (streamingLinks.length > 0 || downloadLinks.length > 0) {
+      fetchMediaInfo()
+    }
+  }, [streamingLinks, downloadLinks])
+
+  const getMediaInfo = (link: StreamingLink | DownloadLink) => {
+    const key = `${link.media_type}-${link.tmdb_id}`
+    return mediaInfoCache[key] || { title: link.ww_id, poster: null }
+  }
+
+  const formatEpisodeInfo = (link: StreamingLink | DownloadLink) => {
+    if (link.media_type === "tv" && link.season_number !== null) {
+      const season = `S${String(link.season_number).padStart(2, "0")}`
+      const episode = link.episode_number !== null ? `E${String(link.episode_number).padStart(2, "0")}` : ""
+      return `${season}${episode}`
+    }
+    return null
+  }
 
   const totalApprovedLinks =
     stats.verifiedStreaming + stats.verifiedDownload + stats.verifiedLiveTv + stats.verifiedDigital
@@ -576,31 +637,35 @@ export function DashboardContent({
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {[...streamingLinks, ...downloadLinks].slice(0, 5).map((link, i) => (
-                        <div
-                          key={link.id}
-                          className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`p-2 rounded-lg ${"source_url" in link && !link.link_type ? "bg-primary/10" : "bg-blue-500/10"}`}
-                            >
-                              {"link_type" in link ? (
-                                <Download className="w-4 h-4 text-blue-500" />
-                              ) : (
-                                <Play className="w-4 h-4 text-primary" />
+                      {[...streamingLinks, ...downloadLinks].slice(0, 5).map((link, i) => {
+                        const mediaInfo = getMediaInfo(link)
+                        const episodeInfo = formatEpisodeInfo(link)
+                        return (
+                          <div
+                            key={link.id}
+                            className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0"
+                          >
+                            <div className="flex items-center gap-3">
+                              {mediaInfo.poster && (
+                                <img
+                                  src={mediaInfo.poster || "/placeholder.svg"}
+                                  alt={mediaInfo.title}
+                                  className="w-10 h-12 object-cover rounded"
+                                />
                               )}
+                              <div>
+                                <p className="text-sm font-medium truncate max-w-[150px]">
+                                  {mediaInfo.title} {episodeInfo}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(link.created_at).toLocaleDateString("fr-FR")}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium truncate max-w-[150px]">{link.source_name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(link.created_at).toLocaleDateString("fr-FR")}
-                              </p>
-                            </div>
+                            {getStatusBadge(link.status)}
                           </div>
-                          {getStatusBadge(link.status)}
-                        </div>
-                      ))}
+                        )
+                      })}
                       {streamingLinks.length === 0 && downloadLinks.length === 0 && (
                         <p className="text-sm text-muted-foreground text-center py-4">Aucune activite recente</p>
                       )}
@@ -680,7 +745,7 @@ export function DashboardContent({
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-muted/50">
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">WW ID</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Media</th>
                         <th className="text-left py-3 px-4 text-muted-foreground font-medium">Source</th>
                         <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
                         <th className="text-left py-3 px-4 text-muted-foreground font-medium">Langue</th>
@@ -690,26 +755,53 @@ export function DashboardContent({
                       </tr>
                     </thead>
                     <tbody>
-                      {streamingLinks.map((link) => (
-                        <tr key={link.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                          <td className="py-3 px-4 font-mono text-xs text-primary">{link.ww_id}</td>
-                          <td className="py-3 px-4 font-medium">{link.source_name}</td>
-                          <td className="py-3 px-4">
-                            <Badge variant="outline">{link.quality}</Badge>
-                          </td>
-                          <td className="py-3 px-4">{link.language}</td>
-                          <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-1 text-orange-500">
-                              <Eye className="w-3 h-3" />
-                              <span>{link.view_count}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-muted-foreground">
-                            {new Date(link.created_at).toLocaleDateString("fr-FR")}
-                          </td>
-                        </tr>
-                      ))}
+                      {streamingLinks.map((link) => {
+                        const mediaInfo = getMediaInfo(link)
+                        const episodeInfo = formatEpisodeInfo(link)
+                        return (
+                          <tr key={link.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                {mediaInfo.poster ? (
+                                  <img
+                                    src={mediaInfo.poster || "/placeholder.svg"}
+                                    alt={mediaInfo.title}
+                                    className="w-10 h-14 object-cover rounded"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
+                                    <Play className="w-4 h-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-medium line-clamp-1">{mediaInfo.title}</p>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Badge variant="outline" className="text-xs">
+                                      {link.media_type === "movie" ? "Film" : "Serie"}
+                                    </Badge>
+                                    {episodeInfo && <span className="text-primary font-mono">{episodeInfo}</span>}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 font-medium">{link.source_name}</td>
+                            <td className="py-3 px-4">
+                              <Badge variant="outline">{link.quality}</Badge>
+                            </td>
+                            <td className="py-3 px-4">{link.language}</td>
+                            <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1 text-orange-500">
+                                <Eye className="w-3 h-3" />
+                                <span>{link.view_count}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground">
+                              {new Date(link.created_at).toLocaleDateString("fr-FR")}
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -733,7 +825,7 @@ export function DashboardContent({
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-muted/50">
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">WW ID</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Media</th>
                         <th className="text-left py-3 px-4 text-muted-foreground font-medium">Source</th>
                         <th className="text-left py-3 px-4 text-muted-foreground font-medium">Type</th>
                         <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
@@ -743,28 +835,55 @@ export function DashboardContent({
                       </tr>
                     </thead>
                     <tbody>
-                      {downloadLinks.map((link) => (
-                        <tr key={link.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                          <td className="py-3 px-4 font-mono text-xs text-primary">{link.ww_id}</td>
-                          <td className="py-3 px-4 font-medium">{link.source_name}</td>
-                          <td className="py-3 px-4">
-                            <Badge variant="outline">{link.link_type}</Badge>
-                          </td>
-                          <td className="py-3 px-4">
-                            <Badge variant="outline">{link.quality}</Badge>
-                          </td>
-                          <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-1 text-orange-500">
-                              <Eye className="w-3 h-3" />
-                              <span>{link.view_count}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-muted-foreground">
-                            {new Date(link.created_at).toLocaleDateString("fr-FR")}
-                          </td>
-                        </tr>
-                      ))}
+                      {downloadLinks.map((link) => {
+                        const mediaInfo = getMediaInfo(link)
+                        const episodeInfo = formatEpisodeInfo(link)
+                        return (
+                          <tr key={link.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                {mediaInfo.poster ? (
+                                  <img
+                                    src={mediaInfo.poster || "/placeholder.svg"}
+                                    alt={mediaInfo.title}
+                                    className="w-10 h-14 object-cover rounded"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
+                                    <Download className="w-4 h-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-medium line-clamp-1">{mediaInfo.title}</p>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Badge variant="outline" className="text-xs">
+                                      {link.media_type === "movie" ? "Film" : "Serie"}
+                                    </Badge>
+                                    {episodeInfo && <span className="text-primary font-mono">{episodeInfo}</span>}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 font-medium">{link.source_name}</td>
+                            <td className="py-3 px-4">
+                              <Badge variant="outline">{link.link_type}</Badge>
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge variant="outline">{link.quality}</Badge>
+                            </td>
+                            <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1 text-orange-500">
+                                <Eye className="w-3 h-3" />
+                                <span>{link.view_count}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground">
+                              {new Date(link.created_at).toLocaleDateString("fr-FR")}
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
