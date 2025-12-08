@@ -375,7 +375,7 @@ function resetAdUI(){
 var s1=$("step1"),s2=$("step2"),s3=$("step3");
 if(s1){s1.classList.add("active");s1.classList.remove("done");}
 if(s2){s2.classList.remove("active");s2.classList.remove("done");}
-if(s3)s3.classList.remove("active");s3.classList.remove("done");}
+if(s3){s3.classList.remove("active");s3.classList.remove("done");}
 $("boxHelp")&&$("boxHelp").classList.remove("hi");
 $("boxTime")&&$("boxTime").classList.remove("hi");
 $("boxThanks")&&$("boxThanks").classList.add("hi");
