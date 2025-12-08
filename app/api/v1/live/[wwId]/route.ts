@@ -71,6 +71,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       "\\u003c",
     )
 
+    const { data: siteSettings } = await supabase.from("site_settings").select("*").single()
+    const tickerEnabled = siteSettings?.live_tv_ticker_enabled ?? false
+    const tickerMessage = siteSettings?.live_tv_ticker_message ?? ""
+    const tickerSpeed = siteSettings?.live_tv_ticker_speed ?? 50
+    const tickerBgColor = siteSettings?.live_tv_ticker_bg_color ?? "#ef4444"
+    const tickerTextColor = siteSettings?.live_tv_ticker_text_color ?? "#ffffff"
+
     await supabase.from("embed_views").insert({
       ww_id: wwId,
       media_type: "live",
@@ -82,6 +89,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const sourcesJson = JSON.stringify(allSources).replace(/</g, "\\u003c")
     const channelName = channel.channel_name || "Live TV"
     const channelLogo = channel.channel_logo || ""
+
+    const animationDuration = Math.max(10, 100 - tickerSpeed / 2)
 
     const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -108,6 +117,9 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .player{flex:1;background:#000;position:relative}
 .player iframe,.player video{width:100%;height:100%;position:absolute;inset:0;border:none}
 .no-src{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#555;gap:8px}
+.ticker{position:absolute;bottom:0;left:0;right:0;overflow:hidden;white-space:nowrap;z-index:50}
+.ticker-content{display:inline-block;padding:8px 16px;animation:ticker-scroll ${animationDuration}s linear infinite;font-size:13px;font-weight:600}
+@keyframes ticker-scroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
 .modal.sh{display:flex}
 .modal-box{background:#1a1a28;border-radius:14px;width:100%;max-width:720px;max-height:85vh;display:flex;flex-direction:column;border:1px solid #333}
@@ -194,7 +206,10 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <button class="rpt-btn" id="rptBtn" title="Signaler">⚠</button>
 </div>
 </div>
-<div class="player" id="player"><div class="no-src">Chargement...</div></div>
+<div class="player" id="player">
+<div class="no-src">Chargement...</div>
+${tickerEnabled && tickerMessage ? `<div class="ticker" style="background:${tickerBgColor}"><div class="ticker-content" style="color:${tickerTextColor}">${tickerMessage}</div></div>` : ""}
+</div>
 </div>
 <div class="modal" id="srcModal">
 <div class="modal-box">
@@ -270,14 +285,15 @@ if(!p||!_src||!_src.length)return;
 var s=_src[_idx];
 if(!s||!s.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";return;}
 var url=s.url;
+var tickerHtml=p.querySelector(".ticker")?p.querySelector(".ticker").outerHTML:"";
 if(url.indexOf(".m3u8")>=0||url.indexOf("m3u8")>=0){
-p.innerHTML='<video id="vid" controls autoplay></video>';
+p.innerHTML='<video id="vid" controls autoplay></video>'+tickerHtml;
 var vid=document.getElementById("vid");
 if(vid&&typeof Hls!=="undefined"&&Hls.isSupported()){
 var hls=new Hls();hls.loadSource(url);hls.attachMedia(vid);
 }else if(vid){vid.src=url;}
 }else{
-p.innerHTML='<iframe src="'+url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>';
+p.innerHTML='<iframe src="'+url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>'+tickerHtml;
 }
 }
 
@@ -316,26 +332,26 @@ function processAd(){
 var ad=_ads[_adIndex];
 if(!ad)return startPlayer();
 window.open(ad.url,"_blank");
+fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:ad.id,wwId:_wwId})}).catch(function(){});
 var s1=$("step1"),s2=$("step2"),s3=$("step3");
-var boxHelp=$("boxHelp"),boxTime=$("boxTime"),boxThanks=$("boxThanks"),boxDone=$("boxDone");
-var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
-var tmEl=$("timer"),prEl=$("progress");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
 if(s2)s2.classList.add("active");
+var boxHelp=$("boxHelp"),boxTime=$("boxTime"),boxThanks=$("boxThanks"),boxDone=$("boxDone");
 if(boxHelp)boxHelp.classList.add("hi");
 if(boxThanks)boxThanks.classList.remove("hi");
+var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
 if(btnUnlock)btnUnlock.classList.add("hi");
 var tm=3;
 var iv=setInterval(function(){
 tm--;
-if(tmEl)tmEl.textContent=tm;
-if(prEl)prEl.style.width=((3-tm)/3*100)+"%";
+if($("timer"))$("timer").textContent=tm;
+if($("progress"))$("progress").style.width=((3-tm)/3*100)+"%";
 if(tm<=0){
 clearInterval(iv);
 if(s2){s2.classList.remove("active");s2.classList.add("done");}
-if(s3)s3.classList.add("active");
-if(boxTime)boxTime.classList.add("hi");
-if(boxDone)boxDone.classList.remove("hi");
+if(s3)$("step3").classList.add("active");
+if(boxTime)$("boxTime").classList.add("hi");
+if(boxDone)$("boxDone").classList.remove("hi");
 if(_adIndex<_ads.length-1){if(btnNext)btnNext.classList.remove("hi");}
 else{if(btnPlay)btnPlay.classList.remove("hi");}
 }

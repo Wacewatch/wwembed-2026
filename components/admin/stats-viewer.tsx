@@ -13,11 +13,12 @@ interface ViewsByDay {
 }
 
 interface TopMedia {
-  tmdb_id: number
+  tmdb_id: number | null
   media_type: string
   views: number
   title?: string
   poster?: string
+  ww_id?: string
 }
 
 interface TopReferrer {
@@ -28,6 +29,7 @@ interface TopReferrer {
 interface DetailedStats {
   totalViews: number
   totalClicks: number
+  totalAdClicks: number
   uniqueVisitors: number
   avgViewsPerDay: number
   topCountries: { country: string; count: number }[]
@@ -62,8 +64,10 @@ export function StatsViewer() {
 
     const { data: clicks } = await supabase.from("link_clicks").select("*").gte("clicked_at", startDate)
 
+    const { data: adClicks } = await supabase.from("ad_clicks").select("*").gte("clicked_at", startDate)
+
     const byDay: Record<string, number> = {}
-    const mediaCount: Record<string, { tmdb_id: number; media_type: string; views: number }> = {}
+    const mediaCount: Record<string, { tmdb_id: number | null; media_type: string; views: number; ww_id?: string }> = {}
     const refCount: Record<string, number> = {}
     const typeCount: Record<string, number> = { movie: 0, tv: 0, live: 0 }
     const uniqueIps = new Set<string>()
@@ -71,16 +75,23 @@ export function StatsViewer() {
       const date = new Date(v.viewed_at).toISOString().split("T")[0]
       byDay[date] = (byDay[date] || 0) + 1
 
-      const mediaKey = `${v.media_type}-${v.tmdb_id}`
+      const isLive = v.media_type === "live" || v.ww_id?.includes("live")
+      const mediaKey = isLive ? `live-${v.ww_id}` : `${v.media_type}-${v.tmdb_id}`
+
       if (!mediaCount[mediaKey]) {
-        mediaCount[mediaKey] = { tmdb_id: v.tmdb_id, media_type: v.media_type, views: 0 }
+        mediaCount[mediaKey] = {
+          tmdb_id: isLive ? null : v.tmdb_id,
+          media_type: isLive ? "live" : v.media_type,
+          views: 0,
+          ww_id: v.ww_id,
+        }
       }
       mediaCount[mediaKey].views++
 
       const ref = v.referrer || "Direct"
       refCount[ref] = (refCount[ref] || 0) + 1
 
-      if (v.ww_id?.includes("live")) {
+      if (isLive) {
         typeCount.live++
       } else if (v.media_type === "movie") {
         typeCount.movie++
@@ -105,7 +116,19 @@ export function StatsViewer() {
 
     const topMediaWithDetails: TopMedia[] = await Promise.all(
       topMediaList.map(async (m) => {
-        if (m.tmdb_id && m.media_type && m.media_type !== "live") {
+        if (m.media_type === "live" && m.ww_id) {
+          const channelId = m.ww_id.replace(/^ww-live-/i, "")
+          const { data: channel } = await supabase
+            .from("live_tv_channels")
+            .select("channel_name, channel_logo")
+            .or(`id.eq.${channelId},id.ilike.${channelId}%`)
+            .single()
+          return {
+            ...m,
+            title: channel?.channel_name || "Chaine TV",
+            poster: channel?.channel_logo || undefined,
+          }
+        } else if (m.tmdb_id && m.media_type && m.media_type !== "live") {
           try {
             const res = await fetch(`/api/tmdb/${m.media_type}/${m.tmdb_id}`)
             if (res.ok) {
@@ -120,7 +143,7 @@ export function StatsViewer() {
             // Ignore errors
           }
         }
-        return { ...m, title: m.media_type === "live" ? "Live TV" : `#${m.tmdb_id}` }
+        return { ...m, title: m.media_type === "live" ? "Chaine TV" : `#${m.tmdb_id}` }
       }),
     )
 
@@ -137,6 +160,7 @@ export function StatsViewer() {
     setDetailedStats({
       totalViews,
       totalClicks: clicks?.length || 0,
+      totalAdClicks: adClicks?.length || 0,
       uniqueVisitors: uniqueIps.size,
       avgViewsPerDay: totalViews / daysAgo,
       topCountries: [],
@@ -148,7 +172,7 @@ export function StatsViewer() {
       recentActivity: (views || []).slice(0, 5).map((v) => ({
         action: "Vue",
         timestamp: v.viewed_at,
-        details: `${v.media_type} #${v.tmdb_id}`,
+        details: `${v.media_type} #${v.tmdb_id || v.ww_id}`,
       })),
     })
 
@@ -182,7 +206,7 @@ export function StatsViewer() {
       </div>
 
       {detailedStats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -201,6 +225,17 @@ export function StatsViewer() {
                 <div>
                   <p className="text-2xl font-bold text-blue-500">{detailedStats.totalClicks.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">Clics liens</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <MousePointer className="w-8 h-8 text-purple-500" />
+                <div>
+                  <p className="text-2xl font-bold text-purple-500">{detailedStats.totalAdClicks.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">Clics pubs</p>
                 </div>
               </div>
             </CardContent>
@@ -297,7 +332,7 @@ export function StatsViewer() {
               <div className="space-y-2">
                 {topMedia.map((m, i) => (
                   <div
-                    key={`${m.media_type}-${m.tmdb_id}`}
+                    key={`${m.media_type}-${m.tmdb_id || m.ww_id}`}
                     className="flex items-center justify-between py-2 border-b border-border last:border-0"
                   >
                     <div className="flex items-center gap-3">
@@ -312,6 +347,8 @@ export function StatsViewer() {
                         <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
                           {m.media_type === "movie" ? (
                             <Film className="w-5 h-5 text-muted-foreground" />
+                          ) : m.media_type === "live" ? (
+                            <Play className="w-5 h-5 text-red-500" />
                           ) : (
                             <Tv className="w-5 h-5 text-muted-foreground" />
                           )}
@@ -319,8 +356,13 @@ export function StatsViewer() {
                       )}
                       <div>
                         <p className="font-medium text-foreground line-clamp-1">{m.title}</p>
-                        <Badge variant={m.media_type === "movie" ? "default" : "secondary"} className="text-xs">
-                          {m.media_type === "movie" ? "Film" : m.media_type === "tv" ? "Serie" : "Live"}
+                        <Badge
+                          variant={
+                            m.media_type === "movie" ? "default" : m.media_type === "live" ? "destructive" : "secondary"
+                          }
+                          className="text-xs"
+                        >
+                          {m.media_type === "movie" ? "Film" : m.media_type === "tv" ? "Serie" : "TV Live"}
                         </Badge>
                       </div>
                     </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ApiManager } from "./api-manager"
 import { StreamingLinksManager } from "./streaming-links-manager"
@@ -12,10 +12,25 @@ import { PendingLinksManager } from "./pending-links-manager"
 import { LiveTVManager } from "./live-tv-manager"
 import { DigitalContentManager } from "./digital-content-manager"
 import { BugReportsManager } from "./bug-reports-manager"
-import { Clock, Globe, Play, Download, Book, Tv, Bug, Megaphone, Users, BarChart3 } from "lucide-react"
+import { SettingsManager } from "./settings-manager"
+import { Clock, Globe, Play, Download, Book, Tv, Bug, Megaphone, Users, BarChart3, Settings } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 export function AdminTabs() {
   const [activeTab, setActiveTab] = useState("pending")
+  const [pendingBugsCount, setPendingBugsCount] = useState(0)
+
+  useEffect(() => {
+    async function fetchPendingBugs() {
+      const supabase = createClient()
+      const { count } = await supabase
+        .from("bug_reports")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending")
+      setPendingBugsCount(count || 0)
+    }
+    fetchPendingBugs()
+  }, [activeTab])
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -65,10 +80,15 @@ export function AdminTabs() {
           </TabsTrigger>
           <TabsTrigger
             value="bugs"
-            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap relative"
           >
             <Bug className="w-4 h-4" />
             <span>Bugs</span>
+            {pendingBugsCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                {pendingBugsCount}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger
             value="ads"
@@ -90,6 +110,13 @@ export function AdminTabs() {
           >
             <BarChart3 className="w-4 h-4" />
             <span>Stats</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="settings"
+            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+          >
+            <Settings className="w-4 h-4" />
+            <span>Parametres</span>
           </TabsTrigger>
         </TabsList>
       </div>
@@ -132,6 +159,10 @@ export function AdminTabs() {
 
       <TabsContent value="stats" className="mt-0">
         <StatsViewer />
+      </TabsContent>
+
+      <TabsContent value="settings" className="mt-0">
+        <SettingsManager />
       </TabsContent>
     </Tabs>
   )
