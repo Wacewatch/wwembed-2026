@@ -75,7 +75,7 @@ export function StatsViewer() {
       const date = new Date(v.viewed_at).toISOString().split("T")[0]
       byDay[date] = (byDay[date] || 0) + 1
 
-      const isLive = v.media_type === "live" || v.ww_id?.includes("live")
+      const isLive = v.media_type === "live" || v.media_type === "live_tv" || v.ww_id?.toLowerCase().includes("live")
       const mediaKey = isLive ? `live-${v.ww_id}` : `${v.media_type}-${v.tmdb_id}`
 
       if (!mediaCount[mediaKey]) {

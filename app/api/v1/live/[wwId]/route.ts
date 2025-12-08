@@ -119,6 +119,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .no-src{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#555;gap:8px}
 .ticker{position:absolute;bottom:0;left:0;right:0;overflow:hidden;white-space:nowrap;z-index:50}
 .ticker-content{display:inline-block;padding:8px 16px;animation:ticker-scroll ${animationDuration}s linear infinite;font-size:13px;font-weight:600}
+.ticker-close{position:absolute;top:5px;right:10px;padding:3px 7px;background:#ef4444;border-radius:5px;font-size:13px;font-weight:700;color:#fff;cursor:pointer}
 @keyframes ticker-scroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
 .modal.sh{display:flex}
@@ -208,7 +209,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 </div>
 <div class="player" id="player">
 <div class="no-src">Chargement...</div>
-${tickerEnabled && tickerMessage ? `<div class="ticker" style="background:${tickerBgColor}"><div class="ticker-content" style="color:${tickerTextColor}">${tickerMessage}</div></div>` : ""}
+${tickerEnabled && tickerMessage ? `<div class="ticker" id="tickerBar" style="background:${tickerBgColor}"><div class="ticker-content" style="color:${tickerTextColor}">${tickerMessage}</div><button class="ticker-close" id="tickerClose">×</button></div>` : ""}
 </div>
 </div>
 <div class="modal" id="srcModal">
@@ -378,6 +379,9 @@ if(rptSubmit)rptSubmit.onclick=function(){
     setTimeout(function(){toggleModal("rptModal");rptForm.classList.remove("hi");rptSuccess.classList.add("hi");rptMsg.value="";rptSubmit.disabled=false;rptSubmit.textContent="Envoyer"},2000);
   }).catch(function(){alert("Erreur");rptSubmit.disabled=false;rptSubmit.textContent="Envoyer";});
 };
+
+var tickerClose=$("tickerClose");
+if(tickerClose)tickerClose.onclick=function(){var tickerBar=$("tickerBar");if(tickerBar)tickerBar.style.display="none";};
 
 if(_hasAds&&_ads.length>0){
 var ov=$("adOverlay");if(ov)ov.classList.add("sh");
