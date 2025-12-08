@@ -280,12 +280,84 @@ function loadPlayer(){
 var p=$("player");if(!p||!_src||!_src.length)return;
 var s=_src[_idx];if(!s||!s.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";return;}
 var url=s.url;
-if(url.indexOf(".m3u8")>=0||url.indexOf("m3u8")>=0){
-p.innerHTML='<video id="vid" controls autoplay></video>';
-var vid=document.getElementById("vid");
-if(vid&&typeof Hls!=="undefined"&&Hls.isSupported()){var hls=new Hls();hls.loadSource(url);hls.attachMedia(vid);}
-else if(vid){vid.src=url;}
-}else{p.innerHTML='<iframe src="'+url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>';}
+var isHls=url.indexOf(".m3u8")>=0||url.indexOf("m3u8")>=0;
+
+if(isHls){
+  p.innerHTML='<video id="vid" controls autoplay playsinline style="width:100%;height:100%;background:#000;"></video><div id="hlsError" class="no-src" style="display:none;">Chargement du flux...</div>';
+  var vid=document.getElementById("vid");
+  var errDiv=document.getElementById("hlsError");
+  
+  if(vid&&typeof Hls!=="undefined"&&Hls.isSupported()){
+    var proxyUrl="/api/hls-proxy?url="+encodeURIComponent(url);
+    var hls=new Hls({
+      debug:false,
+      enableWorker:true,
+      lowLatencyMode:true,
+      backBufferLength:90
+    });
+    
+    hls.on(Hls.Events.ERROR,function(event,data){
+      console.log("[v0] HLS Error:",data.type,data.details);
+      if(data.fatal){
+        switch(data.type){
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            console.log("[v0] Network error, trying direct URL...");
+            hls.destroy();
+            // Try direct URL without proxy
+            var hls2=new Hls();
+            hls2.loadSource(url);
+            hls2.attachMedia(vid);
+            hls2.on(Hls.Events.MANIFEST_PARSED,function(){vid.play().catch(function(){});});
+            hls2.on(Hls.Events.ERROR,function(e,d){
+              if(d.fatal&&errDiv){
+                errDiv.style.display="flex";
+                errDiv.textContent="Flux indisponible - Essayez une autre source";
+                vid.style.display="none";
+              }
+            });
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            console.log("[v0] Media error, trying to recover...");
+            hls.recoverMediaError();
+            break;
+          default:
+            if(errDiv){
+              errDiv.style.display="flex";
+              errDiv.textContent="Erreur de lecture - Essayez une autre source";
+              vid.style.display="none";
+            }
+            break;
+        }
+      }
+    });
+    
+    hls.on(Hls.Events.MANIFEST_PARSED,function(){
+      console.log("[v0] HLS Manifest parsed, starting playback...");
+      vid.play().catch(function(e){console.log("[v0] Autoplay blocked:",e);});
+    });
+    
+    hls.loadSource(proxyUrl);
+    hls.attachMedia(vid);
+  }
+  else if(vid&&vid.canPlayType("application/vnd.apple.mpegurl")){
+    // Safari native HLS support
+    vid.src=url;
+    vid.addEventListener("loadedmetadata",function(){vid.play().catch(function(){});});
+    vid.addEventListener("error",function(){
+      if(errDiv){
+        errDiv.style.display="flex";
+        errDiv.textContent="Flux indisponible";
+        vid.style.display="none";
+      }
+    });
+  }
+  else if(errDiv){
+    errDiv.style.display="flex";
+    errDiv.textContent="Votre navigateur ne supporte pas ce format";
+  }
+}else{
+  p.innerHTML='<iframe src="'+url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>';
+}
 }
 
 function startPlayer(){
@@ -365,9 +437,9 @@ $("tickerClose")&&($("tickerClose").onclick=function(){$("tickerBar")&&($("ticke
 if(_hasAds&&_ads.length>0){
 $("adOverlay")&&$("adOverlay").classList.add("sh");
 updateAdCounter();
-$("btnUnlock")&&($("btnUnlock").onclick=processAd);
-$("btnNext")&&($("btnNext").onclick=function(){_adIndex++;resetAdUI();});
-$("btnPlay")&&($("btnPlay").onclick=startPlayer);
+$("btnUnlock")&&$("btnUnlock").onclick=processAd;
+$("btnNext")&&$("btnNext").onclick=function(){_adIndex++;resetAdUI();};
+$("btnPlay")&&$("btnPlay").onclick=startPlayer;
 }else{startPlayer();}
 })();
 </script>
