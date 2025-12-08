@@ -133,7 +133,7 @@ export function StatsViewer() {
           const { data: channel } = await supabase
             .from("live_tv_channels")
             .select("channel_name, channel_logo")
-            .or(`id.eq.${channelId},id.ilike.${channelId}%`)
+            .eq("id", channelId)
             .single()
           return {
             ...m,
