@@ -78,18 +78,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const tickerBgColor = siteSettings?.live_tv_ticker_bg_color ?? "#ef4444"
     const tickerTextColor = siteSettings?.live_tv_ticker_text_color ?? "#ffffff"
 
+    // Insert view - tmdb_id is null for live TV, use ww_id for identification
+    const referer = request.headers.get("referer") || request.headers.get("referrer") || null
     await supabase.from("embed_views").insert({
       ww_id: wwId,
       media_type: "live",
       embed_type: "live",
-      referrer: request.headers.get("referer"),
+      tmdb_id: null,
+      referrer: referer,
       user_agent: request.headers.get("user-agent"),
     })
 
     const sourcesJson = JSON.stringify(allSources).replace(/</g, "\\u003c")
     const channelName = channel.channel_name || "Live TV"
     const channelLogo = channel.channel_logo || ""
-
     const animationDuration = Math.max(10, 100 - tickerSpeed / 2)
 
     const html = `<!DOCTYPE html>
@@ -111,16 +113,16 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
 .hdr-actions{display:flex;gap:8px}
 .src-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;background:linear-gradient(135deg,#ef4444,#f97316);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
-.src-btn:hover{opacity:.9}
 .rpt-btn{background:#ef4444;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
-.rpt-btn:hover{background:#dc2626}
 .player{flex:1;background:#000;position:relative}
 .player iframe,.player video{width:100%;height:100%;position:absolute;inset:0;border:none}
 .no-src{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#555;gap:8px}
-.ticker{position:absolute;bottom:0;left:0;right:0;overflow:hidden;white-space:nowrap;z-index:50}
-.ticker-content{display:inline-block;padding:8px 16px;animation:ticker-scroll ${animationDuration}s linear infinite;font-size:13px;font-weight:600}
-.ticker-close{position:absolute;top:5px;right:10px;padding:3px 7px;background:#ef4444;border-radius:5px;font-size:13px;font-weight:700;color:#fff;cursor:pointer}
+.ticker{position:absolute;bottom:0;left:0;right:0;z-index:50;display:flex;align-items:center}
+.ticker-wrap{flex:1;overflow:hidden;white-space:nowrap}
+.ticker-content{display:inline-block;padding:10px 20px;animation:ticker-scroll ${animationDuration}s linear infinite;font-size:13px;font-weight:600}
 @keyframes ticker-scroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+.ticker-close{flex-shrink:0;width:32px;height:100%;background:rgba(0,0,0,0.6);border:none;font-size:20px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ticker-close:hover{background:rgba(0,0,0,0.9)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
 .modal.sh{display:flex}
 .modal-box{background:#1a1a28;border-radius:14px;width:100%;max-width:720px;max-height:85vh;display:flex;flex-direction:column;border:1px solid #333}
@@ -148,8 +150,6 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .rpt-form textarea{width:100%;min-height:100px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:12px;color:#fff;font-size:14px;resize:vertical}
 .rpt-form textarea:focus{outline:none;border-color:#ef4444}
 .rpt-form button{background:#ef4444;color:#fff;border:none;padding:12px;border-radius:8px;font-weight:600;cursor:pointer}
-.rpt-form button:hover{background:#dc2626}
-.rpt-form button:disabled{opacity:0.5;cursor:not-allowed}
 .rpt-success{color:#10b981;text-align:center;padding:20px}
 .mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(239,68,68,0.95) 0%,rgba(249,115,22,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px;backdrop-filter:blur(8px)}
 .mo.sh{display:flex}
@@ -209,8 +209,8 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 </div>
 <div class="player" id="player">
 <div class="no-src">Chargement...</div>
-${tickerEnabled && tickerMessage ? `<div class="ticker" id="tickerBar" style="background:${tickerBgColor}"><div class="ticker-content" style="color:${tickerTextColor}">${tickerMessage}</div><button class="ticker-close" id="tickerClose">×</button></div>` : ""}
 </div>
+${tickerEnabled && tickerMessage ? `<div class="ticker" id="tickerBar" style="background:${tickerBgColor}"><div class="ticker-wrap"><div class="ticker-content" style="color:${tickerTextColor}">${tickerMessage}</div></div><button class="ticker-close" id="tickerClose">×</button></div>` : ""}
 </div>
 <div class="modal" id="srcModal">
 <div class="modal-box">
@@ -233,10 +233,7 @@ ${tickerEnabled && tickerMessage ? `<div class="ticker" id="tickerBar" style="ba
 <textarea id="rptMsg" placeholder="Décrivez le problème..."></textarea>
 <button type="button" id="rptSubmit">Envoyer</button>
 </div>
-<div class="rpt-success hi" id="rptSuccess">
-<div style="font-size:48px;margin-bottom:12px">✓</div>
-<p style="font-weight:600">Merci !</p>
-</div>
+<div class="rpt-success hi" id="rptSuccess"><div style="font-size:48px;margin-bottom:12px">✓</div><p style="font-weight:600">Merci !</p></div>
 </div>
 </div>
 </div>
@@ -262,8 +259,7 @@ return"tag-vo";
 }
 
 function buildGrid(){
-var g=$("srcGrid");
-if(!g)return;
+var g=$("srcGrid");if(!g)return;
 if(!_src||!_src.length){g.innerHTML="<div style='grid-column:1/-1;text-align:center;padding:30px;color:#666'>Aucune source</div>";return;}
 g.innerHTML="";
 for(var i=0;i<_src.length;i++){
@@ -281,30 +277,20 @@ g.appendChild(d);
 function toggleModal(id){var m=$(id);if(m)m.classList.toggle("sh");}
 
 function loadPlayer(){
-var p=$("player");
-if(!p||!_src||!_src.length)return;
-var s=_src[_idx];
-if(!s||!s.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";return;}
+var p=$("player");if(!p||!_src||!_src.length)return;
+var s=_src[_idx];if(!s||!s.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";return;}
 var url=s.url;
-var tickerHtml=p.querySelector(".ticker")?p.querySelector(".ticker").outerHTML:"";
 if(url.indexOf(".m3u8")>=0||url.indexOf("m3u8")>=0){
-p.innerHTML='<video id="vid" controls autoplay></video>'+tickerHtml;
+p.innerHTML='<video id="vid" controls autoplay></video>';
 var vid=document.getElementById("vid");
-if(vid&&typeof Hls!=="undefined"&&Hls.isSupported()){
-var hls=new Hls();hls.loadSource(url);hls.attachMedia(vid);
-}else if(vid){vid.src=url;}
-}else{
-p.innerHTML='<iframe src="'+url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>'+tickerHtml;
-}
-var newTickerClose=$("tickerClose");
-if(newTickerClose)newTickerClose.onclick=function(){var tb=$("tickerBar");if(tb)tb.style.display="none";};
+if(vid&&typeof Hls!=="undefined"&&Hls.isSupported()){var hls=new Hls();hls.loadSource(url);hls.attachMedia(vid);}
+else if(vid){vid.src=url;}
+}else{p.innerHTML='<iframe src="'+url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>';}
 }
 
 function startPlayer(){
-if(_started)return;
-_started=true;
-var ov=$("adOverlay");
-if(ov)ov.classList.remove("sh");
+if(_started)return;_started=true;
+var ov=$("adOverlay");if(ov)ov.classList.remove("sh");
 buildGrid();
 if(_src&&_src.length){$("srcLabel").textContent=_src[0].name;loadPlayer();}
 }
@@ -313,85 +299,75 @@ function updateAdCounter(){var el=$("adCounter");if(el)el.textContent="Pub "+(_a
 
 function resetAdUI(){
 var s1=$("step1"),s2=$("step2"),s3=$("step3");
-var boxHelp=$("boxHelp"),boxTime=$("boxTime"),boxThanks=$("boxThanks"),boxDone=$("boxDone");
-var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
-var tmEl=$("timer"),prEl=$("progress");
 if(s1){s1.classList.add("active");s1.classList.remove("done");}
 if(s2){s2.classList.remove("active");s2.classList.remove("done");}
 if(s3){s3.classList.remove("active");s3.classList.remove("done");}
-if(boxHelp)boxHelp.classList.remove("hi");
-if(boxTime)boxTime.classList.remove("hi");
-if(boxThanks)boxThanks.classList.add("hi");
-if(boxDone)boxDone.classList.add("hi");
-if(btnUnlock)btnUnlock.classList.remove("hi");
-if(btnNext)btnNext.classList.add("hi");
-if(btnPlay)btnPlay.classList.add("hi");
-if(tmEl)tmEl.textContent="3";
-if(prEl)prEl.style.width="0%";
+$("boxHelp")&&$("boxHelp").classList.remove("hi");
+$("boxTime")&&$("boxTime").classList.remove("hi");
+$("boxThanks")&&$("boxThanks").classList.add("hi");
+$("boxDone")&&$("boxDone").classList.add("hi");
+$("btnUnlock")&&$("btnUnlock").classList.remove("hi");
+$("btnNext")&&$("btnNext").classList.add("hi");
+$("btnPlay")&&$("btnPlay").classList.add("hi");
+$("timer")&&($("timer").textContent="3");
+$("progress")&&($("progress").style.width="0%");
 updateAdCounter();
 }
 
 function processAd(){
-var ad=_ads[_adIndex];
-if(!ad)return startPlayer();
+var ad=_ads[_adIndex];if(!ad)return startPlayer();
 window.open(ad.url,"_blank");
 fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:ad.id,wwId:_wwId})}).catch(function(){});
-var s1=$("step1"),s2=$("step2"),s3=$("step3");
+var s1=$("step1"),s2=$("step2");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
 if(s2)s2.classList.add("active");
-var boxHelp=$("boxHelp"),boxTime=$("boxTime"),boxThanks=$("boxThanks"),boxDone=$("boxDone");
-if(boxHelp)boxHelp.classList.add("hi");
-if(boxThanks)boxThanks.classList.remove("hi");
-var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
-if(btnUnlock)btnUnlock.classList.add("hi");
+$("boxHelp")&&$("boxHelp").classList.add("hi");
+$("boxThanks")&&$("boxThanks").classList.remove("hi");
+$("btnUnlock")&&$("btnUnlock").classList.add("hi");
 var tm=3;
 var iv=setInterval(function(){
 tm--;
-if($("timer"))$("timer").textContent=tm;
-if($("progress"))$("progress").style.width=((3-tm)/3*100)+"%";
+$("timer")&&($("timer").textContent=tm);
+$("progress")&&($("progress").style.width=((3-tm)/3*100)+"%");
 if(tm<=0){
 clearInterval(iv);
-if(s2){s2.classList.remove("active");s2.classList.add("done");}
-if(s3)$("step3").classList.add("active");
-if(boxTime)$("boxTime").classList.add("hi");
-if(boxDone)$("boxDone").classList.remove("hi");
-if(_adIndex<_ads.length-1){if(btnNext)btnNext.classList.remove("hi");}
-else{if(btnPlay)btnPlay.classList.remove("hi");}
+$("step2")&&$("step2").classList.remove("active");
+$("step2")&&$("step2").classList.add("done");
+$("step3")&&$("step3").classList.add("active");
+$("boxTime")&&$("boxTime").classList.add("hi");
+$("boxDone")&&$("boxDone").classList.remove("hi");
+if(_adIndex<_ads.length-1){$("btnNext")&&$("btnNext").classList.remove("hi");}
+else{$("btnPlay")&&$("btnPlay").classList.remove("hi");}
 }
 },1000);
 }
 
-var srcBtn=$("srcBtn"),closeModal=$("closeModal"),srcModal=$("srcModal");
-if(srcBtn)srcBtn.onclick=function(){toggleModal("srcModal")};
-if(closeModal)closeModal.onclick=function(){toggleModal("srcModal")};
-if(srcModal)srcModal.onclick=function(e){if(e.target===srcModal)toggleModal("srcModal");};
+$("srcBtn")&&($("srcBtn").onclick=function(){toggleModal("srcModal")});
+$("closeModal")&&($("closeModal").onclick=function(){toggleModal("srcModal")});
+$("srcModal")&&($("srcModal").onclick=function(e){if(e.target===$("srcModal"))toggleModal("srcModal");});
 
-var rptBtn=$("rptBtn"),rptModal=$("rptModal"),rptClose=$("rptClose"),rptSubmit=$("rptSubmit"),rptMsg=$("rptMsg"),rptForm=$("rptForm"),rptSuccess=$("rptSuccess");
-if(rptBtn)rptBtn.onclick=function(){toggleModal("rptModal")};
-if(rptClose)rptClose.onclick=function(){toggleModal("rptModal")};
-if(rptModal)rptModal.onclick=function(e){if(e.target===rptModal)toggleModal("rptModal");};
-if(rptSubmit)rptSubmit.onclick=function(){
-  var msg=rptMsg.value.trim();
-  if(!msg){alert("Décrivez le problème");return}
-  rptSubmit.disabled=true;rptSubmit.textContent="Envoi...";
-  var currentSource=_src[_idx]||{};
-  fetch("/api/bug-reports",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({wwId:_wwId,title:_channelName,sourceName:currentSource.name||"",sourceUrl:currentSource.url||"",message:msg,embedType:"live"})
-  }).then(function(r){return r.json()}).then(function(){
-    rptForm.classList.add("hi");rptSuccess.classList.remove("hi");
-    setTimeout(function(){toggleModal("rptModal");rptForm.classList.remove("hi");rptSuccess.classList.add("hi");rptMsg.value="";rptSubmit.disabled=false;rptSubmit.textContent="Envoyer"},2000);
-  }).catch(function(){alert("Erreur");rptSubmit.disabled=false;rptSubmit.textContent="Envoyer";});
-};
+$("rptBtn")&&($("rptBtn").onclick=function(){toggleModal("rptModal")});
+$("rptClose")&&($("rptClose").onclick=function(){toggleModal("rptModal")});
+$("rptModal")&&($("rptModal").onclick=function(e){if(e.target===$("rptModal"))toggleModal("rptModal");});
+$("rptSubmit")&&($("rptSubmit").onclick=function(){
+var msg=$("rptMsg").value.trim();if(!msg){alert("Décrivez le problème");return}
+$("rptSubmit").disabled=true;$("rptSubmit").textContent="Envoi...";
+var currentSource=_src[_idx]||{};
+fetch("/api/bug-reports",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({wwId:_wwId,title:_channelName,sourceName:currentSource.name||"",sourceUrl:currentSource.url||"",message:msg,embedType:"live"})})
+.then(function(r){return r.json()}).then(function(){
+$("rptForm").classList.add("hi");$("rptSuccess").classList.remove("hi");
+setTimeout(function(){toggleModal("rptModal");$("rptForm").classList.remove("hi");$("rptSuccess").classList.add("hi");$("rptMsg").value="";$("rptSubmit").disabled=false;$("rptSubmit").textContent="Envoyer"},2000);
+}).catch(function(){alert("Erreur");$("rptSubmit").disabled=false;$("rptSubmit").textContent="Envoyer";});
+});
 
-var tickerClose=$("tickerClose");
-if(tickerClose)tickerClose.onclick=function(){var tickerBar=$("tickerBar");if(tickerBar)tickerBar.style.display="none";};
+$("tickerClose")&&($("tickerClose").onclick=function(){$("tickerBar")&&($("tickerBar").style.display="none");});
 
 if(_hasAds&&_ads.length>0){
-var ov=$("adOverlay");if(ov)ov.classList.add("sh");
+$("adOverlay")&&$("adOverlay").classList.add("sh");
 updateAdCounter();
-var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
-if(btnUnlock)btnUnlock.onclick=processAd;
-if(btnNext)btnNext.onclick=function(){_adIndex++;resetAdUI();};
-if(btnPlay)btnPlay.onclick=startPlayer;
+$("btnUnlock")&&($("btnUnlock").onclick=processAd);
+$("btnNext")&&($("btnNext").onclick=function(){_adIndex++;resetAdUI();});
+$("btnPlay")&&($("btnPlay").onclick=startPlayer);
 }else{startPlayer();}
 })();
 </script>
