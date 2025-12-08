@@ -148,7 +148,7 @@ export function StatsViewer() {
               return {
                 ...m,
                 title: data.title || data.name || `#${m.tmdb_id}`,
-                poster: data.poster_path ? TMDB_IMAGE_BASE + data.poster_path : undefined,
+                poster: data.poster || undefined,
               }
             }
           } catch (e) {
@@ -310,20 +310,30 @@ export function StatsViewer() {
         </CardHeader>
         <CardContent>
           {viewsByDay.length > 0 ? (
-            <div className="flex items-end gap-1 h-48">
-              {viewsByDay.map((day) => (
-                <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-xs text-muted-foreground mb-1">{day.count}</span>
-                  <div
-                    className="w-full bg-gradient-to-t from-primary to-primary/60 rounded-t transition-all hover:from-primary/80"
-                    style={{ height: `${(day.count / maxViews) * 100}%`, minHeight: "4px" }}
-                    title={`${day.date}: ${day.count} vues`}
-                  />
-                  <span className="text-xs text-muted-foreground transform -rotate-45 origin-left whitespace-nowrap">
-                    {day.date.slice(5)}
-                  </span>
-                </div>
-              ))}
+            <div className="h-64">
+              <div className="flex items-end gap-1 h-48">
+                {viewsByDay.map((day) => (
+                  <div key={day.date} className="flex-1 flex flex-col items-center">
+                    <span className="text-xs text-muted-foreground mb-1">{day.count}</span>
+                    <div
+                      className="w-full bg-gradient-to-t from-primary to-primary/60 rounded-t transition-all hover:from-primary/80"
+                      style={{ height: `${(day.count / maxViews) * 100}%`, minHeight: "4px" }}
+                      title={`${day.date}: ${day.count} vues`}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-1 mt-2 border-t border-border pt-2">
+                {viewsByDay.map((day) => {
+                  const dateObj = new Date(day.date)
+                  const formattedDate = `${dateObj.getDate().toString().padStart(2, "0")}/${(dateObj.getMonth() + 1).toString().padStart(2, "0")}`
+                  return (
+                    <div key={day.date + "-label"} className="flex-1 text-center">
+                      <span className="text-xs text-muted-foreground">{formattedDate}</span>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           ) : (
             <p className="text-muted-foreground text-center py-8">Aucune donnee disponible</p>
