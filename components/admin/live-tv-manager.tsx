@@ -12,7 +12,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Trash2, Plus, Copy, Tv, Eye, ChevronDown, ChevronUp, Pencil, Search, Power } from "lucide-react"
+import {
+  Trash2,
+  Plus,
+  Copy,
+  Tv,
+  Eye,
+  ChevronDown,
+  ChevronUp,
+  Pencil,
+  Search,
+  Power,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react"
 import type { LiveTVChannel, LiveTVSource } from "@/lib/types"
 
 const CATEGORIES = [
@@ -99,7 +112,7 @@ export function LiveTVManager() {
             .from("live_tv_sources")
             .select("*")
             .eq("channel_id", channel.id)
-            .order("created_at", { ascending: true })
+            .order("priority", { ascending: true })
 
           return { ...channel, sources: sources || [] }
         }),
@@ -260,6 +273,45 @@ export function LiveTVManager() {
     fetchChannels()
   }
 
+  const changeSourcePriority = async (channelId: string, sourceId: string, direction: "up" | "down") => {
+    const supabase = createClient()
+    const channel = channels.find((c) => c.id === channelId)
+    if (!channel?.sources) return
+
+    const sources = [...channel.sources].sort((a, b) => (a.priority || 0) - (b.priority || 0))
+    const currentIndex = sources.findIndex((s) => s.id === sourceId)
+
+    if (direction === "up" && currentIndex > 0) {
+      // Swap with previous
+      const prevSource = sources[currentIndex - 1]
+      const currentSource = sources[currentIndex]
+
+      await supabase
+        .from("live_tv_sources")
+        .update({ priority: prevSource.priority || 0 })
+        .eq("id", currentSource.id)
+      await supabase
+        .from("live_tv_sources")
+        .update({ priority: currentSource.priority || 0 })
+        .eq("id", prevSource.id)
+    } else if (direction === "down" && currentIndex < sources.length - 1) {
+      // Swap with next
+      const nextSource = sources[currentIndex + 1]
+      const currentSource = sources[currentIndex]
+
+      await supabase
+        .from("live_tv_sources")
+        .update({ priority: nextSource.priority || 0 })
+        .eq("id", currentSource.id)
+      await supabase
+        .from("live_tv_sources")
+        .update({ priority: currentSource.priority || 0 })
+        .eq("id", nextSource.id)
+    }
+
+    fetchChannels()
+  }
+
   const filteredChannels = useMemo(() => {
     return channels.filter((channel) => {
       const matchesSearch = searchQuery === "" || channel.channel_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -411,7 +463,7 @@ export function LiveTVManager() {
                 <SelectContent>
                   <SelectItem value="SD">SD</SelectItem>
                   <SelectItem value="HD">HD</SelectItem>
-                  <SelectItem value="FHD">FHD</SelectItem>
+                  <SelectItem value="FHD">Full HD</SelectItem>
                   <SelectItem value="4K">4K</SelectItem>
                 </SelectContent>
               </Select>
@@ -737,6 +789,7 @@ export function LiveTVManager() {
                         <Table>
                           <TableHeader>
                             <TableRow>
+                              <TableHead className="w-[80px]">Ordre</TableHead>
                               <TableHead>Nom</TableHead>
                               <TableHead>URL</TableHead>
                               <TableHead>Qualite</TableHead>
@@ -746,46 +799,73 @@ export function LiveTVManager() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {channel.sources.map((source, index) => (
-                              <TableRow key={source.id}>
-                                <TableCell className="font-medium">
-                                  {source.source_name || `Source #${index + 1}`}
-                                </TableCell>
-                                <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
-                                  {source.stream_url}
-                                </TableCell>
-                                <TableCell>{source.quality}</TableCell>
-                                <TableCell>
-                                  <Badge variant={source.status === "approved" ? "default" : "secondary"}>
-                                    {source.status === "approved"
-                                      ? "Approuve"
-                                      : source.status === "pending"
-                                        ? "En attente"
-                                        : "Rejete"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <Button
-                                    size="sm"
-                                    variant={source.is_active ? "default" : "outline"}
-                                    className={source.is_active ? "bg-green-600 hover:bg-green-700" : ""}
-                                    onClick={() => toggleSourceActive(source.id, source.is_active)}
-                                  >
-                                    <Power className="w-4 h-4" />
-                                  </Button>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    <Button size="sm" variant="outline" onClick={() => openEditSource(source)}>
-                                      <Pencil className="w-4 h-4" />
+                            {channel.sources
+                              .sort((a, b) => (a.priority || 0) - (b.priority || 0))
+                              .map((source, index) => (
+                                <TableRow key={source.id}>
+                                  <TableCell>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-sm font-medium text-muted-foreground w-5">{index + 1}</span>
+                                      <div className="flex flex-col">
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-6 w-6"
+                                          disabled={index === 0}
+                                          onClick={() => changeSourcePriority(channel.id, source.id, "up")}
+                                        >
+                                          <ArrowUp className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-6 w-6"
+                                          disabled={index === channel.sources!.length - 1}
+                                          onClick={() => changeSourcePriority(channel.id, source.id, "down")}
+                                        >
+                                          <ArrowDown className="w-3 h-3" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {source.source_name || `Source #${index + 1}`}
+                                  </TableCell>
+                                  <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
+                                    {source.stream_url}
+                                  </TableCell>
+                                  <TableCell>{source.quality}</TableCell>
+                                  <TableCell>
+                                    <Badge variant={source.status === "approved" ? "default" : "secondary"}>
+                                      {source.status === "approved"
+                                        ? "Approuve"
+                                        : source.status === "pending"
+                                          ? "En attente"
+                                          : "Rejete"}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      size="sm"
+                                      variant={source.is_active ? "default" : "outline"}
+                                      className={source.is_active ? "bg-green-600 hover:bg-green-700" : ""}
+                                      onClick={() => toggleSourceActive(source.id, source.is_active)}
+                                    >
+                                      <Power className="w-4 h-4" />
                                     </Button>
-                                    <Button size="sm" variant="destructive" onClick={() => deleteSource(source.id)}>
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                      <Button size="sm" variant="outline" onClick={() => openEditSource(source)}>
+                                        <Pencil className="w-4 h-4" />
+                                      </Button>
+                                      <Button size="sm" variant="destructive" onClick={() => deleteSource(source.id)}>
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
                           </TableBody>
                         </Table>
                       ) : (
