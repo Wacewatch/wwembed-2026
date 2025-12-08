@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Trash2, Plus, Copy, Tv, Eye, ChevronDown, ChevronUp, Pencil } from "lucide-react"
+import { Trash2, Plus, Copy, Tv, Eye, ChevronDown, ChevronUp, Pencil, Search } from "lucide-react"
 import type { LiveTVChannel, LiveTVSource } from "@/lib/types"
 
 const CATEGORIES = [
@@ -52,6 +52,9 @@ export function LiveTVManager() {
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null)
   const [showSourceForm, setShowSourceForm] = useState<string | null>(null)
   const [editingChannel, setEditingChannel] = useState<LiveTVChannel | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [filterCategory, setFilterCategory] = useState("all")
+  const [filterCountry, setFilterCountry] = useState("all")
   const [editChannelData, setEditChannelData] = useState({
     channel_name: "",
     channel_logo: "",
@@ -251,12 +254,21 @@ export function LiveTVManager() {
     navigator.clipboard.writeText(url)
   }
 
+  const filteredChannels = useMemo(() => {
+    return channels.filter((channel) => {
+      const matchesSearch = searchQuery === "" || channel.channel_name.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesCategory = filterCategory === "all" || channel.category === filterCategory
+      const matchesCountry = filterCountry === "all" || channel.country === filterCountry
+      return matchesSearch && matchesCategory && matchesCountry
+    })
+  }, [channels, searchQuery, filterCategory, filterCountry])
+
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Chargement...</div>
   }
 
   return (
-    <div className="space-y-6">
+    <>
       <Dialog open={!!editingChannel} onOpenChange={(open) => !open && setEditingChannel(null)}>
         <DialogContent>
           <DialogHeader>
@@ -420,6 +432,44 @@ export function LiveTVManager() {
           </Button>
         </CardHeader>
         <CardContent>
+          <div className="mb-6 flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Rechercher une chaine..."
+                className="pl-9"
+              />
+            </div>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Categorie" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes categories</SelectItem>
+                {CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterCountry} onValueChange={setFilterCountry}>
+              <SelectTrigger className="w-full sm:w-[150px]">
+                <SelectValue placeholder="Pays" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous pays</SelectItem>
+                {COUNTRIES.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {showForm && (
             <form onSubmit={handleSubmit} className="mb-6 p-4 bg-secondary/50 rounded-lg space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
@@ -518,11 +568,19 @@ export function LiveTVManager() {
             </form>
           )}
 
-          {channels.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">Aucune chaine TV live</p>
+          {(searchQuery || filterCategory !== "all" || filterCountry !== "all") && (
+            <p className="text-sm text-muted-foreground">
+              {filteredChannels.length} chaine(s) trouvee(s) sur {channels.length}
+            </p>
+          )}
+
+          {filteredChannels.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              {channels.length === 0 ? "Aucune chaine TV live" : "Aucun resultat pour cette recherche"}
+            </p>
           ) : (
             <div className="space-y-4">
-              {channels.map((channel) => (
+              {filteredChannels.map((channel) => (
                 <div key={channel.id} className="border rounded-lg overflow-hidden">
                   <div
                     className="flex items-center justify-between p-4 bg-secondary/30 cursor-pointer hover:bg-secondary/50"
@@ -724,6 +782,6 @@ export function LiveTVManager() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </>
   )
 }
