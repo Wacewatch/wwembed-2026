@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
   try {
-    const { wwId } = params
+    const { wwId } = await params
     const match = wwId.match(/^ww-live-(.+)$/i)
     if (!match) return new NextResponse("Invalid WW ID format", { status: 400 })
 
@@ -93,10 +93,6 @@ export async function GET(request: NextRequest, { params }: { params: { wwId: st
     const channelName = channel.channel_name || "Live TV"
     const channelLogo = channel.channel_logo || ""
     const animationDuration = Math.max(10, 100 - tickerSpeed / 2)
-
-    const host = request.headers.get("host") || "localhost:3000"
-    const protocol = host.includes("localhost") ? "http" : "https"
-    const baseUrl = `${protocol}://${host}`
 
     const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -251,7 +247,6 @@ var _idx=0;
 var _started=false;
 var _wwId="${wwId}";
 var _channelName="${channelName.replace(/"/g, '\\"')}";
-var _baseUrl="${baseUrl}";
 
 function $(id){return document.getElementById(id);}
 
@@ -285,81 +280,12 @@ function loadPlayer(){
 var p=$("player");if(!p||!_src||!_src.length)return;
 var s=_src[_idx];if(!s||!s.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";return;}
 var url=s.url;
-var isHls=url.indexOf(".m3u8")>=0||url.indexOf("m3u8")>=0;
-
-if(isHls){
-  p.innerHTML='<video id="vid" controls autoplay playsinline style="width:100%;height:100%;background:#000;"></video><div id="hlsError" class="no-src" style="display:none;">Chargement du flux...</div>';
-  var vid=document.getElementById("vid");
-  var errDiv=document.getElementById("hlsError");
-  
-  if(vid && typeof Hls!=="undefined" && Hls.isSupported()){
-    var proxyUrl=_baseUrl+"/api/hls-proxy?url="+encodeURIComponent(url);
-    var hls=new Hls({
-      debug:false,
-      enableWorker:true,
-      lowLatencyMode:true,
-      backBufferLength:90
-    });
-    
-    hls.on(Hls.Events.ERROR,function(ev,data){
-      console.log("[v0] HLS Error:",data.type,data.details);
-      if(data.fatal){
-        if(data.type===Hls.ErrorTypes.NETWORK_ERROR){
-          console.log("[v0] Network error, trying direct URL...");
-          hls.destroy();
-          var hls2=new Hls({debug:false});
-          hls2.loadSource(url);
-          hls2.attachMedia(vid);
-          hls2.on(Hls.Events.MANIFEST_PARSED,function(){
-            vid.play().catch(function(){});
-          });
-          hls2.on(Hls.Events.ERROR,function(e2,d2){
-            if(d2.fatal && errDiv){
-              errDiv.style.display="flex";
-              errDiv.textContent="Flux indisponible - Essayez une autre source";
-              vid.style.display="none";
-            }
-          });
-        }else if(data.type===Hls.ErrorTypes.MEDIA_ERROR){
-          console.log("[v0] Media error, trying to recover...");
-          hls.recoverMediaError();
-        }else{
-          if(errDiv){
-            errDiv.style.display="flex";
-            errDiv.textContent="Erreur de lecture - Essayez une autre source";
-            vid.style.display="none";
-          }
-        }
-      }
-    });
-    
-    hls.on(Hls.Events.MANIFEST_PARSED,function(){
-      console.log("[v0] HLS Manifest parsed, starting playback...");
-      vid.play().catch(function(e){console.log("[v0] Autoplay blocked:",e);});
-    });
-    
-    hls.loadSource(proxyUrl);
-    hls.attachMedia(vid);
-  }
-  else if(vid && vid.canPlayType && vid.canPlayType("application/vnd.apple.mpegurl")){
-    // Safari native HLS support
-    vid.src=url;
-    vid.addEventListener("loadedmetadata",function(){vid.play().catch(function(){});});
-    vid.addEventListener("error",function(){
-      if(errDiv){
-        errDiv.style.display="flex";
-        errDiv.textContent="Flux indisponible";
-        vid.style.display="none";
-      }
-    });
-  }
-  else if(errDiv){
-    errDiv.style.display="flex";
-    errDiv.textContent="Votre navigateur ne supporte pas ce format";
-  }
-}else{
-  p.innerHTML='<iframe src="'+url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>';
-}
+if(url.indexOf(".m3u8")>=0||url.indexOf("m3u8")>=0){
+p.innerHTML='<video id="vid" controls autoplay></video>';
+var vid=document.getElementById("vid");
+if(vid&&typeof Hls!=="undefined"&&Hls.isSupported()){var hls=new Hls();hls.loadSource(url);hls.attachMedia(vid);}
+else if(vid){vid.src=url;}
+}else{p.innerHTML='<iframe src="'+url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>';}
 }
 
 function startPlayer(){
@@ -439,9 +365,9 @@ $("tickerClose")&&($("tickerClose").onclick=function(){$("tickerBar")&&($("ticke
 if(_hasAds&&_ads.length>0){
 $("adOverlay")&&$("adOverlay").classList.add("sh");
 updateAdCounter();
-$("btnUnlock")&&$("btnUnlock").onclick=processAd;
-$("btnNext")&&$("btnNext").onclick=function(){_adIndex++;resetAdUI();};
-$("btnPlay")&&$("btnPlay").onclick=startPlayer;
+$("btnUnlock")&&($("btnUnlock").onclick=processAd);
+$("btnNext")&&($("btnNext").onclick=function(){_adIndex++;resetAdUI();});
+$("btnPlay")&&($("btnPlay").onclick=startPlayer);
 }else{startPlayer();}
 })();
 </script>
