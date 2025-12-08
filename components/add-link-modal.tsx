@@ -1880,7 +1880,7 @@ export function AddLinkModal({
                                         <div className="space-y-2">
                                           <Label>Codec Video</Label>
                                           <Input
-                                            placeholder="Ex: x264, x265, AV1"
+                                            placeholder="Ex: x264, x265"
                                             value={link.codec_video}
                                             onChange={(e) => updateDownloadLink(index, "codec_video", e.target.value)}
                                             className="bg-zinc-950 border-zinc-800 focus:border-primary"
@@ -1984,12 +1984,12 @@ export function AddLinkModal({
 
             {(mainTab === "livetv" || mode === "livetv") && (
               <div className="space-y-6 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800">
-                {!isChannelPrefilled && mode !== "livetv" && (
+                {!isChannelPrefilled && (
                   <div className="flex gap-2 mb-4">
                     <Button
                       variant={liveTvMode === "new" ? "default" : "outline"}
                       size="sm"
-                      className="data-[state=active]:bg-primary data-[state=active]:text-white"
+                      className={liveTvMode === "new" ? "bg-amber-600 hover:bg-amber-700 text-white" : ""}
                       onClick={() => setLiveTvMode("new")}
                     >
                       Nouvelle chaine
@@ -1997,7 +1997,7 @@ export function AddLinkModal({
                     <Button
                       variant={liveTvMode === "existing" ? "default" : "outline"}
                       size="sm"
-                      className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                      className={liveTvMode === "existing" ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}
                       onClick={() => setLiveTvMode("existing")}
                     >
                       Ajouter une source
@@ -2005,7 +2005,7 @@ export function AddLinkModal({
                   </div>
                 )}
 
-                {liveTvMode === "new" && !isChannelPrefilled && mode !== "livetv" ? (
+                {liveTvMode === "new" && !isChannelPrefilled ? (
                   <form onSubmit={handleLiveTvSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -2015,7 +2015,7 @@ export function AddLinkModal({
                           value={liveTvData.channel_name}
                           onChange={(e) => setLiveTvData({ ...liveTvData, channel_name: e.target.value })}
                           required
-                          className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                          className="bg-zinc-950 border-zinc-800 focus:border-primary"
                         />
                       </div>
                       <div className="space-y-2">
@@ -2024,10 +2024,10 @@ export function AddLinkModal({
                           value={liveTvData.category}
                           onValueChange={(v) => setLiveTvData({ ...liveTvData, category: v })}
                         >
-                          <SelectTrigger className="bg-zinc-900 border-zinc-700">
+                          <SelectTrigger className="bg-zinc-950 border-zinc-800">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-zinc-900 border-zinc-700">
+                          <SelectContent className="bg-zinc-950 border-zinc-800">
                             {LIVE_TV_CATEGORIES.map((cat) => (
                               <SelectItem key={cat.value} value={cat.value}>
                                 {cat.label}
@@ -2044,7 +2044,7 @@ export function AddLinkModal({
                         value={liveTvData.channel_logo}
                         onChange={(e) => setLiveTvData({ ...liveTvData, channel_logo: e.target.value })}
                         type="url"
-                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                        className="bg-zinc-950 border-zinc-800 focus:border-primary"
                       />
                     </div>
                     <div className="space-y-2">
@@ -2054,7 +2054,7 @@ export function AddLinkModal({
                         value={liveTvData.stream_url}
                         onChange={(e) => setLiveTvData({ ...liveTvData, stream_url: e.target.value })}
                         required
-                        className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                        className="bg-zinc-950 border-zinc-800 focus:border-primary"
                       />
                     </div>
                     <div className="grid grid-cols-3 gap-4">
@@ -2064,10 +2064,10 @@ export function AddLinkModal({
                           value={liveTvData.country}
                           onValueChange={(v) => setLiveTvData({ ...liveTvData, country: v })}
                         >
-                          <SelectTrigger className="bg-zinc-900 border-zinc-700">
+                          <SelectTrigger className="bg-zinc-950 border-zinc-800">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-zinc-900 border-zinc-700">
+                          <SelectContent className="bg-zinc-950 border-zinc-800">
                             <SelectItem value="fr">France</SelectItem>
                             <SelectItem value="be">Belgique</SelectItem>
                             <SelectItem value="ch">Suisse</SelectItem>
@@ -2084,10 +2084,10 @@ export function AddLinkModal({
                           value={liveTvData.language}
                           onValueChange={(v) => setLiveTvData({ ...liveTvData, language: v })}
                         >
-                          <SelectTrigger className="bg-zinc-900 border-zinc-700">
+                          <SelectTrigger className="bg-zinc-950 border-zinc-800">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-zinc-900 border-zinc-700">
+                          <SelectContent className="bg-zinc-950 border-zinc-800">
                             <SelectItem value="fr">Francais</SelectItem>
                             <SelectItem value="en">Anglais</SelectItem>
                             <SelectItem value="multi">Multi</SelectItem>
@@ -2100,10 +2100,10 @@ export function AddLinkModal({
                           value={liveTvData.quality}
                           onValueChange={(v) => setLiveTvData({ ...liveTvData, quality: v })}
                         >
-                          <SelectTrigger className="bg-zinc-900 border-zinc-700">
+                          <SelectTrigger className="bg-zinc-950 border-zinc-800">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-zinc-900 border-zinc-700">
+                          <SelectContent className="bg-zinc-950 border-zinc-800">
                             <SelectItem value="SD">SD</SelectItem>
                             <SelectItem value="HD">HD</SelectItem>
                             <SelectItem value="FHD">FHD</SelectItem>
@@ -2118,73 +2118,67 @@ export function AddLinkModal({
                       {loading ? "Ajout en cours..." : "Ajouter la chaine TV"}
                     </Button>
                   </form>
-                ) : (
+                ) : liveTvMode === "existing" && !isChannelPrefilled ? (
                   <div className="space-y-4">
-                    {!isChannelPrefilled && mode !== "livetv" && (
-                      <>
+                    <div className="space-y-2">
+                      <Label>Rechercher une chaine</Label>
+                      <Input
+                        placeholder="Rechercher..."
+                        value={channelSearchQuery}
+                        onChange={(e) => setChannelSearchQuery(e.target.value)}
+                        className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                      />
+                    </div>
+                    <div className="max-h-40 overflow-y-auto border border-zinc-800 rounded-md bg-zinc-950">
+                      {filteredChannels.map((channel) => (
+                        <button
+                          key={channel.id}
+                          type="button"
+                          className={`w-full flex items-center gap-3 p-2 text-left transition-colors ${
+                            selectedChannelId === channel.id
+                              ? "bg-primary/20 hover:bg-primary/30 text-primary"
+                              : "hover:bg-zinc-800"
+                          }`}
+                          onClick={() => setSelectedChannelId(channel.id)}
+                        >
+                          {channel.channel_logo && (
+                            <img
+                              src={channel.channel_logo || "/placeholder.svg"}
+                              alt={channel.channel_name}
+                              className="w-8 h-8 object-contain"
+                            />
+                          )}
+                          <span>{channel.channel_name}</span>
+                        </button>
+                      ))}
+                      {filteredChannels.length === 0 && (
+                        <p className="p-4 text-center text-zinc-500">Aucune chaine trouvee</p>
+                      )}
+                    </div>
+
+                    {selectedChannelId && (
+                      <form onSubmit={handleLiveTvSourceSubmit} className="space-y-4 mt-4">
                         <div className="space-y-2">
-                          <Label>Rechercher une chaine</Label>
+                          <Label>URL du flux</Label>
                           <Input
-                            placeholder="Rechercher..."
-                            value={channelSearchQuery}
-                            onChange={(e) => setChannelSearchQuery(e.target.value)}
-                            className="bg-zinc-900 border-zinc-700 focus:border-primary"
+                            placeholder="https://... ou m3u8"
+                            value={liveTvData.stream_url}
+                            onChange={(e) => setLiveTvData({ ...liveTvData, stream_url: e.target.value })}
+                            required
+                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
                           />
                         </div>
-                        <div className="max-h-40 overflow-y-auto border border-zinc-800 rounded-md bg-zinc-900/50">
-                          {filteredChannels.map((channel) => (
-                            <button
-                              key={channel.id}
-                              type="button"
-                              className={`w-full flex items-center gap-3 p-2 text-left transition-colors ${
-                                selectedChannelId === channel.id
-                                  ? "bg-primary/20 hover:bg-primary/30 text-primary"
-                                  : "hover:bg-zinc-800"
-                              }`}
-                              onClick={() => setSelectedChannelId(channel.id)}
-                            >
-                              {channel.channel_logo && (
-                                <img
-                                  src={channel.channel_logo || "/placeholder.svg"}
-                                  alt={channel.channel_name}
-                                  className="w-8 h-8 object-contain"
-                                />
-                              )}
-                              <span>{channel.channel_name}</span>
-                            </button>
-                          ))}
-                          {filteredChannels.length === 0 && (
-                            <p className="text-center py-4 text-zinc-400">Aucune chaine trouvee</p>
-                          )}
-                        </div>
-                      </>
-                    )}
-
-                    {(selectedChannelId || isChannelPrefilled) && (
-                      <form onSubmit={handleLiveTvSourceSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Nom de la source</Label>
-                            <Input
-                              placeholder="Ex: Source HD"
-                              value={liveTvSourceData.source_name}
-                              onChange={(e) =>
-                                setLiveTvSourceData({ ...liveTvSourceData, source_name: e.target.value })
-                              }
-                              required
-                              className="bg-zinc-900 border-zinc-700 focus:border-primary"
-                            />
-                          </div>
                           <div className="space-y-2">
                             <Label>Qualite</Label>
                             <Select
-                              value={liveTvSourceData.quality}
-                              onValueChange={(v) => setLiveTvSourceData({ ...liveTvSourceData, quality: v })}
+                              value={liveTvData.quality}
+                              onValueChange={(v) => setLiveTvData({ ...liveTvData, quality: v })}
                             >
-                              <SelectTrigger className="bg-zinc-900 border-zinc-700">
+                              <SelectTrigger className="bg-zinc-950 border-zinc-800">
                                 <SelectValue />
                               </SelectTrigger>
-                              <SelectContent className="bg-zinc-900 border-zinc-700">
+                              <SelectContent className="bg-zinc-950 border-zinc-800">
                                 <SelectItem value="SD">SD</SelectItem>
                                 <SelectItem value="HD">HD</SelectItem>
                                 <SelectItem value="FHD">FHD</SelectItem>
@@ -2192,24 +2186,87 @@ export function AddLinkModal({
                               </SelectContent>
                             </Select>
                           </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>URL du flux</Label>
-                          <Input
-                            placeholder="https://... ou m3u8"
-                            value={liveTvSourceData.stream_url}
-                            onChange={(e) => setLiveTvSourceData({ ...liveTvSourceData, stream_url: e.target.value })}
-                            required
-                            className="bg-zinc-900 border-zinc-700 focus:border-primary"
-                          />
+                          <div className="space-y-2">
+                            <Label>Langue</Label>
+                            <Select
+                              value={liveTvData.language}
+                              onValueChange={(v) => setLiveTvData({ ...liveTvData, language: v })}
+                            >
+                              <SelectTrigger className="bg-zinc-950 border-zinc-800">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-zinc-950 border-zinc-800">
+                                <SelectItem value="fr">Francais</SelectItem>
+                                <SelectItem value="en">Anglais</SelectItem>
+                                <SelectItem value="multi">Multi</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                         {success && <p className="text-sm text-green-400">{success}</p>}
                         {error && <p className="text-sm text-red-400">{error}</p>}
-                        <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
+                        <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700" disabled={loading}>
                           {loading ? "Ajout en cours..." : "Ajouter la source"}
                         </Button>
                       </form>
                     )}
+                  </div>
+                ) : isChannelPrefilled ? (
+                  <form onSubmit={handleLiveTvSourceSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>URL du flux</Label>
+                      <Input
+                        placeholder="https://... ou m3u8"
+                        value={liveTvSourceData.stream_url}
+                        onChange={(e) => setLiveTvSourceData({ ...liveTvSourceData, stream_url: e.target.value })}
+                        required
+                        className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Qualite</Label>
+                        <Select
+                          value={liveTvSourceData.quality}
+                          onValueChange={(v) => setLiveTvSourceData({ ...liveTvSourceData, quality: v })}
+                        >
+                          <SelectTrigger className="bg-zinc-950 border-zinc-800">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-zinc-950 border-zinc-800">
+                            <SelectItem value="SD">SD</SelectItem>
+                            <SelectItem value="HD">HD</SelectItem>
+                            <SelectItem value="FHD">FHD</SelectItem>
+                            <SelectItem value="4K">4K</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Langue</Label>
+                        <Select
+                          value={liveTvSourceData.language}
+                          onValueChange={(v) => setLiveTvSourceData({ ...liveTvSourceData, language: v })}
+                        >
+                          <SelectTrigger className="bg-zinc-950 border-zinc-800">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-zinc-950 border-zinc-800">
+                            <SelectItem value="fr">Francais</SelectItem>
+                            <SelectItem value="en">Anglais</SelectItem>
+                            <SelectItem value="multi">Multi</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    {success && <p className="text-sm text-green-400">{success}</p>}
+                    {error && <p className="text-sm text-red-400">{error}</p>}
+                    <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
+                      {loading ? "Ajout en cours..." : "Ajouter la source"}
+                    </Button>
+                  </form>
+                ) : (
+                  <div className="text-center py-10">
+                    <p className="text-zinc-400">Veuillez selectionner une chaine ou creer une nouvelle.</p>
                   </div>
                 )}
               </div>
@@ -2389,7 +2446,7 @@ export function AddLinkModal({
                               URL de lecture {digitalContentType === "ebook" ? "(lecteur PDF)" : "(lecteur audio)"}
                             </Label>
                             <Input
-                              placeholder="https://... (optionnel)"
+                              placeholder="https://... (optionnel, pour la lecture en ligne)"
                               value={digitalLinkData.reader_url}
                               onChange={(e) => setDigitalLinkData({ ...digitalLinkData, reader_url: e.target.value })}
                               type="url"
