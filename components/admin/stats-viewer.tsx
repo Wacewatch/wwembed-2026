@@ -59,7 +59,7 @@ export function StatsViewer() {
 
     const { data: views } = await supabase
       .from("embed_views")
-      .select("viewed_at, tmdb_id, media_type, referrer, ww_id, user_agent")
+      .select("viewed_at, tmdb_id, media_type, referrer, ww_id, user_agent, embed_type")
       .gte("viewed_at", startDate)
 
     const { data: clicks } = await supabase.from("link_clicks").select("*").gte("clicked_at", startDate)
@@ -75,7 +75,11 @@ export function StatsViewer() {
       const date = new Date(v.viewed_at).toISOString().split("T")[0]
       byDay[date] = (byDay[date] || 0) + 1
 
-      const isLive = v.media_type === "live" || v.media_type === "live_tv" || v.ww_id?.toLowerCase().includes("live")
+      const isLive =
+        v.media_type === "live" ||
+        v.media_type === "live_tv" ||
+        v.embed_type === "live" ||
+        (v.ww_id && v.ww_id.toLowerCase().includes("live"))
       const mediaKey = isLive ? `live-${v.ww_id}` : `${v.media_type}-${v.tmdb_id}`
 
       if (!mediaCount[mediaKey]) {
@@ -88,14 +92,22 @@ export function StatsViewer() {
       }
       mediaCount[mediaKey].views++
 
-      const ref = v.referrer || "Direct"
+      let ref = "Direct"
+      if (v.referrer) {
+        try {
+          const url = new URL(v.referrer)
+          ref = url.origin
+        } catch {
+          ref = v.referrer
+        }
+      }
       refCount[ref] = (refCount[ref] || 0) + 1
 
       if (isLive) {
         typeCount.live++
       } else if (v.media_type === "movie") {
         typeCount.movie++
-      } else {
+      } else if (v.media_type === "tv") {
         typeCount.tv++
       }
 

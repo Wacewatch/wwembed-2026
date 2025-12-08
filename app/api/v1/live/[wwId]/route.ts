@@ -296,6 +296,8 @@ var hls=new Hls();hls.loadSource(url);hls.attachMedia(vid);
 }else{
 p.innerHTML='<iframe src="'+url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>'+tickerHtml;
 }
+var newTickerClose=$("tickerClose");
+if(newTickerClose)newTickerClose.onclick=function(){var tb=$("tickerBar");if(tb)tb.style.display="none";};
 }
 
 function startPlayer(){
