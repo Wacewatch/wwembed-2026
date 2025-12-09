@@ -9,11 +9,12 @@ export async function GET() {
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     // Fetch TMDB stats and database stats in parallel
-    const [discoverMovies, discoverTv, allApis, downloadLinks] = await Promise.all([
+    const [discoverMovies, discoverTv, allApis, downloadLinks, digitalDownloadLinks] = await Promise.all([
       fetch(`${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&language=fr-FR&page=1`),
       fetch(`${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&language=fr-FR&page=1`),
       supabase.from("third_party_apis").select("id, url_pattern_movie, url_pattern_tv").eq("is_active", true),
       supabase.from("download_links").select("id", { count: "exact", head: true }).eq("status", "approved"),
+      supabase.from("digital_download_links").select("id", { count: "exact", head: true }).eq("status", "approved"),
     ])
 
     const discoverMoviesData = await discoverMovies.json()
@@ -28,7 +29,7 @@ export async function GET() {
     const tvApiCount = apis.filter((api: any) => api.url_pattern_tv && api.url_pattern_tv.trim() !== "").length
 
     const totalStreamingLinks = totalMovies * movieApiCount + estimatedEpisodes * tvApiCount
-    const totalDownloadLinks = downloadLinks.count || 0
+    const totalDownloadLinks = (downloadLinks.count || 0) + (digitalDownloadLinks.count || 0)
 
     return NextResponse.json({
       movies: totalMovies,
