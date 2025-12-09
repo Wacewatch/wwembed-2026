@@ -57,21 +57,62 @@ export function StatsViewer() {
     const daysAgo = Number.parseInt(period)
     const startDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString()
 
-    const { data: views } = await supabase
-      .from("embed_views")
-      .select("viewed_at, tmdb_id, media_type, referrer, ww_id, user_agent, embed_type")
-      .gte("viewed_at", startDate)
+    const [
+      { count: totalViewsCount },
+      { count: totalClicksCount },
+      { count: totalAdClicksCount },
+      { count: movieViewsCount },
+      { count: tvViewsCount },
+      { count: liveViewsCount },
+    ] = await Promise.all([
+      supabase.from("embed_views").select("*", { count: "exact", head: true }).gte("viewed_at", startDate),
+      supabase.from("link_clicks").select("*", { count: "exact", head: true }).gte("clicked_at", startDate),
+      supabase.from("ad_clicks").select("*", { count: "exact", head: true }).gte("clicked_at", startDate),
+      supabase
+        .from("embed_views")
+        .select("*", { count: "exact", head: true })
+        .gte("viewed_at", startDate)
+        .eq("media_type", "movie"),
+      supabase
+        .from("embed_views")
+        .select("*", { count: "exact", head: true })
+        .gte("viewed_at", startDate)
+        .eq("media_type", "tv"),
+      supabase
+        .from("embed_views")
+        .select("*", { count: "exact", head: true })
+        .gte("viewed_at", startDate)
+        .or("media_type.eq.live,media_type.eq.live_tv,embed_type.eq.live"),
+    ])
 
-    const { data: clicks } = await supabase.from("link_clicks").select("*").gte("clicked_at", startDate)
+    let allViews: any[] = []
+    let page = 0
+    const pageSize = 1000
+    let hasMore = true
 
-    const { data: adClicks } = await supabase.from("ad_clicks").select("*").gte("clicked_at", startDate)
+    while (hasMore) {
+      const { data: viewsPage } = await supabase
+        .from("embed_views")
+        .select("viewed_at, tmdb_id, media_type, referrer, ww_id, user_agent, embed_type")
+        .gte("viewed_at", startDate)
+        .range(page * pageSize, (page + 1) * pageSize - 1)
+        .order("viewed_at", { ascending: false })
+
+      if (viewsPage && viewsPage.length > 0) {
+        allViews = [...allViews, ...viewsPage]
+        page++
+        hasMore = viewsPage.length === pageSize
+      } else {
+        hasMore = false
+      }
+    }
 
     const byDay: Record<string, number> = {}
     const mediaCount: Record<string, { tmdb_id: number | null; media_type: string; views: number; ww_id?: string }> = {}
     const refCount: Record<string, number> = {}
-    const typeCount: Record<string, number> = { movie: 0, tv: 0, live: 0 }
     const uniqueIps = new Set<string>()
-    ;(views || []).forEach((v) => {
+
+    allViews.forEach((v) => {
       const date = new Date(v.viewed_at).toISOString().split("T")[0]
       byDay[date] = (byDay[date] || 0) + 1
 
@@ -102,14 +143,6 @@ export function StatsViewer() {
         }
       }
       refCount[ref] = (refCount[ref] || 0) + 1
-
-      if (isLive) {
-        typeCount.live++
-      } else if (v.media_type === "movie") {
-        typeCount.movie++
-      } else if (v.media_type === "tv") {
-        typeCount.tv++
-      }
 
       if (v.user_agent) {
         uniqueIps.add(v.user_agent.substring(0, 50))
@@ -168,20 +201,20 @@ export function StatsViewer() {
         .slice(0, 10),
     )
 
-    const totalViews = views?.length || 0
+    const totalViews = totalViewsCount || 0
     setDetailedStats({
       totalViews,
-      totalClicks: clicks?.length || 0,
-      totalAdClicks: adClicks?.length || 0,
+      totalClicks: totalClicksCount || 0,
+      totalAdClicks: totalAdClicksCount || 0,
       uniqueVisitors: uniqueIps.size,
       avgViewsPerDay: totalViews / daysAgo,
       topCountries: [],
       viewsByType: [
-        { type: "Films", count: typeCount.movie },
-        { type: "Series", count: typeCount.tv },
-        { type: "TV Live", count: typeCount.live },
+        { type: "Films", count: movieViewsCount || 0 },
+        { type: "Series", count: tvViewsCount || 0 },
+        { type: "TV Live", count: liveViewsCount || 0 },
       ],
-      recentActivity: (views || []).slice(0, 5).map((v) => ({
+      recentActivity: allViews.slice(0, 5).map((v) => ({
         action: "Vue",
         timestamp: v.viewed_at,
         details: `${v.media_type} #${v.tmdb_id || v.ww_id}`,
