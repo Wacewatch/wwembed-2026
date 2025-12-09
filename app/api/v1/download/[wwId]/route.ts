@@ -457,8 +457,21 @@ return;
 }
 var first=results[0];
 var movieId=first.id||first.movie_id||first.tmdb_id;
-// Treat digital content as movie always
-var dlUrl="https://api.movix.site/api/darkiworld/download/movie/"+movieId;
+if(!movieId){
+loading.style.display="none";
+content.innerHTML='<div class="em">Aucune source externe trouvée</div>';
+countBadge.textContent="0";
+return;
+}
+
+var dlUrl;
+if(_mediaType==="tv"){
+var s=_seasonNum||1;
+var e=_episodeNum||1;
+dlUrl="https://api.movix.site/api/darkiworld/download/tv/"+movieId+"?season="+s+"&episode="+e;
+}else{
+dlUrl="https://api.movix.site/api/darkiworld/download/movie/"+movieId;
+}
 
 fetch(dlUrl).then(function(r){return r.json();}).then(function(dlData){
 loading.style.display="none";
@@ -476,14 +489,14 @@ countBadge.textContent=links.length;
 _populateExtFilters(links);
 filters.style.display="flex";
 _renderExtLinks(links);
-}).catch(function(){
+}).catch(function(err){
 loading.style.display="none";
-content.innerHTML='<div class="em">Erreur de chargement</div>';
+content.innerHTML='<div class="em">Aucun lien externe disponible</div>';
 countBadge.textContent="0";
 });
-}).catch(function(){
+}).catch(function(err){
 loading.style.display="none";
-content.innerHTML='<div class="em">Erreur de recherche</div>';
+content.innerHTML='<div class="em">Aucune source externe trouvée</div>';
 countBadge.textContent="0";
 });
 }
@@ -503,17 +516,24 @@ var pf=document.getElementById("extProviderFilter");
 qualities.forEach(function(q){var o=document.createElement("option");o.value=q;o.textContent=q;qf.appendChild(o);});
 languages.forEach(function(l){var o=document.createElement("option");o.value=l;o.textContent=l;lf.appendChild(o);});
 providers.forEach(function(p){var o=document.createElement("option");o.value=p;o.textContent=p;pf.appendChild(o);});
-qf.onchange=lf.onchange=pf.onchange=_applyExtFilters;
+qf.onchange=lf.onchange=pf.onchange=document.getElementById("extSizeFilter").onchange=_applyExtFilters;
 }
 
 function _applyExtFilters(){
 var qf=document.getElementById("extQualityFilter").value;
 var lf=document.getElementById("extLanguageFilter").value;
 var pf=document.getElementById("extProviderFilter").value;
+var sf=document.getElementById("extSizeFilter").value;
 var filtered=_allExtLinks.filter(function(l){
 if(qf&&l.quality!==qf)return false;
 if(lf&&l.language!==lf)return false;
 if(pf&&l.provider!==pf)return false;
+if(sf){
+var sizeGB=(l.size||0)/(1024*1024*1024);
+if(sf==="small"&&sizeGB>=1)return false;
+if(sf==="medium"&&(sizeGB<1||sizeGB>5))return false;
+if(sf==="large"&&sizeGB<=5)return false;
+}
 return true;
 });
 _renderExtLinks(filtered);
@@ -537,6 +557,7 @@ return;
 var html="";
 links.forEach(function(l){
 var size=_formatSize(l.size||0);
+var date=l.upload_date?new Date(l.upload_date).toLocaleDateString("fr-FR"):"";
 html+='<div class="ext-card" data-id="'+l.id+'">';
 html+='<div class="ext-card-body">';
 html+='<div class="ext-provider">'+(l.provider||"Inconnu")+'</div>';
@@ -549,6 +570,7 @@ html+='<span>'+l.host_name+'</span></div>';
 }
 html+='<div class="ext-stats">';
 if(l.size)html+='<div class="ext-stat"><span class="ext-stat-label">Taille</span><span class="ext-stat-value">'+size+'</span></div>';
+if(date)html+='<div class="ext-stat"><span class="ext-stat-label">Date</span><span class="ext-stat-value">'+date+'</span></div>';
 html+='</div>';
 html+='<button class="ext-btn">Voir le lien</button>';
 html+='</div></div>';
@@ -1187,13 +1209,18 @@ countBadge.textContent="0";
 return;
 }
 var first=results[0];
-var movieId=first.id||first.movie_id||first.tmdb_id||_tmdbId;
-var isSeries=first.is_series||first.type==="series"||_mediaType==="tv";
+var movieId=first.id||first.movie_id||first.tmdb_id;
+if(!movieId){
+loading.style.display="none";
+content.innerHTML='<div class="em">Aucune source externe trouvée</div>';
+countBadge.textContent="0";
+return;
+}
 
 var dlUrl;
-if(isSeries){
-var s=_seasonNum||first.season||1;
-var e=_episodeNum||first.episode||1;
+if(_mediaType==="tv"){
+var s=_seasonNum||1;
+var e=_episodeNum||1;
 dlUrl="https://api.movix.site/api/darkiworld/download/tv/"+movieId+"?season="+s+"&episode="+e;
 }else{
 dlUrl="https://api.movix.site/api/darkiworld/download/movie/"+movieId;
@@ -1215,14 +1242,14 @@ countBadge.textContent=links.length;
 _populateExtFilters(links);
 filters.style.display="flex";
 _renderExtLinks(links);
-}).catch(function(){
+}).catch(function(err){
 loading.style.display="none";
-content.innerHTML='<div class="em">Erreur de chargement des sources</div>';
+content.innerHTML='<div class="em">Aucun lien externe disponible</div>';
 countBadge.textContent="0";
 });
-}).catch(function(){
+}).catch(function(err){
 loading.style.display="none";
-content.innerHTML='<div class="em">Erreur de recherche</div>';
+content.innerHTML='<div class="em">Aucune source externe trouvée</div>';
 countBadge.textContent="0";
 });
 }
@@ -1268,7 +1295,7 @@ _renderExtLinks(filtered);
 function _renderExtLinks(links){
 var content=document.getElementById(_extIds.content);
 if(links.length===0){
-content.innerHTML='<div class="em">Aucun résultat avec ces filtres</div>';
+content.innerHTML='<div class="em">Aucun résultat</div>';
 return;
 }
 var html="";
@@ -1280,7 +1307,6 @@ html+='<div class="ext-card-body">';
 html+='<div class="ext-provider">'+(l.provider||"Inconnu")+'</div>';
 html+='<span class="ext-quality">'+(l.quality||"N/A")+'</span>';
 html+='<div class="ext-info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V15"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>'+(l.language||"N/A")+'</div>';
-if(l.sub)html+='<div class="ext-info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'+l.sub+'</div>';
 if(l.host_name){
 html+='<div class="ext-host">';
 if(l.host_icon)html+='<img src="'+l.host_icon+'" alt="'+l.host_name+'" onerror="this.style.display=\\'none\\'">';
@@ -1294,24 +1320,26 @@ html+='<button class="ext-btn">Voir le lien</button>';
 html+='</div></div>';
 });
 content.innerHTML=html;
-content.querySelectorAll(".ext-card").forEach(function(card){
+var cards=content.querySelectorAll(".ext-card");
+cards.forEach(function(card){
 card.onclick=function(){
-var id=this.getAttribute("data-id");
-_showExtDetails(id);
+var linkId=card.getAttribute("data-id");
+var link=_allExtLinks.find(function(l){return String(l.id)===linkId;});
+if(link)_showExtDetails(link);
 };
 });
 }
 
-function _showExtDetails(linkId){
+function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
-var detailsContent=document.getElementById(_extIds.detailsContent);
+var body=document.getElementById(_extIds.detailsContent);
 details.style.display="block";
 details.scrollIntoView({behavior:"smooth",block:"nearest"});
-detailsContent.innerHTML='<div class="ext-loading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Chargement...</div>';
+body.innerHTML='<div class="ext-loading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Chargement...</div>';
 
-fetch("https://api.movix.site/api/darkiworld/decode/"+linkId).then(function(r){return r.json();}).then(function(data){
+fetch("https://api.movix.site/api/darkiworld/decode/"+link.id).then(function(r){return r.json();}).then(function(data){
 if(!data||!data.success||!data.embed_url){
-detailsContent.innerHTML='<div class="em">Données indisponibles</div>';
+body.innerHTML='<div class="em">Données indisponibles</div>';
 return;
 }
 var embed=data.embed_url;
@@ -1330,16 +1358,17 @@ html+='<div class="ext-link-url">'+embed.lien+'</div>';
 html+='</div>';
 html+='<div class="ext-info-cards">';
 html+='<div class="ext-info-card"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Informations</h5><ul>';
-if(_seasonNum)html+='<li><span>Saison</span><strong>S'+String(_seasonNum).padStart(2,"0")+'</strong></li>';
-if(_episodeNum)html+='<li><span>Épisode</span><strong>E'+String(_episodeNum).padStart(2,"0")+'</strong></li>';
-html+='<li><span>Taille</span><strong>'+(embed.taille?_formatSize(embed.taille):"N/A")+'</strong></li>';
+html+='<li><span>Provider</span><strong>'+(link.provider||"N/A")+'</strong></li>';
+html+='<li><span>Qualité</span><strong>'+(link.quality||"N/A")+'</strong></li>';
+html+='<li><span>Langue</span><strong>'+(link.language||"N/A")+'</strong></li>';
+html+='<li><span>Taille</span><strong>'+(embed.taille?_formatSize(embed.taille):_formatSize(link.size||0))+'</strong></li>';
 html+='</ul></div>';
 html+='<div class="ext-info-card"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Stats</h5><ul>';
 html+='<li><span>Vues</span><strong>'+(embed.view||0)+'</strong></li>';
 html+='<li><span>Streaming</span><strong>'+(embed.streaming?"Oui":"Non")+'</strong></li>';
 html+='<li><span>Actif</span><strong>'+(embed.active?"Oui":"Non")+'</strong></li>';
 html+='</ul></div></div>';
-detailsContent.innerHTML=html;
+body.innerHTML=html;
 
 document.getElementById("extUnlockBtn").onclick=function(){
 if(unlocked)return;
@@ -1353,7 +1382,7 @@ document.getElementById("extUnlockedSection").style.display="block";
 },500);
 };
 }).catch(function(){
-detailsContent.innerHTML='<div class="em">Erreur de décodage</div>';
+body.innerHTML='<div class="em">Erreur de décodage</div>';
 });
 }
 
@@ -1362,39 +1391,7 @@ document.getElementById(_extIds.details).style.display="none";
 };
 
 _loadExternal();
-
-// Select the appropriate sort button based on current sort state
-const sortBtns = document.getElementById(_ids.sortBtns);
-if (sortBtns) {
-  sortBtns.querySelectorAll('.sb-btn').forEach(btn => {
-    btn.classList.remove('ac');
-    if (btn.getAttribute('data-sort') === _sort) {
-      btn.classList.add('ac');
-    }
-  });
-}
-
-// Add event listeners for sort buttons
-if (sortBtns) {
-  sortBtns.querySelectorAll('.sb-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const newSort = btn.getAttribute('data-sort');
-      if (newSort === _sort) {
-        _sortDir *= -1; // Reverse direction if same sort is clicked
-      } else {
-        _sort = newSort;
-        _sortDir = 1; // Reset direction for new sort
-      }
-      _renderLinks(); // Re-render links with new sort order
-      // Update active class for buttons
-      sortBtns.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('ac'));
-      btn.classList.add('ac');
-    });
-  });
-}
-
-_renderLinks(); // Initial render of links
-
+// </CHANGE> Fixed missing closing brace for IIFE
 })();
 </script>
 </body>
