@@ -234,7 +234,7 @@ ${l.language ? `<span class="bg">${l.language}</span>` : ""}
 <div class="bx-content"><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
 </div>
 <div class="bx bh" id="${ids.boxHelp}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-106a5.5 5.5 0 0 0 0-7.78z"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
 <div class="bx-content"><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
 </div>
 <div class="bx bi" id="${ids.boxTime}">
@@ -425,6 +425,16 @@ if(_p){window.open(_p,"_blank");_p=null;}
   const isSeries = mediaType === "tv"
   const showSeasonGroups = isSeries && seasonNumber === undefined
 
+  const externalIds = {
+    container: generateRandomId("ext"),
+    content: generateRandomId("exc"),
+    loading: generateRandomId("exl"),
+    filters: generateRandomId("exf"),
+    count: generateRandomId("exn"),
+    details: generateRandomId("exd"),
+    detailsContent: generateRandomId("exdc"),
+  }
+
   const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -517,10 +527,70 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .cf a{color:#667eea;text-decoration:none;font-weight:500}
 .tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;margin-left:8px;font-weight:600}
 
+/* External links styles */
+.sec-title{display:flex;align-items:center;gap:10px;padding:16px;background:linear-gradient(135deg,rgba(102,126,234,0.2),rgba(118,75,162,0.2));border:1px solid rgba(102,126,234,0.3);border-radius:12px;margin:24px 0 16px;font-weight:700;color:#a78bfa}
+.sec-title svg{width:20px;height:20px}
+.sec-title .badge{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;margin-left:auto}
+
+.ext-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:30px;color:#8ba3b5;font-size:14px}
+.ext-loading svg{animation:spin 1s linear infinite;width:24px;height:24px}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+.ext-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;padding:12px;background:rgba(30,58,79,0.2);border-radius:10px}
+.ext-select{padding:8px 12px;background:rgba(30,58,79,0.5);border:1px solid #1e3a4f;border-radius:8px;color:#e5e7eb;font-size:12px;cursor:pointer}
+.ext-select:focus{outline:none;border-color:#667eea}
+.ext-count{margin-left:auto;color:#667eea;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+
+.ext-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.ext-card{background:rgba(22,34,48,0.8);border-radius:12px;border:1px solid rgba(102,126,234,0.3);overflow:hidden;transition:all 0.2s;cursor:pointer}
+.ext-card:hover{border-color:rgba(102,126,234,0.6);transform:translateY(-2px);box-shadow:0 8px 24px rgba(102,126,234,0.2)}
+.ext-card-body{padding:16px}
+.ext-provider{font-size:11px;color:#667eea;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.ext-quality{display:inline-block;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;margin-bottom:10px}
+.ext-info{display:flex;align-items:center;gap:6px;font-size:12px;color:#94a3b8;margin-bottom:6px}
+.ext-info svg{width:14px;height:14px;flex-shrink:0}
+.ext-host{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid rgba(30,58,79,0.4);margin-top:10px}
+.ext-host img{width:20px;height:20px;border-radius:4px}
+.ext-host span{font-size:12px;color:#8ba3b5}
+.ext-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.ext-stat{text-align:center;padding:8px;background:rgba(30,58,79,0.3);border-radius:6px}
+.ext-stat-label{font-size:10px;color:#6b7280;display:block}
+.ext-stat-value{font-size:13px;font-weight:600;color:#e5e7eb}
+.ext-btn{display:block;width:100%;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;text-align:center;transition:all 0.2s;margin-top:12px}
+.ext-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(102,126,234,0.4)}
+
+.ext-details{margin-top:16px;background:rgba(22,34,48,0.9);border-radius:12px;border:1px solid rgba(102,126,234,0.4);overflow:hidden}
+.ext-details-header{display:flex;justify-content:space-between;align-items:center;padding:16px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.ext-details-header h3{font-size:16px;font-weight:700}
+.ext-close{background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px}
+.ext-close:hover{background:rgba(255,255,255,0.3)}
+.ext-details-body{padding:20px}
+.ext-unlock{text-align:center;padding:24px;background:rgba(102,126,234,0.1);border-radius:12px;border:2px solid rgba(102,126,234,0.3)}
+.ext-unlock-icon{font-size:48px;margin-bottom:12px}
+.ext-unlock h4{color:#a78bfa;margin-bottom:8px;font-size:18px}
+.ext-unlock p{color:#8ba3b5;font-size:13px;margin-bottom:16px}
+.ext-unlock-btn{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:14px 28px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.ext-unlock-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(102,126,234,0.5)}
+.ext-unlocked{text-align:center;padding:24px;background:rgba(16,185,129,0.1);border-radius:12px;border:2px solid rgba(16,185,129,0.3)}
+.ext-unlocked-icon{font-size:48px;margin-bottom:12px;color:#10b981}
+.ext-unlocked h4{color:#10b981;margin-bottom:12px;font-size:18px}
+.ext-link-btn{display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:14px 28px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;transition:all 0.2s}
+.ext-link-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(16,185,129,0.5);color:#fff}
+.ext-link-url{font-size:11px;color:#6ee7b7;margin-top:12px;word-break:break-all}
+.ext-info-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px}
+.ext-info-card{background:rgba(30,58,79,0.3);border-radius:10px;padding:16px;border:1px solid rgba(30,58,79,0.5)}
+.ext-info-card h5{color:#667eea;font-size:13px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ext-info-card ul{list-style:none}
+.ext-info-card li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(30,58,79,0.4);font-size:12px}
+.ext-info-card li:last-child{border-bottom:none}
+.ext-info-card li strong{color:#e5e7eb}
+.ext-info-card li span{color:#8ba3b5}
+
 @media(max-width:480px){
 .hd{flex-direction:column;text-align:center}
 .ps{width:60px;height:90px}
 .li-nm{min-width:100%}
+.ext-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -544,6 +614,40 @@ ${posterUrl ? `<img src="${posterUrl}" alt="${title}" class="ps">` : ""}
 
 <div id="${ids.linksContainer}"></div>
 
+<!-- External links section -->
+<div class="sec-title">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+Sources externes
+<span class="badge" id="${externalIds.count}">...</span>
+</div>
+
+<div id="${externalIds.container}">
+<div class="ext-loading" id="${externalIds.loading}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+Recherche de sources externes...
+</div>
+<div id="${externalIds.filters}" class="ext-filters" style="display:none">
+<select id="extQualityFilter" class="ext-select"><option value="">Qualité</option></select>
+<select id="extLanguageFilter" class="ext-select"><option value="">Langue</option></select>
+<select id="extProviderFilter" class="ext-select"><option value="">Provider</option></select>
+<select id="extSizeFilter" class="ext-select">
+<option value="">Taille</option>
+<option value="small">&lt; 1 GB</option>
+<option value="medium">1-5 GB</option>
+<option value="large">&gt; 5 GB</option>
+</select>
+</div>
+<div id="${externalIds.content}" class="ext-grid"></div>
+</div>
+
+<div id="${externalIds.details}" class="ext-details" style="display:none">
+<div class="ext-details-header">
+<h3>Détails du lien</h3>
+<button class="ext-close" id="extCloseBtn">&times;</button>
+</div>
+<div class="ext-details-body" id="${externalIds.detailsContent}"></div>
+</div>
+
 <div class="ft">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
 
 <div class="mo" id="${ids.overlay}">
@@ -560,7 +664,7 @@ ${posterUrl ? `<img src="${posterUrl}" alt="${title}" class="ps">` : ""}
 <div class="bx-content"><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
 </div>
 <div class="bx bh" id="${ids.boxHelp}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-106a5.5 5.5 0 0 0 0-7.78z"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
 <div class="bx-content"><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
 </div>
 <div class="bx bi" id="${ids.boxTime}">
@@ -590,16 +694,23 @@ var _i="${adId}";
 var _h=${hasAds};
 var _p=null;
 var _ids=${JSON.stringify(ids)};
+var _extIds=${JSON.stringify(externalIds)};
 var _isSeries=${isSeries};
 var _showGroups=${showSeasonGroups};
 var _sort="default";
 var _sortDir=1;
+var _title="${title.replace(/"/g, '\\"')}";
+var _mediaType="${mediaType}";
+var _tmdbId=${tmdbId};
+var _seasonNum=${seasonNumber !== undefined ? seasonNumber : "null"};
+var _episodeNum=${episodeNumber !== undefined ? episodeNumber : "null"};
+var _allExtLinks=[];
 
 function _renderLinks(){
 var c=document.getElementById(_ids.linksContainer);
 if(!c)return;
 if(_lks.length===0){
-c.innerHTML='<div class="em">Aucun lien de téléchargement disponible</div>';
+c.innerHTML='<div class="em">Aucun lien direct disponible</div>';
 return;
 }
 var sorted=[].concat(_lks);
@@ -759,6 +870,210 @@ _renderLinks();
 }
 
 _renderLinks();
+
+function _loadExternal(){
+var loading=document.getElementById(_extIds.loading);
+var content=document.getElementById(_extIds.content);
+var filters=document.getElementById(_extIds.filters);
+var countBadge=document.getElementById(_extIds.count);
+
+var searchUrl="https://api.movix.site/api/search?title="+encodeURIComponent(_title);
+fetch(searchUrl).then(function(r){return r.json();}).then(function(data){
+var results=data;
+if(data&&typeof data==="object"&&!Array.isArray(data)){
+if(data.results)results=data.results;
+else if(data.data)results=data.data;
+else if(data.movies)results=data.movies;
+}
+if(!Array.isArray(results)||results.length===0){
+loading.style.display="none";
+content.innerHTML='<div class="em">Aucune source externe trouvée</div>';
+countBadge.textContent="0";
+return;
+}
+var first=results[0];
+var movieId=first.id||first.movie_id||first.tmdb_id||_tmdbId;
+var isSeries=first.is_series||first.type==="series"||_mediaType==="tv";
+
+var dlUrl;
+if(isSeries){
+var s=_seasonNum||first.season||1;
+var e=_episodeNum||first.episode||1;
+dlUrl="https://api.movix.site/api/darkiworld/download/tv/"+movieId+"?season="+s+"&episode="+e;
+}else{
+dlUrl="https://api.movix.site/api/darkiworld/download/movie/"+movieId;
+}
+
+fetch(dlUrl).then(function(r){return r.json();}).then(function(dlData){
+loading.style.display="none";
+var links=null;
+if(dlData&&dlData.success&&dlData.all&&Array.isArray(dlData.all)){
+links=dlData.all;
+}
+if(!links||links.length===0){
+content.innerHTML='<div class="em">Aucun lien externe disponible</div>';
+countBadge.textContent="0";
+return;
+}
+_allExtLinks=links;
+countBadge.textContent=links.length;
+_populateExtFilters(links);
+filters.style.display="flex";
+_renderExtLinks(links);
+}).catch(function(){
+loading.style.display="none";
+content.innerHTML='<div class="em">Erreur de chargement des sources</div>';
+countBadge.textContent="0";
+});
+}).catch(function(){
+loading.style.display="none";
+content.innerHTML='<div class="em">Erreur de recherche</div>';
+countBadge.textContent="0";
+});
+}
+
+function _populateExtFilters(links){
+var qualities=new Set();
+var languages=new Set();
+var providers=new Set();
+links.forEach(function(l){
+if(l.quality)qualities.add(l.quality);
+if(l.language)languages.add(l.language);
+if(l.provider)providers.add(l.provider);
+});
+var qf=document.getElementById("extQualityFilter");
+var lf=document.getElementById("extLanguageFilter");
+var pf=document.getElementById("extProviderFilter");
+qualities.forEach(function(q){var o=document.createElement("option");o.value=q;o.textContent=q;qf.appendChild(o);});
+languages.forEach(function(l){var o=document.createElement("option");o.value=l;o.textContent=l;lf.appendChild(o);});
+providers.forEach(function(p){var o=document.createElement("option");o.value=p;o.textContent=p;pf.appendChild(o);});
+qf.onchange=lf.onchange=pf.onchange=document.getElementById("extSizeFilter").onchange=_applyExtFilters;
+}
+
+function _applyExtFilters(){
+var qf=document.getElementById("extQualityFilter").value;
+var lf=document.getElementById("extLanguageFilter").value;
+var pf=document.getElementById("extProviderFilter").value;
+var sf=document.getElementById("extSizeFilter").value;
+var filtered=_allExtLinks.filter(function(l){
+if(qf&&l.quality!==qf)return false;
+if(lf&&l.language!==lf)return false;
+if(pf&&l.provider!==pf)return false;
+if(sf){
+var sizeGB=(l.size||0)/(1024*1024*1024);
+if(sf==="small"&&sizeGB>=1)return false;
+if(sf==="medium"&&(sizeGB<1||sizeGB>5))return false;
+if(sf==="large"&&sizeGB<=5)return false;
+}
+return true;
+});
+_renderExtLinks(filtered);
+}
+
+function _renderExtLinks(links){
+var content=document.getElementById(_extIds.content);
+if(links.length===0){
+content.innerHTML='<div class="em">Aucun résultat avec ces filtres</div>';
+return;
+}
+var html="";
+links.forEach(function(l){
+var size=_formatSize(l.size||0);
+var date=l.upload_date?new Date(l.upload_date).toLocaleDateString("fr-FR"):"";
+html+='<div class="ext-card" data-id="'+l.id+'">';
+html+='<div class="ext-card-body">';
+html+='<div class="ext-provider">'+(l.provider||"Inconnu")+'</div>';
+html+='<span class="ext-quality">'+(l.quality||"N/A")+'</span>';
+html+='<div class="ext-info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V15"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>'+(l.language||"N/A")+'</div>';
+if(l.sub)html+='<div class="ext-info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'+l.sub+'</div>';
+if(l.host_name){
+html+='<div class="ext-host">';
+if(l.host_icon)html+='<img src="'+l.host_icon+'" alt="'+l.host_name+'" onerror="this.style.display=\\'none\\'">';
+html+='<span>'+l.host_name+'</span></div>';
+}
+html+='<div class="ext-stats">';
+if(l.size)html+='<div class="ext-stat"><span class="ext-stat-label">Taille</span><span class="ext-stat-value">'+size+'</span></div>';
+if(date)html+='<div class="ext-stat"><span class="ext-stat-label">Date</span><span class="ext-stat-value">'+date+'</span></div>';
+html+='</div>';
+html+='<button class="ext-btn">Voir le lien</button>';
+html+='</div></div>';
+});
+content.innerHTML=html;
+content.querySelectorAll(".ext-card").forEach(function(card){
+card.onclick=function(){
+var id=this.getAttribute("data-id");
+_showExtDetails(id);
+};
+});
+}
+
+function _showExtDetails(linkId){
+var details=document.getElementById(_extIds.details);
+var detailsContent=document.getElementById(_extIds.detailsContent);
+details.style.display="block";
+details.scrollIntoView({behavior:"smooth",block:"nearest"});
+detailsContent.innerHTML='<div class="ext-loading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Chargement...</div>';
+
+fetch("https://api.movix.site/api/darkiworld/decode/"+linkId).then(function(r){return r.json();}).then(function(data){
+if(!data||!data.success||!data.embed_url){
+detailsContent.innerHTML='<div class="em">Données indisponibles</div>';
+return;
+}
+var embed=data.embed_url;
+var unlocked=false;
+var html='<div id="extUnlockSection" class="ext-unlock">';
+html+='<div class="ext-unlock-icon">🔒</div>';
+html+='<h4>Lien protégé</h4>';
+html+='<p>Débloquez ce lien en ouvrant une courte publicité</p>';
+html+='<button id="extUnlockBtn" class="ext-unlock-btn">Débloquer maintenant</button>';
+html+='</div>';
+html+='<div id="extUnlockedSection" class="ext-unlocked" style="display:none">';
+html+='<div class="ext-unlocked-icon">✅</div>';
+html+='<h4>Lien débloqué !</h4>';
+html+='<a href="'+embed.lien+'" target="_blank" class="ext-link-btn">Accéder au lien</a>';
+html+='<div class="ext-link-url">'+embed.lien+'</div>';
+html+='</div>';
+html+='<div class="ext-info-cards">';
+html+='<div class="ext-info-card"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Informations</h5><ul>';
+if(_seasonNum)html+='<li><span>Saison</span><strong>S'+String(_seasonNum).padStart(2,"0")+'</strong></li>';
+if(_episodeNum)html+='<li><span>Épisode</span><strong>E'+String(_episodeNum).padStart(2,"0")+'</strong></li>';
+html+='<li><span>Taille</span><strong>'+(embed.taille?_formatSize(embed.taille):"N/A")+'</strong></li>';
+html+='</ul></div>';
+html+='<div class="ext-info-card"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Stats</h5><ul>';
+html+='<li><span>Vues</span><strong>'+(embed.view||0)+'</strong></li>';
+html+='<li><span>Streaming</span><strong>'+(embed.streaming?"Oui":"Non")+'</strong></li>';
+html+='<li><span>Actif</span><strong>'+(embed.active?"Oui":"Non")+'</strong></li>';
+html+='</ul></div></div>';
+detailsContent.innerHTML=html;
+
+document.getElementById("extUnlockBtn").onclick=function(){
+if(unlocked)return;
+this.textContent="Ouverture...";
+this.style.opacity="0.7";
+window.open("https://otieu.com/4/9248013","_blank");
+setTimeout(function(){
+unlocked=true;
+document.getElementById("extUnlockSection").style.display="none";
+document.getElementById("extUnlockedSection").style.display="block";
+},500);
+};
+}).catch(function(){
+detailsContent.innerHTML='<div class="em">Erreur de décodage</div>';
+});
+}
+
+document.getElementById("extCloseBtn").onclick=function(){
+document.getElementById(_extIds.details).style.display="none";
+};
+
+function _formatSize(bytes){
+if(!bytes)return"N/A";
+var sizes=["o","Ko","Mo","Go","To"];
+var i=Math.floor(Math.log(bytes)/Math.log(1024));
+return Math.round((bytes/Math.pow(1024,i))*100)/100+" "+sizes[i];
+}
+
+_loadExternal();
 })();
 </script>
 </body>
