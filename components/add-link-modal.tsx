@@ -815,10 +815,10 @@ export function AddLinkModal({
     const supabase = createClient()
     const status = getLinkStatus()
 
-    const { error: linkError } = await supabase.from("digital_links").insert({
+    const { error: linkError } = await supabase.from("digital_download_links").insert({
       content_id: selectedDigitalContentId,
       source_name: digitalLinkData.source_name,
-      download_url: digitalLinkData.download_url,
+      source_url: digitalLinkData.download_url,
       reader_url: digitalLinkData.reader_url || null,
       file_format: digitalLinkData.file_format || null,
       file_size: digitalLinkData.file_size || null,
@@ -2157,23 +2157,29 @@ export function AddLinkModal({
                     </div>
 
                     {selectedChannelId && (
-                      <form onSubmit={handleLiveTvSourceSubmit} className="space-y-4 mt-4">
-                        <div className="space-y-2">
-                          <Label>URL du flux</Label>
-                          <Input
-                            placeholder="https://... ou m3u8"
-                            value={liveTvData.stream_url}
-                            onChange={(e) => setLiveTvData({ ...liveTvData, stream_url: e.target.value })}
-                            required
-                            className="bg-zinc-950 border-zinc-800 focus:border-primary"
-                          />
-                        </div>
+                      <form
+                        onSubmit={handleLiveTvSourceSubmit}
+                        className="space-y-4 mt-4 pt-4 border-t border-zinc-800"
+                      >
+                        <Label className="text-base font-semibold flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center text-xs font-bold text-blue-600">
+                            3
+                          </div>
+                          URL du flux
+                        </Label>
+                        <Input
+                          placeholder="https://... ou m3u8"
+                          value={liveTvSourceData.stream_url}
+                          onChange={(e) => setLiveTvSourceData({ ...liveTvSourceData, stream_url: e.target.value })}
+                          required
+                          className="bg-zinc-950 border-zinc-800 focus:border-primary"
+                        />
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>Qualite</Label>
                             <Select
-                              value={liveTvData.quality}
-                              onValueChange={(v) => setLiveTvData({ ...liveTvData, quality: v })}
+                              value={liveTvSourceData.quality}
+                              onValueChange={(v) => setLiveTvSourceData({ ...liveTvSourceData, quality: v })}
                             >
                               <SelectTrigger className="bg-zinc-950 border-zinc-800">
                                 <SelectValue />
@@ -2189,8 +2195,8 @@ export function AddLinkModal({
                           <div className="space-y-2">
                             <Label>Langue</Label>
                             <Select
-                              value={liveTvData.language}
-                              onValueChange={(v) => setLiveTvData({ ...liveTvData, language: v })}
+                              value={liveTvSourceData.language}
+                              onValueChange={(v) => setLiveTvSourceData({ ...liveTvSourceData, language: v })}
                             >
                               <SelectTrigger className="bg-zinc-950 border-zinc-800">
                                 <SelectValue />

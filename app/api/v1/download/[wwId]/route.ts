@@ -52,7 +52,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     })
 
     const links = digitalLinks || []
-    const readerLinks = links.filter((l) => l.reader_url)
     const downloadLinks = links.filter((l) => l.source_url)
 
     const externalIds = {
@@ -209,41 +208,14 @@ ${cover ? `<img src="${cover}" alt="${title}" class="ps">` : ""}
 </div>
 </div>
 
-${
-  readerLinks.length > 0
-    ? `
-<div class="sc">
-<div class="sc-title">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-Lire en ligne
-</div>
-<div class="lk">
-${readerLinks
-  .map(
-    (l) => `
-<div class="li">
-<div class="ln">
-<span class="nm">${l.source_name}</span>
-${l.quality ? `<span class="bg">${l.quality}</span>` : ""}
-${l.language ? `<span class="bg">${l.language}</span>` : ""}
-</div>
-<button class="db rd" onclick="window.open('${l.reader_url}','_blank')">Lire</button>
-</div>
-`,
-  )
-  .join("")}
-</div>
-</div>
-`
-    : ""
-}
+<!-- Removed "Lire en ligne" section -->
 
 <div class="sc">
 <div class="sc-title">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
 Téléchargements
 </div>
-<div class="lk" id="${ids.container}">
+<div class="lk">
 ${
   downloadLinks.length === 0
     ? '<div class="em">Aucun lien de téléchargement disponible</div>'
@@ -760,7 +732,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ext-stat-label{font-size:10px;color:#6b7280;display:block}
 .ext-stat-value{font-size:13px;font-weight:600;color:#e5e7eb}
 .ext-btn{display:block;width:100%;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;text-align:center;transition:all 0.2s;margin-top:12px}
-.ext-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(102,126,234,0.4)}
+.ext-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(102,126,234,0.2)}
 
 .ext-details{margin-top:16px;background:rgba(22,34,48,0.9);border-radius:12px;border:1px solid rgba(102,126,234,0.4);overflow:hidden}
 .ext-details-header{display:flex;justify-content:space-between;align-items:center;padding:16px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
