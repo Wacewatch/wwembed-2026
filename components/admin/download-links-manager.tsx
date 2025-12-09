@@ -39,7 +39,7 @@ export function DownloadLinksManager() {
     const supabase = createClient()
     const { data } = await supabase
       .from("download_links")
-      .select("*, profiles:user_id!left(username)")
+      .select("*, profiles:submitted_by(username)")
       .order("created_at", { ascending: false })
       .limit(50)
     setLinks(data || [])
