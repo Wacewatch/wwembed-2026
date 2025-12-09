@@ -12,20 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import {
-  Trash2,
-  Plus,
-  Copy,
-  Tv,
-  Eye,
-  ChevronDown,
-  ChevronUp,
-  Pencil,
-  Search,
-  Power,
-  ArrowUp,
-  ArrowDown,
-} from "lucide-react"
+import { Trash2, Plus, Copy, Tv, Eye, ChevronDown, ChevronUp, Pencil, Search, Power } from "lucide-react"
 import type { LiveTVChannel, LiveTVSource } from "@/lib/types"
 
 const CATEGORIES = [
@@ -273,42 +260,9 @@ export function LiveTVManager() {
     fetchChannels()
   }
 
-  const changeSourcePriority = async (channelId: string, sourceId: string, direction: "up" | "down") => {
+  const setSourcePriority = async (sourceId: string, newPriority: number) => {
     const supabase = createClient()
-    const channel = channels.find((c) => c.id === channelId)
-    if (!channel?.sources) return
-
-    const sources = [...channel.sources].sort((a, b) => (a.priority || 0) - (b.priority || 0))
-    const currentIndex = sources.findIndex((s) => s.id === sourceId)
-
-    if (direction === "up" && currentIndex > 0) {
-      // Swap with previous
-      const prevSource = sources[currentIndex - 1]
-      const currentSource = sources[currentIndex]
-
-      await supabase
-        .from("live_tv_sources")
-        .update({ priority: prevSource.priority || 0 })
-        .eq("id", currentSource.id)
-      await supabase
-        .from("live_tv_sources")
-        .update({ priority: currentSource.priority || 0 })
-        .eq("id", prevSource.id)
-    } else if (direction === "down" && currentIndex < sources.length - 1) {
-      // Swap with next
-      const nextSource = sources[currentIndex + 1]
-      const currentSource = sources[currentIndex]
-
-      await supabase
-        .from("live_tv_sources")
-        .update({ priority: nextSource.priority || 0 })
-        .eq("id", currentSource.id)
-      await supabase
-        .from("live_tv_sources")
-        .update({ priority: currentSource.priority || 0 })
-        .eq("id", nextSource.id)
-    }
-
+    await supabase.from("live_tv_sources").update({ priority: newPriority }).eq("id", sourceId)
     fetchChannels()
   }
 
@@ -789,7 +743,7 @@ export function LiveTVManager() {
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead className="w-[80px]">Ordre</TableHead>
+                              <TableHead className="w-[100px]">Priorite</TableHead>
                               <TableHead>Nom</TableHead>
                               <TableHead>URL</TableHead>
                               <TableHead>Qualite</TableHead>
@@ -804,29 +758,21 @@ export function LiveTVManager() {
                               .map((source, index) => (
                                 <TableRow key={source.id}>
                                   <TableCell>
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-sm font-medium text-muted-foreground w-5">{index + 1}</span>
-                                      <div className="flex flex-col">
-                                        <Button
-                                          size="icon"
-                                          variant="ghost"
-                                          className="h-6 w-6"
-                                          disabled={index === 0}
-                                          onClick={() => changeSourcePriority(channel.id, source.id, "up")}
-                                        >
-                                          <ArrowUp className="w-3 h-3" />
-                                        </Button>
-                                        <Button
-                                          size="icon"
-                                          variant="ghost"
-                                          className="h-6 w-6"
-                                          disabled={index === channel.sources!.length - 1}
-                                          onClick={() => changeSourcePriority(channel.id, source.id, "down")}
-                                        >
-                                          <ArrowDown className="w-3 h-3" />
-                                        </Button>
-                                      </div>
-                                    </div>
+                                    <Select
+                                      value={String(source.priority || index + 1)}
+                                      onValueChange={(v) => setSourcePriority(source.id, Number.parseInt(v))}
+                                    >
+                                      <SelectTrigger className="w-[70px] h-8">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                                          <SelectItem key={n} value={String(n)}>
+                                            {n}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
                                   </TableCell>
                                   <TableCell className="font-medium">
                                     {source.source_name || `Source #${index + 1}`}
