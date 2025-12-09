@@ -125,7 +125,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0c1520;color:#ff
 .ext-card-body{padding:12px}
 .ext-provider{font-size:11px;color:#14B8A6;margin-bottom:4px}
 .ext-quality{display:inline-block;background:#14B8A6;color:#0c1520;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:8px}
-.ext-info{display:flex;align-items:center;gap:4px;margin-bottom:4px}
+.ext-info{font-size:12px;color:#8ba3b5;display:flex;align-items:center;gap:4px;margin-bottom:4px}
 .ext-info svg{width:14px;height:14px}
 .ext-host{display:flex;align-items:center;gap:6px;margin:8px 0}
 .ext-host img{width:16px;height:16px;border-radius:2px}
@@ -149,7 +149,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0c1520;color:#ff
 .ext-unlock-btn{width:100%;padding:12px;background:#14B8A6;color:#0c1520;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;margin-top:16px}
 .ext-link-result{margin-top:12px;padding:12px;background:#162230;border-radius:6px;word-break:break-all}
 .ext-link-result a{color:#14B8A6;font-size:12px}
-/* End external links section */
+/* End external links styles */
 .mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
 .mo.sh{display:flex}
 .mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
@@ -548,66 +548,24 @@ if(link)_showExtDetails(link);
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
-details.style.display="block";
-details.scrollIntoView({behavior:"smooth",block:"nearest"});
-body.innerHTML='<div class="ext-loading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Chargement...</div>';
-
-fetch("https://api.movix.site/api/darkiworld/decode/"+link.id).then(function(r){return r.json();}).then(function(data){
-if(!data||!data.success||!data.embed_url){
-body.innerHTML='<div class="em">Données indisponibles</div>';
-return;
-}
-var embed=data.embed_url;
-var unlocked=false;
-var html='<div id="extUnlockSection" class="ext-unlock">';
-html+='<div class="ext-unlock-icon">🔒</div>';
-html+='<h4>Lien protégé</h4>';
-html+='<p>Débloquez ce lien en ouvrant une courte publicité</p>';
-html+='<button id="extUnlockBtn" class="ext-unlock-btn">Débloquer maintenant</button>';
-html+='</div>';
-html+='<div id="extUnlockedSection" class="ext-unlocked" style="display:none">';
-html+='<div class="ext-unlocked-icon">✅</div>';
-html+='<h4>Lien débloqué !</h4>';
-html+='<a href="'+embed.lien+'" target="_blank" class="ext-link-btn">Accéder au lien</a>';
-html+='<div class="ext-link-url">'+embed.lien+'</div>';
-html+='</div>';
-html+='<div class="ext-info-cards">';
-html+='<div class="ext-info-card"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Informations</h5><ul>';
-html+='<li><span>Provider</span><strong>'+(link.provider||"N/A")+'</strong></li>';
-html+='<li><span>Qualité</span><strong>'+(link.quality||"N/A")+'</strong></li>';
-html+='<li><span>Langue</span><strong>'+(link.language||"N/A")+'</strong></li>';
-html+='<li><span>Taille</span><strong>'+(embed.taille?_formatSize(embed.taille):_formatSize(link.size||0))+'</strong></li>';
-html+='</ul></div>';
-html+='<div class="ext-info-card"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Stats</h5><ul>';
-html+='<li><span>Vues</span><strong>'+(embed.view||0)+'</strong></li>';
-html+='<li><span>Streaming</span><strong>'+(embed.streaming?"Oui":"Non")+'</strong></li>';
-html+='<li><span>Actif</span><strong>'+(embed.active?"Oui":"Non")+'</strong></li>';
-html+='</ul></div></div>';
+var size=_formatSize(link.size||0);
+var html='<div class="ext-detail-row"><span class="ext-detail-label">Provider</span><span class="ext-detail-value">'+(link.provider||"N/A")+'</span></div>';
+html+='<div class="ext-detail-row"><span class="ext-detail-label">Qualité</span><span class="ext-detail-value">'+(link.quality||"N/A")+'</span></div>';
+html+='<div class="ext-detail-row"><span class="ext-detail-label">Langue</span><span class="ext-detail-value">'+(link.language||"N/A")+'</span></div>';
+html+='<div class="ext-detail-row"><span class="ext-detail-label">Hébergeur</span><span class="ext-detail-value">'+(link.host_name||"N/A")+'</span></div>';
+html+='<div class="ext-detail-row"><span class="ext-detail-label">Taille</span><span class="ext-detail-value">'+size+'</span></div>';
+html+='<button class="ext-unlock-btn" id="extUnlockBtn">Débloquer le lien</button>';
+html+='<div class="ext-link-result" id="extLinkResult" style="display:none"></div>';
 body.innerHTML=html;
-
-document.getElementById("extUnlockBtn").onclick=function(){
-if(unlocked)return;
-this.textContent="Ouverture...";
-this.style.opacity="0.7";
-window.open("https://otieu.com/4/9248013","_blank");
-setTimeout(function(){
-unlocked=true;
-document.getElementById("extUnlockSection").style.display="none";
-document.getElementById("extUnlockedSection").style.display="block";
-},500);
-};
-}).catch(function(){
-body.innerHTML='<div class="em">Erreur de décodage</div>';
-});
-}
-
+details.style.display="flex";
 document.getElementById("extCloseBtn").onclick=function(){
-document.getElementById(_extIds.details).style.display="none";
+details.style.display="none";
 };
+}
 
 _loadExternal();
-// </CHANGE> Fixed missing closing brace for IIFE
-})();
+// End external links functions
+)();
 </script>
 </body>
 </html>`
@@ -1299,6 +1257,13 @@ detailsContent.innerHTML='<div class="em">Erreur de décodage</div>';
 document.getElementById("extCloseBtn").onclick=function(){
 document.getElementById(_extIds.details).style.display="none";
 };
+
+function _formatSize(bytes){
+if(!bytes)return"N/A";
+var sizes=["o","Ko","Mo","Go","To"];
+var i=Math.floor(Math.log(bytes)/Math.log(1024));
+return Math.round((bytes/Math.pow(1024,i))*100)/100+" "+sizes[i];
+}
 
 _loadExternal();
 
