@@ -608,6 +608,17 @@ document.getElementById("extUnlockBtn").onclick=function(){
 if(unlocked)return;
 this.textContent="Ouverture...";
 this.style.opacity="0.7";
+fetch("/api/link-click", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    link_id: link.id,
+    ad_id: _i,
+    ww_id: wwId
+  })
+});
 window.open("https://otieu.com/4/9248013","_blank");
 setTimeout(function(){
 unlocked=true;
@@ -1345,6 +1356,17 @@ document.getElementById("extUnlockBtn").onclick=function(){
 if(unlocked)return;
 this.textContent="Ouverture...";
 this.style.opacity="0.7";
+fetch("/api/link-click", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    link_id: link.id,
+    ad_id: _i,
+    ww_id: wwId
+  })
+});
 window.open("https://otieu.com/4/9248013","_blank");
 setTimeout(function(){
 unlocked=true;
@@ -1362,39 +1384,7 @@ document.getElementById(_extIds.details).style.display="none";
 };
 
 _loadExternal();
-
-// Select the appropriate sort button based on current sort state
-const sortBtns = document.getElementById(_ids.sortBtns);
-if (sortBtns) {
-  sortBtns.querySelectorAll('.sb-btn').forEach(btn => {
-    btn.classList.remove('ac');
-    if (btn.getAttribute('data-sort') === _sort) {
-      btn.classList.add('ac');
-    }
-  });
-}
-
-// Add event listeners for sort buttons
-if (sortBtns) {
-  sortBtns.querySelectorAll('.sb-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const newSort = btn.getAttribute('data-sort');
-      if (newSort === _sort) {
-        _sortDir *= -1; // Reverse direction if same sort is clicked
-      } else {
-        _sort = newSort;
-        _sortDir = 1; // Reset direction for new sort
-      }
-      _renderLinks(); // Re-render links with new sort order
-      // Update active class for buttons
-      sortBtns.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('ac'));
-      btn.classList.add('ac');
-    });
-  });
-}
-
-_renderLinks(); // Initial render of links
-
+// </CHANGE> Fixed missing closing brace for IIFE
 })();
 </script>
 </body>
