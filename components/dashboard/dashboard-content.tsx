@@ -810,7 +810,7 @@ export function DashboardContent({
 
             {/* Download Tab */}
             <TabsContent value="download" className="mt-0">
-              {downloadLinks.length === 0 ? (
+              {downloadLinks.length === 0 && digitalLinks.length === 0 ? (
                 <div className="text-center py-12">
                   <Download className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">Aucun lien telechargement soumis</p>
@@ -821,71 +821,153 @@ export function DashboardContent({
                   />
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-muted/50">
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Media</th>
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Source</th>
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Type</th>
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Vues</th>
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {downloadLinks.map((link) => {
-                        const mediaInfo = getMediaInfo(link)
-                        const episodeInfo = formatEpisodeInfo(link)
-                        return (
-                          <tr key={link.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-3">
-                                {mediaInfo.poster ? (
-                                  <img
-                                    src={mediaInfo.poster || "/placeholder.svg"}
-                                    alt={mediaInfo.title}
-                                    className="w-10 h-14 object-cover rounded"
-                                  />
-                                ) : (
-                                  <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
-                                    <Download className="w-4 h-4 text-muted-foreground" />
-                                  </div>
-                                )}
-                                <div>
-                                  <p className="font-medium line-clamp-1">{mediaInfo.title}</p>
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <Badge variant="outline" className="text-xs">
-                                      {link.media_type === "movie" ? "Film" : "Serie"}
-                                    </Badge>
-                                    {episodeInfo && <span className="text-primary font-mono">{episodeInfo}</span>}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 font-medium">{link.source_name}</td>
-                            <td className="py-3 px-4">
-                              <Badge variant="outline">{link.link_type}</Badge>
-                            </td>
-                            <td className="py-3 px-4">
-                              <Badge variant="outline">{link.quality}</Badge>
-                            </td>
-                            <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-1 text-orange-500">
-                                <Eye className="w-3 h-3" />
-                                <span>{link.view_count}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-muted-foreground">
-                              {new Date(link.created_at).toLocaleDateString("fr-FR")}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+                <div className="space-y-6">
+                  {downloadLinks.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Download className="w-4 h-4 text-blue-500" />
+                        Films & Series ({downloadLinks.length})
+                      </h4>
+                      <div className="overflow-x-auto rounded-lg border border-border">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-muted/50">
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Media</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Source</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Type</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Vues</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {downloadLinks.map((link) => {
+                              const mediaInfo = getMediaInfo(link)
+                              const episodeInfo = formatEpisodeInfo(link)
+                              return (
+                                <tr
+                                  key={link.id}
+                                  className="border-t border-border hover:bg-muted/30 transition-colors"
+                                >
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center gap-3">
+                                      {mediaInfo.poster ? (
+                                        <img
+                                          src={mediaInfo.poster || "/placeholder.svg"}
+                                          alt={mediaInfo.title}
+                                          className="w-10 h-14 object-cover rounded"
+                                        />
+                                      ) : (
+                                        <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
+                                          <Download className="w-4 h-4 text-muted-foreground" />
+                                        </div>
+                                      )}
+                                      <div>
+                                        <p className="font-medium line-clamp-1">{mediaInfo.title}</p>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                          <Badge variant="outline" className="text-xs">
+                                            {link.media_type === "movie" ? "Film" : "Serie"}
+                                          </Badge>
+                                          {episodeInfo && <span className="text-primary font-mono">{episodeInfo}</span>}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4 font-medium">{link.source_name}</td>
+                                  <td className="py-3 px-4">
+                                    <Badge variant="outline">{link.link_type}</Badge>
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    <Badge variant="outline">{link.quality}</Badge>
+                                  </td>
+                                  <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center gap-1 text-orange-500">
+                                      <Eye className="w-3 h-3" />
+                                      <span>{link.view_count}</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4 text-muted-foreground">
+                                    {new Date(link.created_at).toLocaleDateString("fr-FR")}
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {digitalLinks.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Package className="w-4 h-4 text-amber-500" />
+                        Contenu Digital ({digitalLinks.length})
+                      </h4>
+                      <div className="overflow-x-auto rounded-lg border border-border">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-muted/50">
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Contenu</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Source</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {digitalLinks.map((link) => {
+                              const digitalContent = digitalContents.find((dc) => dc.id === link.content_id)
+                              return (
+                                <tr
+                                  key={link.id}
+                                  className="border-t border-border hover:bg-muted/30 transition-colors"
+                                >
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center gap-3">
+                                      {digitalContent?.cover_url ? (
+                                        <img
+                                          src={digitalContent.cover_url || "/placeholder.svg"}
+                                          alt={digitalContent?.title || "Digital"}
+                                          className="w-10 h-14 object-cover rounded"
+                                        />
+                                      ) : (
+                                        <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
+                                          <Package className="w-4 h-4 text-muted-foreground" />
+                                        </div>
+                                      )}
+                                      <div>
+                                        <p className="font-medium line-clamp-1">
+                                          {digitalContent?.title || link.ww_id}
+                                        </p>
+                                        <Badge variant="outline" className="text-xs">
+                                          {digitalContent?.type === "ebook" && "Ebook"}
+                                          {digitalContent?.type === "music" && "Musique"}
+                                          {digitalContent?.type === "software" && "Logiciel"}
+                                          {digitalContent?.type === "game" && "Jeu"}
+                                          {!digitalContent?.type && "Digital"}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4 font-medium">{link.source_name}</td>
+                                  <td className="py-3 px-4">
+                                    <Badge variant="outline">{link.quality || "N/A"}</Badge>
+                                  </td>
+                                  <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
+                                  <td className="py-3 px-4 text-muted-foreground">
+                                    {new Date(link.created_at).toLocaleDateString("fr-FR")}
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </TabsContent>
