@@ -796,7 +796,6 @@ export function AddLinkModal({
 
   const handleDigitalLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!userId) return
 
     if (!selectedDigitalContentId) {
       setError("Veuillez selectionner un contenu")
@@ -815,8 +814,21 @@ export function AddLinkModal({
     const supabase = createClient()
     const status = getLinkStatus()
 
+    const { data: contentData, error: contentError } = await supabase
+      .from("digital_content")
+      .select("ww_id")
+      .eq("id", selectedDigitalContentId)
+      .single()
+
+    if (contentError || !contentData?.ww_id) {
+      setError("Impossible de récupérer le contenu digital")
+      setLoading(false)
+      return
+    }
+
     const { error: linkError } = await supabase.from("digital_download_links").insert({
       content_id: selectedDigitalContentId,
+      ww_id: contentData.ww_id, // Ajouter le ww_id
       source_name: digitalLinkData.source_name,
       source_url: digitalLinkData.download_url,
       reader_url: digitalLinkData.reader_url || null,
@@ -1144,7 +1156,7 @@ export function AddLinkModal({
                     {mode === "download" && (
                       <>
                         {mediaType === "tv" && (
-                          <div className="space-y-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-800">
+                          <div className="space-y-4 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800">
                             <div className="flex items-center gap-4">
                               <div className="space-y-2">
                                 <Label>Saison</Label>
