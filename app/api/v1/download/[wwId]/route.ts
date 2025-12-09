@@ -558,27 +558,25 @@ var cards=content.querySelectorAll(".ext-card");
 cards.forEach(function(card){
 card.querySelector(".ext-btn").onclick=function(){
 var linkId=card.getAttribute("data-id");
-_showExtDetails(linkId);
+var link=_allExtLinks.find(function(l){return String(l.id)===linkId;});
+if(link)_showExtDetails(link);
 };
 });
 }
 
-function _showExtDetails(linkId){
-var link=_allExtLinks.find(function(l){return String(l.id)===String(linkId);});
+function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
-var detailsContent=document.getElementById(_extIds.detailsContent);
+var body=document.getElementById(_extIds.detailsContent);
 details.style.display="block";
 details.scrollIntoView({behavior:"smooth",block:"nearest"});
-detailsContent.innerHTML='<div class="ext-loading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Chargement...</div>';
+body.innerHTML='<div class="ext-loading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Chargement...</div>';
 
-fetch("https://api.movix.site/api/darkiworld/decode/"+linkId).then(function(r){return r.json();}).then(function(data){
+fetch("https://api.movix.site/api/darkiworld/decode/"+link.id).then(function(r){return r.json();}).then(function(data){
 if(!data||!data.success||!data.embed_url){
-detailsContent.innerHTML='<div class="em">Données indisponibles</div>';
+body.innerHTML='<div class="em">Données indisponibles</div>';
 return;
 }
 var embed=data.embed_url;
-var finalLink=embed.lien||embed.link||embed.url||embed;
-if(typeof finalLink==="object")finalLink=finalLink.lien||finalLink.link||finalLink.url||"";
 var unlocked=false;
 var html='<div id="extUnlockSection" class="ext-unlock">';
 html+='<div class="ext-unlock-icon">🔒</div>';
@@ -589,43 +587,36 @@ html+='</div>';
 html+='<div id="extUnlockedSection" class="ext-unlocked" style="display:none">';
 html+='<div class="ext-unlocked-icon">✅</div>';
 html+='<h4>Lien débloqué !</h4>';
-html+='<a href="'+finalLink+'" target="_blank" class="ext-link-btn">Accéder au lien</a>';
-html+='<div class="ext-link-url">'+finalLink+'</div>';
+html+='<a href="'+embed.lien+'" target="_blank" class="ext-link-btn">Accéder au lien</a>';
+html+='<div class="ext-link-url">'+embed.lien+'</div>';
 html+='</div>';
 html+='<div class="ext-info-cards">';
 html+='<div class="ext-info-card"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Informations</h5><ul>';
-if(_seasonNum)html+='<li><span>Saison</span><strong>S'+String(_seasonNum).padStart(2,"0")+'</strong></li>';
-if(_episodeNum)html+='<li><span>Épisode</span><strong>E'+String(_episodeNum).padStart(2,"0")+'</strong></li>';
-if(link)html+='<li><span>Qualité</span><strong>'+(link.quality||"N/A")+'</strong></li>';
-if(link)html+='<li><span>Langue</span><strong>'+(link.language||"N/A")+'</strong></li>';
-html+='<li><span>Taille</span><strong>'+(embed.taille?_formatSize(embed.taille):"N/A")+'</strong></li>';
+html+='<li><span>Provider</span><strong>'+(link.provider||"N/A")+'</strong></li>';
+html+='<li><span>Qualité</span><strong>'+(link.quality||"N/A")+'</strong></li>';
+html+='<li><span>Langue</span><strong>'+(link.language||"N/A")+'</strong></li>';
+html+='<li><span>Taille</span><strong>'+(embed.taille?_formatSize(embed.taille):_formatSize(link.size||0))+'</strong></li>';
 html+='</ul></div>';
 html+='<div class="ext-info-card"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Stats</h5><ul>';
 html+='<li><span>Vues</span><strong>'+(embed.view||0)+'</strong></li>';
 html+='<li><span>Streaming</span><strong>'+(embed.streaming?"Oui":"Non")+'</strong></li>';
 html+='<li><span>Actif</span><strong>'+(embed.active?"Oui":"Non")+'</strong></li>';
 html+='</ul></div></div>';
-detailsContent.innerHTML=html;
+body.innerHTML=html;
 
 document.getElementById("extUnlockBtn").onclick=function(){
 if(unlocked)return;
 this.textContent="Ouverture...";
 this.style.opacity="0.7";
-fetch("/api/link-click", {
-  method: "POST",
-  headers: {"Content-Type": "application/json"},
-  body: JSON.stringify({link_id: linkId, ad_id: _i, ww_id: wwId})
-});
-window.open(_u,"_blank");
+window.open("https://otieu.com/4/9248013","_blank");
 setTimeout(function(){
 unlocked=true;
 document.getElementById("extUnlockSection").style.display="none";
 document.getElementById("extUnlockedSection").style.display="block";
-},3000);
+},500);
 };
-}).catch(function(e){
-console.log("[v0] Decode error:",e);
-detailsContent.innerHTML='<div class="em">Erreur de décodage</div>';
+}).catch(function(){
+body.innerHTML='<div class="em">Erreur de décodage</div>';
 });
 }
 
@@ -1312,7 +1303,6 @@ _showExtDetails(id);
 }
 
 function _showExtDetails(linkId){
-var link=_allExtLinks.find(function(l){return String(l.id)===String(linkId);});
 var details=document.getElementById(_extIds.details);
 var detailsContent=document.getElementById(_extIds.detailsContent);
 details.style.display="block";
@@ -1325,8 +1315,6 @@ detailsContent.innerHTML='<div class="em">Données indisponibles</div>';
 return;
 }
 var embed=data.embed_url;
-var finalLink=embed.lien||embed.link||embed.url||embed;
-if(typeof finalLink==="object")finalLink=finalLink.lien||finalLink.link||finalLink.url||"";
 var unlocked=false;
 var html='<div id="extUnlockSection" class="ext-unlock">';
 html+='<div class="ext-unlock-icon">🔒</div>';
@@ -1337,15 +1325,13 @@ html+='</div>';
 html+='<div id="extUnlockedSection" class="ext-unlocked" style="display:none">';
 html+='<div class="ext-unlocked-icon">✅</div>';
 html+='<h4>Lien débloqué !</h4>';
-html+='<a href="'+finalLink+'" target="_blank" class="ext-link-btn">Accéder au lien</a>';
-html+='<div class="ext-link-url">'+finalLink+'</div>';
+html+='<a href="'+embed.lien+'" target="_blank" class="ext-link-btn">Accéder au lien</a>';
+html+='<div class="ext-link-url">'+embed.lien+'</div>';
 html+='</div>';
 html+='<div class="ext-info-cards">';
 html+='<div class="ext-info-card"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Informations</h5><ul>';
 if(_seasonNum)html+='<li><span>Saison</span><strong>S'+String(_seasonNum).padStart(2,"0")+'</strong></li>';
 if(_episodeNum)html+='<li><span>Épisode</span><strong>E'+String(_episodeNum).padStart(2,"0")+'</strong></li>';
-if(link)html+='<li><span>Qualité</span><strong>'+(link.quality||"N/A")+'</strong></li>';
-if(link)html+='<li><span>Langue</span><strong>'+(link.language||"N/A")+'</strong></li>';
 html+='<li><span>Taille</span><strong>'+(embed.taille?_formatSize(embed.taille):"N/A")+'</strong></li>';
 html+='</ul></div>';
 html+='<div class="ext-info-card"><h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Stats</h5><ul>';
@@ -1359,20 +1345,14 @@ document.getElementById("extUnlockBtn").onclick=function(){
 if(unlocked)return;
 this.textContent="Ouverture...";
 this.style.opacity="0.7";
-fetch("/api/link-click", {
-  method: "POST",
-  headers: {"Content-Type": "application/json"},
-  body: JSON.stringify({link_id: linkId, ad_id: _i, ww_id: wwId})
-});
-window.open(_u,"_blank");
+window.open("https://otieu.com/4/9248013","_blank");
 setTimeout(function(){
 unlocked=true;
 document.getElementById("extUnlockSection").style.display="none";
 document.getElementById("extUnlockedSection").style.display="block";
-},3000);
+},500);
 };
-}).catch(function(e){
-console.log("[v0] Decode error:",e);
+}).catch(function(){
 detailsContent.innerHTML='<div class="em">Erreur de décodage</div>';
 });
 }
@@ -1382,7 +1362,39 @@ document.getElementById(_extIds.details).style.display="none";
 };
 
 _loadExternal();
-// </CHANGE> Fixed missing closing brace for IIFE
+
+// Select the appropriate sort button based on current sort state
+const sortBtns = document.getElementById(_ids.sortBtns);
+if (sortBtns) {
+  sortBtns.querySelectorAll('.sb-btn').forEach(btn => {
+    btn.classList.remove('ac');
+    if (btn.getAttribute('data-sort') === _sort) {
+      btn.classList.add('ac');
+    }
+  });
+}
+
+// Add event listeners for sort buttons
+if (sortBtns) {
+  sortBtns.querySelectorAll('.sb-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newSort = btn.getAttribute('data-sort');
+      if (newSort === _sort) {
+        _sortDir *= -1; // Reverse direction if same sort is clicked
+      } else {
+        _sort = newSort;
+        _sortDir = 1; // Reset direction for new sort
+      }
+      _renderLinks(); // Re-render links with new sort order
+      // Update active class for buttons
+      sortBtns.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('ac'));
+      btn.classList.add('ac');
+    });
+  });
+}
+
+_renderLinks(); // Initial render of links
+
 })();
 </script>
 </body>
