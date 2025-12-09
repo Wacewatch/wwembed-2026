@@ -5,22 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import {
-  Eye,
-  MousePointer,
-  TrendingUp,
-  Users,
-  Film,
-  Tv,
-  Play,
-  Globe,
-  Calendar,
-  BarChart3,
-  Clock,
-  Book,
-  Music,
-  Gamepad2,
-} from "lucide-react"
+import { Eye, MousePointer, TrendingUp, Users, Film, Tv, Play, Globe, Calendar, BarChart3 } from "lucide-react"
 
 interface ViewsByDay {
   date: string
@@ -39,16 +24,6 @@ interface TopMedia {
 interface TopReferrer {
   referrer: string
   count: number
-}
-
-interface RecentView {
-  id: string
-  viewed_at: string
-  media_type: string
-  tmdb_id: number | null
-  ww_id: string | null
-  title?: string
-  poster?: string
 }
 
 interface DetailedStats {
@@ -70,7 +45,6 @@ export function StatsViewer() {
   const [topMedia, setTopMedia] = useState<TopMedia[]>([])
   const [topReferrers, setTopReferrers] = useState<TopReferrer[]>([])
   const [detailedStats, setDetailedStats] = useState<DetailedStats | null>(null)
-  const [recentViews, setRecentViews] = useState<RecentView[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -97,18 +71,18 @@ export function StatsViewer() {
       supabase
         .from("embed_views")
         .select("*", { count: "exact", head: true })
-        .eq("media_type", "movie")
-        .gte("viewed_at", startDate),
+        .gte("viewed_at", startDate)
+        .eq("media_type", "movie"),
       supabase
         .from("embed_views")
         .select("*", { count: "exact", head: true })
-        .eq("media_type", "tv")
-        .gte("viewed_at", startDate),
+        .gte("viewed_at", startDate)
+        .eq("media_type", "tv"),
       supabase
         .from("embed_views")
         .select("*", { count: "exact", head: true })
-        .eq("media_type", "live")
-        .gte("viewed_at", startDate),
+        .gte("viewed_at", startDate)
+        .or("media_type.eq.live,media_type.eq.live_tv,embed_type.eq.live"),
     ])
 
     let allViews: any[] = []
@@ -119,7 +93,7 @@ export function StatsViewer() {
     while (hasMore) {
       const { data: viewsPage } = await supabase
         .from("embed_views")
-        .select("viewed_at, tmdb_id, media_type, referrer, ww_id, user_agent, embed_type, ip")
+        .select("viewed_at, tmdb_id, media_type, referrer, ww_id, user_agent, embed_type")
         .gte("viewed_at", startDate)
         .range(page * pageSize, (page + 1) * pageSize - 1)
         .order("viewed_at", { ascending: false })
@@ -170,8 +144,8 @@ export function StatsViewer() {
       }
       refCount[ref] = (refCount[ref] || 0) + 1
 
-      if (v.ip) {
-        uniqueIps.add(v.ip)
+      if (v.user_agent) {
+        uniqueIps.add(v.user_agent.substring(0, 50))
       }
     })
 
@@ -247,97 +221,10 @@ export function StatsViewer() {
       })),
     })
 
-    const recentViewsData = allViews.slice(0, 20)
-
-    const recentViewsWithDetails = await Promise.all(
-      recentViewsData.map(async (v) => {
-        const view: RecentView = {
-          id: v.id,
-          viewed_at: v.viewed_at,
-          media_type: v.media_type,
-          tmdb_id: v.tmdb_id,
-          ww_id: v.ww_id,
-        }
-
-        if (v.tmdb_id && (v.media_type === "movie" || v.media_type === "tv")) {
-          try {
-            const res = await fetch(`/api/media/${v.media_type}/${v.tmdb_id}`)
-            if (res.ok) {
-              const data = await res.json()
-              view.title = data.title || data.name || `#${v.tmdb_id}`
-              view.poster = data.poster
-            }
-          } catch {}
-        } else if (v.media_type === "live" && v.ww_id) {
-          try {
-            const { data: channel } = await supabase
-              .from("live_channels")
-              .select("name, logo")
-              .eq("ww_id", v.ww_id)
-              .single()
-            if (channel) {
-              view.title = channel.name
-              view.poster = channel.logo
-            }
-          } catch {}
-        } else if (v.ww_id) {
-          // Digital content
-          try {
-            const { data: digital } = await supabase
-              .from("digital_content")
-              .select("title, cover_image")
-              .eq("ww_id", v.ww_id)
-              .single()
-            if (digital) {
-              view.title = digital.title
-              view.poster = digital.cover_image
-            }
-          } catch {}
-        }
-
-        if (!view.title) {
-          view.title = v.ww_id || `#${v.tmdb_id || "inconnu"}`
-        }
-
-        return view
-      }),
-    )
-
-    setRecentViews(recentViewsWithDetails)
-
     setLoading(false)
   }
 
   const maxViews = Math.max(...viewsByDay.map((v) => v.count), 1)
-
-  const formatDateTime = (dateStr: string) => {
-    const date = new Date(dateStr)
-    const day = date.getDate().toString().padStart(2, "0")
-    const month = (date.getMonth() + 1).toString().padStart(2, "0")
-    const year = date.getFullYear()
-    const hours = date.getHours().toString().padStart(2, "0")
-    const minutes = date.getMinutes().toString().padStart(2, "0")
-    return `${day}/${month}/${year} ${hours}:${minutes}`
-  }
-
-  const getTypeInfo = (mediaType: string) => {
-    switch (mediaType) {
-      case "movie":
-        return { label: "Film", icon: Film, color: "bg-blue-500" }
-      case "tv":
-        return { label: "Série", icon: Tv, color: "bg-purple-500" }
-      case "live":
-        return { label: "TV Live", icon: Play, color: "bg-red-500" }
-      case "ebook":
-        return { label: "Ebook", icon: Book, color: "bg-amber-500" }
-      case "music":
-        return { label: "Musique", icon: Music, color: "bg-green-500" }
-      case "game":
-        return { label: "Jeu", icon: Gamepad2, color: "bg-cyan-500" }
-      default:
-        return { label: "Digital", icon: Eye, color: "bg-gray-500" }
-    }
-  }
 
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Chargement des statistiques...</div>
@@ -575,65 +462,6 @@ export function StatsViewer() {
           </CardContent>
         </Card>
       </div>
-
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Clock className="w-5 h-5 text-primary" />
-            Vues récentes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recentViews.length > 0 ? (
-            <div className="space-y-3 max-h-[500px] overflow-y-auto">
-              {recentViews.map((view) => {
-                const typeInfo = getTypeInfo(view.media_type)
-                const TypeIcon = typeInfo.icon
-                return (
-                  <div
-                    key={view.id}
-                    className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    {/* Image */}
-                    {view.poster ? (
-                      <img
-                        src={view.poster || "/placeholder.svg"}
-                        alt={view.title}
-                        className="w-12 h-16 object-cover rounded flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-12 h-16 bg-muted rounded flex items-center justify-center flex-shrink-0">
-                        <TypeIcon className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                    )}
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground truncate">{view.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge className={`${typeInfo.color} text-white text-xs`}>
-                          <TypeIcon className="w-3 h-3 mr-1" />
-                          {typeInfo.label}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {/* Date and Time */}
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {formatDateTime(view.viewed_at)}
-                      </p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-8">Aucune vue récente</p>
-          )}
-        </CardContent>
-      </Card>
     </div>
   )
 }
