@@ -384,8 +384,20 @@ return;
 }
 var movie=data.results[0];
 var movieId=movie.id;
-fetch("https://api.movix.site/api/darkiworld/download/movie/"+movieId)
+var movieType=movie.type||"movie";
+
+var apiUrl="https://api.movix.site/api/darkiworld/download/"+movieType+"/"+movieId;
+
+fetch(apiUrl)
 .then(function(r){return r.json();})
+.then(function(dlData){
+if(!dlData||!dlData.success||!dlData.all||dlData.all.length===0){
+var otherType=movieType==="movie"?"tv":"movie";
+return fetch("https://api.movix.site/api/darkiworld/download/"+otherType+"/"+movieId)
+.then(function(r2){return r2.json();});
+}
+return dlData;
+})
 .then(function(dlData){
 if(!dlData||!dlData.success||!dlData.all||dlData.all.length===0){
 container.innerHTML='<div class="em">Aucun lien disponible</div>';
@@ -399,12 +411,12 @@ filtersDiv.style.display="flex";
 renderExtLinks(_allExtLinks);
 })
 .catch(function(){
-container.innerHTML='<div class="em">Erreur de chargement</div>';
+container.innerHTML='<div class="em">Aucun lien disponible</div>';
 countBadge.textContent="0";
 });
 })
 .catch(function(){
-container.innerHTML='<div class="em">Erreur de recherche</div>';
+container.innerHTML='<div class="em">Aucune source externe trouvée</div>';
 countBadge.textContent="0";
 });
 }
@@ -691,7 +703,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .hi{display:none}
 .cf{margin-top:14px;font-size:11px;color:#9ca3af}
 .cf a{color:#667eea;text-decoration:none;font-weight:500}
-.tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;margin-left:8px;font-weight:600}
 
 /* External links styles */
 .sec-title{display:flex;align-items:center;gap:10px;padding:16px;background:linear-gradient(135deg,rgba(102,126,234,0.2),rgba(118,75,162,0.2));border:1px solid rgba(102,126,234,0.3);border-radius:12px;margin:24px 0 16px;font-weight:700;color:#a78bfa}
@@ -865,6 +876,10 @@ var _sort="default";
 var _sortDir=1;
 var _extIds=${JSON.stringify(externalIds)};
 var _allExtLinks=[];
+var _tmdbId=${JSON.stringify(tmdbId)};
+var _seasonNum=${JSON.stringify(seasonNumber)};
+var _episodeNum=${JSON.stringify(episodeNumber)};
+var _mediaType=${JSON.stringify(mediaType)};
 
 function _renderLinks(){
 var c=document.getElementById(_ids.linksContainer);
