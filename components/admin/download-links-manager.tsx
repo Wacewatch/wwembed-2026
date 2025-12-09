@@ -10,14 +10,18 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Pencil } from "lucide-react"
+import { Pencil, User } from "lucide-react"
 import type { DownloadLink } from "@/lib/types"
 
+interface DownloadLinkWithProfile extends DownloadLink {
+  profiles?: { username: string } | null
+}
+
 export function DownloadLinksManager() {
-  const [links, setLinks] = useState<DownloadLink[]>([])
+  const [links, setLinks] = useState<DownloadLinkWithProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
-  const [editingLink, setEditingLink] = useState<DownloadLink | null>(null)
+  const [editingLink, setEditingLink] = useState<DownloadLinkWithProfile | null>(null)
   const [editData, setEditData] = useState({
     source_name: "",
     source_url: "",
@@ -35,7 +39,7 @@ export function DownloadLinksManager() {
     const supabase = createClient()
     const { data } = await supabase
       .from("download_links")
-      .select("*")
+      .select("*, profiles:user_id(username)")
       .order("created_at", { ascending: false })
       .limit(50)
     setLinks(data || [])
@@ -61,7 +65,7 @@ export function DownloadLinksManager() {
     loadLinks()
   }
 
-  const openEdit = (link: DownloadLink) => {
+  const openEdit = (link: DownloadLinkWithProfile) => {
     setEditingLink(link)
     setEditData({
       source_name: link.source_name,
@@ -95,7 +99,8 @@ export function DownloadLinksManager() {
     (l) =>
       l.source_name.toLowerCase().includes(search.toLowerCase()) ||
       l.ww_id.toLowerCase().includes(search.toLowerCase()) ||
-      String(l.tmdb_id).includes(search),
+      String(l.tmdb_id).includes(search) ||
+      (l.profiles?.username || "").toLowerCase().includes(search.toLowerCase()),
   )
 
   if (loading) {
@@ -217,6 +222,12 @@ export function DownloadLinksManager() {
                   <p className="text-sm text-muted-foreground mt-1">
                     WW ID: {link.ww_id} | TMDB: {link.tmdb_id}
                   </p>
+                  {link.profiles?.username && (
+                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      <span className="text-emerald-500 font-medium">{link.profiles.username}</span>
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1 font-mono truncate max-w-xl">{link.source_url}</p>
                 </div>
                 <div className="flex items-center gap-3">
