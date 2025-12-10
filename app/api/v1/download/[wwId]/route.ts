@@ -706,6 +706,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ft a{color:#14B8A6;text-decoration:none;font-weight:500}
 .ft a:hover{text-decoration:underline}
 
+/* Added modal CSS for movie/series - THIS WAS MISSING */
+.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
+.mo.sh{display:flex}
+.mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
+.mc h2{color:#1a1a2e;margin-bottom:8px;font-size:clamp(16px,4vw,20px);font-weight:700}
+.mc-sub{color:#6b7280;font-size:clamp(11px,3vw,13px);margin-bottom:16px}
+.steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
+.step{width:10px;height:10px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
+.step.active{background:linear-gradient(135deg,#667eea,#764ba2);transform:scale(1.2)}
+.step.done{background:#10b981}
+.bx{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
+.bx svg{flex-shrink:0;width:18px;height:18px;min-width:18px;min-height:18px;max-width:18px;max-height:18px}
+.bx-content{min-width:0}
+.bx-content b{display:block;font-size:clamp(12px,3.5vw,14px);margin-bottom:2px}
+.bx-content span{font-size:clamp(10px,2.8vw,12px);opacity:0.8;display:block}
+.bw{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
+.bh{background:linear-gradient(135deg,#fce7f3,#fbcfe8);border:1px solid #ec4899;color:#9d174d}
+.bi{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #8b5cf6;color:#5b21b6}
+.bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
+.pb{height:5px;background:#e5e7eb;border-radius:3px;margin:12px 0;overflow:hidden}
+.pf{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2,#ec4899);transition:width 0.3s;border-radius:3px}
+.bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:clamp(12px,3.5vw,14px);font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
+.bt:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+.bt:active{transform:scale(0.98)}
+.bp{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;box-shadow:0 4px 14px rgba(102,126,234,0.4)}
+.bn{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 4px 14px rgba(16,185,129,0.4)}
+.hi{display:none}
+.cf{margin-top:12px;font-size:clamp(9px,2.5vw,11px);color:#9ca3af}
+.cf a{color:#667eea;text-decoration:none;font-weight:500}
+.tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;font-weight:600}
+/* End modal CSS */
+
 /* External links section */
 .sec-title{display:flex;align-items:center;gap:10px;padding:16px;background:linear-gradient(135deg,rgba(102,126,234,0.2),rgba(118,75,162,0.2));border:1px solid rgba(102,126,234,0.3);border-radius:12px;margin:24px 0 16px;font-weight:700;color:#a78bfa}
 .sec-title svg{width:20px;height:20px}
