@@ -35,6 +35,7 @@ import {
   Zap,
   ChevronRight,
   ExternalLink,
+  Trash2,
 } from "lucide-react"
 import type {
   Profile,
@@ -272,8 +273,48 @@ export function DashboardContent({
   const [uploaderRequestResult, setUploaderRequestResult] = useState<{ success: boolean; message: string } | null>(null)
   const [bugReports, setBugReports] = useState<BugReport[]>([])
   const [loadingBugReports, setLoadingBugReports] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const supabase = createClient()
+
+  const handleDeleteStreamingLink = async (linkId: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce lien streaming ?")) return
+    setDeletingId(linkId)
+    const supabase = createClient()
+    const { error } = await supabase.from("streaming_links").delete().eq("id", linkId)
+    if (!error) {
+      window.location.reload()
+    } else {
+      alert("Erreur lors de la suppression")
+    }
+    setDeletingId(null)
+  }
+
+  const handleDeleteDownloadLink = async (linkId: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce lien téléchargement ?")) return
+    setDeletingId(linkId)
+    const supabase = createClient()
+    const { error } = await supabase.from("download_links").delete().eq("id", linkId)
+    if (!error) {
+      window.location.reload()
+    } else {
+      alert("Erreur lors de la suppression")
+    }
+    setDeletingId(null)
+  }
+
+  const handleDeleteDigitalLink = async (linkId: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce lien digital ?")) return
+    setDeletingId(linkId)
+    const supabase = createClient()
+    const { error } = await supabase.from("digital_download_links").delete().eq("id", linkId)
+    if (!error) {
+      window.location.reload()
+    } else {
+      alert("Erreur lors de la suppression")
+    }
+    setDeletingId(null)
+  }
 
   useEffect(() => {
     const fetchMediaInfo = async () => {
@@ -752,6 +793,8 @@ export function DashboardContent({
                         <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
                         <th className="text-left py-3 px-4 text-muted-foreground font-medium">Vues</th>
                         <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
+                        {/* CHANGE: Added Actions column */}
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -799,6 +842,22 @@ export function DashboardContent({
                             <td className="py-3 px-4 text-muted-foreground">
                               {new Date(link.created_at).toLocaleDateString("fr-FR")}
                             </td>
+                            {/* CHANGE: Added delete button */}
+                            <td className="py-3 px-4">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                onClick={() => handleDeleteStreamingLink(link.id)}
+                                disabled={deletingId === link.id}
+                              >
+                                {deletingId === link.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </td>
                           </tr>
                         )
                       })}
@@ -839,6 +898,7 @@ export function DashboardContent({
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Vues</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -891,6 +951,22 @@ export function DashboardContent({
                                   <td className="py-3 px-4 text-muted-foreground">
                                     {new Date(link.created_at).toLocaleDateString("fr-FR")}
                                   </td>
+                                  {/* CHANGE: Added delete button */}
+                                  <td className="py-3 px-4">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                      onClick={() => handleDeleteDownloadLink(link.id)}
+                                      disabled={deletingId === link.id}
+                                    >
+                                      {deletingId === link.id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Trash2 className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </td>
                                 </tr>
                               )
                             })}
@@ -915,6 +991,8 @@ export function DashboardContent({
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
+                              {/* CHANGE: Added Actions column */}
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -959,6 +1037,22 @@ export function DashboardContent({
                                   <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
                                   <td className="py-3 px-4 text-muted-foreground">
                                     {new Date(link.created_at).toLocaleDateString("fr-FR")}
+                                  </td>
+                                  {/* CHANGE: Added delete button */}
+                                  <td className="py-3 px-4">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                      onClick={() => handleDeleteDigitalLink(link.id)}
+                                      disabled={deletingId === link.id}
+                                    >
+                                      {deletingId === link.id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Trash2 className="h-4 w-4" />
+                                      )}
+                                    </Button>
                                   </td>
                                 </tr>
                               )
