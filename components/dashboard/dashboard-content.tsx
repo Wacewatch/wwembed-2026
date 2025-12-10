@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { AddLinkModal } from "@/components/add-link-modal"
 import { ProfileSettings } from "@/components/dashboard/profile-settings"
 import { Separator } from "@/components/ui/separator"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Play,
   Download,
@@ -36,6 +38,7 @@ import {
   ChevronRight,
   ExternalLink,
   Trash2,
+  Search,
 } from "lucide-react"
 import type {
   Profile,
@@ -275,6 +278,16 @@ export function DashboardContent({
   const [loadingBugReports, setLoadingBugReports] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
+  const [streamingSearch, setStreamingSearch] = useState("")
+  const [streamingStatusFilter, setStreamingStatusFilter] = useState<string>("all")
+  const [streamingTypeFilter, setStreamingTypeFilter] = useState<string>("all")
+  const [streamingQualityFilter, setStreamingQualityFilter] = useState<string>("all")
+
+  const [downloadSearch, setDownloadSearch] = useState("")
+  const [downloadStatusFilter, setDownloadStatusFilter] = useState<string>("all")
+  const [downloadTypeFilter, setDownloadTypeFilter] = useState<string>("all")
+  const [downloadQualityFilter, setDownloadQualityFilter] = useState<string>("all")
+
   const supabase = createClient()
 
   const handleDeleteStreamingLink = async (linkId: string) => {
@@ -436,6 +449,44 @@ export function DashboardContent({
         return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Membre</Badge>
     }
   }
+
+  const filteredStreamingLinks = streamingLinks.filter((link) => {
+    const mediaInfo = getMediaInfo(link)
+    const matchesSearch =
+      streamingSearch === "" ||
+      mediaInfo.title.toLowerCase().includes(streamingSearch.toLowerCase()) ||
+      link.source_name.toLowerCase().includes(streamingSearch.toLowerCase())
+    const matchesStatus = streamingStatusFilter === "all" || link.status === streamingStatusFilter
+    const matchesType = streamingTypeFilter === "all" || link.media_type === streamingTypeFilter
+    const matchesQuality = streamingQualityFilter === "all" || link.quality === streamingQualityFilter
+    return matchesSearch && matchesStatus && matchesType && matchesQuality
+  })
+
+  const filteredDownloadLinks = downloadLinks.filter((link) => {
+    const mediaInfo = getMediaInfo(link)
+    const matchesSearch =
+      downloadSearch === "" ||
+      mediaInfo.title.toLowerCase().includes(downloadSearch.toLowerCase()) ||
+      link.source_name.toLowerCase().includes(downloadSearch.toLowerCase())
+    const matchesStatus = downloadStatusFilter === "all" || link.status === downloadStatusFilter
+    const matchesType = downloadTypeFilter === "all" || link.media_type === downloadTypeFilter
+    const matchesQuality = downloadQualityFilter === "all" || link.quality === downloadQualityFilter
+    return matchesSearch && matchesStatus && matchesType && matchesQuality
+  })
+
+  const filteredDigitalLinks = digitalLinks.filter((link) => {
+    const content = digitalContents.find((c) => c.id === link.content_id)
+    const title = content?.title || ""
+    const matchesSearch =
+      downloadSearch === "" ||
+      title.toLowerCase().includes(downloadSearch.toLowerCase()) ||
+      link.source_name.toLowerCase().includes(downloadSearch.toLowerCase())
+    const matchesStatus = downloadStatusFilter === "all" || link.status === downloadStatusFilter
+    return matchesSearch && matchesStatus
+  })
+
+  const streamingQualities = [...new Set(streamingLinks.map((l) => l.quality))].filter(Boolean)
+  const downloadQualities = [...new Set(downloadLinks.map((l) => l.quality))].filter(Boolean)
 
   return (
     <div className="space-y-6">
@@ -782,87 +833,146 @@ export function DashboardContent({
                   />
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-muted/50">
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Media</th>
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Source</th>
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Langue</th>
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Vues</th>
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
-                        {/* CHANGE: Added Actions column */}
-                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {streamingLinks.map((link) => {
-                        const mediaInfo = getMediaInfo(link)
-                        const episodeInfo = formatEpisodeInfo(link)
-                        return (
-                          <tr key={link.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-3">
-                                {mediaInfo.poster ? (
-                                  <img
-                                    src={mediaInfo.poster || "/placeholder.svg"}
-                                    alt={mediaInfo.title}
-                                    className="w-10 h-14 object-cover rounded"
-                                  />
-                                ) : (
-                                  <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
-                                    <Play className="w-4 h-4 text-muted-foreground" />
-                                  </div>
-                                )}
-                                <div>
-                                  <p className="font-medium line-clamp-1">{mediaInfo.title}</p>
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <Badge variant="outline" className="text-xs">
-                                      {link.media_type === "movie" ? "Film" : "Serie"}
-                                    </Badge>
-                                    {episodeInfo && <span className="text-primary font-mono">{episodeInfo}</span>}
+                <div className="space-y-4">
+                  <div className="flex flex-col md:flex-row gap-3 p-4 bg-muted/30 rounded-lg border border-border">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Rechercher par titre ou source..."
+                        value={streamingSearch}
+                        onChange={(e) => setStreamingSearch(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Select value={streamingStatusFilter} onValueChange={setStreamingStatusFilter}>
+                        <SelectTrigger className="w-[130px]">
+                          <SelectValue placeholder="Statut" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous statuts</SelectItem>
+                          <SelectItem value="approved">Approuve</SelectItem>
+                          <SelectItem value="pending">En attente</SelectItem>
+                          <SelectItem value="rejected">Rejete</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={streamingTypeFilter} onValueChange={setStreamingTypeFilter}>
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous types</SelectItem>
+                          <SelectItem value="movie">Film</SelectItem>
+                          <SelectItem value="tv">Serie</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={streamingQualityFilter} onValueChange={setStreamingQualityFilter}>
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="Qualite" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Toutes qualites</SelectItem>
+                          {streamingQualities.map((q) => (
+                            <SelectItem key={q} value={q}>
+                              {q}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="text-sm text-muted-foreground">
+                    {filteredStreamingLinks.length} lien(s) sur {streamingLinks.length}
+                  </div>
+
+                  <div className="overflow-x-auto rounded-lg border border-border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-muted/50">
+                          <th className="text-left py-3 px-4 text-muted-foreground font-medium">Media</th>
+                          <th className="text-left py-3 px-4 text-muted-foreground font-medium">Source</th>
+                          <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
+                          <th className="text-left py-3 px-4 text-muted-foreground font-medium">Langue</th>
+                          <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
+                          <th className="text-left py-3 px-4 text-muted-foreground font-medium">Vues</th>
+                          <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
+                          <th className="text-left py-3 px-4 text-muted-foreground font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredStreamingLinks.map((link) => {
+                          const mediaInfo = getMediaInfo(link)
+                          const episodeInfo = formatEpisodeInfo(link)
+                          return (
+                            <tr key={link.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-3">
+                                  {mediaInfo.poster ? (
+                                    <img
+                                      src={mediaInfo.poster || "/placeholder.svg"}
+                                      alt={mediaInfo.title}
+                                      className="w-10 h-14 object-cover rounded"
+                                    />
+                                  ) : (
+                                    <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
+                                      <Play className="w-4 h-4 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <p className="font-medium line-clamp-1">{mediaInfo.title}</p>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <Badge variant="outline" className="text-xs">
+                                        {link.media_type === "movie" ? "Film" : "Serie"}
+                                      </Badge>
+                                      {episodeInfo && <span className="text-primary font-mono">{episodeInfo}</span>}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 font-medium">{link.source_name}</td>
-                            <td className="py-3 px-4">
-                              <Badge variant="outline">{link.quality}</Badge>
-                            </td>
-                            <td className="py-3 px-4">{link.language}</td>
-                            <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-1 text-orange-500">
-                                <Eye className="w-3 h-3" />
-                                <span>{link.view_count}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-muted-foreground">
-                              {new Date(link.created_at).toLocaleDateString("fr-FR")}
-                            </td>
-                            {/* CHANGE: Added delete button */}
-                            <td className="py-3 px-4">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                                onClick={() => handleDeleteStreamingLink(link.id)}
-                                disabled={deletingId === link.id}
-                              >
-                                {deletingId === link.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-4 w-4" />
-                                )}
-                              </Button>
+                              </td>
+                              <td className="py-3 px-4 font-medium">{link.source_name}</td>
+                              <td className="py-3 px-4">
+                                <Badge variant="outline">{link.quality}</Badge>
+                              </td>
+                              <td className="py-3 px-4">{link.language}</td>
+                              <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-1 text-orange-500">
+                                  <Eye className="w-3 h-3" />
+                                  <span>{link.view_count}</span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-muted-foreground">
+                                {new Date(link.created_at).toLocaleDateString("fr-FR")}
+                              </td>
+                              <td className="py-3 px-4">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                  onClick={() => handleDeleteStreamingLink(link.id)}
+                                  disabled={deletingId === link.id}
+                                >
+                                  {deletingId === link.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                        {filteredStreamingLinks.length === 0 && (
+                          <tr>
+                            <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                              Aucun resultat trouve
                             </td>
                           </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </TabsContent>
@@ -881,11 +991,59 @@ export function DashboardContent({
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {downloadLinks.length > 0 && (
+                  <div className="flex flex-col md:flex-row gap-3 p-4 bg-muted/30 rounded-lg border border-border">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Rechercher par titre ou source..."
+                        value={downloadSearch}
+                        onChange={(e) => setDownloadSearch(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Select value={downloadStatusFilter} onValueChange={setDownloadStatusFilter}>
+                        <SelectTrigger className="w-[130px]">
+                          <SelectValue placeholder="Statut" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous statuts</SelectItem>
+                          <SelectItem value="approved">Approuve</SelectItem>
+                          <SelectItem value="pending">En attente</SelectItem>
+                          <SelectItem value="rejected">Rejete</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={downloadTypeFilter} onValueChange={setDownloadTypeFilter}>
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous types</SelectItem>
+                          <SelectItem value="movie">Film</SelectItem>
+                          <SelectItem value="tv">Serie</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={downloadQualityFilter} onValueChange={setDownloadQualityFilter}>
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="Qualite" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Toutes qualites</SelectItem>
+                          {downloadQualities.map((q) => (
+                            <SelectItem key={q} value={q}>
+                              {q}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {filteredDownloadLinks.length > 0 && (
                     <div>
                       <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                         <Download className="w-4 h-4 text-blue-500" />
-                        Films & Series ({downloadLinks.length})
+                        Films & Series ({filteredDownloadLinks.length} sur {downloadLinks.length})
                       </h4>
                       <div className="overflow-x-auto rounded-lg border border-border">
                         <table className="w-full text-sm">
@@ -902,7 +1060,7 @@ export function DashboardContent({
                             </tr>
                           </thead>
                           <tbody>
-                            {downloadLinks.map((link) => {
+                            {filteredDownloadLinks.map((link) => {
                               const mediaInfo = getMediaInfo(link)
                               const episodeInfo = formatEpisodeInfo(link)
                               return (
@@ -951,7 +1109,6 @@ export function DashboardContent({
                                   <td className="py-3 px-4 text-muted-foreground">
                                     {new Date(link.created_at).toLocaleDateString("fr-FR")}
                                   </td>
-                                  {/* CHANGE: Added delete button */}
                                   <td className="py-3 px-4">
                                     <Button
                                       variant="ghost"
@@ -970,34 +1127,55 @@ export function DashboardContent({
                                 </tr>
                               )
                             })}
+                            {filteredDownloadLinks.length === 0 && downloadLinks.length > 0 && (
+                              <tr>
+                                <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                                  Aucun resultat trouve
+                                </td>
+                              </tr>
+                            )}
                           </tbody>
                         </table>
                       </div>
                     </div>
                   )}
 
-                  {digitalLinks.length > 0 && (
+                  {filteredDigitalLinks.length > 0 && (
                     <div>
                       <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                         <Package className="w-4 h-4 text-amber-500" />
-                        Contenu Digital ({digitalLinks.length})
+                        Contenu Digital ({filteredDigitalLinks.length} sur {digitalLinks.length})
                       </h4>
                       <div className="overflow-x-auto rounded-lg border border-border">
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="bg-muted/50">
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Contenu</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Type</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Source</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
-                              {/* CHANGE: Added Actions column */}
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Actions</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {digitalLinks.map((link) => {
-                              const digitalContent = digitalContents.find((dc) => dc.id === link.content_id)
+                            {filteredDigitalLinks.map((link) => {
+                              const content = digitalContents.find((c) => c.id === link.content_id)
+                              const getContentTypeIcon = (type: string) => {
+                                switch (type) {
+                                  case "ebook":
+                                    return <Book className="w-4 h-4" />
+                                  case "music":
+                                    return <Music className="w-4 h-4" />
+                                  case "software":
+                                    return <Package className="w-4 h-4" />
+                                  case "game":
+                                    return <Gamepad2 className="w-4 h-4" />
+                                  default:
+                                    return <Package className="w-4 h-4" />
+                                }
+                              }
                               return (
                                 <tr
                                   key={link.id}
@@ -1005,40 +1183,36 @@ export function DashboardContent({
                                 >
                                   <td className="py-3 px-4">
                                     <div className="flex items-center gap-3">
-                                      {digitalContent?.cover_url ? (
+                                      {content?.cover_url ? (
                                         <img
-                                          src={digitalContent.cover_url || "/placeholder.svg"}
-                                          alt={digitalContent?.title || "Digital"}
+                                          src={content.cover_url || "/placeholder.svg"}
+                                          alt={content?.title}
                                           className="w-10 h-14 object-cover rounded"
                                         />
                                       ) : (
                                         <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
-                                          <Package className="w-4 h-4 text-muted-foreground" />
+                                          {getContentTypeIcon(content?.content_type || "")}
                                         </div>
                                       )}
                                       <div>
-                                        <p className="font-medium line-clamp-1">
-                                          {digitalContent?.title || link.ww_id}
-                                        </p>
-                                        <Badge variant="outline" className="text-xs">
-                                          {digitalContent?.type === "ebook" && "Ebook"}
-                                          {digitalContent?.type === "music" && "Musique"}
-                                          {digitalContent?.type === "software" && "Logiciel"}
-                                          {digitalContent?.type === "game" && "Jeu"}
-                                          {!digitalContent?.type && "Digital"}
-                                        </Badge>
+                                        <p className="font-medium line-clamp-1">{content?.title || "Inconnu"}</p>
+                                        <p className="text-xs text-muted-foreground">{content?.creator}</p>
                                       </div>
                                     </div>
                                   </td>
+                                  <td className="py-3 px-4">
+                                    <Badge variant="outline" className="capitalize">
+                                      {content?.content_type || "digital"}
+                                    </Badge>
+                                  </td>
                                   <td className="py-3 px-4 font-medium">{link.source_name}</td>
                                   <td className="py-3 px-4">
-                                    <Badge variant="outline">{link.quality || "N/A"}</Badge>
+                                    <Badge variant="outline">{link.quality}</Badge>
                                   </td>
                                   <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
                                   <td className="py-3 px-4 text-muted-foreground">
                                     {new Date(link.created_at).toLocaleDateString("fr-FR")}
                                   </td>
-                                  {/* CHANGE: Added delete button */}
                                   <td className="py-3 px-4">
                                     <Button
                                       variant="ghost"
@@ -1057,6 +1231,13 @@ export function DashboardContent({
                                 </tr>
                               )
                             })}
+                            {filteredDigitalLinks.length === 0 && digitalLinks.length > 0 && (
+                              <tr>
+                                <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                                  Aucun resultat trouve
+                                </td>
+                              </tr>
+                            )}
                           </tbody>
                         </table>
                       </div>
