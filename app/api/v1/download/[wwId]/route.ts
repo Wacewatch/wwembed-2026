@@ -319,17 +319,30 @@ var _extIds=${JSON.stringify(externalIds)};
 var _title="${title.replace(/"/g, '\\"')}";
 var _allExtLinks=[];
 
-var bs=document.querySelectorAll(".db:not(.rd)");
-for(var j=0;j<bs.length;j++){
-bs[j].onclick=function(){
-var url=this.getAttribute("data-url");
-if(!url || url==="undefined" || url==="null" || url===""){
-alert("Lien non disponible");
-return;
-}
-if(_h&&_u){_sa(url);}else{window.open(decodeURIComponent(url),"_blank");}
-};
-}
+setTimeout(function(){
+  var bs=document.querySelectorAll(".db");
+  console.log("[v0] Digital: Found "+bs.length+" download buttons");
+  for(var j=0;j<bs.length;j++){
+    (function(btn){
+      btn.addEventListener("click",function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        var url=btn.getAttribute("data-url");
+        console.log("[v0] Digital button clicked, data-url="+url+", hasAds="+_h);
+        if(!url || url==="undefined" || url==="null" || url===""){
+          alert("Lien non disponible");
+          return;
+        }
+        if(_h && _u){
+          _sa(url);
+        } else {
+          window.open(decodeURIComponent(url),"_blank");
+        }
+      });
+    })(bs[j]);
+  }
+  _loadExternal();
+},100);
 
 function _sa(url){
 _p=url;
@@ -345,6 +358,7 @@ var dn=document.getElementById(_ids.btnDownload);
 var s1=document.getElementById(_ids.step1);
 var s2=document.getElementById(_ids.step2);
 var s3=document.getElementById(_ids.step3);
+console.log("[v0] _sa called, overlay element:", o);
 if(bt)bt.classList.remove("hi");
 if(bh)bh.classList.remove("hi");
 if(bk)bk.classList.add("hi");
@@ -356,7 +370,10 @@ if(dn)dn.classList.add("hi");
 if(s1){s1.classList.add("active");s1.classList.remove("done");}
 if(s2){s2.classList.remove("active");s2.classList.remove("done");}
 if(s3){s3.classList.remove("active");s3.classList.remove("done");}
-o.classList.add("sh");
+if(o){
+  o.classList.add("sh");
+  console.log("[v0] Modal shown");
+}
 
 bu.onclick=function(){
 var xhr=new XMLHttpRequest();
@@ -735,7 +752,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .hi{display:none}
 .cf{margin-top:12px;font-size:clamp(9px,2.5vw,11px);color:#9ca3af}
 .cf a{color:#667eea;text-decoration:none;font-weight:500}
-.tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;font-weight:600}
 /* End modal CSS */
 
 /* External links section */
@@ -906,7 +922,7 @@ var _u="${adUrl}";
 var _i="${adId}";
 var _h=${hasAds};
 var _p=null;
-var _ids=${JSON.stringify(ids)};
+var _ids=${JSON.JSON.stringify(ids)};
 var _extIds=${JSON.stringify(externalIds)};
 var _isSeries=${isSeries};
 var _showGroups=${showSeasonGroups};
@@ -954,23 +970,24 @@ function _bindBtns(){
 var bs=document.querySelectorAll(".li-btn");
 console.log("[v0] Binding buttons:", bs.length);
 for(var j=0;j<bs.length;j++){
-bs[j].onclick=function(){
-console.log("[v0] Button clicked");
-if(this.hasAttribute("disabled"))return;
-var url=decodeURIComponent(this.getAttribute("data-url"));
-console.log("[v0] URL:", url, "_h:", _h, "_u:", _u);
-if(!url||url==="undefined"||url==="null"){
+(function(btn){
+btn.onclick=function(e){
+e.preventDefault();
+var url=btn.getAttribute("data-url");
+console.log("[v0] Button clicked, url:", url);
+if(!url || url==="undefined" || url==="null"){
 alert("Lien non disponible");
 return;
 }
-if(_h&&_u){
-console.log("[v0] Showing ad modal");
+if(_h && _u){
+console.log("[v0] Opening modal for ad");
 _sa(url);
-}else{
-console.log("[v0] Opening URL directly");
+} else {
+console.log("[v0] No ads, opening directly");
 window.open(url,"_blank");
 }
 };
+})(bs[j]);
 }
 }
 // End of updates
