@@ -917,20 +917,31 @@ var btnText=url?'Télécharger':'Lien indisponible';
 return '<div class="li"><div class="li-top"><div class="li-header">'+ep+'<div class="li-nm">'+release+'</div>'+up+'</div>'+meta+nfo+'</div><div class="li-bottom"><button class="li-btn"'+btnDisabled+' data-url="'+encodeURIComponent(url)+'">'+btnText+'</button></div></div>';
 }
 
+// Start of updates
 function _bindBtns(){
 var bs=document.querySelectorAll(".li-btn");
+console.log("[v0] Binding buttons:", bs.length);
 for(var j=0;j<bs.length;j++){
 bs[j].onclick=function(){
+console.log("[v0] Button clicked");
 if(this.hasAttribute("disabled"))return;
 var url=decodeURIComponent(this.getAttribute("data-url"));
+console.log("[v0] URL:", url, "_h:", _h, "_u:", _u);
 if(!url||url==="undefined"||url==="null"){
 alert("Lien non disponible");
 return;
 }
-if(_h&&_u){_sa(url);}else{window.open(url,"_blank");}
+if(_h&&_u){
+console.log("[v0] Showing ad modal");
+_sa(url);
+}else{
+console.log("[v0] Opening URL directly");
+window.open(url,"_blank");
+}
 };
 }
 }
+// End of updates
 
 function _renderLinks(){
 var c=document.getElementById(_ids.linksContainer);
