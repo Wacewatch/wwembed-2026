@@ -124,7 +124,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0c1520;color:#ff
 .ext-card-body{padding:12px}
 .ext-provider{font-size:11px;color:#14B8A6;margin-bottom:4px}
 .ext-quality{display:inline-block;background:#14B8A6;color:#0c1520;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:8px}
-.ext-info{font-size:12px;color:#8ba3b5;display:flex;align-items:center;gap:4px;margin-bottom:4px}
+.ext-info{display:flex;align-items:center;gap:4px;margin-bottom:4px}
 .ext-info svg{width:14px;height:14px}
 .ext-host{display:flex;align-items:center;gap:6px;margin:8px 0}
 .ext-host img{width:16px;height:16px;border-radius:2px}
@@ -323,6 +323,10 @@ var bs=document.querySelectorAll(".db:not(.rd)");
 for(var j=0;j<bs.length;j++){
 bs[j].onclick=function(){
 var url=this.getAttribute("data-url");
+if(!url || url==="undefined" || url==="null" || url===""){
+alert("Lien non disponible");
+return;
+}
 if(_h&&_u){_sa(url);}else{window.open(decodeURIComponent(url),"_blank");}
 };
 }
@@ -883,6 +887,51 @@ var _seasonNum=${seasonNumber !== undefined ? seasonNumber : "null"};
 var _episodeNum=${episodeNumber !== undefined ? episodeNumber : "null"};
 var _allExtLinks=[];
 
+function _renderLink(l){
+var ep="";
+if(_isSeries){
+if(l.is_full_season){ep='<span class="li-ep">Saison '+l.season_number+' Complete</span>';}
+else if(l.episode_number){ep='<span class="li-ep">S'+l.season_number+'E'+l.episode_number+'</span>';}
+}
+var up=(l.profiles&&l.profiles.username)?'<a href="/profile/'+encodeURIComponent(l.profiles.username)+'" target="_blank" class="li-up">par '+l.profiles.username+'</a>':"";
+var release=l.release_name||l.source_name||"Téléchargement";
+var url=l.source_url||l.download_url||"";
+if(url&&!url.startsWith("http://")&&!url.startsWith("https://")){url="https://"+url;}
+
+var meta='<div class="li-meta">';
+if(l.quality)meta+='<span class="li-tag quality">'+l.quality+'</span>';
+if(l.resolution)meta+='<span class="li-tag resolution">'+l.resolution+'</span>';
+if(l.codec_video)meta+='<span class="li-tag codec">'+l.codec_video+'</span>';
+if(l.codec_audio)meta+='<span class="li-tag audio">'+l.codec_audio+'</span>';
+if(l.file_size)meta+='<span class="li-tag size">'+l.file_size+'</span>';
+if(l.language)meta+='<span class="li-tag lang">'+l.language+'</span>';
+if(l.subtitle)meta+='<span class="li-tag sub">ST: '+l.subtitle+'</span>';
+if(l.has_audio_description)meta+='<span class="li-tag ad">AD</span>';
+meta+='</div>';
+
+var nfo=l.nfo?'<div class="li-nfo">'+l.nfo.replace(/</g,"&lt;").replace(/>/g,"&gt;")+'</div>':"";
+
+var btnDisabled=!url?' disabled style="opacity:0.5;cursor:not-allowed"':'';
+var btnText=url?'Télécharger':'Lien indisponible';
+
+return '<div class="li"><div class="li-top"><div class="li-header">'+ep+'<div class="li-nm">'+release+'</div>'+up+'</div>'+meta+nfo+'</div><div class="li-bottom"><button class="li-btn"'+btnDisabled+' data-url="'+encodeURIComponent(url)+'">'+btnText+'</button></div></div>';
+}
+
+function _bindBtns(){
+var bs=document.querySelectorAll(".li-btn");
+for(var j=0;j<bs.length;j++){
+bs[j].onclick=function(){
+if(this.hasAttribute("disabled"))return;
+var url=decodeURIComponent(this.getAttribute("data-url"));
+if(!url||url==="undefined"||url==="null"){
+alert("Lien non disponible");
+return;
+}
+if(_h&&_u){_sa(url);}else{window.open(url,"_blank");}
+};
+}
+}
+
 function _renderLinks(){
 var c=document.getElementById(_ids.linksContainer);
 if(!c)return;
@@ -935,43 +984,6 @@ for(var i=0;i<sorted.length;i++){html+=_renderLink(sorted[i]);}
 c.innerHTML=html;
 }
 _bindBtns();
-}
-
-function _renderLink(l){
-var ep="";
-if(_isSeries){
-if(l.is_full_season){ep='<span class="li-ep">Saison '+l.season_number+' Complete</span>';}
-else if(l.episode_number){ep='<span class="li-ep">S'+l.season_number+'E'+l.episode_number+'</span>';}
-}
-var up=(l.profiles&&l.profiles.username)?'<a href="/profile/'+encodeURIComponent(l.profiles.username)+'" target="_blank" class="li-up">par '+l.profiles.username+'</a>':"";
-var release=l.release_name||l.source_name||"Téléchargement";
-var url=l.source_url||"";
-if(url&&!url.startsWith("http://")&&!url.startsWith("https://")){url="https://"+url;}
-
-var meta='<div class="li-meta">';
-if(l.quality)meta+='<span class="li-tag quality">'+l.quality+'</span>';
-if(l.resolution)meta+='<span class="li-tag resolution">'+l.resolution+'</span>';
-if(l.codec_video)meta+='<span class="li-tag codec">'+l.codec_video+'</span>';
-if(l.codec_audio)meta+='<span class="li-tag audio">'+l.codec_audio+'</span>';
-if(l.file_size)meta+='<span class="li-tag size">'+l.file_size+'</span>';
-if(l.language)meta+='<span class="li-tag lang">'+l.language+'</span>';
-if(l.subtitle)meta+='<span class="li-tag sub">ST: '+l.subtitle+'</span>';
-if(l.has_audio_description)meta+='<span class="li-tag ad">AD</span>';
-meta+='</div>';
-
-var nfo=l.nfo?'<div class="li-nfo">'+l.nfo.replace(/</g,"&lt;").replace(/>/g,"&gt;")+'</div>':"";
-
-return '<div class="li"><div class="li-top"><div class="li-header">'+ep+'<div class="li-nm">'+release+'</div>'+up+'</div>'+meta+nfo+'</div><div class="li-bottom"><button class="li-btn" data-url="'+encodeURIComponent(url)+'">Télécharger</button></div></div>';
-}
-
-function _bindBtns(){
-var bs=document.querySelectorAll(".li-btn");
-for(var j=0;j<bs.length;j++){
-bs[j].onclick=function(){
-var url=decodeURIComponent(this.getAttribute("data-url"));
-if(_h&&_u){_sa(url);}else{window.open(url,"_blank");}
-};
-}
 }
 
 function _sa(url){
