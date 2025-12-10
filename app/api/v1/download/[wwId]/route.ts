@@ -9,8 +9,6 @@ function generateRandomId(prefix = "x"): string {
 export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
   const { wwId } = await params
 
-  console.log("[v0] Download route called with wwId:", wwId)
-
   const supabase = createAdminClient()
 
   const isDigitalContent =
@@ -38,7 +36,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const hasAds = ads && ads.length > 0
     const adUrl = hasAds ? ads[0].ad_url : ""
     const adId = hasAds ? ads[0].id : ""
-    const adCount = ads ? ads.length : 0
 
     const title = digitalContent.title
     const cover = digitalContent.cover_url || ""
@@ -103,13 +100,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0c1520;color:#ff
 .nm{font-weight:500;font-size:14px}
 .bg{padding:2px 6px;background:#1e3a4f;border-radius:4px;font-size:10px;color:#8ba3b5}
 .db{padding:10px 16px;background:#14B8A6;color:#0c1520;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;width:100%;transition:background 0.2s}
-.db:active{background:#0d9488;transform:scale(0.98)}
-.db.rd{background:#8b5cf6}
-.db.rd:active{background:#7c3aed}
+.db:hover{background:#0d9488}
+.db:active{transform:scale(0.98)}
 .em{color:#5a7a8a;padding:20px;text-align:center;font-size:14px}
 .ft{text-align:center;color:#5a7a8a;font-size:11px;margin-top:16px}
 .ft a{color:#14B8A6}
-/* Add external links styles */
 .sec-title{font-size:14px;font-weight:600;color:#14B8A6;margin:20px 0 12px;display:flex;align-items:center;gap:8px}
 .sec-title svg{width:18px;height:18px}
 .badge{background:#14B8A6;color:#0c1520;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
@@ -135,7 +130,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0c1520;color:#ff
 .ext-stat-value{font-size:12px;color:#fff}
 .ext-btn{width:100%;padding:10px;background:transparent;border:1px solid #14B8A6;color:#14B8A6;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:all 0.2s}
 .ext-btn:hover{background:#14B8A6;color:#0c1520}
-.ext-details{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:1000;padding:12px;backdrop-filter:blur(8px)}
+.ext-details{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;z-index:1000;padding:12px;backdrop-filter:blur(8px)}
+.ext-details.show{display:flex}
 .ext-details-inner{background:#0c1520;border:1px solid #1e3a4f;border-radius:12px;max-width:400px;width:100%;max-height:80vh;overflow:auto}
 .ext-details-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #1e3a4f}
 .ext-details-header h3{font-size:14px;color:#fff}
@@ -148,9 +144,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0c1520;color:#ff
 .ext-unlock-btn{width:100%;padding:12px;background:#14B8A6;color:#0c1520;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;margin-top:16px}
 .ext-link-result{margin-top:12px;padding:12px;background:#162230;border-radius:6px;word-break:break-all}
 .ext-link-result a{color:#14B8A6;font-size:12px}
-/* End external links styles */
-.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none !important;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
-.mo.sh{display:flex !important}
+.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
+.mo.sh{display:flex}
 .mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
 .mc h2{color:#1a1a2e;margin-bottom:8px;font-size:clamp(16px,4vw,20px);font-weight:700}
 .mc-sub{color:#6b7280;font-size:clamp(11px,3vw,13px);margin-bottom:16px}
@@ -178,19 +173,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0c1520;color:#ff
 .cf{margin-top:12px;font-size:clamp(9px,2.5vw,11px);color:#9ca3af}
 .cf a{color:#667eea;text-decoration:none;font-weight:500}
 .tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;font-weight:600}
-@media(max-height:500px){
-.mc{padding:16px;border-radius:12px}
-.bx{padding:10px;margin:6px 0}
-.steps{margin-bottom:12px}
-.pb{margin:10px 0}
-.bt{padding:10px}
-}
-@media(max-width:360px){
-.mo{padding:8px}
-.mc{padding:16px;border-radius:12px}
-.bx{padding:10px;gap:8px}
-.bx svg{width:16px;height:16px}
-}
 @media(min-width:480px){
 .ps{width:80px;height:120px}
 .tt{font-size:18px}
@@ -207,8 +189,6 @@ ${cover ? `<img src="${cover}" alt="${title}" class="ps">` : ""}
 <div class="tg">${contentType}</div>
 </div>
 </div>
-
-<!-- Removed "Lire en ligne" section -->
 
 <div class="sc">
 <div class="sc-title">
@@ -230,7 +210,7 @@ ${l.file_size ? `<span class="bg">${l.file_size}</span>` : ""}
 ${l.file_format ? `<span class="bg">${l.file_format}</span>` : ""}
 ${l.language ? `<span class="bg">${l.language}</span>` : ""}
 </div>
-<button class="db" data-url="${encodeURIComponent(l.source_url)}">Télécharger</button>
+<button class="db" data-url="${encodeURIComponent(l.source_url || "")}">Télécharger</button>
 </div>
 `,
         )
@@ -239,7 +219,6 @@ ${l.language ? `<span class="bg">${l.language}</span>` : ""}
 </div>
 </div>
 
-<!-- Add external links section for digital -->
 <div class="sec-title">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
 Sources externes
@@ -259,7 +238,7 @@ Recherche de sources externes...
 <div id="${externalIds.content}" class="ext-grid"></div>
 </div>
 
-<div id="${externalIds.details}" class="ext-details" style="display:none">
+<div id="${externalIds.details}" class="ext-details">
 <div class="ext-details-inner">
 <div class="ext-details-header">
 <h3>Détails du lien</h3>
@@ -268,7 +247,6 @@ Recherche de sources externes...
 <div class="ext-details-body" id="${externalIds.detailsContent}"></div>
 </div>
 </div>
-<!-- End external links section -->
 
 <div class="ft">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
 
@@ -319,33 +297,32 @@ var _extIds=${JSON.stringify(externalIds)};
 var _title="${title.replace(/"/g, '\\"')}";
 var _allExtLinks=[];
 
-setTimeout(function(){
-  var bs=document.querySelectorAll(".db");
-  console.log("[v0] Digital: Found "+bs.length+" download buttons");
-  for(var j=0;j<bs.length;j++){
-    (function(btn){
-      btn.addEventListener("click",function(e){
-        e.preventDefault();
-        e.stopPropagation();
-        var url=btn.getAttribute("data-url");
-        console.log("[v0] Digital button clicked, data-url="+url+", hasAds="+_h);
-        if(!url || url==="undefined" || url==="null" || url===""){
-          alert("Lien non disponible");
-          return;
-        }
-        if(_h && _u){
-          _sa(url);
-        } else {
-          window.open(decodeURIComponent(url),"_blank");
-        }
-      });
-    })(bs[j]);
-  }
-  _loadExternal();
-},100);
+// Bind download buttons for internal links
+function _bindButtons(){
+var buttons=document.querySelectorAll(".db");
+for(var i=0;i<buttons.length;i++){
+(function(btn){
+btn.onclick=function(e){
+e.preventDefault();
+e.stopPropagation();
+var url=btn.getAttribute("data-url");
+if(!url || url==="" || url==="undefined" || url==="null"){
+alert("Lien non disponible");
+return;
+}
+if(_h && _u){
+_showAdModal(decodeURIComponent(url));
+}else{
+window.open(decodeURIComponent(url),"_blank");
+}
+};
+})(buttons[i]);
+}
+}
 
-function _sa(url){
-_p=url;
+// Show ad modal
+function _showAdModal(downloadUrl){
+_p=downloadUrl;
 var o=document.getElementById(_ids.overlay);
 var bt=document.getElementById(_ids.boxTime);
 var bh=document.getElementById(_ids.boxHelp);
@@ -358,7 +335,7 @@ var dn=document.getElementById(_ids.btnDownload);
 var s1=document.getElementById(_ids.step1);
 var s2=document.getElementById(_ids.step2);
 var s3=document.getElementById(_ids.step3);
-console.log("[v0] _sa called, overlay element:", o);
+
 if(bt)bt.classList.remove("hi");
 if(bh)bh.classList.remove("hi");
 if(bk)bk.classList.add("hi");
@@ -370,10 +347,7 @@ if(dn)dn.classList.add("hi");
 if(s1){s1.classList.add("active");s1.classList.remove("done");}
 if(s2){s2.classList.remove("active");s2.classList.remove("done");}
 if(s3){s3.classList.remove("active");s3.classList.remove("done");}
-if(o){
-  o.classList.add("sh");
-  console.log("[v0] Modal shown");
-}
+if(o)o.classList.add("sh");
 
 bu.onclick=function(){
 var xhr=new XMLHttpRequest();
@@ -384,12 +358,12 @@ window.open(_u,"_blank");
 bu.classList.add("hi");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
 if(s2)s2.classList.add("active");
-var s=3,pg=0;
+var sec=3,prog=0;
 var iv=setInterval(function(){
-s--;pg+=33.33;
-if(tm)tm.textContent=s+" seconde(s)";
-if(pr)pr.style.width=pg+"%";
-if(s<=0){
+sec--;prog+=33.33;
+if(tm)tm.textContent=sec+" seconde(s)";
+if(pr)pr.style.width=prog+"%";
+if(sec<=0){
 clearInterval(iv);
 if(s2){s2.classList.remove("active");s2.classList.add("done");}
 if(s3)s3.classList.add("active");
@@ -405,18 +379,20 @@ if(dn)dn.classList.remove("hi");
 
 dn.onclick=function(){
 o.classList.remove("sh");
-if(_p){window.open(decodeURIComponent(_p),"_blank");_p=null;}
+if(_p){window.open(_p,"_blank");_p=null;}
 };
 }
 
+// External links functions
 function _loadExternal(){
 var loading=document.getElementById(_extIds.loading);
 var content=document.getElementById(_extIds.content);
 var filters=document.getElementById(_extIds.filters);
 var countBadge=document.getElementById(_extIds.count);
 
-var searchUrl="https://api.movix.site/api/search?title="+encodeURIComponent(_title);
-fetch(searchUrl).then(function(r){return r.json();}).then(function(data){
+fetch("https://api.movix.site/api/search?title="+encodeURIComponent(_title))
+.then(function(r){return r.json();})
+.then(function(data){
 var results=data;
 if(data&&typeof data==="object"&&!Array.isArray(data)){
 if(data.results)results=data.results;
@@ -431,10 +407,11 @@ return;
 }
 var first=results[0];
 var movieId=first.id||first.movie_id||first.tmdb_id;
-// Treat digital content as movie always
 var dlUrl="https://api.movix.site/api/darkiworld/download/movie/"+movieId;
 
-fetch(dlUrl).then(function(r){return r.json();}).then(function(dlData){
+fetch(dlUrl)
+.then(function(r){return r.json();})
+.then(function(dlData){
 loading.style.display="none";
 var links=null;
 if(dlData&&dlData.success&&dlData.all&&Array.isArray(dlData.all)){
@@ -447,22 +424,24 @@ return;
 }
 _allExtLinks=links;
 countBadge.textContent=links.length;
-_populateExtFilters(links);
+_populateFilters(links);
 filters.style.display="flex";
 _renderExtLinks(links);
-}).catch(function(){
+})
+.catch(function(){
 loading.style.display="none";
 content.innerHTML='<div class="em">Erreur de chargement</div>';
 countBadge.textContent="0";
 });
-}).catch(function(){
+})
+.catch(function(){
 loading.style.display="none";
 content.innerHTML='<div class="em">Erreur de recherche</div>';
 countBadge.textContent="0";
 });
 }
 
-function _populateExtFilters(links){
+function _populateFilters(links){
 var qualities=new Set();
 var languages=new Set();
 var providers=new Set();
@@ -477,10 +456,10 @@ var pf=document.getElementById("extProviderFilter");
 qualities.forEach(function(q){var o=document.createElement("option");o.value=q;o.textContent=q;qf.appendChild(o);});
 languages.forEach(function(l){var o=document.createElement("option");o.value=l;o.textContent=l;lf.appendChild(o);});
 providers.forEach(function(p){var o=document.createElement("option");o.value=p;o.textContent=p;pf.appendChild(o);});
-qf.onchange=lf.onchange=pf.onchange=_applyExtFilters;
+qf.onchange=lf.onchange=pf.onchange=_applyFilters;
 }
 
-function _applyExtFilters(){
+function _applyFilters(){
 var qf=document.getElementById("extQualityFilter").value;
 var lf=document.getElementById("extLanguageFilter").value;
 var pf=document.getElementById("extProviderFilter").value;
@@ -509,9 +488,9 @@ content.innerHTML='<div class="em">Aucun résultat</div>';
 return;
 }
 var html="";
-links.forEach(function(l){
+links.forEach(function(l,idx){
 var size=_formatSize(l.size||0);
-html+='<div class="ext-card" data-id="'+l.id+'">';
+html+='<div class="ext-card" data-idx="'+idx+'">';
 html+='<div class="ext-card-body">';
 html+='<div class="ext-provider">'+(l.provider||"Inconnu")+'</div>';
 html+='<span class="ext-quality">'+(l.quality||"N/A")+'</span>';
@@ -529,13 +508,16 @@ html+='</div></div>';
 });
 content.innerHTML=html;
 var cards=content.querySelectorAll(".ext-card");
-cards.forEach(function(card){
-card.querySelector(".ext-btn").onclick=function(){
-var linkId=card.getAttribute("data-id");
-var link=_allExtLinks.find(function(l){return String(l.id)===linkId;});
+for(var i=0;i<cards.length;i++){
+(function(card){
+card.querySelector(".ext-btn").onclick=function(e){
+e.stopPropagation();
+var idx=parseInt(card.getAttribute("data-idx"));
+var link=_allExtLinks[idx];
 if(link)_showExtDetails(link);
 };
-});
+})(cards[i]);
+}
 }
 
 function _showExtDetails(link){
@@ -550,15 +532,38 @@ html+='<div class="ext-detail-row"><span class="ext-detail-label">Taille</span><
 html+='<button class="ext-unlock-btn" id="extUnlockBtn">Débloquer le lien</button>';
 html+='<div class="ext-link-result" id="extLinkResult" style="display:none"></div>';
 body.innerHTML=html;
-details.style.display="flex";
-document.getElementById("extCloseBtn").onclick=function(){
-details.style.display="none";
+details.classList.add("show");
+
+document.getElementById("extUnlockBtn").onclick=function(){
+var btn=this;
+btn.textContent="Ouverture...";
+btn.style.opacity="0.7";
+if(_h && _u){
+window.open(_u,"_blank");
+var xhr=new XMLHttpRequest();
+xhr.open("POST","/api/ads/click",true);
+xhr.setRequestHeader("Content-Type","application/json");
+xhr.send(JSON.stringify({adId:_i}));
+}
+setTimeout(function(){
+var result=document.getElementById("extLinkResult");
+result.style.display="block";
+var linkUrl=link.url||link.link||link.download_url||"#";
+result.innerHTML='<a href="'+linkUrl+'" target="_blank">Accéder au lien</a>';
+btn.textContent="Lien débloqué !";
+btn.style.background="#10b981";
+},500);
 };
 }
 
+document.getElementById("extCloseBtn").onclick=function(){
+document.getElementById(_extIds.details).classList.remove("show");
+};
+
+// Initialize
+_bindButtons();
 _loadExternal();
-// End external links functions
-)();
+})();
 </script>
 </body>
 </html>`
@@ -570,9 +575,11 @@ _loadExternal();
         "Access-Control-Allow-Origin": "*",
       },
     })
-  } // THIS IS THE END OF THE DIGITAL CONTENT BLOCK
+  }
 
-  // Original media download logic
+  // ============================================
+  // FILM / SERIE DOWNLOAD - DO NOT MODIFY BELOW
+  // ============================================
   const parsed = parseWWId(wwId)
 
   if (!parsed) {
@@ -585,7 +592,6 @@ _loadExternal();
   const hasAds = ads && ads.length > 0
   const adUrl = hasAds ? ads[0].ad_url : ""
   const adId = hasAds ? ads[0].id : ""
-  const adCount = ads ? ads.length : 0
 
   const tmdbData = mediaType === "movie" ? await getMovieDetails(tmdbId) : await getTVDetails(tmdbId)
   const title = tmdbData ? ("title" in tmdbData ? tmdbData.title : tmdbData.name) : "Unknown"
@@ -723,7 +729,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ft a{color:#14B8A6;text-decoration:none;font-weight:500}
 .ft a:hover{text-decoration:underline}
 
-/* Added modal CSS for movie/series - THIS WAS MISSING */
 .mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
 .mo.sh{display:flex}
 .mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
@@ -752,9 +757,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .hi{display:none}
 .cf{margin-top:12px;font-size:clamp(9px,2.5vw,11px);color:#9ca3af}
 .cf a{color:#667eea;text-decoration:none;font-weight:500}
-/* End modal CSS */
+.tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;font-weight:600}
 
-/* External links section */
 .sec-title{display:flex;align-items:center;gap:10px;padding:16px;background:linear-gradient(135deg,rgba(102,126,234,0.2),rgba(118,75,162,0.2));border:1px solid rgba(102,126,234,0.3);border-radius:12px;margin:24px 0 16px;font-weight:700;color:#a78bfa}
 .sec-title svg{width:20px;height:20px}
 .sec-title .badge{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;margin-left:auto}
@@ -786,7 +790,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ext-btn{display:block;width:100%;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;text-align:center;transition:all 0.2s;margin-top:12px}
 .ext-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(102,126,234,0.2)}
 
-.ext-details{margin-top:16px;background:rgba(22,34,48,0.9);border-radius:12px;border:1px solid rgba(102,126,234,0.4);overflow:hidden}
+.ext-details{margin-top:16px;background:rgba(22,34,48,0.9);border-radius:12px;border:1px solid rgba(102,126,234,0.4);overflow:hidden;display:none}
+.ext-details.show{display:block}
 .ext-details-header{display:flex;justify-content:space-between;align-items:center;padding:16px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
 .ext-details-header h3{font-size:16px;font-weight:700}
 .ext-close{background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px}
@@ -841,7 +846,6 @@ ${posterUrl ? `<img src="${posterUrl}" alt="${title}" class="ps">` : ""}
 
 <div id="${ids.linksContainer}"></div>
 
-<!-- External links section -->
 <div class="sec-title">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
 Sources externes
@@ -867,7 +871,7 @@ Recherche de sources externes...
 <div id="${externalIds.content}" class="ext-grid"></div>
 </div>
 
-<div id="${externalIds.details}" class="ext-details" style="display:none">
+<div id="${externalIds.details}" class="ext-details">
 <div class="ext-details-inner">
 <div class="ext-details-header">
 <h3>Détails du lien</h3>
@@ -922,7 +926,7 @@ var _u="${adUrl}";
 var _i="${adId}";
 var _h=${hasAds};
 var _p=null;
-var _ids=${JSON.JSON.stringify(ids)};
+var _ids=${JSON.stringify(ids)};
 var _extIds=${JSON.stringify(externalIds)};
 var _isSeries=${isSeries};
 var _showGroups=${showSeasonGroups};
@@ -965,32 +969,26 @@ var btnText=url?'Télécharger':'Lien indisponible';
 return '<div class="li"><div class="li-top"><div class="li-header">'+ep+'<div class="li-nm">'+release+'</div>'+up+'</div>'+meta+nfo+'</div><div class="li-bottom"><button class="li-btn"'+btnDisabled+' data-url="'+encodeURIComponent(url)+'">'+btnText+'</button></div></div>';
 }
 
-// Start of updates
 function _bindBtns(){
 var bs=document.querySelectorAll(".li-btn");
-console.log("[v0] Binding buttons:", bs.length);
 for(var j=0;j<bs.length;j++){
 (function(btn){
 btn.onclick=function(e){
 e.preventDefault();
 var url=btn.getAttribute("data-url");
-console.log("[v0] Button clicked, url:", url);
 if(!url || url==="undefined" || url==="null"){
 alert("Lien non disponible");
 return;
 }
 if(_h && _u){
-console.log("[v0] Opening modal for ad");
-_sa(url);
+_sa(decodeURIComponent(url));
 } else {
-console.log("[v0] No ads, opening directly");
-window.open(url,"_blank");
+window.open(decodeURIComponent(url),"_blank");
 }
 };
 })(bs[j]);
 }
 }
-// End of updates
 
 function _renderLinks(){
 var c=document.getElementById(_ids.linksContainer);
@@ -1246,7 +1244,7 @@ _showExtDetails(id);
 function _showExtDetails(linkId){
 var details=document.getElementById(_extIds.details);
 var detailsContent=document.getElementById(_extIds.detailsContent);
-details.style.display="block";
+details.classList.add("show");
 details.scrollIntoView({behavior:"smooth",block:"nearest"});
 detailsContent.innerHTML='<div class="ext-loading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Chargement...</div>';
 
@@ -1299,7 +1297,7 @@ detailsContent.innerHTML='<div class="em">Erreur de décodage</div>';
 }
 
 document.getElementById("extCloseBtn").onclick=function(){
-document.getElementById(_extIds.details).style.display="none";
+document.getElementById(_extIds.details).classList.remove("show");
 };
 
 function _formatSize(bytes){
@@ -1311,37 +1309,25 @@ return Math.round((bytes/Math.pow(1024,i))*100)/100+" "+sizes[i];
 
 _loadExternal();
 
-// Select the appropriate sort button based on current sort state
-const sortBtns = document.getElementById(_ids.sortBtns);
+var sortBtns = document.getElementById(_ids.sortBtns);
 if (sortBtns) {
-  sortBtns.querySelectorAll('.sb-btn').forEach(btn => {
-    btn.classList.remove('ac');
-    if (btn.getAttribute('data-sort') === _sort) {
-      btn.classList.add('ac');
-    }
-  });
-}
-
-// Add event listeners for sort buttons
-if (sortBtns) {
-  sortBtns.querySelectorAll('.sb-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const newSort = btn.getAttribute('data-sort');
+  sortBtns.querySelectorAll('.sb-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var newSort = btn.getAttribute('data-sort');
       if (newSort === _sort) {
-        _sortDir *= -1; // Reverse direction if same sort is clicked
+        _sortDir *= -1;
       } else {
         _sort = newSort;
-        _sortDir = 1; // Reset direction for new sort
+        _sortDir = 1;
       }
-      _renderLinks(); // Re-render links with new sort order
-      // Update active class for buttons
-      sortBtns.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('ac'));
+      _renderLinks();
+      sortBtns.querySelectorAll('.sb-btn').forEach(function(b) { b.classList.remove('ac'); });
       btn.classList.add('ac');
     });
   });
 }
 
-_renderLinks(); // Initial render of links
+_renderLinks();
 
 })();
 </script>
