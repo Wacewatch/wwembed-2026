@@ -4,12 +4,13 @@ import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Progress } from "@/components/ui/progress"
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,11 +21,19 @@ import {
   ShieldCheck,
   ShieldX,
   ShieldQuestion,
+  AlertTriangle,
+  Trash2,
+  ImageIcon,
 } from "lucide-react"
 import type { DownloadLink } from "@/lib/types"
 
 interface DownloadLinkWithProfile extends DownloadLink {
   profiles?: { username: string } | null
+}
+
+interface InvalidLinkWithMedia extends DownloadLinkWithProfile {
+  mediaTitle?: string
+  mediaPoster?: string
 }
 
 export function DownloadLinksManager() {
@@ -48,9 +57,17 @@ export function DownloadLinksManager() {
   })
   const [checkingLinkId, setCheckingLinkId] = useState<string | null>(null)
 
+  const [isCheckingAll, setIsCheckingAll] = useState(false)
+  const [checkProgress, setCheckProgress] = useState(0)
+  const [checkTotal, setCheckTotal] = useState(0)
+  const [invalidLinks, setInvalidLinks] = useState<InvalidLinkWithMedia[]>([])
+  const [loadingInvalid, setLoadingInvalid] = useState(false)
+  const [showInvalidSection, setShowInvalidSection] = useState(true)
+
   useEffect(() => {
     loadLinks()
     loadUsers()
+    loadInvalidLinks()
   }, [page, userFilter, statusFilter])
 
   const loadUsers = async () => {
@@ -82,6 +99,62 @@ export function DownloadLinksManager() {
     setLoading(false)
   }
 
+  const loadInvalidLinks = async () => {
+    setLoadingInvalid(true)
+    const supabase = createClient()
+
+    // Get invalid download_links
+    const { data: downloadInvalid } = await supabase
+      .from("download_links")
+      .select("*, profiles:submitted_by(username)")
+      .eq("is_valid", false)
+      .order("last_checked", { ascending: false })
+
+    // Get invalid digital_download_links
+    const { data: digitalInvalid } = await supabase
+      .from("digital_download_links")
+      .select("*, profiles:submitted_by(username), digital_content(title, cover_url)")
+      .eq("is_valid", false)
+      .order("last_checked", { ascending: false })
+
+    // Fetch TMDB info for download links
+    const invalidWithMedia: InvalidLinkWithMedia[] = []
+
+    for (const link of downloadInvalid || []) {
+      let mediaTitle = `${link.media_type === "movie" ? "Film" : "Série"} #${link.tmdb_id}`
+      let mediaPoster = ""
+
+      try {
+        const tmdbRes = await fetch(`/api/tmdb-info?type=${link.media_type}&id=${link.tmdb_id}`)
+        if (tmdbRes.ok) {
+          const tmdbData = await tmdbRes.json()
+          mediaTitle = tmdbData.title || tmdbData.name || mediaTitle
+          mediaPoster = tmdbData.poster_path ? `https://image.tmdb.org/t/p/w92${tmdbData.poster_path}` : ""
+        }
+      } catch (e) {
+        // Ignore TMDB errors
+      }
+
+      invalidWithMedia.push({
+        ...link,
+        mediaTitle,
+        mediaPoster,
+      })
+    }
+
+    // Add digital links
+    for (const link of digitalInvalid || []) {
+      invalidWithMedia.push({
+        ...link,
+        mediaTitle: (link as any).digital_content?.title || "Contenu Digital",
+        mediaPoster: (link as any).digital_content?.cover_url || "",
+      })
+    }
+
+    setInvalidLinks(invalidWithMedia)
+    setLoadingInvalid(false)
+  }
+
   const toggleActive = async (id: string, currentState: boolean) => {
     const supabase = createClient()
     await supabase.from("download_links").update({ is_active: !currentState }).eq("id", id)
@@ -98,6 +171,16 @@ export function DownloadLinksManager() {
     if (!confirm("Supprimer ce lien?")) return
     const supabase = createClient()
     await supabase.from("download_links").delete().eq("id", id)
+    loadLinks()
+    loadInvalidLinks()
+  }
+
+  const deleteInvalidLink = async (id: string, isDigital = false) => {
+    if (!confirm("Supprimer ce lien invalide?")) return
+    const supabase = createClient()
+    const table = isDigital ? "digital_download_links" : "download_links"
+    await supabase.from(table).delete().eq("id", id)
+    loadInvalidLinks()
     loadLinks()
   }
 
@@ -131,17 +214,16 @@ export function DownloadLinksManager() {
     loadLinks()
   }
 
-  const checkLinkValidity = async (linkId: string, url: string) => {
+  const checkLinkValidity = async (linkId: string, url: string, linkType = "download") => {
     setCheckingLinkId(linkId)
     try {
       const response = await fetch("/api/check-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ linkId, linkType: "download", url }),
+        body: JSON.stringify({ linkId, linkType, url }),
       })
       const result = await response.json()
 
-      // Update local state
       setLinks((prev) =>
         prev.map((l) =>
           l.id === linkId ? { ...l, is_valid: result.isValid, last_checked: new Date().toISOString() } : l,
@@ -156,12 +238,59 @@ export function DownloadLinksManager() {
     }
   }
 
-  const checkAllLinks = async () => {
-    for (const link of links) {
-      if (link.source_url) {
-        await checkLinkValidity(link.id, link.source_url)
+  const checkAllLinksInDatabase = async () => {
+    setIsCheckingAll(true)
+    setCheckProgress(0)
+
+    const supabase = createClient()
+
+    // Get ALL download links
+    const { data: allDownloadLinks } = await supabase
+      .from("download_links")
+      .select("id, source_url")
+      .not("source_url", "is", null)
+
+    // Get ALL digital download links
+    const { data: allDigitalLinks } = await supabase
+      .from("digital_download_links")
+      .select("id, source_url")
+      .not("source_url", "is", null)
+
+    const allLinks = [
+      ...(allDownloadLinks || []).map((l) => ({ ...l, type: "download" })),
+      ...(allDigitalLinks || []).map((l) => ({ ...l, type: "digital" })),
+    ]
+
+    setCheckTotal(allLinks.length)
+
+    let checked = 0
+    for (const link of allLinks) {
+      if (!link.source_url) continue
+
+      try {
+        await fetch("/api/check-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            linkId: link.id,
+            linkType: link.type,
+            url: link.source_url,
+          }),
+        })
+      } catch (e) {
+        // Continue checking other links
       }
+
+      checked++
+      setCheckProgress(checked)
+
+      // Small delay to avoid overwhelming the server
+      await new Promise((r) => setTimeout(r, 100))
     }
+
+    setIsCheckingAll(false)
+    loadLinks()
+    loadInvalidLinks()
   }
 
   const getValidityBadge = (link: { is_valid?: boolean | null; last_checked?: string | null }) => {
@@ -204,16 +333,141 @@ export function DownloadLinksManager() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <Card className="border-red-500/50 bg-red-500/5">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+              <CardTitle className="text-red-500">Liens Invalides</CardTitle>
+              <Badge variant="destructive">{invalidLinks.length}</Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowInvalidSection(!showInvalidSection)}>
+                {showInvalidSection ? "Masquer" : "Afficher"}
+              </Button>
+              <Button variant="destructive" size="sm" onClick={checkAllLinksInDatabase} disabled={isCheckingAll}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${isCheckingAll ? "animate-spin" : ""}`} />
+                {isCheckingAll ? "Vérification..." : "Vérifier TOUS les liens"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Progress bar during check */}
+          {isCheckingAll && (
+            <div className="mt-4 space-y-2">
+              <Progress value={(checkProgress / checkTotal) * 100} className="h-2" />
+              <p className="text-sm text-muted-foreground text-center">
+                Vérification en cours... {checkProgress} / {checkTotal} liens
+              </p>
+            </div>
+          )}
+        </CardHeader>
+
+        {showInvalidSection && (
+          <CardContent>
+            {loadingInvalid ? (
+              <div className="text-center py-4 text-muted-foreground">Chargement...</div>
+            ) : invalidLinks.length === 0 ? (
+              <div className="text-center py-4 text-emerald-500">
+                <ShieldCheck className="w-8 h-8 mx-auto mb-2" />
+                Aucun lien invalide trouvé
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                {invalidLinks.map((link) => (
+                  <div
+                    key={link.id}
+                    className="flex items-center gap-4 p-3 bg-background/50 rounded-lg border border-red-500/30"
+                  >
+                    {/* Poster */}
+                    <div className="w-16 h-24 flex-shrink-0 bg-zinc-800 rounded overflow-hidden">
+                      {link.mediaPoster ? (
+                        <img
+                          src={link.mediaPoster || "/placeholder.svg"}
+                          alt={link.mediaTitle}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImageIcon className="w-6 h-6 text-zinc-600" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate">{link.mediaTitle}</h4>
+                      <p className="text-sm text-muted-foreground truncate">{link.source_name}</p>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-red-500 border-red-500">
+                          <ShieldX className="w-3 h-3 mr-1" />
+                          Invalide
+                        </Badge>
+                        {link.profiles && (
+                          <Badge variant="outline" className="text-blue-500 border-blue-500">
+                            <User className="w-3 h-3 mr-1" />
+                            {link.profiles.username}
+                          </Badge>
+                        )}
+                        {link.media_type && (
+                          <Badge variant="secondary">{link.media_type === "movie" ? "Film" : "Série"}</Badge>
+                        )}
+                        {!link.tmdb_id && (
+                          <Badge variant="secondary" className="bg-amber-500/20 text-amber-500">
+                            Digital
+                          </Badge>
+                        )}
+                      </div>
+                      {link.last_checked && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Vérifié: {new Date(link.last_checked).toLocaleString("fr-FR")}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          link.source_url &&
+                          checkLinkValidity(link.id, link.source_url, link.tmdb_id ? "download" : "digital")
+                        }
+                        disabled={checkingLinkId === link.id}
+                      >
+                        <RefreshCw className={`h-4 w-4 ${checkingLinkId === link.id ? "animate-spin" : ""}`} />
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => deleteInvalidLink(link.id, !link.tmdb_id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        )}
+      </Card>
+
+      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Download className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-semibold">Liens Download</h2>
           <Badge variant="secondary">{totalCount} liens</Badge>
         </div>
-        <Button variant="outline" size="sm" onClick={checkAllLinks} disabled={checkingLinkId !== null}>
-          <RefreshCw className={`w-4 h-4 mr-2 ${checkingLinkId ? "animate-spin" : ""}`} />
-          Vérifier tous les liens
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            loadLinks()
+            loadInvalidLinks()
+          }}
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Actualiser
         </Button>
       </div>
 
