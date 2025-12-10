@@ -477,7 +477,7 @@ async function getUserLinks(userId: string) {
         .eq("status", "approved")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
-        .limit(50),
+        .limit(1000),
       supabase
         .from("streaming_links")
         .select("*")
@@ -485,7 +485,7 @@ async function getUserLinks(userId: string) {
         .eq("status", "approved")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
-        .limit(50),
+        .limit(1000),
       supabase
         .from("digital_content")
         .select("*")
@@ -493,7 +493,7 @@ async function getUserLinks(userId: string) {
         .eq("status", "approved")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
-        .limit(50),
+        .limit(1000),
       supabase
         .from("live_tv_channels")
         .select("*")
@@ -501,7 +501,7 @@ async function getUserLinks(userId: string) {
         .eq("status", "approved")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
-        .limit(50),
+        .limit(1000),
     ])
 
     return {

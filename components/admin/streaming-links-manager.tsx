@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Pencil, User } from "lucide-react"
+import { Pencil, User, ChevronLeft, ChevronRight } from "lucide-react"
 import type { StreamingLink } from "@/lib/types"
 
 interface StreamingLinkWithProfile extends StreamingLink {
@@ -21,6 +21,12 @@ export function StreamingLinksManager() {
   const [links, setLinks] = useState<StreamingLinkWithProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [userFilter, setUserFilter] = useState<string>("all")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [users, setUsers] = useState<{ id: string; username: string }[]>([])
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
+  const pageSize = 100
   const [editingLink, setEditingLink] = useState<StreamingLinkWithProfile | null>(null)
   const [editData, setEditData] = useState({
     source_name: "",
@@ -31,16 +37,35 @@ export function StreamingLinksManager() {
 
   useEffect(() => {
     loadLinks()
-  }, [])
+    loadUsers()
+  }, [page, userFilter, statusFilter])
+
+  const loadUsers = async () => {
+    const supabase = createClient()
+    const { data } = await supabase.from("profiles").select("id, username").order("username")
+    setUsers(data || [])
+  }
 
   const loadLinks = async () => {
+    setLoading(true)
     const supabase = createClient()
-    const { data } = await supabase
-      .from("streaming_links")
-      .select("*, profiles:submitted_by(username)")
+
+    let query = supabase.from("streaming_links").select("*, profiles:submitted_by(username)", { count: "exact" })
+
+    if (userFilter !== "all") {
+      query = query.eq("submitted_by", userFilter)
+    }
+
+    if (statusFilter !== "all") {
+      query = query.eq("status", statusFilter)
+    }
+
+    const { data, count } = await query
       .order("created_at", { ascending: false })
-      .limit(50)
+      .range(page * pageSize, (page + 1) * pageSize - 1)
+
     setLinks(data || [])
+    setTotalCount(count || 0)
     setLoading(false)
   }
 
@@ -97,36 +122,148 @@ export function StreamingLinksManager() {
       (l.profiles?.username || "").toLowerCase().includes(search.toLowerCase()),
   )
 
+  const totalPages = Math.ceil(totalCount / pageSize)
+
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Chargement...</div>
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xl font-semibold text-foreground">Liens Streaming</h2>
+    <div className="space-y-4">
+      {/* Filtres */}
+      <div className="flex flex-wrap gap-4 items-center">
         <Input
           placeholder="Rechercher..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
         />
+        <Select
+          value={userFilter}
+          onValueChange={(v) => {
+            setUserFilter(v)
+            setPage(0)
+          }}
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Filtrer par utilisateur" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les utilisateurs</SelectItem>
+            {users.map((u) => (
+              <SelectItem key={u.id} value={u.id}>
+                {u.username}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => {
+            setStatusFilter(v)
+            setPage(0)
+          }}
+        >
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Statut" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous statuts</SelectItem>
+            <SelectItem value="approved">Approuvé</SelectItem>
+            <SelectItem value="pending">En attente</SelectItem>
+            <SelectItem value="rejected">Rejeté</SelectItem>
+          </SelectContent>
+        </Select>
+        <div className="text-sm text-muted-foreground">{totalCount} liens au total</div>
       </div>
 
-      <Dialog open={!!editingLink} onOpenChange={(open) => !open && setEditingLink(null)}>
+      {/* Liste */}
+      <div className="space-y-2">
+        {filteredLinks.map((link) => (
+          <Card key={link.id} className="overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium truncate">{link.source_name}</span>
+                    <Badge variant="outline">{link.quality}</Badge>
+                    <Badge variant="secondary">{link.language?.toUpperCase()}</Badge>
+                    {link.profiles?.username && (
+                      <Badge variant="outline" className="text-emerald-500 border-emerald-500">
+                        <User className="w-3 h-3 mr-1" />
+                        {link.profiles.username}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    WW: {link.ww_id} | TMDB: {link.tmdb_id} | Type: {link.media_type}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(link.created_at).toLocaleString("fr-FR")}
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs">Actif</Label>
+                    <Switch checked={link.is_active} onCheckedChange={() => toggleActive(link.id, link.is_active)} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs">Vérifié</Label>
+                    <Switch
+                      checked={link.is_verified}
+                      onCheckedChange={() => toggleVerified(link.id, link.is_verified)}
+                    />
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => openEdit(link)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => deleteLink(link.id)}>
+                    X
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4 pt-4">
+          <Button variant="outline" size="sm" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}>
+            <ChevronLeft className="w-4 h-4" />
+            Précédent
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {page + 1} sur {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+            disabled={page >= totalPages - 1}
+          >
+            Suivant
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* Modal d'édition */}
+      <Dialog open={!!editingLink} onOpenChange={() => setEditingLink(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifier le lien streaming</DialogTitle>
+            <DialogTitle>Modifier le lien</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div>
               <Label>Nom de la source</Label>
               <Input
                 value={editData.source_name}
                 onChange={(e) => setEditData({ ...editData, source_name: e.target.value })}
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label>URL</Label>
               <Input
                 value={editData.source_url}
@@ -134,15 +271,14 @@ export function StreamingLinksManager() {
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Qualite</Label>
+              <div>
+                <Label>Qualité</Label>
                 <Select value={editData.quality} onValueChange={(v) => setEditData({ ...editData, quality: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="CAM">CAM</SelectItem>
-                    <SelectItem value="TS">TS</SelectItem>
                     <SelectItem value="SD">SD</SelectItem>
                     <SelectItem value="HD">HD</SelectItem>
                     <SelectItem value="FHD">FHD</SelectItem>
@@ -150,7 +286,7 @@ export function StreamingLinksManager() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label>Langue</Label>
                 <Select value={editData.language} onValueChange={(v) => setEditData({ ...editData, language: v })}>
                   <SelectTrigger>
@@ -160,75 +296,16 @@ export function StreamingLinksManager() {
                     <SelectItem value="vf">VF</SelectItem>
                     <SelectItem value="vostfr">VOSTFR</SelectItem>
                     <SelectItem value="vo">VO</SelectItem>
-                    <SelectItem value="multi">Multi</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setEditingLink(null)}>
-                Annuler
-              </Button>
-              <Button onClick={saveEdit}>Sauvegarder</Button>
-            </div>
+            <Button onClick={saveEdit} className="w-full">
+              Enregistrer
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
-
-      <div className="space-y-3">
-        {filteredLinks.map((link) => (
-          <Card key={link.id} className="bg-card border-border">
-            <CardContent className="py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-medium text-foreground">{link.source_name}</h3>
-                    <Badge variant="outline">{link.media_type}</Badge>
-                    <Badge variant="secondary">{link.quality}</Badge>
-                    {link.is_verified && <Badge className="bg-green-600">Verifie</Badge>}
-                    {link.is_auto_generated && <Badge variant="outline">Auto</Badge>}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    WW ID: {link.ww_id} | TMDB: {link.tmdb_id}
-                  </p>
-                  {link.profiles?.username && (
-                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      <span className="text-emerald-500 font-medium">{link.profiles.username}</span>
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1 font-mono truncate max-w-xl">{link.source_url}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col gap-1 items-end">
-                    <label className="text-xs text-muted-foreground flex items-center gap-2">
-                      Actif
-                      <Switch checked={link.is_active} onCheckedChange={() => toggleActive(link.id, link.is_active)} />
-                    </label>
-                    <label className="text-xs text-muted-foreground flex items-center gap-2">
-                      Verifie
-                      <Switch
-                        checked={link.is_verified}
-                        onCheckedChange={() => toggleVerified(link.id, link.is_verified)}
-                      />
-                    </label>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => openEdit(link)}>
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => deleteLink(link.id)}>
-                    Supprimer
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        {filteredLinks.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">Aucun lien streaming trouve</div>
-        )}
-      </div>
     </div>
   )
 }
