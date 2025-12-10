@@ -10,7 +10,17 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Pencil, User, ChevronLeft, ChevronRight } from "lucide-react"
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Pencil,
+  User,
+  RefreshCw,
+  ShieldCheck,
+  ShieldX,
+  ShieldQuestion,
+} from "lucide-react"
 import type { DownloadLink } from "@/lib/types"
 
 interface DownloadLinkWithProfile extends DownloadLink {
@@ -36,6 +46,7 @@ export function DownloadLinksManager() {
     file_size: "",
     language: "vf",
   })
+  const [checkingLinkId, setCheckingLinkId] = useState<string | null>(null)
 
   useEffect(() => {
     loadLinks()
@@ -120,6 +131,64 @@ export function DownloadLinksManager() {
     loadLinks()
   }
 
+  const checkLinkValidity = async (linkId: string, url: string) => {
+    setCheckingLinkId(linkId)
+    try {
+      const response = await fetch("/api/check-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ linkId, linkType: "download", url }),
+      })
+      const result = await response.json()
+
+      // Update local state
+      setLinks((prev) =>
+        prev.map((l) =>
+          l.id === linkId ? { ...l, is_valid: result.isValid, last_checked: new Date().toISOString() } : l,
+        ),
+      )
+
+      return result
+    } catch (error) {
+      console.error("Error checking link:", error)
+    } finally {
+      setCheckingLinkId(null)
+    }
+  }
+
+  const checkAllLinks = async () => {
+    for (const link of links) {
+      if (link.source_url) {
+        await checkLinkValidity(link.id, link.source_url)
+      }
+    }
+  }
+
+  const getValidityBadge = (link: { is_valid?: boolean | null; last_checked?: string | null }) => {
+    if (link.is_valid === null || link.is_valid === undefined) {
+      return (
+        <Badge variant="outline" className="text-gray-400 border-gray-600">
+          <ShieldQuestion className="w-3 h-3 mr-1" />
+          Non vérifié
+        </Badge>
+      )
+    }
+    if (link.is_valid) {
+      return (
+        <Badge variant="outline" className="text-emerald-500 border-emerald-500">
+          <ShieldCheck className="w-3 h-3 mr-1" />
+          Valide
+        </Badge>
+      )
+    }
+    return (
+      <Badge variant="outline" className="text-red-500 border-red-500">
+        <ShieldX className="w-3 h-3 mr-1" />
+        Invalide
+      </Badge>
+    )
+  }
+
   const filteredLinks = links.filter(
     (l) =>
       l.source_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -136,6 +205,18 @@ export function DownloadLinksManager() {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Download className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-semibold">Liens Download</h2>
+          <Badge variant="secondary">{totalCount} liens</Badge>
+        </div>
+        <Button variant="outline" size="sm" onClick={checkAllLinks} disabled={checkingLinkId !== null}>
+          <RefreshCw className={`w-4 h-4 mr-2 ${checkingLinkId ? "animate-spin" : ""}`} />
+          Vérifier tous les liens
+        </Button>
+      </div>
+
       {/* Filtres */}
       <div className="flex flex-wrap gap-4 items-center">
         <Input
@@ -186,17 +267,16 @@ export function DownloadLinksManager() {
       {/* Liste */}
       <div className="space-y-2">
         {filteredLinks.map((link) => (
-          <Card key={link.id} className="overflow-hidden">
+          <Card key={link.id} className="border-zinc-800">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium truncate">{link.source_name}</span>
-                    <Badge variant="outline">{link.quality}</Badge>
-                    <Badge variant="secondary">{link.language?.toUpperCase()}</Badge>
-                    <Badge>{link.link_type}</Badge>
-                    {link.file_size && <Badge variant="outline">{link.file_size}</Badge>}
-                    {link.profiles?.username && (
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium">{link.source_name}</span>
+                    {link.quality && <Badge variant="outline">{link.quality}</Badge>}
+                    {link.language && <Badge variant="secondary">{link.language}</Badge>}
+                    {getValidityBadge(link)}
+                    {link.profiles && (
                       <Badge variant="outline" className="text-emerald-500 border-emerald-500">
                         <User className="w-3 h-3 mr-1" />
                         {link.profiles.username}
@@ -206,11 +286,24 @@ export function DownloadLinksManager() {
                   <div className="text-sm text-muted-foreground mt-1">
                     WW: {link.ww_id} | TMDB: {link.tmdb_id} | Type: {link.media_type}
                   </div>
+                  {link.last_checked && (
+                    <div className="text-xs text-muted-foreground">
+                      Vérifié: {new Date(link.last_checked).toLocaleString("fr-FR")}
+                    </div>
+                  )}
                   <div className="text-xs text-muted-foreground">
                     {new Date(link.created_at).toLocaleString("fr-FR")}
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => link.source_url && checkLinkValidity(link.id, link.source_url)}
+                    disabled={checkingLinkId === link.id}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${checkingLinkId === link.id ? "animate-spin" : ""}`} />
+                  </Button>
                   <div className="flex items-center gap-2">
                     <Label className="text-xs">Actif</Label>
                     <Switch checked={link.is_active} onCheckedChange={() => toggleActive(link.id, link.is_active)} />

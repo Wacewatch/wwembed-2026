@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -11,6 +13,15 @@ import { ProfileSettings } from "@/components/dashboard/profile-settings"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   Play,
   Download,
@@ -39,6 +50,12 @@ import {
   ExternalLink,
   Trash2,
   Search,
+  Pencil,
+  BookOpen,
+  RefreshCw,
+  ShieldCheck,
+  ShieldX,
+  ShieldQuestion,
 } from "lucide-react"
 import type {
   Profile,
@@ -58,14 +75,20 @@ interface MediaInfo {
 
 interface StreamingLinkWithViews extends StreamingLink {
   view_count: number
+  is_valid?: boolean | null
+  last_checked?: string | null
 }
 
 interface DownloadLinkWithViews extends DownloadLink {
   view_count: number
+  is_valid?: boolean | null
+  last_checked?: string | null
 }
 
 interface DigitalContentWithViews extends DigitalContent {
   view_count: number
+  is_valid?: boolean | null
+  last_checked?: string | null
 }
 
 interface BugReport {
@@ -262,12 +285,12 @@ function NavItem({
 
 export function DashboardContent({
   profile,
-  streamingLinks,
-  downloadLinks,
+  streamingLinks: initialStreamingLinks,
+  downloadLinks: initialDownloadLinks,
   liveTvChannels,
   liveTvSources,
   digitalContents,
-  digitalLinks,
+  digitalLinks: initialDigitalLinks,
   stats,
 }: DashboardContentProps) {
   const [activeTab, setActiveTab] = useState("overview")
@@ -277,6 +300,21 @@ export function DashboardContent({
   const [bugReports, setBugReports] = useState<BugReport[]>([])
   const [loadingBugReports, setLoadingBugReports] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const [checkingLinkId, setCheckingLinkId] = useState<string | null>(null)
+
+  const [editingStreamingLink, setEditingStreamingLink] = useState<StreamingLinkWithViews | null>(null)
+  const [editingDownloadLink, setEditingDownloadLink] = useState<DownloadLinkWithViews | null>(null)
+  const [editingDigitalLink, setEditingDigitalLink] = useState<DigitalDownloadLink | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editForm, setEditForm] = useState({
+    source_name: "",
+    source_url: "",
+    quality: "",
+    language: "",
+    link_type: "",
+  })
+  const [isSaving, setIsSaving] = useState(false)
 
   const [streamingSearch, setStreamingSearch] = useState("")
   const [streamingStatusFilter, setStreamingStatusFilter] = useState<string>("all")
@@ -290,13 +328,23 @@ export function DashboardContent({
 
   const supabase = createClient()
 
+  const canEdit = profile.role === "uploader" || profile.role === "admin"
+
+  const [streamingLinks, setStreamingLinks] = useState(initialStreamingLinks)
+  const [downloadLinks, setDownloadLinks] = useState(initialDownloadLinks)
+  const [digitalLinks, setDigitalLinks] = useState(initialDigitalLinks)
+
+  // Use local state for downloadLinks and digitalLinks to manage is_valid and last_checked
+  const [localDownloadLinks, setLocalDownloadLinks] = useState(initialDownloadLinks)
+  const [localDigitalLinks, setLocalDigitalLinks] = useState(initialDigitalLinks)
+
   const handleDeleteStreamingLink = async (linkId: string) => {
     if (!confirm("Êtes-vous sûr de vouloir supprimer ce lien streaming ?")) return
     setDeletingId(linkId)
     const supabase = createClient()
     const { error } = await supabase.from("streaming_links").delete().eq("id", linkId)
     if (!error) {
-      window.location.reload()
+      setStreamingLinks(streamingLinks.filter((link) => link.id !== linkId))
     } else {
       alert("Erreur lors de la suppression")
     }
@@ -309,7 +357,8 @@ export function DashboardContent({
     const supabase = createClient()
     const { error } = await supabase.from("download_links").delete().eq("id", linkId)
     if (!error) {
-      window.location.reload()
+      setDownloadLinks(downloadLinks.filter((link) => link.id !== linkId))
+      setLocalDownloadLinks(localDownloadLinks.filter((link) => link.id !== linkId)) // Update local state
     } else {
       alert("Erreur lors de la suppression")
     }
@@ -322,11 +371,204 @@ export function DashboardContent({
     const supabase = createClient()
     const { error } = await supabase.from("digital_download_links").delete().eq("id", linkId)
     if (!error) {
-      window.location.reload()
+      setDigitalLinks(digitalLinks.filter((link) => link.id !== linkId))
+      setLocalDigitalLinks(localDigitalLinks.filter((link) => link.id !== linkId)) // Update local state
     } else {
       alert("Erreur lors de la suppression")
     }
     setDeletingId(null)
+  }
+
+  const handleEditStreamingLink = (link: StreamingLinkWithViews) => {
+    setEditingStreamingLink(link)
+    setEditingDownloadLink(null)
+    setEditingDigitalLink(null)
+    setEditForm({
+      source_name: link.source_name,
+      source_url: link.source_url,
+      quality: link.quality,
+      language: link.language,
+      link_type: "",
+    })
+    setIsEditModalOpen(true)
+  }
+
+  const handleEditDownloadLink = (link: DownloadLinkWithViews) => {
+    setEditingDownloadLink(link)
+    setEditingStreamingLink(null)
+    setEditingDigitalLink(null)
+    setEditForm({
+      source_name: link.source_name,
+      source_url: link.source_url,
+      quality: link.quality,
+      language: link.language,
+      link_type: link.link_type || "",
+    })
+    setIsEditModalOpen(true)
+  }
+
+  const handleEditDigitalLink = (link: DigitalDownloadLink) => {
+    setEditingDigitalLink(link)
+    setEditingStreamingLink(null)
+    setEditingDownloadLink(null)
+    setEditForm({
+      source_name: link.source_name,
+      source_url: link.source_url,
+      quality: link.quality,
+      language: "",
+      link_type: "",
+    })
+    setIsEditModalOpen(true)
+  }
+
+  const handleSaveEdit = async () => {
+    setIsSaving(true)
+    try {
+      if (editingStreamingLink) {
+        const { error } = await supabase
+          .from("streaming_links")
+          .update({
+            source_name: editForm.source_name,
+            source_url: editForm.source_url,
+            quality: editForm.quality,
+            language: editForm.language,
+          })
+          .eq("id", editingStreamingLink.id)
+
+        if (error) throw error
+
+        setStreamingLinks((prev) =>
+          prev.map((link) => (link.id === editingStreamingLink.id ? { ...link, ...editForm } : link)),
+        )
+      } else if (editingDownloadLink) {
+        const { error } = await supabase
+          .from("download_links")
+          .update({
+            source_name: editForm.source_name,
+            source_url: editForm.source_url,
+            quality: editForm.quality,
+            language: editForm.language,
+            link_type: editForm.link_type,
+          })
+          .eq("id", editingDownloadLink.id)
+
+        if (error) throw error
+
+        setDownloadLinks((prev) =>
+          prev.map((link) => (link.id === editingDownloadLink.id ? { ...link, ...editForm } : link)),
+        )
+        // Update local state as well
+        setLocalDownloadLinks((prev) =>
+          prev.map((link) => (link.id === editingDownloadLink.id ? { ...link, ...editForm } : link)),
+        )
+      } else if (editingDigitalLink) {
+        const { error } = await supabase
+          .from("digital_download_links")
+          .update({
+            source_name: editForm.source_name,
+            source_url: editForm.source_url,
+            quality: editForm.quality,
+          })
+          .eq("id", editingDigitalLink.id)
+
+        if (error) throw error
+
+        setDigitalLinks((prev) =>
+          prev.map((link) =>
+            link.id === editingDigitalLink.id
+              ? {
+                  ...link,
+                  source_name: editForm.source_name,
+                  source_url: editForm.source_url,
+                  quality: editForm.quality,
+                }
+              : link,
+          ),
+        )
+        // Update local state as well
+        setLocalDigitalLinks((prev) =>
+          prev.map((link) =>
+            link.id === editingDigitalLink.id
+              ? {
+                  ...link,
+                  source_name: editForm.source_name,
+                  source_url: editForm.source_url,
+                  quality: editForm.quality,
+                }
+              : link,
+          ),
+        )
+      }
+
+      setIsEditModalOpen(false)
+      setEditingStreamingLink(null)
+      setEditingDownloadLink(null)
+      setEditingDigitalLink(null)
+      setEditForm({ source_name: "", source_url: "", quality: "", language: "", link_type: "" })
+    } catch (error) {
+      console.error("Error updating link:", error)
+      alert("Erreur lors de la modification du lien")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const checkLinkValidity = async (linkId: string, url: string, linkType: "download" | "digital" | "streaming") => {
+    setCheckingLinkId(linkId)
+    try {
+      const response = await fetch("/api/check-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ linkId, linkType, url }),
+      })
+      const result = await response.json()
+
+      // Update local state
+      if (linkType === "download") {
+        setLocalDownloadLinks((prev) =>
+          prev.map((l) =>
+            l.id === linkId ? { ...l, is_valid: result.isValid, last_checked: new Date().toISOString() } : l,
+          ),
+        )
+      } else if (linkType === "digital") {
+        setLocalDigitalLinks((prev) =>
+          prev.map((l) =>
+            l.id === linkId ? { ...l, is_valid: result.isValid, last_checked: new Date().toISOString() } : l,
+          ),
+        )
+      }
+
+      return result
+    } catch (error) {
+      console.error("Error checking link:", error)
+    } finally {
+      setCheckingLinkId(null)
+    }
+  }
+
+  const getValidityBadge = (link: { is_valid?: boolean | null; last_checked?: string | null }) => {
+    if (link.is_valid === null || link.is_valid === undefined) {
+      return (
+        <Badge variant="outline" className="text-gray-400 border-gray-600">
+          <ShieldQuestion className="w-3 h-3 mr-1" />
+          Non vérifié
+        </Badge>
+      )
+    }
+    if (link.is_valid) {
+      return (
+        <Badge variant="outline" className="text-emerald-500 border-emerald-500">
+          <ShieldCheck className="w-3 h-3 mr-1" />
+          Valide
+        </Badge>
+      )
+    }
+    return (
+      <Badge variant="outline" className="text-red-500 border-red-500">
+        <ShieldX className="w-3 h-3 mr-1" />
+        Invalide
+      </Badge>
+    )
   }
 
   useEffect(() => {
@@ -462,7 +704,8 @@ export function DashboardContent({
     return matchesSearch && matchesStatus && matchesType && matchesQuality
   })
 
-  const filteredDownloadLinks = downloadLinks.filter((link) => {
+  const filteredDownloadLinks = localDownloadLinks.filter((link) => {
+    // Use localDownloadLinks for filtering
     const mediaInfo = getMediaInfo(link)
     const matchesSearch =
       downloadSearch === "" ||
@@ -474,7 +717,8 @@ export function DashboardContent({
     return matchesSearch && matchesStatus && matchesType && matchesQuality
   })
 
-  const filteredDigitalLinks = digitalLinks.filter((link) => {
+  const filteredDigitalLinks = localDigitalLinks.filter((link) => {
+    // Use localDigitalLinks for filtering
     const content = digitalContents.find((c) => c.id === link.content_id)
     const title = content?.title || ""
     const matchesSearch =
@@ -486,7 +730,21 @@ export function DashboardContent({
   })
 
   const streamingQualities = [...new Set(streamingLinks.map((l) => l.quality))].filter(Boolean)
-  const downloadQualities = [...new Set(downloadLinks.map((l) => l.quality))].filter(Boolean)
+  const downloadQualities = [...new Set(localDownloadLinks.map((l) => l.quality))].filter(Boolean) // Use localDownloadLinks
+
+  // Edit modal handlers and state management
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false)
+    setEditingStreamingLink(null)
+    setEditingDownloadLink(null)
+    setEditingDigitalLink(null)
+    setEditForm({ source_name: "", source_url: "", quality: "", language: "", link_type: "" })
+  }
+
+  const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setEditForm((prev) => ({ ...prev, [name]: value }))
+  }
 
   return (
     <div className="space-y-6">
@@ -683,7 +941,7 @@ export function DashboardContent({
                 value="digital"
                 className="flex-1 min-w-[100px] data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2"
               >
-                <Book className="h-4 w-4" />
+                <BookOpen className="h-4 w-4" />
                 <span className="hidden sm:inline">Digital</span>
               </TabsTrigger>
               <TabsTrigger
@@ -946,19 +1204,31 @@ export function DashboardContent({
                                 {new Date(link.created_at).toLocaleDateString("fr-FR")}
                               </td>
                               <td className="py-3 px-4">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                                  onClick={() => handleDeleteStreamingLink(link.id)}
-                                  disabled={deletingId === link.id}
-                                >
-                                  {deletingId === link.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="h-4 w-4" />
+                                <div className="flex items-center gap-1">
+                                  {canEdit && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                                      onClick={() => handleEditStreamingLink(link)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
                                   )}
-                                </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                    onClick={() => handleDeleteStreamingLink(link.id)}
+                                    disabled={deletingId === link.id}
+                                  >
+                                    {deletingId === link.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
                           )
@@ -979,7 +1249,7 @@ export function DashboardContent({
 
             {/* Download Tab */}
             <TabsContent value="download" className="mt-0">
-              {downloadLinks.length === 0 && digitalLinks.length === 0 ? (
+              {localDownloadLinks.length === 0 && digitalLinks.length === 0 ? (
                 <div className="text-center py-12">
                   <Download className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">Aucun lien telechargement soumis</p>
@@ -1043,7 +1313,7 @@ export function DashboardContent({
                     <div>
                       <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                         <Download className="w-4 h-4 text-blue-500" />
-                        Films & Series ({filteredDownloadLinks.length} sur {downloadLinks.length})
+                        Films & Series ({filteredDownloadLinks.length} sur {localDownloadLinks.length})
                       </h4>
                       <div className="overflow-x-auto rounded-lg border border-border">
                         <table className="w-full text-sm">
@@ -1054,6 +1324,8 @@ export function DashboardContent({
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Type</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Validite</th>{" "}
+                              {/* Added Validity Header */}
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Vues</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Actions</th>
@@ -1101,6 +1373,17 @@ export function DashboardContent({
                                   </td>
                                   <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
                                   <td className="py-3 px-4">
+                                    {" "}
+                                    {/* Validity Column */}
+                                    {checkingLinkId === link.id ? (
+                                      <div className="flex items-center gap-1 text-blue-500">
+                                        <Loader2 className="w-3 h-3 animate-spin" /> Checking...
+                                      </div>
+                                    ) : (
+                                      getValidityBadge(link)
+                                    )}
+                                  </td>
+                                  <td className="py-3 px-4">
                                     <div className="flex items-center gap-1 text-orange-500">
                                       <Eye className="w-3 h-3" />
                                       <span>{link.view_count}</span>
@@ -1110,26 +1393,49 @@ export function DashboardContent({
                                     {new Date(link.created_at).toLocaleDateString("fr-FR")}
                                   </td>
                                   <td className="py-3 px-4">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                                      onClick={() => handleDeleteDownloadLink(link.id)}
-                                      disabled={deletingId === link.id}
-                                    >
-                                      {deletingId === link.id ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <Trash2 className="h-4 w-4" />
+                                    <div className="flex items-center gap-1">
+                                      {canEdit && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                                          onClick={() => handleEditDownloadLink(link)}
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                        </Button>
                                       )}
-                                    </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10"
+                                        onClick={() => checkLinkValidity(link.id, link.source_url, "download")}
+                                        disabled={checkingLinkId !== null}
+                                      >
+                                        <RefreshCw className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                        onClick={() => handleDeleteDownloadLink(link.id)}
+                                        disabled={deletingId === link.id}
+                                      >
+                                        {deletingId === link.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    </div>
                                   </td>
                                 </tr>
                               )
                             })}
-                            {filteredDownloadLinks.length === 0 && downloadLinks.length > 0 && (
+                            {filteredDownloadLinks.length === 0 && localDownloadLinks.length > 0 && (
                               <tr>
-                                <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                                <td colSpan={9} className="py-8 text-center text-muted-foreground">
+                                  {" "}
+                                  {/* Increased colSpan */}
                                   Aucun resultat trouve
                                 </td>
                               </tr>
@@ -1140,11 +1446,12 @@ export function DashboardContent({
                     </div>
                   )}
 
-                  {filteredDigitalLinks.length > 0 && (
+                  {localDigitalLinks.length > 0 && ( // Use localDigitalLinks
                     <div>
                       <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                        <Package className="w-4 h-4 text-amber-500" />
-                        Contenu Digital ({filteredDigitalLinks.length} sur {digitalLinks.length})
+                        <BookOpen className="w-4 h-4 text-amber-500" />
+                        Contenu Digital ({localDigitalLinks.filter((l) => l.status === "approved").length} valides /{" "}
+                        {localDigitalLinks.length} soumis)
                       </h4>
                       <div className="overflow-x-auto rounded-lg border border-border">
                         <table className="w-full text-sm">
@@ -1155,12 +1462,15 @@ export function DashboardContent({
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Source</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Qualite</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Validite</th>{" "}
+                              {/* Added Validity Header */}
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Actions</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {filteredDigitalLinks.map((link) => {
+                            {localDigitalLinks.map((link) => {
+                              // Iterate over localDigitalLinks
                               const content = digitalContents.find((c) => c.id === link.content_id)
                               const getContentTypeIcon = (type: string) => {
                                 switch (type) {
@@ -1210,30 +1520,62 @@ export function DashboardContent({
                                     <Badge variant="outline">{link.quality}</Badge>
                                   </td>
                                   <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
+                                  <td className="py-3 px-4">
+                                    {" "}
+                                    {/* Validity Column */}
+                                    {checkingLinkId === link.id ? (
+                                      <div className="flex items-center gap-1 text-blue-500">
+                                        <Loader2 className="w-3 h-3 animate-spin" /> Checking...
+                                      </div>
+                                    ) : (
+                                      getValidityBadge(link)
+                                    )}
+                                  </td>
                                   <td className="py-3 px-4 text-muted-foreground">
                                     {new Date(link.created_at).toLocaleDateString("fr-FR")}
                                   </td>
                                   <td className="py-3 px-4">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                                      onClick={() => handleDeleteDigitalLink(link.id)}
-                                      disabled={deletingId === link.id}
-                                    >
-                                      {deletingId === link.id ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <Trash2 className="h-4 w-4" />
+                                    <div className="flex items-center gap-1">
+                                      {canEdit && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                                          onClick={() => handleEditDigitalLink(link)}
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                        </Button>
                                       )}
-                                    </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10"
+                                        onClick={() => checkLinkValidity(link.id, link.source_url, "digital")}
+                                        disabled={checkingLinkId !== null}
+                                      >
+                                        <RefreshCw className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                        onClick={() => handleDeleteDigitalLink(link.id)}
+                                        disabled={deletingId === link.id}
+                                      >
+                                        {deletingId === link.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    </div>
                                   </td>
                                 </tr>
                               )
                             })}
-                            {filteredDigitalLinks.length === 0 && digitalLinks.length > 0 && (
+                            {localDigitalLinks.length === 0 && digitalLinks.length > 0 && (
                               <tr>
-                                <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                                <td colSpan={8} className="py-8 text-center text-muted-foreground">
                                   Aucun resultat trouve
                                 </td>
                               </tr>
@@ -1359,7 +1701,7 @@ export function DashboardContent({
             <TabsContent value="digital" className="mt-0">
               {digitalContents.length === 0 ? (
                 <div className="text-center py-12">
-                  <Book className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">Aucun contenu digital soumis</p>
                   <AddLinkModal
                     onSuccess={() => window.location.reload()}
@@ -1378,6 +1720,7 @@ export function DashboardContent({
                         <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
                         <th className="text-left py-3 px-4 text-muted-foreground font-medium">Vues</th>
                         <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
+                        <th className="text-left py-3 px-4 text-muted-foreground font-medium">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1411,6 +1754,33 @@ export function DashboardContent({
                           </td>
                           <td className="py-3 px-4 text-muted-foreground">
                             {new Date(content.created_at).toLocaleDateString("fr-FR")}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1">
+                              {canEdit && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                                  onClick={() => handleEditDigitalLink(content)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                onClick={() => handleDeleteDigitalLink(content.id)}
+                                disabled={deletingId === content.id}
+                              >
+                                {deletingId === content.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1529,7 +1899,7 @@ export function DashboardContent({
                       <Card className="cursor-pointer hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group">
                         <CardContent className="pt-6 text-center">
                           <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-amber-500/20 transition-colors">
-                            <Book className="w-7 h-7 text-amber-500" />
+                            <BookOpen className="w-7 h-7 text-amber-500" />
                           </div>
                           <h3 className="font-semibold mb-1">Digital</h3>
                           <p className="text-sm text-muted-foreground">Ebook, Musique...</p>
@@ -1548,6 +1918,114 @@ export function DashboardContent({
             </TabsContent>
           </div>
         </Tabs>
+
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Modifier le lien</DialogTitle>
+              <DialogDescription>
+                Modifiez les informations du lien. Les champs marques * sont obligatoires.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-source-name">Nom de la source *</Label>
+                <Input
+                  id="edit-source-name"
+                  value={editForm.source_name}
+                  onChange={(e) => setEditForm({ ...editForm, source_name: e.target.value })}
+                  placeholder="Ex: Uptobox, 1Fichier..."
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-source-url">URL du lien *</Label>
+                <Input
+                  id="edit-source-url"
+                  value={editForm.source_url}
+                  onChange={(e) => setEditForm({ ...editForm, source_url: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-quality">Qualite *</Label>
+                <Select
+                  value={editForm.quality}
+                  onValueChange={(value) => setEditForm({ ...editForm, quality: value })}
+                >
+                  <SelectTrigger id="edit-quality">
+                    <SelectValue placeholder="Selectionnez une qualite" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CAM">CAM</SelectItem>
+                    <SelectItem value="TS">TS</SelectItem>
+                    <SelectItem value="DVDSCR">DVDSCR</SelectItem>
+                    <SelectItem value="HDTS">HDTS</SelectItem>
+                    <SelectItem value="WEBRip">WEBRip</SelectItem>
+                    <SelectItem value="HDRip">HDRip</SelectItem>
+                    <SelectItem value="720p">720p</SelectItem>
+                    <SelectItem value="1080p">1080p</SelectItem>
+                    <SelectItem value="2160p">2160p (4K)</SelectItem>
+                    <SelectItem value="REMUX">REMUX</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {(editingStreamingLink || editingDownloadLink) && (
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-language">Langue</Label>
+                  <Select
+                    value={editForm.language}
+                    onValueChange={(value) => setEditForm({ ...editForm, language: value })}
+                  >
+                    <SelectTrigger id="edit-language">
+                      <SelectValue placeholder="Selectionnez une langue" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="VF">VF (Francais)</SelectItem>
+                      <SelectItem value="VOSTFR">VOSTFR</SelectItem>
+                      <SelectItem value="VO">VO</SelectItem>
+                      <SelectItem value="MULTI">MULTI</SelectItem>
+                      <SelectItem value="TRUEFRENCH">TRUEFRENCH</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {editingDownloadLink && (
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-link-type">Type de lien</Label>
+                  <Select
+                    value={editForm.link_type}
+                    onValueChange={(value) => setEditForm({ ...editForm, link_type: value })}
+                  >
+                    <SelectTrigger id="edit-link-type">
+                      <SelectValue placeholder="Selectionnez un type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="direct">Direct</SelectItem>
+                      <SelectItem value="torrent">Torrent</SelectItem>
+                      <SelectItem value="magnet">Magnet</SelectItem>
+                      <SelectItem value="ddl">DDL</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleSaveEdit} disabled={isSaving || !editForm.source_name || !editForm.source_url}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : (
+                  "Enregistrer"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Card>
     </div>
   )
