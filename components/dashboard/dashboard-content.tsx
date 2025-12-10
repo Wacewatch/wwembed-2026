@@ -56,6 +56,8 @@ import {
   ShieldCheck,
   ShieldX,
   ShieldQuestion,
+  Film,
+  FileDown,
 } from "lucide-react"
 import type {
   Profile,
@@ -976,6 +978,145 @@ export function DashboardContent({
           <div className="p-4 md:p-6">
             {/* Overview Tab */}
             <TabsContent value="overview" className="mt-0 space-y-6">
+              {(() => {
+                const invalidDownloadLinks = localDownloadLinks.filter((l) => l.is_valid === false)
+                const invalidDigitalLinks = localDigitalLinks.filter((l) => l.is_valid === false)
+                const totalInvalidLinks = invalidDownloadLinks.length + invalidDigitalLinks.length
+
+                if (totalInvalidLinks === 0) return null
+
+                return (
+                  <Card className="border-red-800/50 bg-red-950/20">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2 text-red-400">
+                        <ShieldX className="w-4 h-4" />
+                        Liens Invalides ({totalInvalidLinks})
+                      </CardTitle>
+                      <p className="text-xs text-red-400/70">
+                        Ces liens ne fonctionnent plus. Veuillez les mettre à jour ou les supprimer.
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                        {invalidDownloadLinks.map((link) => {
+                          const mediaInfo = getMediaInfo(link)
+                          const episodeInfo = formatEpisodeInfo(link)
+                          return (
+                            <div
+                              key={link.id}
+                              className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-red-800/30"
+                            >
+                              <div className="flex items-center gap-3">
+                                {mediaInfo.poster ? (
+                                  <img
+                                    src={mediaInfo.poster || "/placeholder.svg"}
+                                    alt={mediaInfo.title}
+                                    className="w-12 h-16 object-cover rounded"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-16 bg-zinc-800 rounded flex items-center justify-center">
+                                    <Film className="w-5 h-5 text-zinc-600" />
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="text-sm font-medium">
+                                    {mediaInfo.title} {episodeInfo}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">{link.source_name}</p>
+                                  <Badge variant="outline" className="text-xs mt-1 text-blue-400 border-blue-600">
+                                    Download
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {(profile.role === "uploader" || profile.role === "admin") && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-blue-400 border-blue-600 hover:bg-blue-600/20 bg-transparent"
+                                    onClick={() => handleEditDownloadLink(link)}
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-400 border-red-600 hover:bg-red-600/20 bg-transparent"
+                                  onClick={() => handleDeleteDownloadLink(link.id)}
+                                  disabled={deletingId === link.id}
+                                >
+                                  {deletingId === link.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-3 h-3" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                        {invalidDigitalLinks.map((link) => (
+                          <div
+                            key={link.id}
+                            className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-red-800/30"
+                          >
+                            <div className="flex items-center gap-3">
+                              {link.digital_content?.cover_url ? (
+                                <img
+                                  src={link.digital_content.cover_url || "/placeholder.svg"}
+                                  alt={link.digital_content?.title || "Digital"}
+                                  className="w-12 h-16 object-cover rounded"
+                                />
+                              ) : (
+                                <div className="w-12 h-16 bg-zinc-800 rounded flex items-center justify-center">
+                                  <FileDown className="w-5 h-5 text-zinc-600" />
+                                </div>
+                              )}
+                              <div>
+                                <p className="text-sm font-medium">
+                                  {link.digital_content?.title || "Contenu digital"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">{link.source_name}</p>
+                                <Badge variant="outline" className="text-xs mt-1 text-amber-400 border-amber-600">
+                                  Digital
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {(profile.role === "uploader" || profile.role === "admin") && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-blue-400 border-blue-600 hover:bg-blue-600/20 bg-transparent"
+                                  onClick={() => handleEditDigitalLink(link)}
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-400 border-red-600 hover:bg-red-600/20 bg-transparent"
+                                onClick={() => handleDeleteDigitalLink(link.id)}
+                                disabled={deletingId === link.id}
+                              >
+                                {deletingId === link.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-3 h-3" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })()}
+              {/* End Invalid Links Section */}
+
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Recent Activity */}
                 <Card className="border-zinc-800 bg-zinc-900/50">
