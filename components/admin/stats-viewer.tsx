@@ -5,7 +5,20 @@ import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Eye, MousePointer, TrendingUp, Users, Film, Tv, Play, Globe, Calendar, BarChart3, Loader2 } from "lucide-react"
+import {
+  Eye,
+  MousePointer,
+  TrendingUp,
+  Users,
+  Film,
+  Tv,
+  Play,
+  Globe,
+  Calendar,
+  BarChart3,
+  Loader2,
+  Download,
+} from "lucide-react"
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts"
 
 interface ViewsByDay {
@@ -18,6 +31,15 @@ interface TopMedia {
   tmdb_id: number | null
   media_type: string
   views: number
+  title?: string
+  poster?: string
+  ww_id?: string
+}
+
+interface TopMediaDownload {
+  tmdb_id: number | null
+  media_type: string
+  downloads: number
   title?: string
   poster?: string
   ww_id?: string
@@ -45,6 +67,7 @@ export function StatsViewer() {
   const [period, setPeriod] = useState("7")
   const [viewsByDay, setViewsByDay] = useState<ViewsByDay[]>([])
   const [topMedia, setTopMedia] = useState<TopMedia[]>([])
+  const [topMediaDownload, setTopMediaDownload] = useState<TopMediaDownload[]>([])
   const [topReferrers, setTopReferrers] = useState<TopReferrer[]>([])
   const [detailedStats, setDetailedStats] = useState<DetailedStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -143,8 +166,18 @@ export function StatsViewer() {
       "viewed_at",
     )
 
+    setLoadingProgress("Récupération des clics téléchargement...")
+    const allLinkClicks = await fetchAllRowsPaginated(
+      supabase,
+      "link_clicks",
+      "clicked_at, tmdb_id, media_type, ww_id, link_type",
+      startDate,
+      "clicked_at",
+    )
+
     console.log("[v0] Total views from count:", totalViewsCount)
     console.log("[v0] Total views fetched:", allViews.length)
+    console.log("[v0] Total link clicks fetched:", allLinkClicks.length)
 
     // Préparer les dates pour le graphique
     const byDay: Record<string, number> = {}
@@ -200,6 +233,32 @@ export function StatsViewer() {
       }
     })
 
+    const downloadCount: Record<
+      string,
+      { tmdb_id: number | null; media_type: string; downloads: number; ww_id?: string }
+    > = {}
+    allLinkClicks.forEach((click) => {
+      const isDigital =
+        click.ww_id &&
+        (click.ww_id.startsWith("ww-ebook-") ||
+          click.ww_id.startsWith("ww-music-") ||
+          click.ww_id.startsWith("ww-software-") ||
+          click.ww_id.startsWith("ww-game-"))
+      const mediaKey = isDigital
+        ? `digital-${click.ww_id}`
+        : `${click.media_type || "unknown"}-${click.tmdb_id || click.ww_id}`
+
+      if (!downloadCount[mediaKey]) {
+        downloadCount[mediaKey] = {
+          tmdb_id: isDigital ? null : click.tmdb_id,
+          media_type: isDigital ? "digital" : click.media_type || "unknown",
+          downloads: 0,
+          ww_id: click.ww_id,
+        }
+      }
+      downloadCount[mediaKey].downloads++
+    })
+
     const totalFromChart = Object.values(byDay).reduce((sum, count) => sum + count, 0)
     console.log("[v0] Total from chart data:", totalFromChart)
 
@@ -253,6 +312,45 @@ export function StatsViewer() {
 
     setTopMedia(topMediaWithDetails)
 
+    setLoadingProgress("Chargement des métadonnées téléchargements...")
+    const topDownloadList = Object.values(downloadCount)
+      .sort((a, b) => b.downloads - a.downloads)
+      .slice(0, 50)
+
+    const topDownloadWithDetails: TopMediaDownload[] = await Promise.all(
+      topDownloadList.map(async (m) => {
+        if (m.media_type === "digital" && m.ww_id) {
+          const { data: digital } = await supabase
+            .from("digital_content")
+            .select("title, cover_image")
+            .eq("ww_id", m.ww_id)
+            .single()
+          return {
+            ...m,
+            title: digital?.title || "Contenu Digital",
+            poster: digital?.cover_image || undefined,
+          }
+        } else if (m.tmdb_id && m.media_type && m.media_type !== "digital") {
+          try {
+            const res = await fetch(`/api/tmdb/${m.media_type}/${m.tmdb_id}`)
+            if (res.ok) {
+              const data = await res.json()
+              return {
+                ...m,
+                title: data.title || data.name || `#${m.tmdb_id}`,
+                poster: data.poster || undefined,
+              }
+            }
+          } catch (e) {
+            // Ignore errors
+          }
+        }
+        return { ...m, title: m.media_type === "digital" ? "Contenu Digital" : `#${m.tmdb_id || m.ww_id}` }
+      }),
+    )
+
+    setTopMediaDownload(topDownloadWithDetails)
+
     const totalFromReferrers = Object.values(refCount).reduce((sum, count) => sum + count, 0)
     console.log("[v0] Total from referrers:", totalFromReferrers)
 
@@ -300,6 +398,7 @@ export function StatsViewer() {
   const chartTotal = viewsByDay.reduce((sum, day) => sum + day.count, 0)
   const referrersTotal = topReferrers.reduce((sum, ref) => sum + ref.count, 0)
   const mediaTotal = topMedia.reduce((sum, m) => sum + m.views, 0)
+  const downloadTotal = topMediaDownload.reduce((sum, m) => sum + m.downloads, 0)
 
   return (
     <div className="space-y-6">
@@ -457,16 +556,16 @@ export function StatsViewer() {
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-3 gap-6">
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-lg flex items-center justify-between">
               <span className="flex items-center gap-2">
                 <Film className="w-5 h-5 text-primary" />
-                Top Medias
+                Top Medias (Vues)
               </span>
               <Badge variant="outline" className="text-primary">
-                {mediaTotal.toLocaleString()} vues (top 50)
+                {mediaTotal.toLocaleString()} vues
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -495,21 +594,90 @@ export function StatsViewer() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground truncate">{media.title}</p>
+                      <p className="font-medium text-foreground truncate text-sm">{media.title}</p>
                       <Badge
                         variant="outline"
                         className={
                           media.media_type === "movie"
-                            ? "text-blue-500 border-blue-500/30"
+                            ? "text-blue-500 border-blue-500/30 text-xs"
                             : media.media_type === "tv"
-                              ? "text-purple-500 border-purple-500/30"
-                              : "text-red-500 border-red-500/30"
+                              ? "text-purple-500 border-purple-500/30 text-xs"
+                              : "text-red-500 border-red-500/30 text-xs"
                         }
                       >
                         {media.media_type === "movie" ? "Film" : media.media_type === "tv" ? "Série" : "TV Live"}
                       </Badge>
                     </div>
-                    <span className="text-primary font-bold">{media.views.toLocaleString()} vues</span>
+                    <span className="text-primary font-bold text-sm">{media.views.toLocaleString()}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-4">Aucune donnee</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Download className="w-5 h-5 text-orange-500" />
+                Top Medias (Download)
+              </span>
+              <Badge variant="outline" className="text-orange-500">
+                {downloadTotal.toLocaleString()} clics
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+              {topMediaDownload.length > 0 ? (
+                topMediaDownload.map((media, i) => (
+                  <div
+                    key={`dl-${media.media_type}-${media.tmdb_id || media.ww_id}-${i}`}
+                    className="flex items-center gap-3"
+                  >
+                    <span className="text-muted-foreground w-6 text-right font-medium">{i + 1}.</span>
+                    {media.poster ? (
+                      <img
+                        src={media.poster.startsWith("http") ? media.poster : `${TMDB_IMAGE_BASE}${media.poster}`}
+                        alt={media.title}
+                        className="w-10 h-14 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
+                        {media.media_type === "digital" ? (
+                          <Download className="w-5 h-5 text-muted-foreground" />
+                        ) : (
+                          <Film className="w-5 h-5 text-muted-foreground" />
+                        )}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground truncate text-sm">{media.title}</p>
+                      <Badge
+                        variant="outline"
+                        className={
+                          media.media_type === "movie"
+                            ? "text-blue-500 border-blue-500/30 text-xs"
+                            : media.media_type === "tv"
+                              ? "text-purple-500 border-purple-500/30 text-xs"
+                              : media.media_type === "digital"
+                                ? "text-yellow-500 border-yellow-500/30 text-xs"
+                                : "text-gray-500 border-gray-500/30 text-xs"
+                        }
+                      >
+                        {media.media_type === "movie"
+                          ? "Film"
+                          : media.media_type === "tv"
+                            ? "Série"
+                            : media.media_type === "digital"
+                              ? "Digital"
+                              : media.media_type}
+                      </Badge>
+                    </div>
+                    <span className="text-orange-500 font-bold text-sm">{media.downloads.toLocaleString()}</span>
                   </div>
                 ))
               ) : (
@@ -527,7 +695,7 @@ export function StatsViewer() {
                 Top Referents
               </span>
               <Badge variant="outline" className="text-primary">
-                {referrersTotal.toLocaleString()} vues (top 50)
+                {referrersTotal.toLocaleString()} vues
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -538,10 +706,10 @@ export function StatsViewer() {
                   <div key={ref.referrer} className="flex items-center gap-3">
                     <span className="text-muted-foreground w-6 text-right font-medium">{i + 1}.</span>
                     <Globe className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                    <p className="flex-1 truncate text-foreground" title={ref.referrer}>
+                    <p className="flex-1 truncate text-foreground text-sm" title={ref.referrer}>
                       {ref.referrer}
                     </p>
-                    <span className="text-primary font-bold">{ref.count.toLocaleString()}</span>
+                    <span className="text-primary font-bold text-sm">{ref.count.toLocaleString()}</span>
                   </div>
                 ))
               ) : (
