@@ -317,38 +317,52 @@ export function StatsViewer() {
       .sort((a, b) => b.downloads - a.downloads)
       .slice(0, 50)
 
+    console.log("[v0] Top download list:", topDownloadList)
+
     const topDownloadWithDetails: TopMediaDownload[] = await Promise.all(
       topDownloadList.map(async (m) => {
+        console.log("[v0] Processing download media:", m)
+
         if (m.media_type === "digital" && m.ww_id) {
           const { data: digital } = await supabase
             .from("digital_content")
-            .select("title, cover_image")
+            .select("title, cover_url")
             .eq("ww_id", m.ww_id)
             .single()
+          console.log("[v0] Digital content found:", digital)
           return {
             ...m,
             title: digital?.title || "Contenu Digital",
-            poster: digital?.cover_image || undefined,
+            poster: digital?.cover_url || undefined,
           }
-        } else if (m.tmdb_id && m.media_type && m.media_type !== "digital") {
-          try {
-            const res = await fetch(`/api/tmdb/${m.media_type}/${m.tmdb_id}`)
-            if (res.ok) {
-              const data = await res.json()
-              return {
-                ...m,
-                title: data.title || data.name || `#${m.tmdb_id}`,
-                poster: data.poster || undefined,
+        } else if (m.tmdb_id && m.media_type) {
+          // Normalize media_type for TMDB API (should be "movie" or "tv")
+          const tmdbType = m.media_type === "movie" || m.media_type === "tv" ? m.media_type : null
+          console.log("[v0] TMDB fetch for:", m.tmdb_id, "type:", tmdbType)
+
+          if (tmdbType) {
+            try {
+              const res = await fetch(`/api/tmdb/${tmdbType}/${m.tmdb_id}`)
+              console.log("[v0] TMDB response status:", res.status)
+              if (res.ok) {
+                const data = await res.json()
+                console.log("[v0] TMDB data:", data)
+                return {
+                  ...m,
+                  title: data.title || data.name || `#${m.tmdb_id}`,
+                  poster: data.poster || undefined,
+                }
               }
+            } catch (e) {
+              console.error("[v0] TMDB fetch error:", e)
             }
-          } catch (e) {
-            // Ignore errors
           }
         }
         return { ...m, title: m.media_type === "digital" ? "Contenu Digital" : `#${m.tmdb_id || m.ww_id}` }
       }),
     )
 
+    console.log("[v0] Top download with details:", topDownloadWithDetails)
     setTopMediaDownload(topDownloadWithDetails)
 
     const totalFromReferrers = Object.values(refCount).reduce((sum, count) => sum + count, 0)
@@ -471,7 +485,7 @@ export function StatsViewer() {
               <div className="flex items-center gap-3">
                 <TrendingUp className="w-8 h-8 text-orange-500" />
                 <div>
-                  <p className="text-2xl font-bold text-orange-500">
+                  <p className="text-2xl font-bold text-foreground">
                     {Math.round(detailedStats.avgViewsPerDay).toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground">Moy. vues/jour</p>
