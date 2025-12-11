@@ -216,7 +216,7 @@ export function StatsViewer() {
     setLoadingProgress("Chargement des métadonnées...")
     const topMediaList = Object.values(mediaCount)
       .sort((a, b) => b.views - a.views)
-      .slice(0, 10)
+      .slice(0, 50)
 
     const topMediaWithDetails: TopMedia[] = await Promise.all(
       topMediaList.map(async (m) => {
@@ -260,7 +260,7 @@ export function StatsViewer() {
       Object.entries(refCount)
         .map(([referrer, count]) => ({ referrer, count }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 10),
+        .slice(0, 50),
     )
 
     const totalViews = totalViewsCount || 0
@@ -466,12 +466,12 @@ export function StatsViewer() {
                 Top Medias
               </span>
               <Badge variant="outline" className="text-primary">
-                {mediaTotal.toLocaleString()} vues (top 10)
+                {mediaTotal.toLocaleString()} vues (top 50)
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
+            <div className="space-y-3 max-h-[600px] overflow-y-auto">
               {topMedia.length > 0 ? (
                 topMedia.map((media, i) => (
                   <div
@@ -527,12 +527,12 @@ export function StatsViewer() {
                 Top Referents
               </span>
               <Badge variant="outline" className="text-primary">
-                {referrersTotal.toLocaleString()} vues (top 10)
+                {referrersTotal.toLocaleString()} vues (top 50)
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
+            <div className="space-y-2 max-h-[600px] overflow-y-auto">
               {topReferrers.length > 0 ? (
                 topReferrers.map((ref, i) => (
                   <div key={ref.referrer} className="flex items-center gap-3">
