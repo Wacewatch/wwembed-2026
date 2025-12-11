@@ -463,33 +463,56 @@ _showExtDetails(_allExtLinks[idx]);
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
+
+// Show loading first
+body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg style="animation:spin 1s linear infinite;width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="margin-top:12px">Chargement du lien...</p></div>';
+details.classList.add("show");
+
+// Decode the link via Movix API
+fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
+.then(function(r){return r.json();})
+.then(function(data){
+if(!data||!data.success||!data.embed_url){
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
+return;
+}
+var embed=data.embed_url;
+var finalUrl=embed.lien||"#";
+
 var html='<div style="margin-bottom:16px"><strong>Provider:</strong> '+(link.provider||"N/A")+'</div>';
 html+='<div style="margin-bottom:16px"><strong>Qualité:</strong> '+(link.quality||"N/A")+'</div>';
 html+='<div style="margin-bottom:16px"><strong>Langue:</strong> '+(link.language||"N/A")+'</div>';
-html+='<div style="margin-bottom:16px"><strong>Taille:</strong> '+_formatSize(link.size)+'</div>';
-html+='<button class="ext-unlock-btn" id="extUnlockBtn">Débloquer le lien</button>';
-html+='<div class="ext-link-result" id="extLinkResult" style="display:none"></div>';
+html+='<div style="margin-bottom:16px"><strong>Taille:</strong> '+(embed.taille?_formatSize(embed.taille):_formatSize(link.size))+'</div>';
+html+='<div id="extUnlockSection"><div style="text-align:center;padding:20px;background:rgba(102,126,234,0.1);border-radius:12px;margin-bottom:16px"><div style="font-size:48px;margin-bottom:12px">🔒</div><h4 style="color:#e0e7ff;margin-bottom:8px">Lien protégé</h4><p style="color:#a5b4fc;font-size:13px;margin-bottom:16px">Débloquez ce lien en ouvrant une courte publicité</p><button class="ext-unlock-btn" id="extUnlockBtn">🔓 Débloquer maintenant</button></div></div>';
+html+='<div id="extLinkSection" style="display:none"><div style="text-align:center;padding:20px;background:rgba(16,185,129,0.1);border-radius:12px"><div style="font-size:48px;margin-bottom:12px">✅</div><h4 style="color:#10b981;margin-bottom:12px">Lien débloqué !</h4><a href="'+finalUrl+'" target="_blank" id="extFinalLink" style="display:inline-block;padding:14px 28px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:10px;font-weight:700;text-decoration:none">📥 Accéder au téléchargement</a><p style="margin-top:12px;font-size:11px;color:#6b7280;word-break:break-all">'+finalUrl+'</p></div></div>';
 body.innerHTML=html;
-details.classList.add("show");
 
 var closeBtn=document.getElementById("extCloseBtn");
 if(closeBtn){closeBtn.onclick=function(){details.classList.remove("show");};}
 
-var btn=document.getElementById("extUnlockBtn");
-if(btn){
-btn.onclick=function(){
-btn.disabled=true;
-btn.textContent="Chargement...";
-var result=document.getElementById("extLinkResult");
-result.style.display="block";
-var linkUrl=link.url||link.link||link.download_url||"#";
-result.innerHTML='<a href="'+linkUrl+'" target="_blank" id="extFinalLink">Accéder au lien</a>';
+var unlockBtn=document.getElementById("extUnlockBtn");
+if(unlockBtn){
+unlockBtn.onclick=function(){
+unlockBtn.disabled=true;
+unlockBtn.innerHTML="⏳ Ouverture...";
+// Open ad popup
+if(_h&&_u){
+fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
+window.open(_u,"_blank");
+}
+// Show link after 500ms
+setTimeout(function(){
+document.getElementById("extUnlockSection").style.display="none";
+document.getElementById("extLinkSection").style.display="block";
 var finalLink=document.getElementById("extFinalLink");
-if(finalLink){finalLink.onclick=function(){fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});};}
-btn.textContent="Lien débloqué !";
-btn.style.background="#10b981";
+if(finalLink){finalLink.onclick=function(){fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});};}
+},500);
 };
 }
+})
+.catch(function(err){
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
+});
 }
 
 _bindButtons();
