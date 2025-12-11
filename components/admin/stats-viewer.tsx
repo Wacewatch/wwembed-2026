@@ -5,8 +5,8 @@ import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Eye, MousePointer, TrendingUp, Users, Film, Tv, Play, Globe, Calendar, BarChart3 } from "lucide-react"
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { Eye, MousePointer, TrendingUp, Users, Film, Tv, Play, Globe, Calendar, BarChart3, Loader2 } from "lucide-react"
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts"
 
 interface ViewsByDay {
   date: string
@@ -48,12 +48,13 @@ export function StatsViewer() {
   const [topReferrers, setTopReferrers] = useState<TopReferrer[]>([])
   const [detailedStats, setDetailedStats] = useState<DetailedStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadingProgress, setLoadingProgress] = useState("")
 
   useEffect(() => {
     loadStats()
   }, [period])
 
-  const fetchAllRows = async (
+  const fetchAllRowsPaginated = async (
     supabase: any,
     table: string,
     selectFields: string,
@@ -62,35 +63,49 @@ export function StatsViewer() {
   ) => {
     let allData: any[] = []
     let page = 0
-    const pageSize = 10000
+    const pageSize = 1000 // Supabase limite à 1000 par requête
     let hasMore = true
 
     while (hasMore) {
+      const from = page * pageSize
+      const to = from + pageSize - 1
+
+      setLoadingProgress(`Chargement des données... ${allData.length} lignes`)
+
       const { data, error } = await supabase
         .from(table)
         .select(selectFields)
         .gte(dateField, startDate)
-        .range(page * pageSize, (page + 1) * pageSize - 1)
+        .range(from, to)
         .order(dateField, { ascending: false })
 
-      if (error || !data || data.length === 0) {
+      if (error) {
+        console.error("[v0] Error fetching data:", error)
+        hasMore = false
+      } else if (!data || data.length === 0) {
         hasMore = false
       } else {
         allData = [...allData, ...data]
-        hasMore = data.length === pageSize
+        // Si on a reçu moins que pageSize, c'est qu'on a tout récupéré
+        if (data.length < pageSize) {
+          hasMore = false
+        }
         page++
       }
     }
 
+    setLoadingProgress(`${allData.length} lignes chargées`)
     return allData
   }
 
   const loadStats = async () => {
     setLoading(true)
+    setLoadingProgress("Initialisation...")
     const supabase = createClient()
     const daysAgo = Number.parseInt(period)
     const startDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString()
 
+    setLoadingProgress("Récupération des totaux...")
     const [
       { count: totalViewsCount },
       { count: totalClicksCount },
@@ -119,7 +134,8 @@ export function StatsViewer() {
         .or("media_type.eq.live,media_type.eq.live_tv,embed_type.eq.live"),
     ])
 
-    const allViews = await fetchAllRows(
+    setLoadingProgress("Récupération des vues détaillées...")
+    const allViews = await fetchAllRowsPaginated(
       supabase,
       "embed_views",
       "viewed_at, tmdb_id, media_type, referrer, ww_id, user_agent, embed_type",
@@ -127,6 +143,10 @@ export function StatsViewer() {
       "viewed_at",
     )
 
+    console.log("[v0] Total views from count:", totalViewsCount)
+    console.log("[v0] Total views fetched:", allViews.length)
+
+    // Préparer les dates pour le graphique
     const byDay: Record<string, number> = {}
     const today = new Date()
     for (let i = daysAgo - 1; i >= 0; i--) {
@@ -140,6 +160,7 @@ export function StatsViewer() {
     const refCount: Record<string, number> = {}
     const uniqueIps = new Set<string>()
 
+    setLoadingProgress("Analyse des données...")
     allViews.forEach((v) => {
       const date = new Date(v.viewed_at).toISOString().split("T")[0]
       if (byDay.hasOwnProperty(date)) {
@@ -179,6 +200,9 @@ export function StatsViewer() {
       }
     })
 
+    const totalFromChart = Object.values(byDay).reduce((sum, count) => sum + count, 0)
+    console.log("[v0] Total from chart data:", totalFromChart)
+
     setViewsByDay(
       Object.entries(byDay)
         .map(([date, count]) => {
@@ -189,6 +213,7 @@ export function StatsViewer() {
         .sort((a, b) => a.date.localeCompare(b.date)),
     )
 
+    setLoadingProgress("Chargement des métadonnées...")
     const topMediaList = Object.values(mediaCount)
       .sort((a, b) => b.views - a.views)
       .slice(0, 10)
@@ -228,6 +253,9 @@ export function StatsViewer() {
 
     setTopMedia(topMediaWithDetails)
 
+    const totalFromReferrers = Object.values(refCount).reduce((sum, count) => sum + count, 0)
+    console.log("[v0] Total from referrers:", totalFromReferrers)
+
     setTopReferrers(
       Object.entries(refCount)
         .map(([referrer, count]) => ({ referrer, count }))
@@ -256,11 +284,22 @@ export function StatsViewer() {
     })
 
     setLoading(false)
+    setLoadingProgress("")
   }
 
   if (loading) {
-    return <div className="text-center py-8 text-muted-foreground">Chargement des statistiques...</div>
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+        <p>Chargement des statistiques...</p>
+        {loadingProgress && <p className="text-sm mt-2">{loadingProgress}</p>}
+      </div>
+    )
   }
+
+  const chartTotal = viewsByDay.reduce((sum, day) => sum + day.count, 0)
+  const referrersTotal = topReferrers.reduce((sum, ref) => sum + ref.count, 0)
+  const mediaTotal = topMedia.reduce((sum, m) => sum + m.views, 0)
 
   return (
     <div className="space-y-6">
@@ -370,25 +409,34 @@ export function StatsViewer() {
 
       <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-primary" />
-            Vues par jour
+          <CardTitle className="text-lg flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" />
+              Vues par jour
+            </span>
+            <Badge variant="outline" className="text-primary">
+              Total: {chartTotal.toLocaleString()} vues
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {viewsByDay.length > 0 ? (
-            <div className="h-72">
+            <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={viewsByDay} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
-                    </linearGradient>
-                  </defs>
+                <BarChart data={viewsByDay} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="formattedDate" stroke="#9ca3af" tick={{ fill: "#9ca3af", fontSize: 12 }} />
-                  <YAxis stroke="#9ca3af" tick={{ fill: "#9ca3af", fontSize: 12 }} allowDecimals={false} />
+                  <XAxis
+                    dataKey="formattedDate"
+                    stroke="#9ca3af"
+                    tick={{ fill: "#9ca3af", fontSize: 11 }}
+                    interval={viewsByDay.length > 14 ? Math.floor(viewsByDay.length / 10) : 0}
+                  />
+                  <YAxis
+                    stroke="#9ca3af"
+                    tick={{ fill: "#9ca3af", fontSize: 12 }}
+                    allowDecimals={false}
+                    tickFormatter={(value) => value.toLocaleString()}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "#1f2937",
@@ -398,21 +446,13 @@ export function StatsViewer() {
                     }}
                     labelStyle={{ color: "#9ca3af" }}
                     formatter={(value: number) => [`${value.toLocaleString()} vues`, "Vues"]}
-                    labelFormatter={(label) => `Date: ${label}`}
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="count"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#colorViews)"
-                  />
-                </AreaChart>
+                  <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} name="Vues" />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="text-muted-foreground text-center py-8">Aucune donnee disponible</p>
+            <p className="text-center text-muted-foreground py-8">Aucune donnee disponible</p>
           )}
         </CardContent>
       </Card>
@@ -420,88 +460,94 @@ export function StatsViewer() {
       <div className="grid md:grid-cols-2 gap-6">
         <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Film className="w-5 h-5 text-primary" />
-              Top Medias
+            <CardTitle className="text-lg flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Film className="w-5 h-5 text-primary" />
+                Top Medias
+              </span>
+              <Badge variant="outline" className="text-primary">
+                {mediaTotal.toLocaleString()} vues (top 10)
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {topMedia.length > 0 ? (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {topMedia.map((m, i) => (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {topMedia.length > 0 ? (
+                topMedia.map((media, i) => (
                   <div
-                    key={`${m.media_type}-${m.tmdb_id || m.ww_id}`}
-                    className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                    key={`${media.media_type}-${media.tmdb_id || media.ww_id}-${i}`}
+                    className="flex items-center gap-3"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-muted-foreground w-6 font-bold">{i + 1}.</span>
-                      {m.poster ? (
-                        <img
-                          src={m.poster || "/placeholder.svg"}
-                          alt={m.title}
-                          className="w-10 h-14 object-cover rounded"
-                        />
-                      ) : (
-                        <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
-                          {m.media_type === "movie" ? (
-                            <Film className="w-5 h-5 text-muted-foreground" />
-                          ) : m.media_type === "live" ? (
-                            <Play className="w-5 h-5 text-red-500" />
-                          ) : (
-                            <Tv className="w-5 h-5 text-muted-foreground" />
-                          )}
-                        </div>
-                      )}
-                      <div>
-                        <p className="font-medium text-foreground line-clamp-1">{m.title}</p>
-                        <Badge
-                          variant={
-                            m.media_type === "movie" ? "default" : m.media_type === "live" ? "destructive" : "secondary"
-                          }
-                          className="text-xs"
-                        >
-                          {m.media_type === "movie" ? "Film" : m.media_type === "tv" ? "Serie" : "TV Live"}
-                        </Badge>
+                    <span className="text-muted-foreground w-6 text-right font-medium">{i + 1}.</span>
+                    {media.poster ? (
+                      <img
+                        src={media.poster.startsWith("http") ? media.poster : `${TMDB_IMAGE_BASE}${media.poster}`}
+                        alt={media.title}
+                        className="w-10 h-14 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
+                        {media.media_type === "live" ? (
+                          <Play className="w-5 h-5 text-muted-foreground" />
+                        ) : (
+                          <Film className="w-5 h-5 text-muted-foreground" />
+                        )}
                       </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground truncate">{media.title}</p>
+                      <Badge
+                        variant="outline"
+                        className={
+                          media.media_type === "movie"
+                            ? "text-blue-500 border-blue-500/30"
+                            : media.media_type === "tv"
+                              ? "text-purple-500 border-purple-500/30"
+                              : "text-red-500 border-red-500/30"
+                        }
+                      >
+                        {media.media_type === "movie" ? "Film" : media.media_type === "tv" ? "Série" : "TV Live"}
+                      </Badge>
                     </div>
-                    <span className="text-primary font-semibold">{m.views.toLocaleString()} vues</span>
+                    <span className="text-primary font-bold">{media.views.toLocaleString()} vues</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-4">Aucune donnee</p>
-            )}
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-4">Aucune donnee</p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Globe className="w-5 h-5 text-primary" />
-              Top Referents
+            <CardTitle className="text-lg flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Globe className="w-5 h-5 text-primary" />
+                Top Referents
+              </span>
+              <Badge variant="outline" className="text-primary">
+                {referrersTotal.toLocaleString()} vues (top 10)
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {topReferrers.length > 0 ? (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {topReferrers.map((r, i) => (
-                  <div
-                    key={r.referrer}
-                    className="flex items-center justify-between py-2 border-b border-border last:border-0"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-muted-foreground w-6 font-bold">{i + 1}.</span>
-                      <span className="font-medium text-foreground truncate max-w-[200px]" title={r.referrer}>
-                        {r.referrer}
-                      </span>
-                    </div>
-                    <span className="text-primary font-semibold">{r.count.toLocaleString()}</span>
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {topReferrers.length > 0 ? (
+                topReferrers.map((ref, i) => (
+                  <div key={ref.referrer} className="flex items-center gap-3">
+                    <span className="text-muted-foreground w-6 text-right font-medium">{i + 1}.</span>
+                    <Globe className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                    <p className="flex-1 truncate text-foreground" title={ref.referrer}>
+                      {ref.referrer}
+                    </p>
+                    <span className="text-primary font-bold">{ref.count.toLocaleString()}</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-4">Aucune donnee</p>
-            )}
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-4">Aucune donnee</p>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
