@@ -23,8 +23,6 @@ import {
   AlertTriangle,
   Trash2,
   ImageIcon,
-  ChevronDown,
-  ChevronUp,
   Play,
 } from "lucide-react"
 import type { StreamingLink } from "@/lib/types"
@@ -317,27 +315,23 @@ export function StreamingLinksManager() {
   return (
     <div className="space-y-4">
       <Card className="border-red-500/30 bg-red-500/5">
-        <CardHeader className="cursor-pointer" onClick={() => setShowInvalidSection(!showInvalidSection)}>
+        <CardHeader className="pb-2">
           <CardTitle className="flex items-center justify-between text-red-400">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
-              Liens Streaming Invalides ({invalidLinks.length})
+              <span>Liens Invalides</span>
+              <Badge variant="secondary" className="ml-2">
+                {invalidLinks.length}
+              </Badge>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  checkAllLinksInDatabase()
-                }}
-                disabled={isCheckingAll}
-                className="text-amber-400 border-amber-400/30"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isCheckingAll ? "animate-spin" : ""}`} />
-                Vérifier TOUS les liens
+              <Button variant="ghost" size="sm" onClick={() => setShowInvalidSection(!showInvalidSection)}>
+                {showInvalidSection ? "Masquer" : "Afficher"}
               </Button>
-              {showInvalidSection ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              <Button variant="outline" size="sm" onClick={checkAllLinksInDatabase} disabled={isCheckingAll}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isCheckingAll ? "animate-spin" : ""}`} />
+                {isCheckingAll ? "Vérification..." : "Vérifier TOUS les liens"}
+              </Button>
             </div>
           </CardTitle>
         </CardHeader>
@@ -346,13 +340,10 @@ export function StreamingLinksManager() {
           <CardContent>
             {isCheckingAll && (
               <div className="mb-4 space-y-2">
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Vérification en cours...</span>
-                  <span>
-                    {checkProgress} / {checkTotal}
-                  </span>
-                </div>
                 <Progress value={(checkProgress / checkTotal) * 100} className="h-2" />
+                <div className="text-center text-sm text-muted-foreground">
+                  Vérification en cours... {checkProgress} / {checkTotal} liens
+                </div>
               </div>
             )}
 
@@ -386,22 +377,25 @@ export function StreamingLinksManager() {
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{link.mediaTitle}</div>
                       <div className="text-sm text-muted-foreground truncate">{link.source_name}</div>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-red-400 border-red-400/50">
+                          Invalide
+                        </Badge>
+                        {link.profiles?.username && (
+                          <Badge variant="outline" className="text-cyan-400 border-cyan-400/50">
+                            <User className="h-3 w-3 mr-1" />
+                            {link.profiles.username}
+                          </Badge>
+                        )}
                         <Badge variant="outline" className="text-purple-400">
                           {link.media_type === "movie" ? "Film" : "Série"}
                         </Badge>
-                        {link.profiles?.username && (
-                          <span className="text-xs text-green-400 flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {link.profiles.username}
-                          </span>
-                        )}
-                        {link.last_checked && (
-                          <span className="text-xs text-muted-foreground">
-                            Vérifié: {new Date(link.last_checked).toLocaleDateString("fr-FR")}
-                          </span>
-                        )}
                       </div>
+                      {link.last_checked && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Vérifié: {new Date(link.last_checked).toLocaleString("fr-FR")}
+                        </div>
+                      )}
                     </div>
 
                     {/* Actions */}
@@ -425,6 +419,25 @@ export function StreamingLinksManager() {
           </CardContent>
         )}
       </Card>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Play className="h-5 w-5 text-cyan-400" />
+          <span className="font-semibold">Liens Streaming</span>
+          <Badge variant="secondary">{totalCount} liens</Badge>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            loadLinks()
+            loadInvalidLinks()
+          }}
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Actualiser
+        </Button>
+      </div>
 
       {/* Filtres */}
       <div className="flex flex-wrap gap-4 items-center">
