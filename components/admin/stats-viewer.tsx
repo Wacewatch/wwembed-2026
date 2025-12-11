@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Eye, MousePointer, TrendingUp, Users, Film, Tv, Play, Globe, Calendar, BarChart3 } from "lucide-react"
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 interface ViewsByDay {
   date: string
   count: number
+  formattedDate: string
 }
 
 interface TopMedia {
@@ -51,6 +53,38 @@ export function StatsViewer() {
     loadStats()
   }, [period])
 
+  const fetchAllRows = async (
+    supabase: any,
+    table: string,
+    selectFields: string,
+    startDate: string,
+    dateField: string,
+  ) => {
+    let allData: any[] = []
+    let page = 0
+    const pageSize = 10000
+    let hasMore = true
+
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from(table)
+        .select(selectFields)
+        .gte(dateField, startDate)
+        .range(page * pageSize, (page + 1) * pageSize - 1)
+        .order(dateField, { ascending: false })
+
+      if (error || !data || data.length === 0) {
+        hasMore = false
+      } else {
+        allData = [...allData, ...data]
+        hasMore = data.length === pageSize
+        page++
+      }
+    }
+
+    return allData
+  }
+
   const loadStats = async () => {
     setLoading(true)
     const supabase = createClient()
@@ -85,35 +119,32 @@ export function StatsViewer() {
         .or("media_type.eq.live,media_type.eq.live_tv,embed_type.eq.live"),
     ])
 
-    let allViews: any[] = []
-    let page = 0
-    let hasMore = true
-
-    while (hasMore) {
-      const { data: viewsPage } = await supabase
-        .from("embed_views")
-        .select("viewed_at, tmdb_id, media_type, referrer, ww_id, user_agent, embed_type")
-        .gte("viewed_at", startDate)
-        .range(page * 10000, (page + 1) * 10000 - 1)
-        .order("viewed_at", { ascending: false })
-
-      if (viewsPage && viewsPage.length > 0) {
-        allViews = [...allViews, ...viewsPage]
-        page++
-        hasMore = viewsPage.length === 10000
-      } else {
-        hasMore = false
-      }
-    }
+    const allViews = await fetchAllRows(
+      supabase,
+      "embed_views",
+      "viewed_at, tmdb_id, media_type, referrer, ww_id, user_agent, embed_type",
+      startDate,
+      "viewed_at",
+    )
 
     const byDay: Record<string, number> = {}
+    const today = new Date()
+    for (let i = daysAgo - 1; i >= 0; i--) {
+      const d = new Date(today)
+      d.setDate(d.getDate() - i)
+      const dateStr = d.toISOString().split("T")[0]
+      byDay[dateStr] = 0
+    }
+
     const mediaCount: Record<string, { tmdb_id: number | null; media_type: string; views: number; ww_id?: string }> = {}
     const refCount: Record<string, number> = {}
     const uniqueIps = new Set<string>()
 
     allViews.forEach((v) => {
       const date = new Date(v.viewed_at).toISOString().split("T")[0]
-      byDay[date] = (byDay[date] || 0) + 1
+      if (byDay.hasOwnProperty(date)) {
+        byDay[date] = (byDay[date] || 0) + 1
+      }
 
       const isLive =
         v.media_type === "live" ||
@@ -150,7 +181,11 @@ export function StatsViewer() {
 
     setViewsByDay(
       Object.entries(byDay)
-        .map(([date, count]) => ({ date, count }))
+        .map(([date, count]) => {
+          const dateObj = new Date(date)
+          const formattedDate = `${dateObj.getDate().toString().padStart(2, "0")}/${(dateObj.getMonth() + 1).toString().padStart(2, "0")}`
+          return { date, count, formattedDate }
+        })
         .sort((a, b) => a.date.localeCompare(b.date)),
     )
 
@@ -206,7 +241,7 @@ export function StatsViewer() {
       totalClicks: totalClicksCount || 0,
       totalAdClicks: totalAdClicksCount || 0,
       uniqueVisitors: uniqueIps.size,
-      avgViewsPerDay: totalViews / daysAgo,
+      avgViewsPerDay: daysAgo > 0 ? totalViews / daysAgo : 0,
       topCountries: [],
       viewsByType: [
         { type: "Films", count: movieViewsCount || 0 },
@@ -222,8 +257,6 @@ export function StatsViewer() {
 
     setLoading(false)
   }
-
-  const maxViews = Math.max(...viewsByDay.map((v) => v.count), 1)
 
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Chargement des statistiques...</div>
@@ -300,7 +333,9 @@ export function StatsViewer() {
               <div className="flex items-center gap-3">
                 <TrendingUp className="w-8 h-8 text-orange-500" />
                 <div>
-                  <p className="text-2xl font-bold text-orange-500">{detailedStats.avgViewsPerDay.toFixed(0)}</p>
+                  <p className="text-2xl font-bold text-orange-500">
+                    {Math.round(detailedStats.avgViewsPerDay).toLocaleString()}
+                  </p>
                   <p className="text-xs text-muted-foreground">Moy. vues/jour</p>
                 </div>
               </div>
@@ -342,30 +377,39 @@ export function StatsViewer() {
         </CardHeader>
         <CardContent>
           {viewsByDay.length > 0 ? (
-            <div className="h-64">
-              <div className="flex items-end gap-1 h-48">
-                {viewsByDay.map((day) => (
-                  <div key={day.date} className="flex-1 flex flex-col items-center">
-                    <span className="text-xs text-muted-foreground mb-1">{day.count}</span>
-                    <div
-                      className="w-full bg-gradient-to-t from-primary to-primary/60 rounded-t transition-all hover:from-primary/80"
-                      style={{ height: `${(day.count / maxViews) * 100}%`, minHeight: "4px" }}
-                      title={`${day.date}: ${day.count} vues`}
-                    />
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-1 mt-2 border-t border-border pt-2">
-                {viewsByDay.map((day) => {
-                  const dateObj = new Date(day.date)
-                  const formattedDate = `${dateObj.getDate().toString().padStart(2, "0")}/${(dateObj.getMonth() + 1).toString().padStart(2, "0")}`
-                  return (
-                    <div key={day.date + "-label"} className="flex-1 text-center">
-                      <span className="text-xs text-muted-foreground">{formattedDate}</span>
-                    </div>
-                  )
-                })}
-              </div>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={viewsByDay} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="formattedDate" stroke="#9ca3af" tick={{ fill: "#9ca3af", fontSize: 12 }} />
+                  <YAxis stroke="#9ca3af" tick={{ fill: "#9ca3af", fontSize: 12 }} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#1f2937",
+                      border: "1px solid #374151",
+                      borderRadius: "8px",
+                      color: "#fff",
+                    }}
+                    labelStyle={{ color: "#9ca3af" }}
+                    formatter={(value: number) => [`${value.toLocaleString()} vues`, "Vues"]}
+                    labelFormatter={(label) => `Date: ${label}`}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorViews)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           ) : (
             <p className="text-muted-foreground text-center py-8">Aucune donnee disponible</p>
@@ -383,7 +427,7 @@ export function StatsViewer() {
           </CardHeader>
           <CardContent>
             {topMedia.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-96 overflow-y-auto">
                 {topMedia.map((m, i) => (
                   <div
                     key={`${m.media_type}-${m.tmdb_id || m.ww_id}`}
@@ -420,7 +464,7 @@ export function StatsViewer() {
                         </Badge>
                       </div>
                     </div>
-                    <span className="text-primary font-semibold">{m.views} vues</span>
+                    <span className="text-primary font-semibold">{m.views.toLocaleString()} vues</span>
                   </div>
                 ))}
               </div>
@@ -439,7 +483,7 @@ export function StatsViewer() {
           </CardHeader>
           <CardContent>
             {topReferrers.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-96 overflow-y-auto">
                 {topReferrers.map((r, i) => (
                   <div
                     key={r.referrer}
@@ -451,7 +495,7 @@ export function StatsViewer() {
                         {r.referrer}
                       </span>
                     </div>
-                    <span className="text-primary font-semibold">{r.count}</span>
+                    <span className="text-primary font-semibold">{r.count.toLocaleString()}</span>
                   </div>
                 ))}
               </div>
