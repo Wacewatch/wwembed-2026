@@ -460,6 +460,7 @@ _showExtDetails(_allExtLinks[idx]);
 });
 }
 
+// FIX: Add btn variable and onclick handler for extUnlockBtn
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
@@ -474,7 +475,10 @@ details.classList.add("show");
 
 document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
 
-setTimeout(function(){
+var btn=document.getElementById("extUnlockBtn");
+btn.onclick=function(){
+btn.disabled=true;
+btn.textContent="Chargement...";
 var result=document.getElementById("extLinkResult");
 result.style.display="block";
 var linkUrl=link.url||link.link||link.download_url||"#";
@@ -484,7 +488,6 @@ fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json
 };
 btn.textContent="Lien débloqué !";
 btn.style.background="#10b981";
-},500);
 };
 }
 
@@ -995,7 +998,10 @@ details.classList.add("show");
 
 document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
 
-setTimeout(function(){
+var btn=document.getElementById("extUnlockBtn");
+btn.onclick=function(){
+btn.disabled=true;
+btn.textContent="Chargement...";
 var result=document.getElementById("extLinkResult");
 result.style.display="block";
 var linkUrl=link.url||link.link||link.download_url||"#";
@@ -1005,8 +1011,8 @@ fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json
 };
 btn.textContent="Lien débloqué !";
 btn.style.background="#10b981";
-},500);
 };
+}
 }
 
 document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
