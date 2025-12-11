@@ -601,8 +601,15 @@ _loadExternal();
   }
 
   const linksJson = JSON.stringify(links || [])
+    .replace(/\\/g, "\\\\")
     .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
     .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/`/g, "\\`")
+    .replace(/\$/g, "\\$")
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r")
   const isSeries = mediaType === "tv"
 
   const externalIds = {
@@ -714,9 +721,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div class="hd">
 ${posterUrl ? `<img src="${posterUrl}" alt="${title}" class="ps">` : ""}
 <div>
-<div class="tt">${title}</div>
+<div class="tt">${title.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
 <div class="tg">${mediaType === "movie" ? "Film" : "Série"}</div>
 </div>
+</div>
+
+<div class="sec-title" style="margin-top:0;margin-bottom:16px">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+Liens directs
+<span class="badge" id="internalCount">...</span>
 </div>
 
 <div id="${ids.linksContainer}"></div>
@@ -790,10 +803,11 @@ Recherche de sources externes...
 
 <script>
 (function(){
-console.log("[v0] Download page loaded");
+try{
+console.log("[v0] Download page script starting...");
 
-var _lks=${linksJson};
-console.log("[v0] Links loaded:", _lks);
+var _lks=JSON.parse("${linksJson}");
+console.log("[v0] Links parsed successfully:", _lks.length, "links");
 
 var _u="${adUrl}";
 var _i="${adId}";
@@ -881,13 +895,20 @@ return '<div class="li"><div class="li-top"><div class="li-header">'+ep+'<div cl
 function _renderLinks(){
 console.log("[v0] _renderLinks called");
 var c=document.getElementById(_ids.linksContainer);
-console.log("[v0] Links container:", c);
-if(!c){console.log("[v0] ERROR: Links container not found");return;}
-if(_lks.length===0){c.innerHTML='<div class="em">Aucun lien direct disponible</div>';console.log("[v0] No links available");return;}
+var countBadge=document.getElementById("internalCount");
+console.log("[v0] Links container element:", c);
+if(!c){console.error("[v0] ERROR: Links container not found with id:", _ids.linksContainer);return;}
+if(_lks.length===0){
+c.innerHTML='<div class="em">Aucun lien direct disponible</div>';
+if(countBadge)countBadge.textContent="0";
+console.log("[v0] No internal links available");
+return;
+}
+if(countBadge)countBadge.textContent=_lks.length;
 var html='';
 for(var i=0;i<_lks.length;i++){html+=_renderLink(_lks[i]);}
 c.innerHTML=html;
-console.log("[v0] Links rendered, binding buttons");
+console.log("[v0] Links HTML rendered successfully");
 _bindBtns();
 }
 
@@ -1175,6 +1196,10 @@ _renderLinks();
 console.log("[v0] Calling _loadExternal()");
 _loadExternal();
 console.log("[v0] Script execution complete");
+}catch(err){
+console.error("[v0] CRITICAL ERROR in download script:", err);
+document.body.innerHTML='<div style="color:red;padding:20px">Erreur: '+err.message+'</div>';
+}
 })();
 </script>
 </body>
