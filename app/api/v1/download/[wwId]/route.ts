@@ -601,15 +601,8 @@ _loadExternal();
   }
 
   const linksJson = JSON.stringify(links || [])
-    .replace(/\\/g, "\\\\")
     .replace(/'/g, "\\'")
-    .replace(/"/g, '\\"')
     .replace(/</g, "\\u003c")
-    .replace(/>/g, "\\u003e")
-    .replace(/`/g, "\\`")
-    .replace(/\$/g, "\\$")
-    .replace(/\n/g, "\\n")
-    .replace(/\r/g, "\\r")
   const isSeries = mediaType === "tv"
 
   const externalIds = {
@@ -641,16 +634,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .li-ep{background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700}
 .li-nm{font-weight:600;font-size:15px;color:#fff;flex:1}
 .li-up{font-size:12px;color:#6b7280;background:rgba(107,114,128,0.1);padding:4px 10px;border-radius:6px;text-decoration:none}
-.li-up:hover{color:#14B8A6}
+.li-up:hover{background:rgba(107,114,128,0.2)}
 .li-meta{display:flex;flex-wrap:wrap;gap:8px}
 .li-tag{padding:6px 10px;background:rgba(30,58,79,0.6);border-radius:6px;font-size:11px;color:#94a3b8;border:1px solid rgba(30,58,79,0.8);font-weight:600}
-/* Added colored badges for different metadata types */
-.li-tag.quality{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;font-weight:700}
-.li-tag.lang{background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none}
-.li-tag.video{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none}
-.li-tag.audio{background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;border:none}
-.li-tag.size{background:rgba(20,184,166,0.15);color:#14B8A6;border-color:rgba(20,184,166,0.3)}
-.li-tag.host{background:rgba(99,102,241,0.15);color:#818cf8;border-color:rgba(99,102,241,0.3)}
+.li-tag.quality{background:linear-gradient(135deg,rgba(20,184,166,0.2),rgba(20,184,166,0.1));color:#14B8A6;border-color:rgba(20,184,166,0.3)}
+.li-tag.resolution{background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(139,92,246,0.1));color:#a78bfa;border-color:rgba(139,92,246,0.3)}
+.li-tag.language{background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(59,130,246,0.1));color:#60a5fa;border-color:rgba(59,130,246,0.3)}
+.li-tag.video-codec{background:linear-gradient(135deg,rgba(236,72,153,0.2),rgba(236,72,153,0.1));color:#f472b6;border-color:rgba(236,72,153,0.3)}
+.li-tag.audio-codec{background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(245,158,11,0.1));color:#fbbf24;border-color:rgba(245,158,11,0.3)}
+.li-tag.size{background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(16,185,129,0.1));color:#34d399;border-color:rgba(16,185,129,0.3)}
+.li-tag.source{background:linear-gradient(135deg,rgba(239,68,68,0.2),rgba(239,68,68,0.1));color:#f87171;border-color:rgba(239,68,68,0.3)}
 .li-bottom{padding:12px 16px;background:rgba(30,58,79,0.2)}
 .li-btn{padding:12px 20px;background:linear-gradient(135deg,#14B8A6,#0d9488);color:#0c1520;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;width:100%}
 .li-btn:hover{transform:translateY(-1px)}
@@ -721,15 +714,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div class="hd">
 ${posterUrl ? `<img src="${posterUrl}" alt="${title}" class="ps">` : ""}
 <div>
-<div class="tt">${title.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+<div class="tt">${title}</div>
 <div class="tg">${mediaType === "movie" ? "Film" : "Série"}</div>
 </div>
-</div>
-
-<div class="sec-title" style="margin-top:0;margin-bottom:16px">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-Liens directs
-<span class="badge" id="internalCount">...</span>
 </div>
 
 <div id="${ids.linksContainer}"></div>
@@ -803,12 +790,7 @@ Recherche de sources externes...
 
 <script>
 (function(){
-try{
-console.log("[v0] Download page script starting...");
-
-var _lks=JSON.parse("${linksJson}");
-console.log("[v0] Links parsed successfully:", _lks.length, "links");
-
+var _lks=${linksJson};
 var _u="${adUrl}";
 var _i="${adId}";
 var _h=${hasAds};
@@ -824,10 +806,7 @@ var _episodeNum=${episodeNumber !== undefined ? episodeNumber : "null"};
 var _wwId="${wwId}";
 var _allExtLinks=[];
 
-console.log("[v0] Variables initialized");
-
 function _renderLink(l){
-console.log("[v0] Rendering link:", l);
 var ep="";
 if(_isSeries){
 if(l.is_full_season){ep='<span class="li-ep">Saison '+l.season_number+' Complete</span>';}
@@ -838,52 +817,14 @@ var release=l.release_name||l.source_name||"Téléchargement";
 var url=l.source_url||l.download_url||"";
 if(url&&!url.startsWith("http")){url="https://"+url;}
 
-var releaseLower=release.toLowerCase();
-
-// Quality detection
-var quality=l.quality||"";
-if(!quality){
-var qMatch=release.match(/(2160p|4K|UHD|1080p|FHD|720p|HD|480p|HDTV|WEB-?DL|WEBRip|BluRay|BDRip|DVDRip|HDRip|CAM|TS|HDCAM)/i);
-if(qMatch)quality=qMatch[1].toUpperCase();
-}
-
-// Language detection
-var lang=l.language||"";
-if(!lang){
-var lMatch=release.match(/(MULTI|TRUEFRENCH|FRENCH|VFF|VF2|VFQ|VF|VOSTFR|VO|ENGLISH|ENG|GERMAN|SPANISH|ITALIAN)/i);
-if(lMatch)lang=lMatch[1].toUpperCase();
-}
-
-// Video codec detection
-var videoCodec="";
-var vcMatch=release.match(/(x264|x265|H264|H265|HEVC|AVC|XVID|DIVX|AV1|VP9|MPEG)/i);
-if(vcMatch)videoCodec=vcMatch[1].toUpperCase();
-
-// Audio codec detection
-var audioCodec="";
-var acMatch=release.match(/(AAC|AC3|EAC3|DTS|DTSHD|ATMOS|TrueHD|FLAC|MP3|DD51|DD71|DD|51|71)/i);
-if(acMatch)audioCodec=acMatch[1].toUpperCase();
-
-// File size - simplified regex without problematic escapes
-var fileSize=l.file_size||"";
-if(!fileSize){
-var sizePatterns=release.match(/([0-9]+[.]?[0-9]*).?(GB|MB|TB|Go|Mo|To)/i);
-if(sizePatterns)fileSize=sizePatterns[1]+" "+sizePatterns[2].toUpperCase();
-}
-
-// Host/source detection
-var host="";
-var hostMatch=release.match(/(1fichier|Uptobox|Rapidgator|Turbobit|Nitroflare|Uploaded|Mega|MediaFire|GoogleDrive|Streamtape)/i);
-if(hostMatch)host=hostMatch[1];
-
-// Build metadata badges
 var meta='<div class="li-meta">';
-if(quality)meta+='<span class="li-tag quality">'+quality+'</span>';
-if(lang)meta+='<span class="li-tag lang">'+lang+'</span>';
-if(videoCodec)meta+='<span class="li-tag video">'+videoCodec+'</span>';
-if(audioCodec)meta+='<span class="li-tag audio">'+audioCodec+'</span>';
-if(fileSize)meta+='<span class="li-tag size">'+fileSize+'</span>';
-if(host)meta+='<span class="li-tag host">'+host+'</span>';
+if(l.quality)meta+='<span class="li-tag quality">'+l.quality+'</span>';
+if(l.resolution)meta+='<span class="li-tag resolution">'+l.resolution+'</span>';
+if(l.language)meta+='<span class="li-tag language">'+l.language.toUpperCase()+'</span>';
+if(l.video_codec)meta+='<span class="li-tag video-codec">'+l.video_codec.toUpperCase()+'</span>';
+if(l.audio_codec)meta+='<span class="li-tag audio-codec">'+l.audio_codec.toUpperCase()+'</span>';
+if(l.file_size)meta+='<span class="li-tag size">'+l.file_size+'</span>';
+if(l.source_type)meta+='<span class="li-tag source">'+l.source_type+'</span>';
 meta+='</div>';
 
 var btnText=url?'Télécharger':'Lien indisponible';
@@ -893,22 +834,12 @@ return '<div class="li"><div class="li-top"><div class="li-header">'+ep+'<div cl
 }
 
 function _renderLinks(){
-console.log("[v0] _renderLinks called");
 var c=document.getElementById(_ids.linksContainer);
-var countBadge=document.getElementById("internalCount");
-console.log("[v0] Links container element:", c);
-if(!c){console.error("[v0] ERROR: Links container not found with id:", _ids.linksContainer);return;}
-if(_lks.length===0){
-c.innerHTML='<div class="em">Aucun lien direct disponible</div>';
-if(countBadge)countBadge.textContent="0";
-console.log("[v0] No internal links available");
-return;
-}
-if(countBadge)countBadge.textContent=_lks.length;
+if(!c)return;
+if(_lks.length===0){c.innerHTML='<div class="em">Aucun lien direct disponible</div>';return;}
 var html='';
 for(var i=0;i<_lks.length;i++){html+=_renderLink(_lks[i]);}
 c.innerHTML=html;
-console.log("[v0] Links HTML rendered successfully");
 _bindBtns();
 }
 
@@ -1191,15 +1122,8 @@ if(result){result.style.display="block";result.innerHTML='<div style="color:#ef4
 });
 }
 
-console.log("[v0] Calling _renderLinks()");
 _renderLinks();
-console.log("[v0] Calling _loadExternal()");
 _loadExternal();
-console.log("[v0] Script execution complete");
-}catch(err){
-console.error("[v0] CRITICAL ERROR in download script:", err);
-document.body.innerHTML='<div style="color:red;padding:20px">Erreur: '+err.message+'</div>';
-}
 })();
 </script>
 </body>
