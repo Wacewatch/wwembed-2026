@@ -118,25 +118,43 @@ export function StatsViewer() {
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
 
       // Get views from last hour
-      const { data: recentViews } = await supabase
+      const { data: recentViews, error } = await supabase
         .from("embed_views")
         .select("ip_hash, viewed_at, ww_id, media_type, tmdb_id")
         .gte("viewed_at", oneHourAgo)
         .order("viewed_at", { ascending: false })
 
-      // Count unique IPs per timeframe
-      const uniqueIps5min = new Set(
-        recentViews?.filter((v: any) => v.viewed_at >= fiveMinAgo).map((v: any) => v.ip_hash),
-      ).size
-      const uniqueIps15min = new Set(
-        recentViews?.filter((v: any) => v.viewed_at >= fifteenMinAgo).map((v: any) => v.ip_hash),
-      ).size
-      const uniqueIps1hour = new Set(recentViews?.map((v: any) => v.ip_hash)).size
+      console.log("[v0] Recent views count:", recentViews?.length, "Error:", error)
+      console.log("[v0] Time ranges - 5min:", fiveMinAgo, "15min:", fifteenMinAgo, "1hour:", oneHourAgo)
+
+      const views5min = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(fiveMinAgo)) || []
+      const views15min = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(fifteenMinAgo)) || []
+
+      console.log(
+        "[v0] Views in 5min:",
+        views5min.length,
+        "Views in 15min:",
+        views15min.length,
+        "Views in 1hour:",
+        recentViews?.length,
+      )
+
+      const uniqueIps5min =
+        new Set(views5min.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size || views5min.length // If no ip_hash, count views
+
+      const uniqueIps15min =
+        new Set(views15min.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size || views15min.length
+
+      const uniqueIps1hour =
+        new Set(recentViews?.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size ||
+        recentViews?.length ||
+        0
+
+      console.log("[v0] Unique IPs - 5min:", uniqueIps5min, "15min:", uniqueIps15min, "1hour:", uniqueIps1hour)
 
       // Get most active pages in last 15 min
-      const recent15min = recentViews?.filter((v: any) => v.viewed_at >= fifteenMinAgo) || []
       const pageCount: Record<string, { count: number; tmdb_id?: number; media_type?: string }> = {}
-      recent15min.forEach((v: any) => {
+      views15min.forEach((v: any) => {
         if (v.ww_id) {
           if (!pageCount[v.ww_id]) {
             pageCount[v.ww_id] = { count: 0, tmdb_id: v.tmdb_id, media_type: v.media_type }
