@@ -200,8 +200,18 @@ export function BugReportsManager() {
                       </td>
                       <td className="py-3 px-2 max-w-[200px] truncate">{report.message}</td>
                       <td className="py-3 px-2">{getStatusBadge(report.status)}</td>
-                      <td className="py-3 px-2 text-muted-foreground">
-                        {new Date(report.created_at).toLocaleDateString("fr-FR")}
+                      <td className="py-3 px-2 text-muted-foreground text-xs">
+                        {new Date(report.created_at).toLocaleDateString("fr-FR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}{" "}
+                        <span className="text-muted-foreground/60">
+                          {new Date(report.created_at).toLocaleTimeString("fr-FR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
                       </td>
                       <td className="py-3 px-2">
                         <Button

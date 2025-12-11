@@ -148,387 +148,220 @@ const themeConfigs: Record<string, { bg: string; header: string; card: string; g
     card: "bg-rose-900/30 border-rose-500/30",
     glow: "shadow-rose-500/30",
   },
-  "neon-blue": {
-    bg: "from-black via-slate-950 to-black",
-    header: "bg-blue-500/10 backdrop-blur-xl border-b border-blue-500/30",
-    card: "bg-black/50 border-blue-500/50 shadow-lg shadow-blue-500/20",
-    glow: "shadow-blue-500/50",
-  },
-  "neon-green": {
-    bg: "from-black via-slate-950 to-black",
-    header: "bg-green-500/10 backdrop-blur-xl border-b border-green-500/30",
-    card: "bg-black/50 border-green-500/50 shadow-lg shadow-green-500/20",
-    glow: "shadow-green-500/50",
-  },
-  "neon-pink": {
-    bg: "from-black via-slate-950 to-black",
-    header: "bg-pink-500/10 backdrop-blur-xl border-b border-pink-500/30",
-    card: "bg-black/50 border-pink-500/50 shadow-lg shadow-pink-500/20",
-    glow: "shadow-pink-500/50",
-  },
-  matrix: {
-    bg: "from-black via-green-950/20 to-black",
-    header: "bg-green-500/5 backdrop-blur-xl border-b border-green-500/20",
-    card: "bg-black/80 border-green-500/30",
-    glow: "shadow-green-500/30",
-  },
-  cyberpunk: {
-    bg: "from-yellow-950/50 via-slate-950 to-pink-950/50",
-    header: "bg-yellow-500/10 backdrop-blur-xl border-b border-yellow-500/30",
-    card: "bg-black/50 border-yellow-500/30",
-    glow: "shadow-yellow-500/30",
-  },
-  aurora: {
-    bg: "from-green-950 via-blue-950 to-purple-950",
-    header: "bg-green-500/10 backdrop-blur-xl",
-    card: "bg-white/5 border-white/10 backdrop-blur-xl",
-    glow: "shadow-green-500/20",
-  },
 }
 
-const colorConfigs: Record<string, { primary: string; accent: string; button: string; ring: string; text: string }> = {
-  cyan: {
-    primary: "text-cyan-400",
-    accent: "border-cyan-500/30",
-    button: "bg-cyan-500 hover:bg-cyan-600",
-    ring: "ring-cyan-500/50",
-    text: "cyan",
-  },
+const colorSchemes: Record<
+  string,
+  { primary: string; button: string; ring: string; badge: string; accent: string; highlight: string }
+> = {
   blue: {
     primary: "text-blue-400",
-    accent: "border-blue-500/30",
-    button: "bg-blue-500 hover:bg-blue-600",
+    button: "from-blue-600 to-blue-500",
     ring: "ring-blue-500/50",
-    text: "blue",
-  },
-  green: {
-    primary: "text-green-400",
-    accent: "border-green-500/30",
-    button: "bg-green-500 hover:bg-green-600",
-    ring: "ring-green-500/50",
-    text: "green",
+    badge: "bg-blue-500/20 text-blue-400",
+    accent: "bg-blue-500",
+    highlight: "hover:bg-blue-500/10",
   },
   purple: {
     primary: "text-purple-400",
-    accent: "border-purple-500/30",
-    button: "bg-purple-500 hover:bg-purple-600",
+    button: "from-purple-600 to-purple-500",
     ring: "ring-purple-500/50",
-    text: "purple",
-  },
-  pink: {
-    primary: "text-pink-400",
-    accent: "border-pink-500/30",
-    button: "bg-pink-500 hover:bg-pink-600",
-    ring: "ring-pink-500/50",
-    text: "pink",
-  },
-  orange: {
-    primary: "text-orange-400",
-    accent: "border-orange-500/30",
-    button: "bg-orange-500 hover:bg-orange-600",
-    ring: "ring-orange-500/50",
-    text: "orange",
-  },
-  red: {
-    primary: "text-red-400",
-    accent: "border-red-500/30",
-    button: "bg-red-500 hover:bg-red-600",
-    ring: "ring-red-500/50",
-    text: "red",
-  },
-  yellow: {
-    primary: "text-yellow-400",
-    accent: "border-yellow-500/30",
-    button: "bg-yellow-500 hover:bg-yellow-600",
-    ring: "ring-yellow-500/50",
-    text: "yellow",
+    badge: "bg-purple-500/20 text-purple-400",
+    accent: "bg-purple-500",
+    highlight: "hover:bg-purple-500/10",
   },
   emerald: {
     primary: "text-emerald-400",
-    accent: "border-emerald-500/30",
-    button: "bg-emerald-500 hover:bg-emerald-600",
+    button: "from-emerald-600 to-emerald-500",
     ring: "ring-emerald-500/50",
-    text: "emerald",
-  },
-  teal: {
-    primary: "text-teal-400",
-    accent: "border-teal-500/30",
-    button: "bg-teal-500 hover:bg-teal-600",
-    ring: "ring-teal-500/50",
-    text: "teal",
-  },
-  indigo: {
-    primary: "text-indigo-400",
-    accent: "border-indigo-500/30",
-    button: "bg-indigo-500 hover:bg-indigo-600",
-    ring: "ring-indigo-500/50",
-    text: "indigo",
-  },
-  violet: {
-    primary: "text-violet-400",
-    accent: "border-violet-500/30",
-    button: "bg-violet-500 hover:bg-violet-600",
-    ring: "ring-violet-500/50",
-    text: "violet",
-  },
-  fuchsia: {
-    primary: "text-fuchsia-400",
-    accent: "border-fuchsia-500/30",
-    button: "bg-fuchsia-500 hover:bg-fuchsia-600",
-    ring: "ring-fuchsia-500/50",
-    text: "fuchsia",
+    badge: "bg-emerald-500/20 text-emerald-400",
+    accent: "bg-emerald-500",
+    highlight: "hover:bg-emerald-500/10",
   },
   rose: {
     primary: "text-rose-400",
-    accent: "border-rose-500/30",
-    button: "bg-rose-500 hover:bg-rose-600",
+    button: "from-rose-600 to-rose-500",
     ring: "ring-rose-500/50",
-    text: "rose",
+    badge: "bg-rose-500/20 text-rose-400",
+    accent: "bg-rose-500",
+    highlight: "hover:bg-rose-500/10",
   },
   amber: {
     primary: "text-amber-400",
-    accent: "border-amber-500/30",
-    button: "bg-amber-500 hover:bg-amber-600",
+    button: "from-amber-600 to-amber-500",
     ring: "ring-amber-500/50",
-    text: "amber",
+    badge: "bg-amber-500/20 text-amber-400",
+    accent: "bg-amber-500",
+    highlight: "hover:bg-amber-500/10",
+  },
+  cyan: {
+    primary: "text-cyan-400",
+    button: "from-cyan-600 to-cyan-500",
+    ring: "ring-cyan-500/50",
+    badge: "bg-cyan-500/20 text-cyan-400",
+    accent: "bg-cyan-500",
+    highlight: "hover:bg-cyan-500/10",
+  },
+  red: {
+    primary: "text-red-400",
+    button: "from-red-600 to-red-500",
+    ring: "ring-red-500/50",
+    badge: "bg-red-500/20 text-red-400",
+    accent: "bg-red-500",
+    highlight: "hover:bg-red-500/10",
+  },
+  orange: {
+    primary: "text-orange-400",
+    button: "from-orange-600 to-orange-500",
+    ring: "ring-orange-500/50",
+    badge: "bg-orange-500/20 text-orange-400",
+    accent: "bg-orange-500",
+    highlight: "hover:bg-orange-500/10",
   },
   lime: {
     primary: "text-lime-400",
-    accent: "border-lime-500/30",
-    button: "bg-lime-500 hover:bg-lime-600",
+    button: "from-lime-600 to-lime-500",
     ring: "ring-lime-500/50",
-    text: "lime",
+    badge: "bg-lime-500/20 text-lime-400",
+    accent: "bg-lime-500",
+    highlight: "hover:bg-lime-500/10",
+  },
+  teal: {
+    primary: "text-teal-400",
+    button: "from-teal-600 to-teal-500",
+    ring: "ring-teal-500/50",
+    badge: "bg-teal-500/20 text-teal-400",
+    accent: "bg-teal-500",
+    highlight: "hover:bg-teal-500/10",
+  },
+  indigo: {
+    primary: "text-indigo-400",
+    button: "from-indigo-600 to-indigo-500",
+    ring: "ring-indigo-500/50",
+    badge: "bg-indigo-500/20 text-indigo-400",
+    accent: "bg-indigo-500",
+    highlight: "hover:bg-indigo-500/10",
+  },
+  pink: {
+    primary: "text-pink-400",
+    button: "from-pink-600 to-pink-500",
+    ring: "ring-pink-500/50",
+    badge: "bg-pink-500/20 text-pink-400",
+    accent: "bg-pink-500",
+    highlight: "hover:bg-pink-500/10",
   },
   sky: {
     primary: "text-sky-400",
-    accent: "border-sky-500/30",
-    button: "bg-sky-500 hover:bg-sky-600",
+    button: "from-sky-600 to-sky-500",
     ring: "ring-sky-500/50",
-    text: "sky",
+    badge: "bg-sky-500/20 text-sky-400",
+    accent: "bg-sky-500",
+    highlight: "hover:bg-sky-500/10",
   },
-  slate: {
-    primary: "text-slate-400",
-    accent: "border-slate-500/30",
-    button: "bg-slate-500 hover:bg-slate-600",
-    ring: "ring-slate-500/50",
-    text: "slate",
-  },
-  gold: {
-    primary: "text-yellow-500",
-    accent: "border-yellow-600/30",
-    button: "bg-yellow-600 hover:bg-yellow-700",
-    ring: "ring-yellow-600/50",
-    text: "yellow",
-  },
-  coral: {
-    primary: "text-orange-400",
-    accent: "border-orange-400/30",
-    button: "bg-orange-400 hover:bg-orange-500",
-    ring: "ring-orange-400/50",
-    text: "orange",
-  },
-  mint: {
-    primary: "text-emerald-400",
-    accent: "border-emerald-400/30",
-    button: "bg-emerald-400 hover:bg-emerald-500",
-    ring: "ring-emerald-400/50",
-    text: "emerald",
-  },
-  lavender: {
-    primary: "text-purple-400",
-    accent: "border-purple-400/30",
-    button: "bg-purple-400 hover:bg-purple-500",
-    ring: "ring-purple-400/50",
-    text: "purple",
-  },
-  "neon-blue": {
-    primary: "text-blue-400",
-    accent: "border-blue-400/50",
-    button: "bg-blue-400 hover:bg-blue-500 shadow-lg shadow-blue-500/50",
-    ring: "ring-blue-400/70",
-    text: "blue",
-  },
-  "neon-green": {
-    primary: "text-green-400",
-    accent: "border-green-400/50",
-    button: "bg-green-400 hover:bg-green-500 shadow-lg shadow-green-500/50",
-    ring: "ring-green-400/70",
-    text: "green",
-  },
-  "neon-pink": {
-    primary: "text-pink-400",
-    accent: "border-pink-400/50",
-    button: "bg-pink-400 hover:bg-pink-500 shadow-lg shadow-pink-500/50",
-    ring: "ring-pink-400/70",
-    text: "pink",
-  },
-  "neon-yellow": {
-    primary: "text-yellow-400",
-    accent: "border-yellow-400/50",
-    button: "bg-yellow-400 hover:bg-yellow-500 shadow-lg shadow-yellow-500/50",
-    ring: "ring-yellow-400/70",
-    text: "yellow",
-  },
-  electric: {
-    primary: "text-cyan-400",
-    accent: "border-cyan-400/50",
-    button: "bg-cyan-400 hover:bg-cyan-500 shadow-lg shadow-cyan-500/50",
-    ring: "ring-cyan-400/70",
-    text: "cyan",
-  },
-  "sunset-orange": {
-    primary: "text-orange-500",
-    accent: "border-orange-500/30",
-    button: "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600",
-    ring: "ring-orange-500/50",
-    text: "orange",
-  },
-  "ocean-blue": {
-    primary: "text-blue-500",
-    accent: "border-blue-600/30",
-    button: "bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600",
-    ring: "ring-blue-600/50",
-    text: "blue",
-  },
-  "forest-green": {
-    primary: "text-green-600",
-    accent: "border-green-700/30",
-    button: "bg-gradient-to-r from-green-700 to-emerald-600 hover:from-green-800 hover:to-emerald-700",
-    ring: "ring-green-700/50",
-    text: "green",
+  fuchsia: {
+    primary: "text-fuchsia-400",
+    button: "from-fuchsia-600 to-fuchsia-500",
+    ring: "ring-fuchsia-500/50",
+    badge: "bg-fuchsia-500/20 text-fuchsia-400",
+    accent: "bg-fuchsia-500",
+    highlight: "hover:bg-fuchsia-500/10",
   },
 }
 
 const bannerConfigs: Record<string, string> = {
   none: "",
-  "gradient-blue": "bg-gradient-to-r from-blue-600 to-cyan-500",
-  "gradient-purple": "bg-gradient-to-r from-purple-600 to-pink-500",
-  "gradient-green": "bg-gradient-to-r from-green-600 to-emerald-500",
-  "gradient-orange": "bg-gradient-to-r from-orange-600 to-red-500",
-  "gradient-rainbow": "bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500",
-  "gradient-sunset": "bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500",
-  "gradient-aurora": "bg-gradient-to-r from-green-400 via-blue-500 to-purple-600",
-  "gradient-neon": "bg-gradient-to-r from-cyan-400 via-pink-500 to-yellow-400",
-  "pattern-dots": "bg-slate-800",
-  "pattern-grid": "bg-slate-800",
-  "pattern-waves": "bg-slate-800",
-  "anime-1": "bg-gradient-to-r from-pink-500 to-purple-500",
-  "anime-2": "bg-gradient-to-r from-blue-500 to-cyan-400",
-  "movie-1": "bg-gradient-to-r from-slate-800 to-slate-600",
-  gaming: "bg-gradient-to-r from-purple-600 via-pink-500 to-red-500",
-  music: "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500",
-  tech: "bg-gradient-to-r from-cyan-600 to-blue-600",
-}
-
-const roleBadges: Record<string, { label: string; color: string }> = {
-  admin: { label: "Admin", color: "bg-red-500/80 text-white" },
-  uploader: { label: "Uploader", color: "bg-amber-500/80 text-white" },
-  member: { label: "Membre", color: "bg-slate-600/80 text-white" },
+  "gradient-blue": "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600",
+  "gradient-sunset": "bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600",
+  "gradient-forest": "bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600",
+  "gradient-ocean": "bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600",
+  "gradient-fire": "bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600",
+  "gradient-night": "bg-gradient-to-r from-slate-800 via-purple-900 to-slate-800",
+  "gradient-aurora": "bg-gradient-to-r from-green-400 via-cyan-500 to-blue-600",
+  "gradient-candy": "bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400",
+  "gradient-mint": "bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400",
+  "gradient-berry": "bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600",
 }
 
 const avatarPresets: Record<string, string> = {
-  default: "/user-avatar-default.jpg",
-  "avatar-1": "/cool-avatar-blue-gamer.jpg",
-  "avatar-2": "/cool-avatar-purple-anime.jpg",
-  "avatar-3": "/cool-avatar-green-nature.jpg",
-  "avatar-4": "/cool-avatar-red-fire.jpg",
-  "avatar-5": "/cool-avatar-orange-sunset.jpg",
-  "avatar-6": "/cool-avatar-pink-cute.jpg",
-  "avatar-7": "/cool-avatar-cyan-tech.jpg",
-  "avatar-8": "/cool-avatar-yellow-electric.jpg",
-  "avatar-9": "/cool-avatar-dark-mysterious.jpg",
-  "avatar-10": "/cool-avatar-white-minimal.jpg",
-  "avatar-11": "/cool-avatar-neon-cyberpunk.jpg",
-  "avatar-12": "/cool-avatar-retro-vintage.jpg",
-  "gamer-1": "/gamer-avatar-headset.jpg",
-  "gamer-2": "/gamer-avatar-controller.jpg",
+  default: "/diverse-avatars.png",
+  anime1: "https://i.pravatar.cc/150?img=1",
+  anime2: "https://i.pravatar.cc/150?img=2",
+  anime3: "https://i.pravatar.cc/150?img=3",
+  gamer: "https://i.pravatar.cc/150?img=4",
+  minimal: "https://i.pravatar.cc/150?img=5",
+}
+
+const roleBadges: Record<string, { label: string; color: string; icon: string }> = {
+  admin: { label: "Admin", color: "bg-red-500/20 text-red-400 border border-red-500/30", icon: "shield" },
+  vip: { label: "VIP", color: "bg-amber-500/20 text-amber-400 border border-amber-500/30", icon: "star" },
+  premium: {
+    label: "Premium",
+    color: "bg-purple-500/20 text-purple-400 border border-purple-500/30",
+    icon: "crown",
+  },
+  member: { label: "Membre", color: "bg-slate-500/20 text-slate-400 border border-slate-500/30", icon: "user" },
 }
 
 async function getProfile(username: string) {
-  try {
-    const supabase = createAdminClient()
-    const { data: profile, error } = await supabase.from("profiles").select("*").eq("username", username).single()
-    if (error || !profile) return null
-    return profile
-  } catch {
-    return null
-  }
+  const supabase = await createAdminClient()
+  const { data: profile, error } = await supabase.from("profiles").select("*").eq("username", username).single()
+  if (error || !profile) return null
+  return profile
 }
 
 async function getProfileSettings(userId: string) {
-  try {
-    const supabase = createAdminClient()
-    const { data } = await supabase.from("profile_settings").select("*").eq("user_id", userId).single()
-    return data
-  } catch {
-    return null
-  }
+  const supabase = await createAdminClient()
+  const { data } = await supabase.from("profile_settings").select("*").eq("user_id", userId).single()
+  return data
 }
 
 async function getUserLinks(userId: string) {
-  try {
-    const supabase = createAdminClient()
+  const supabase = await createAdminClient()
 
-    const fetchAllRows = async (table: string, filters: Record<string, any>) => {
-      const allRows: any[] = []
-      const pageSize = 1000
-      let page = 0
-      let hasMore = true
+  const [downloadsRes, streamingRes, digitalRes, liveTVRes] = await Promise.all([
+    supabase
+      .from("download_links")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "approved")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("streaming_links")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "approved")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("digital_content")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "approved")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("live_tv_channels")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "approved")
+      .order("created_at", { ascending: false }),
+  ])
 
-      while (hasMore) {
-        let query = supabase
-          .from(table)
-          .select("*")
-          .order("created_at", { ascending: false })
-          .range(page * pageSize, (page + 1) * pageSize - 1)
-
-        // Apply filters
-        for (const [key, value] of Object.entries(filters)) {
-          query = query.eq(key, value)
-        }
-
-        const { data, error } = await query
-
-        if (error || !data || data.length === 0) {
-          hasMore = false
-        } else {
-          allRows.push(...data)
-          if (data.length < pageSize) {
-            hasMore = false
-          } else {
-            page++
-          }
-        }
-      }
-
-      return allRows
-    }
-
-    const [downloads, streaming, digital, liveTV] = await Promise.all([
-      fetchAllRows("download_links", { submitted_by: userId, status: "approved", is_active: true }),
-      fetchAllRows("streaming_links", { submitted_by: userId, status: "approved", is_active: true }),
-      fetchAllRows("digital_content", { submitted_by: userId, status: "approved", is_active: true }),
-      fetchAllRows("live_tv_channels", { submitted_by: userId, status: "approved", is_active: true }),
-    ])
-
-    return {
-      downloads,
-      streaming,
-      digital,
-      liveTV,
-    }
-  } catch {
-    return { downloads: [], streaming: [], digital: [], liveTV: [] }
+  return {
+    downloads: downloadsRes.data || [],
+    streaming: streamingRes.data || [],
+    digital: digitalRes.data || [],
+    liveTV: liveTVRes.data || [],
   }
 }
 
 async function getTmdbInfo(tmdbId: number, mediaType: string) {
+  if (!tmdbId || !mediaType) return null
   try {
     const apiKey = process.env.TMDB_API_KEY
     if (!apiKey) return null
-
-    const url = `https://api.themoviedb.org/3/${mediaType}/${tmdbId}?api_key=${apiKey}&language=fr-FR`
-    const res = await fetch(url, { next: { revalidate: 86400 } })
+    const type = mediaType === "movie" ? "movie" : "tv"
+    const res = await fetch(`https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${apiKey}&language=fr-FR`, {
+      next: { revalidate: 86400 },
+    })
     if (!res.ok) return null
     return res.json()
   } catch {
@@ -545,7 +378,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const [settings, links] = await Promise.all([getProfileSettings(profile.id), getUserLinks(profile.id)])
 
   const theme = themeConfigs[settings?.theme || "dark"] || themeConfigs.dark
-  const color = colorConfigs[settings?.primary_color || "cyan"] || colorConfigs.cyan
+  const color = colorSchemes[settings?.color_scheme || "blue"] || colorSchemes.blue
   const role = roleBadges[profile.role || "member"] || roleBadges.member
   const bannerClass = bannerConfigs[settings?.banner_preset || "none"] || ""
 
@@ -586,187 +419,336 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     })
   }
 
+  // Stats for header
+  const stats = {
+    downloads: links.downloads.length,
+    streaming: links.streaming.length,
+    digital: links.digital.length,
+    liveTV: links.liveTV.length,
+  }
+
   return (
     <div className={`min-h-screen bg-gradient-to-br ${theme.bg}`}>
-      {/* Bannière */}
-      {(settings?.banner_url || bannerClass) && (
-        <div className={`h-48 w-full ${bannerClass} relative overflow-hidden`}>
-          {settings?.banner_url ? (
-            <Image src={settings.banner_url || "/placeholder.svg"} alt="Bannière" fill className="object-cover" />
-          ) : (
-            <div className="absolute inset-0 opacity-30">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-            </div>
-          )}
-        </div>
-      )}
+      {/* Bannière avec effet parallax */}
+      <div className="relative h-64 overflow-hidden">
+        {settings?.banner_url ? (
+          <Image
+            src={settings.banner_url || "/placeholder.svg"}
+            alt="Bannière"
+            fill
+            className="object-cover"
+            priority
+          />
+        ) : bannerClass ? (
+          <div className={`absolute inset-0 ${bannerClass}`} />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent" />
 
-      {/* Header */}
-      <div
-        className={`${theme.header} backdrop-blur-xl border-b border-white/5 ${settings?.banner_url || bannerClass ? "-mt-24 pt-24" : ""}`}
-      >
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div
-              className={`relative w-28 h-28 rounded-full overflow-hidden shadow-xl ${theme.glow || ""} ring-4 ${color.ring}`}
-            >
-              <Image
-                src={avatarUrl || "/placeholder.svg"}
-                alt={profile.username || "Avatar"}
-                fill
-                className="object-cover"
+        {/* Effet de grille */}
+        <div className="absolute inset-0 opacity-10">
+          <div
+            className="h-full w-full"
+            style={{
+              backgroundImage: `linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px)`,
+              backgroundSize: "50px 50px",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Header avec avatar */}
+      <div className="relative max-w-6xl mx-auto px-4 -mt-32">
+        <div className={`${theme.header} backdrop-blur-2xl rounded-3xl border border-white/10 p-8 shadow-2xl`}>
+          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
+            {/* Avatar */}
+            <div className="relative group">
+              <div
+                className={`absolute -inset-1 rounded-full bg-gradient-to-r ${color.button} opacity-75 blur-lg group-hover:opacity-100 transition-opacity`}
               />
-            </div>
-            <div className="text-center md:text-left">
-              <div className="flex items-center gap-3 justify-center md:justify-start flex-wrap">
-                <h1 className="text-3xl font-bold text-white">{profile.username}</h1>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${role.color}`}>{role.label}</span>
+              <div className={`relative w-32 h-32 rounded-full overflow-hidden ring-4 ${color.ring} shadow-2xl`}>
+                <Image
+                  src={avatarUrl || "/placeholder.svg"}
+                  alt={profile.username || "Avatar"}
+                  fill
+                  className="object-cover"
+                />
               </div>
-              {settings?.bio && <p className="text-slate-300 mt-2 max-w-lg">{settings.bio}</p>}
-              <div className="flex items-center gap-4 mt-3 text-sm text-slate-400 justify-center md:justify-start flex-wrap">
-                <span>
+              {/* Badge rôle sur avatar */}
+              <div
+                className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold ${role.color} shadow-lg`}
+              >
+                {role.label}
+              </div>
+            </div>
+
+            {/* Info utilisateur */}
+            <div className="flex-1 text-center lg:text-left space-y-4">
+              <div>
+                <h1 className="text-4xl font-bold text-white tracking-tight">{profile.username}</h1>
+                {settings?.bio && (
+                  <p className="text-slate-300 mt-2 max-w-2xl text-lg leading-relaxed">{settings.bio}</p>
+                )}
+              </div>
+
+              {/* Stats badges */}
+              <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
+                {stats.downloads > 0 && (
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${color.badge} backdrop-blur-sm`}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
+                    <span className="font-semibold">{stats.downloads}</span>
+                    <span className="opacity-75">Downloads</span>
+                  </div>
+                )}
+                {stats.streaming > 0 && (
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${color.badge} backdrop-blur-sm`}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <span className="font-semibold">{stats.streaming}</span>
+                    <span className="opacity-75">Streaming</span>
+                  </div>
+                )}
+                {stats.digital > 0 && (
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${color.badge} backdrop-blur-sm`}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                      />
+                    </svg>
+                    <span className="font-semibold">{stats.digital}</span>
+                    <span className="opacity-75">Digital</span>
+                  </div>
+                )}
+                {stats.liveTV > 0 && (
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${color.badge} backdrop-blur-sm`}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span className="font-semibold">{stats.liveTV}</span>
+                    <span className="opacity-75">TV Live</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Meta info */}
+              <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400 justify-center lg:justify-start">
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
                   Membre depuis{" "}
                   {new Date(profile.created_at).toLocaleDateString("fr-FR", { year: "numeric", month: "long" })}
                 </span>
-                {(settings?.show_stats ?? true) && <span className={color.primary}>{totalLinks} liens partagés</span>}
+                {(settings?.show_stats ?? true) && (
+                  <span className={`${color.primary} font-medium`}>{totalLinks} liens partagés</span>
+                )}
               </div>
+
               {/* Liens sociaux */}
-              <div className="flex gap-3 mt-4 justify-center md:justify-start">
-                {settings?.social_twitter && (
-                  <a
-                    href={`https://twitter.com/${settings.social_twitter.replace("@", "")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`${color.primary} hover:underline text-sm`}
-                  >
-                    Twitter
-                  </a>
-                )}
-                {settings?.social_discord && (
-                  <span className="text-slate-400 text-sm">Discord: {settings.social_discord}</span>
-                )}
-                {settings?.social_website && (
-                  <a
-                    href={settings.social_website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`${color.primary} hover:underline text-sm`}
-                  >
-                    Site web
-                  </a>
-                )}
-              </div>
+              {(settings?.social_twitter || settings?.social_discord || settings?.social_website) && (
+                <div className="flex gap-4 justify-center lg:justify-start pt-2">
+                  {settings?.social_twitter && (
+                    <a
+                      href={`https://twitter.com/${settings.social_twitter.replace("@", "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 ${color.highlight} transition-colors`}
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                      </svg>
+                      <span className="text-sm">Twitter</span>
+                    </a>
+                  )}
+                  {settings?.social_discord && (
+                    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5`}>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z" />
+                      </svg>
+                      <span className="text-sm text-slate-400">{settings.social_discord}</span>
+                    </div>
+                  )}
+                  {settings?.social_website && (
+                    <a
+                      href={settings.social_website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 ${color.highlight} transition-colors`}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                        />
+                      </svg>
+                      <span className="text-sm">Site web</span>
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Contenu */}
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">
         {totalLinks === 0 ? (
-          <div className={`rounded-xl border ${theme.card} p-12 text-center`}>
-            <p className="text-slate-400 text-lg">Cet utilisateur n&apos;a pas encore partagé de liens.</p>
+          <div className={`rounded-3xl border ${theme.card} p-16 text-center backdrop-blur-xl`}>
+            <div className={`w-20 h-20 mx-auto mb-6 rounded-full ${color.badge} flex items-center justify-center`}>
+              <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                />
+              </svg>
+            </div>
+            <p className="text-slate-400 text-xl">Cet utilisateur n&apos;a pas encore partagé de liens.</p>
           </div>
         ) : (
           <>
             {/* Téléchargements */}
             {links.downloads.length > 0 && (
-              <section>
-                <h2 className={`text-xl font-bold ${color.primary} mb-4 flex items-center gap-2`}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                    />
-                  </svg>
-                  Téléchargements ({links.downloads.length})
-                </h2>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <section className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl ${color.badge} flex items-center justify-center`}>
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Téléchargements</h2>
+                    <p className="text-slate-400">{links.downloads.length} fichiers disponibles</p>
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {links.downloads.map((link) => {
                     const tmdbKey = `${link.media_type}-${link.tmdb_id}`
                     const info = tmdbInfoMap[tmdbKey]
                     return (
                       <div
                         key={link.id}
-                        className={`rounded-xl border ${theme.card} ${theme.glow ? `shadow-lg ${theme.glow}` : ""} overflow-hidden transition-transform hover:scale-[1.02]`}
+                        className={`group relative rounded-2xl border ${theme.card} overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${theme.glow ? theme.glow : ""}`}
                       >
-                        <div className="flex gap-4 p-4">
-                          {info?.poster_path && (
+                        {/* Image de fond floue */}
+                        {info?.backdrop_path && (
+                          <div className="absolute inset-0 opacity-20">
                             <Image
-                              src={`https://image.tmdb.org/t/p/w92${info.poster_path}`}
-                              alt={info.title || info.name}
-                              width={60}
-                              height={90}
-                              className="rounded-lg flex-shrink-0"
+                              src={`https://image.tmdb.org/t/p/w300${info.backdrop_path}`}
+                              alt=""
+                              fill
+                              className="object-cover blur-sm"
                             />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-white truncate">
-                              {info?.title || info?.name || `TMDB ${link.tmdb_id}`}
-                            </h3>
-                            <p className="text-xs text-slate-400 capitalize">
-                              {link.media_type === "movie" ? "Film" : "Série"}
-                              {link.season_number && ` - S${link.season_number}`}
-                              {link.episode_number && `E${link.episode_number}`}
-                            </p>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {link.quality && (
-                                <span className="px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 rounded text-[10px] font-medium">
-                                  {link.quality}
-                                </span>
-                              )}
-                              {link.resolution && (
-                                <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded text-[10px] font-medium">
-                                  {link.resolution}
-                                </span>
-                              )}
-                              {link.codec_video && (
-                                <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded text-[10px] font-medium">
-                                  {link.codec_video}
-                                </span>
-                              )}
-                              {link.codec_audio && (
-                                <span className="px-1.5 py-0.5 bg-pink-500/20 text-pink-400 rounded text-[10px] font-medium">
-                                  {link.codec_audio}
-                                </span>
-                              )}
-                              {link.language && (
-                                <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium">
-                                  {link.language}
-                                </span>
-                              )}
-                              {link.subtitle && (
-                                <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded text-[10px] font-medium">
-                                  ST: {link.subtitle}
-                                </span>
-                              )}
-                              {link.file_size && (
-                                <span className="px-1.5 py-0.5 bg-slate-500/20 text-slate-400 rounded text-[10px] font-medium">
-                                  {link.file_size}
-                                </span>
-                              )}
-                              {link.has_audio_description && (
-                                <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded text-[10px] font-medium">
-                                  AD
-                                </span>
-                              )}
-                            </div>
-                            {link.release_name && (
-                              <p className="text-[10px] text-slate-500 mt-1 truncate" title={link.release_name}>
-                                {link.release_name}
-                              </p>
-                            )}
                           </div>
-                        </div>
-                        <div className="px-4 pb-4">
-                          <ProfileLinkButton
-                            url={link.source_url}
-                            label="Télécharger"
-                            type="download"
-                            colorClass={color.button}
-                          />
+                        )}
+                        <div className="relative p-4">
+                          <div className="flex gap-4">
+                            {info?.poster_path ? (
+                              <div className="relative w-16 h-24 rounded-xl overflow-hidden shadow-lg flex-shrink-0 ring-2 ring-white/10">
+                                <Image
+                                  src={`https://image.tmdb.org/t/p/w154${info.poster_path}`}
+                                  alt={info.title || info.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div
+                                className={`w-16 h-24 rounded-xl flex-shrink-0 bg-gradient-to-br ${color.button} flex items-center justify-center`}
+                              >
+                                <svg
+                                  className="w-8 h-8 text-white/60"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"
+                                  />
+                                </svg>
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0 space-y-2">
+                              <h3 className="font-bold text-white truncate text-sm">
+                                {info?.title || info?.name || `TMDB ${link.tmdb_id}`}
+                              </h3>
+                              <p className="text-xs text-slate-400">
+                                {link.media_type === "movie" ? "Film" : "Série"}
+                                {link.season_number && ` • S${link.season_number}`}
+                                {link.episode_number && `E${link.episode_number}`}
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                {link.quality && (
+                                  <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-full text-[10px] font-semibold">
+                                    {link.quality}
+                                  </span>
+                                )}
+                                {link.resolution && (
+                                  <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full text-[10px] font-semibold">
+                                    {link.resolution}
+                                  </span>
+                                )}
+                                {link.language && (
+                                  <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-[10px] font-semibold">
+                                    {link.language}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-4">
+                            <ProfileLinkButton
+                              url={link.source_url}
+                              label="Télécharger"
+                              type="download"
+                              colorClass={color.button}
+                            />
+                          </div>
                         </div>
                       </div>
                     )
@@ -777,78 +759,109 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
             {/* Streaming */}
             {links.streaming.length > 0 && (
-              <section>
-                <h2 className={`text-xl font-bold ${color.primary} mb-4 flex items-center gap-2`}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  Streaming ({links.streaming.length})
-                </h2>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <section className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl ${color.badge} flex items-center justify-center`}>
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Streaming</h2>
+                    <p className="text-slate-400">{links.streaming.length} liens disponibles</p>
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {links.streaming.map((link) => {
                     const tmdbKey = `${link.media_type}-${link.tmdb_id}`
                     const info = tmdbInfoMap[tmdbKey]
                     return (
                       <div
                         key={link.id}
-                        className={`rounded-xl border ${theme.card} ${theme.glow ? `shadow-lg ${theme.glow}` : ""} overflow-hidden transition-transform hover:scale-[1.02]`}
+                        className={`group relative rounded-2xl border ${theme.card} overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${theme.glow ? theme.glow : ""}`}
                       >
-                        <div className="flex gap-4 p-4">
-                          {info?.poster_path && (
+                        {info?.backdrop_path && (
+                          <div className="absolute inset-0 opacity-20">
                             <Image
-                              src={`https://image.tmdb.org/t/p/w92${info.poster_path}`}
-                              alt={info.title || info.name}
-                              width={60}
-                              height={90}
-                              className="rounded-lg flex-shrink-0"
+                              src={`https://image.tmdb.org/t/p/w300${info.backdrop_path}`}
+                              alt=""
+                              fill
+                              className="object-cover blur-sm"
                             />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-white truncate">
-                              {info?.title || info?.name || link.source_name}
-                            </h3>
-                            <p className="text-xs text-slate-400 capitalize">
-                              {link.media_type === "movie" ? "Film" : "Série"}
-                              {link.season_number && ` - S${link.season_number}`}
-                              {link.episode_number && `E${link.episode_number}`}
-                            </p>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {link.quality && (
-                                <span className="px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 rounded text-[10px] font-medium">
-                                  {link.quality}
-                                </span>
-                              )}
-                              {link.language && (
-                                <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium">
-                                  {link.language}
-                                </span>
-                              )}
-                              {link.source_name && (
-                                <span className="px-1.5 py-0.5 bg-slate-500/20 text-slate-400 rounded text-[10px] font-medium">
-                                  {link.source_name}
-                                </span>
-                              )}
+                          </div>
+                        )}
+                        <div className="relative p-4">
+                          <div className="flex gap-4">
+                            {info?.poster_path ? (
+                              <div className="relative w-16 h-24 rounded-xl overflow-hidden shadow-lg flex-shrink-0 ring-2 ring-white/10">
+                                <Image
+                                  src={`https://image.tmdb.org/t/p/w154${info.poster_path}`}
+                                  alt={info.title || info.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div
+                                className={`w-16 h-24 rounded-xl flex-shrink-0 bg-gradient-to-br ${color.button} flex items-center justify-center`}
+                              >
+                                <svg
+                                  className="w-8 h-8 text-white/60"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                                  />
+                                </svg>
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0 space-y-2">
+                              <h3 className="font-bold text-white truncate text-sm">
+                                {info?.title || info?.name || link.source_name}
+                              </h3>
+                              <p className="text-xs text-slate-400">
+                                {link.media_type === "movie" ? "Film" : "Série"}
+                                {link.season_number && ` • S${link.season_number}`}
+                                {link.episode_number && `E${link.episode_number}`}
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                {link.quality && (
+                                  <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-full text-[10px] font-semibold">
+                                    {link.quality}
+                                  </span>
+                                )}
+                                {link.language && (
+                                  <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-[10px] font-semibold">
+                                    {link.language}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="px-4 pb-4">
-                          <ProfileLinkButton
-                            url={link.source_url}
-                            label="Regarder"
-                            type="streaming"
-                            colorClass={color.button}
-                          />
+                          <div className="mt-4">
+                            <ProfileLinkButton
+                              url={link.source_url}
+                              label="Regarder"
+                              type="streaming"
+                              colorClass={color.button}
+                            />
+                          </div>
                         </div>
                       </div>
                     )
@@ -859,103 +872,103 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
             {/* Contenu Digital */}
             {links.digital.length > 0 && (
-              <section>
-                <h2 className={`text-xl font-bold ${color.primary} mb-4 flex items-center gap-2`}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                    />
-                  </svg>
-                  Contenu Digital ({links.digital.length})
-                </h2>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <section className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl ${color.badge} flex items-center justify-center`}>
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Contenu Digital</h2>
+                    <p className="text-slate-400">{links.digital.length} contenus disponibles</p>
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {links.digital.map((content) => (
                     <div
                       key={content.id}
-                      className={`rounded-xl border ${theme.card} ${theme.glow ? `shadow-lg ${theme.glow}` : ""} overflow-hidden transition-transform hover:scale-[1.02]`}
+                      className={`group relative rounded-2xl border ${theme.card} overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${theme.glow ? theme.glow : ""}`}
                     >
-                      <div className="flex gap-4 p-4">
-                        {content.cover_url ? (
-                          <Image
-                            src={content.cover_url || "/placeholder.svg"}
-                            alt={content.title || "Couverture"}
-                            width={60}
-                            height={90}
-                            className="rounded-lg flex-shrink-0 object-cover"
-                          />
-                        ) : (
-                          <div
-                            className={`w-[60px] h-[90px] rounded-lg flex-shrink-0 bg-gradient-to-br ${color.button} flex items-center justify-center`}
-                          >
-                            <svg
-                              className="w-6 h-6 text-white/80"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
+                      <div className="relative p-4">
+                        <div className="flex gap-4">
+                          {content.cover_url ? (
+                            <div className="relative w-16 h-24 rounded-xl overflow-hidden shadow-lg flex-shrink-0 ring-2 ring-white/10">
+                              <Image
+                                src={content.cover_url || "/placeholder.svg"}
+                                alt={content.title || "Couverture"}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className={`w-16 h-24 rounded-xl flex-shrink-0 bg-gradient-to-br ${color.button} flex items-center justify-center`}
                             >
-                              {content.content_type === "ebook" ? (
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                                />
-                              ) : content.content_type === "music" ? (
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
-                                />
-                              ) : (
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                                />
+                              <svg
+                                className="w-8 h-8 text-white/60"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                {content.content_type === "ebook" ? (
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                                  />
+                                ) : content.content_type === "music" ? (
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+                                  />
+                                ) : (
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                  />
+                                )}
+                              </svg>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0 space-y-2">
+                            <h3 className="font-bold text-white truncate text-sm">{content.title}</h3>
+                            <p className="text-xs text-slate-400 capitalize">{content.content_type}</p>
+                            <div className="flex flex-wrap gap-1">
+                              {content.version && (
+                                <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-full text-[10px] font-semibold">
+                                  v{content.version}
+                                </span>
                               )}
-                            </svg>
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-white truncate">{content.title}</h3>
-                          <p className="text-xs text-slate-400 capitalize">{content.content_type}</p>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {content.version && (
-                              <span className="px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 rounded text-[10px] font-medium">
-                                v{content.version}
-                              </span>
-                            )}
-                            {content.file_size && (
-                              <span className="px-1.5 py-0.5 bg-slate-500/20 text-slate-400 rounded text-[10px] font-medium">
-                                {content.file_size}
-                              </span>
-                            )}
-                            {content.content_type && (
-                              <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded text-[10px] font-medium uppercase">
-                                {content.content_type}
-                              </span>
+                              {content.file_size && (
+                                <span className="px-2 py-0.5 bg-slate-500/20 text-slate-400 rounded-full text-[10px] font-semibold">
+                                  {content.file_size}
+                                </span>
+                              )}
+                            </div>
+                            {content.author && (
+                              <p className="text-[10px] text-slate-500 truncate">par {content.author}</p>
                             )}
                           </div>
-                          {content.author && (
-                            <p className="text-[10px] text-slate-500 mt-1 truncate">par {content.author}</p>
-                          )}
-                          {content.description && (
-                            <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">{content.description}</p>
-                          )}
                         </div>
-                      </div>
-                      <div className="px-4 pb-4">
-                        <ProfileLinkButton
-                          url={content.download_url || content.read_url}
-                          label={content.download_url ? "Télécharger" : "Lire"}
-                          type="digital"
-                          colorClass={color.button}
-                        />
+                        <div className="mt-4">
+                          <ProfileLinkButton
+                            url={content.download_url || content.read_url}
+                            label={content.download_url ? "Télécharger" : "Lire"}
+                            type="digital"
+                            colorClass={color.button}
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -963,41 +976,48 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               </section>
             )}
 
-            {/* Chaînes TV */}
+            {/* Chaînes TV - Sans bouton Regarder */}
             {links.liveTV.length > 0 && (
-              <section>
-                <h2 className={`text-xl font-bold ${color.primary} mb-4 flex items-center gap-2`}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Chaînes TV ({links.liveTV.length})
-                </h2>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <section className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl ${color.badge} flex items-center justify-center`}>
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Chaînes TV</h2>
+                    <p className="text-slate-400">{links.liveTV.length} chaînes disponibles</p>
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                   {links.liveTV.map((channel) => (
                     <div
                       key={channel.id}
-                      className={`rounded-xl border ${theme.card} ${theme.glow ? `shadow-lg ${theme.glow}` : ""} overflow-hidden transition-transform hover:scale-[1.02]`}
+                      className={`group relative rounded-2xl border ${theme.card} overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl ${theme.glow ? theme.glow : ""} p-4 text-center`}
                     >
-                      <div className="flex gap-4 p-4">
+                      {/* Logo chaîne */}
+                      <div className="flex justify-center mb-3">
                         {channel.channel_logo ? (
-                          <Image
-                            src={channel.channel_logo || "/placeholder.svg"}
-                            alt={channel.channel_name || "Logo"}
-                            width={60}
-                            height={60}
-                            className="rounded-lg flex-shrink-0 object-contain bg-white/10"
-                          />
+                          <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-white/10 p-2">
+                            <Image
+                              src={channel.channel_logo || "/placeholder.svg"}
+                              alt={channel.channel_name || "Logo"}
+                              fill
+                              className="object-contain"
+                            />
+                          </div>
                         ) : (
                           <div
-                            className={`w-[60px] h-[60px] rounded-lg flex-shrink-0 bg-gradient-to-br ${color.button} flex items-center justify-center`}
+                            className={`w-16 h-16 rounded-xl bg-gradient-to-br ${color.button} flex items-center justify-center`}
                           >
                             <svg
-                              className="w-6 h-6 text-white/80"
+                              className="w-8 h-8 text-white/60"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -1005,51 +1025,32 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
-                                strokeWidth={2}
+                                strokeWidth={1.5}
                                 d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                               />
                             </svg>
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-white truncate">{channel.channel_name}</h3>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {channel.quality && (
-                              <span className="px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 rounded text-[10px] font-medium">
-                                {channel.quality}
-                              </span>
-                            )}
-                            {channel.language && (
-                              <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium">
-                                {channel.language}
-                              </span>
-                            )}
-                            {channel.country && (
-                              <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded text-[10px] font-medium">
-                                {channel.country}
-                              </span>
-                            )}
-                            {channel.category && (
-                              <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded text-[10px] font-medium">
-                                {channel.category}
-                              </span>
-                            )}
-                          </div>
-                        </div>
                       </div>
-                      <div className="px-4 pb-4">
-                        <ProfileLinkButton
-                          url={
-                            channel.stream_url
-                              ? channel.stream_url.startsWith("http")
-                                ? channel.stream_url
-                                : `https://${channel.stream_url}`
-                              : "#"
-                          }
-                          label="Regarder"
-                          type="live"
-                          colorClass={color.button}
-                        />
+                      {/* Nom chaîne */}
+                      <h3 className="font-semibold text-white text-sm truncate mb-2">{channel.channel_name}</h3>
+                      {/* Badges */}
+                      <div className="flex flex-wrap gap-1 justify-center">
+                        {channel.quality && (
+                          <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-full text-[10px] font-semibold">
+                            {channel.quality}
+                          </span>
+                        )}
+                        {channel.country && (
+                          <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full text-[10px] font-semibold">
+                            {channel.country}
+                          </span>
+                        )}
+                        {channel.category && (
+                          <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-full text-[10px] font-semibold">
+                            {channel.category}
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1061,11 +1062,15 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-6 text-center text-sm text-slate-500">
-        Propulsé par{" "}
-        <Link href="/" className={color.primary}>
-          WaveWatch
-        </Link>
+      <footer className="border-t border-white/5 py-8 mt-12">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <p className="text-sm text-slate-500">
+            Propulsé par{" "}
+            <Link href="/" className={`${color.primary} hover:underline font-medium`}>
+              WaveWatch
+            </Link>
+          </p>
+        </div>
       </footer>
     </div>
   )
