@@ -412,6 +412,42 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   const totalLinks = links.downloads.length + links.streaming.length + links.digital.length + links.liveTV.length
 
+  interface GroupedMedia {
+    tmdb_id: number
+    media_type: string
+    episodes: typeof links.downloads
+    info?: any
+  }
+
+  const groupLinksByMedia = (linksList: typeof links.downloads) => {
+    const grouped: Record<string, GroupedMedia> = {}
+    const standalone: typeof links.downloads = []
+
+    linksList.forEach((link) => {
+      // Only group TV series with episodes
+      if (link.media_type === "tv" && link.tmdb_id && (link.season_number || link.episode_number)) {
+        const key = `tv-${link.tmdb_id}`
+        if (!grouped[key]) {
+          grouped[key] = {
+            tmdb_id: link.tmdb_id,
+            media_type: "tv",
+            episodes: [],
+          }
+        }
+        grouped[key].episodes.push(link)
+      } else {
+        // Movies and standalone content
+        standalone.push(link)
+      }
+    })
+
+    return { grouped: Object.values(grouped), standalone }
+  }
+
+  // Group downloads and streaming by series
+  const groupedDownloads = groupLinksByMedia(links.downloads)
+  const groupedStreaming = groupLinksByMedia(links.streaming)
+
   // Get TMDB info
   const tmdbIds = new Set<string>()
   links.downloads.forEach((l) => l.tmdb_id && tmdbIds.add(`${l.media_type}-${l.tmdb_id}`))
@@ -443,6 +479,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     digital: links.digital.length,
     liveTV: links.liveTV.length,
   }
+
+  const uniqueMediaCount =
+    groupedDownloads.grouped.length +
+    groupedDownloads.standalone.length +
+    groupedStreaming.grouped.length +
+    groupedStreaming.standalone.length +
+    links.digital.length +
+    links.liveTV.length
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${theme.bg}`}>
@@ -590,7 +634,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   {new Date(profile.created_at).toLocaleDateString("fr-FR", { year: "numeric", month: "long" })}
                 </span>
                 {(settings?.show_stats ?? true) && (
-                  <span className={`${color.primary} font-medium`}>{totalLinks} liens partagés</span>
+                  <span className={`${color.primary} font-medium`}>{uniqueMediaCount} médias partagés</span>
                 )}
               </div>
 
@@ -613,7 +657,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   {settings?.social_discord && (
                     <div className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5`}>
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.4189 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z" />
+                        <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.4189 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189z" />
                       </svg>
                       <span className="text-sm text-slate-400">{settings.social_discord}</span>
                     </div>
@@ -677,11 +721,100 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-white">Téléchargements</h2>
-                    <p className="text-slate-400">{links.downloads.length} fichiers disponibles</p>
+                    <p className="text-slate-400">
+                      {groupedDownloads.grouped.length + groupedDownloads.standalone.length} médias (
+                      {links.downloads.length} fichiers)
+                    </p>
                   </div>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {links.downloads.map((link) => {
+                  {groupedDownloads.grouped.map((group) => {
+                    const tmdbKey = `tv-${group.tmdb_id}`
+                    const info = tmdbInfoMap[tmdbKey]
+                    // Sort episodes by season and episode number
+                    const sortedEpisodes = [...group.episodes].sort((a, b) => {
+                      if (a.season_number !== b.season_number) {
+                        return (a.season_number || 0) - (b.season_number || 0)
+                      }
+                      return (a.episode_number || 0) - (b.episode_number || 0)
+                    })
+                    // Get unique seasons
+                    const seasons = [...new Set(group.episodes.map((e) => e.season_number).filter(Boolean))]
+                    return (
+                      <div
+                        key={`grouped-${group.tmdb_id}`}
+                        className={`group relative rounded-2xl border ${theme.card} overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${theme.glow ? theme.glow : ""}`}
+                      >
+                        {info?.backdrop_path && (
+                          <div className="absolute inset-0 opacity-20">
+                            <Image
+                              src={`https://image.tmdb.org/t/p/w300${info.backdrop_path}`}
+                              alt=""
+                              fill
+                              className="object-cover blur-sm"
+                            />
+                          </div>
+                        )}
+                        <div className="relative p-4">
+                          <div className="flex gap-4">
+                            {info?.poster_path ? (
+                              <div className="relative w-16 h-24 rounded-xl overflow-hidden shadow-lg flex-shrink-0 ring-2 ring-white/10">
+                                <Image
+                                  src={`https://image.tmdb.org/t/p/w154${info.poster_path}`}
+                                  alt={info.title || info.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div
+                                className={`w-16 h-24 rounded-xl flex-shrink-0 bg-gradient-to-br ${color.button} flex items-center justify-center`}
+                              >
+                                <svg
+                                  className="w-8 h-8 text-white/60"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"
+                                  />
+                                </svg>
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0 space-y-2">
+                              <h3 className="font-bold text-white truncate text-sm">
+                                {info?.title || info?.name || `TMDB ${group.tmdb_id}`}
+                              </h3>
+                              <p className="text-xs text-slate-400">Série</p>
+                              <div className="flex flex-wrap gap-1">
+                                <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-full text-[10px] font-semibold">
+                                  {group.episodes.length} épisodes
+                                </span>
+                                {seasons.length > 0 && (
+                                  <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-full text-[10px] font-semibold">
+                                    {seasons.length === 1 ? `Saison ${seasons[0]}` : `${seasons.length} saisons`}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-4">
+                            <ProfileLinkButton
+                              url={`/download/ww-${group.tmdb_id}-tv`}
+                              label={`Voir ${group.episodes.length} épisodes`}
+                              variant="download"
+                              accentColor={`bg-gradient-to-r ${color.button}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {groupedDownloads.standalone.map((link) => {
                     const tmdbKey = `${link.media_type}-${link.tmdb_id}`
                     const info = tmdbInfoMap[tmdbKey]
                     return (
@@ -689,7 +822,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                         key={link.id}
                         className={`group relative rounded-2xl border ${theme.card} overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${theme.glow ? theme.glow : ""}`}
                       >
-                        {/* Image de fond floue */}
                         {info?.backdrop_path && (
                           <div className="absolute inset-0 opacity-20">
                             <Image
@@ -796,11 +928,92 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-white">Streaming</h2>
-                    <p className="text-slate-400">{links.streaming.length} liens disponibles</p>
+                    <p className="text-slate-400">
+                      {groupedStreaming.grouped.length + groupedStreaming.standalone.length} médias (
+                      {links.streaming.length} liens)
+                    </p>
                   </div>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {links.streaming.map((link) => {
+                  {groupedStreaming.grouped.map((group) => {
+                    const tmdbKey = `tv-${group.tmdb_id}`
+                    const info = tmdbInfoMap[tmdbKey]
+                    const seasons = [...new Set(group.episodes.map((e) => e.season_number).filter(Boolean))]
+                    return (
+                      <div
+                        key={`grouped-streaming-${group.tmdb_id}`}
+                        className={`group relative rounded-2xl border ${theme.card} overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${theme.glow ? theme.glow : ""}`}
+                      >
+                        {info?.backdrop_path && (
+                          <div className="absolute inset-0 opacity-20">
+                            <Image
+                              src={`https://image.tmdb.org/t/p/w300${info.backdrop_path}`}
+                              alt=""
+                              fill
+                              className="object-cover blur-sm"
+                            />
+                          </div>
+                        )}
+                        <div className="relative p-4">
+                          <div className="flex gap-4">
+                            {info?.poster_path ? (
+                              <div className="relative w-16 h-24 rounded-xl overflow-hidden shadow-lg flex-shrink-0 ring-2 ring-white/10">
+                                <Image
+                                  src={`https://image.tmdb.org/t/p/w154${info.poster_path}`}
+                                  alt={info.title || info.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div
+                                className={`w-16 h-24 rounded-xl flex-shrink-0 bg-gradient-to-br ${color.button} flex items-center justify-center`}
+                              >
+                                <svg
+                                  className="w-8 h-8 text-white/60"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                                  />
+                                </svg>
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0 space-y-2">
+                              <h3 className="font-bold text-white truncate text-sm">
+                                {info?.title || info?.name || `TMDB ${group.tmdb_id}`}
+                              </h3>
+                              <p className="text-xs text-slate-400">Série</p>
+                              <div className="flex flex-wrap gap-1">
+                                <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-full text-[10px] font-semibold">
+                                  {group.episodes.length} épisodes
+                                </span>
+                                {seasons.length > 0 && (
+                                  <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-full text-[10px] font-semibold">
+                                    {seasons.length === 1 ? `Saison ${seasons[0]}` : `${seasons.length} saisons`}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-4">
+                            <ProfileLinkButton
+                              url={`/streaming/ww-${group.tmdb_id}-tv`}
+                              label={`Voir ${group.episodes.length} épisodes`}
+                              variant="watch"
+                              accentColor={`bg-gradient-to-r ${color.button}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {groupedStreaming.standalone.map((link) => {
                     const tmdbKey = `${link.media_type}-${link.tmdb_id}`
                     const info = tmdbInfoMap[tmdbKey]
                     return (
@@ -850,7 +1063,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                             )}
                             <div className="flex-1 min-w-0 space-y-2">
                               <h3 className="font-bold text-white truncate text-sm">
-                                {info?.title || info?.name || link.source_name}
+                                {info?.title || info?.name || `TMDB ${link.tmdb_id}`}
                               </h3>
                               <p className="text-xs text-slate-400">
                                 {link.media_type === "movie" ? "Film" : "Série"}
@@ -861,6 +1074,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                                 {link.quality && (
                                   <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-full text-[10px] font-semibold">
                                     {link.quality}
+                                  </span>
+                                )}
+                                {link.resolution && (
+                                  <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full text-[10px] font-semibold">
+                                    {link.resolution}
                                   </span>
                                 )}
                                 {link.language && (
