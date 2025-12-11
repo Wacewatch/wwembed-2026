@@ -463,19 +463,20 @@ _showExtDetails(_allExtLinks[idx]);
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
-var html='<div class="ext-detail-row"><span class="ext-detail-label">Provider</span><span class="ext-detail-value">'+(link.provider||"N/A")+'</span></div>';
-html+='<div class="ext-detail-row"><span class="ext-detail-label">Qualité</span><span class="ext-detail-value">'+(link.quality||"N/A")+'</span></div>';
-html+='<div class="ext-detail-row"><span class="ext-detail-label">Langue</span><span class="ext-detail-value">'+(link.language||"N/A")+'</span></div>';
-html+='<div class="ext-detail-row"><span class="ext-detail-label">Taille</span><span class="ext-detail-value">'+_formatSize(link.size)+'</span></div>';
+var html='<div style="margin-bottom:16px"><strong>Provider:</strong> '+(link.provider||"N/A")+'</div>';
+html+='<div style="margin-bottom:16px"><strong>Qualité:</strong> '+(link.quality||"N/A")+'</div>';
+html+='<div style="margin-bottom:16px"><strong>Langue:</strong> '+(link.language||"N/A")+'</div>';
+html+='<div style="margin-bottom:16px"><strong>Taille:</strong> '+_formatSize(link.size)+'</div>';
 html+='<button class="ext-unlock-btn" id="extUnlockBtn">Débloquer le lien</button>';
 html+='<div class="ext-link-result" id="extLinkResult" style="display:none"></div>';
 body.innerHTML=html;
 details.classList.add("show");
 
 var closeBtn=document.getElementById("extCloseBtn");
-if(closeBtn){closeBtn.onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};}
+if(closeBtn){closeBtn.onclick=function(){details.classList.remove("show");};}
 
 var btn=document.getElementById("extUnlockBtn");
+if(btn){
 btn.onclick=function(){
 btn.disabled=true;
 btn.textContent="Chargement...";
@@ -483,12 +484,12 @@ var result=document.getElementById("extLinkResult");
 result.style.display="block";
 var linkUrl=link.url||link.link||link.download_url||"#";
 result.innerHTML='<a href="'+linkUrl+'" target="_blank" id="extFinalLink">Accéder au lien</a>';
-document.getElementById("extFinalLink").onclick=function(){
-fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});
-};
+var finalLink=document.getElementById("extFinalLink");
+if(finalLink){finalLink.onclick=function(){fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});};}
 btn.textContent="Lien débloqué !";
 btn.style.background="#10b981";
 };
+}
 }
 
 _bindButtons();
@@ -670,7 +671,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
 .pb{height:5px;background:#e5e7eb;border-radius:3px;margin:12px 0;overflow:hidden}
 .pf{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2,#ec4899);transition:width 0.3s}
-.bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px}
+.bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
 .bp{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
 .bn{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
 .hi{display:none}
@@ -985,19 +986,20 @@ _showExtDetails(_allExtLinks[idx]);
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
-var html='<div class="ext-detail-row"><span class="ext-detail-label">Provider</span><span class="ext-detail-value">'+(link.provider||"N/A")+'</span></div>';
-html+='<div class="ext-detail-row"><span class="ext-detail-label">Qualité</span><span class="ext-detail-value">'+(link.quality||"N/A")+'</span></div>';
-html+='<div class="ext-detail-row"><span class="ext-detail-label">Langue</span><span class="ext-detail-value">'+(link.language||"N/A")+'</span></div>';
-html+='<div class="ext-detail-row"><span class="ext-detail-label">Taille</span><span class="ext-detail-value">'+_formatSize(link.size)+'</span></div>';
+var html='<div style="margin-bottom:16px"><strong>Provider:</strong> '+(link.provider||"N/A")+'</div>';
+html+='<div style="margin-bottom:16px"><strong>Qualité:</strong> '+(link.quality||"N/A")+'</div>';
+html+='<div style="margin-bottom:16px"><strong>Langue:</strong> '+(link.language||"N/A")+'</div>';
+html+='<div style="margin-bottom:16px"><strong>Taille:</strong> '+_formatSize(link.size)+'</div>';
 html+='<button class="ext-unlock-btn" id="extUnlockBtn">Débloquer le lien</button>';
 html+='<div class="ext-link-result" id="extLinkResult" style="display:none"></div>';
 body.innerHTML=html;
 details.classList.add("show");
 
 var closeBtn=document.getElementById("extCloseBtn");
-if(closeBtn){closeBtn.onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};}
+if(closeBtn){closeBtn.onclick=function(){details.classList.remove("show");};}
 
 var btn=document.getElementById("extUnlockBtn");
+if(btn){
 btn.onclick=function(){
 btn.disabled=true;
 btn.textContent="Chargement...";
@@ -1005,12 +1007,12 @@ var result=document.getElementById("extLinkResult");
 result.style.display="block";
 var linkUrl=link.url||link.link||link.download_url||"#";
 result.innerHTML='<a href="'+linkUrl+'" target="_blank" id="extFinalLink">Accéder au lien</a>';
-document.getElementById("extFinalLink").onclick=function(){
-fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});
-};
+var finalLink=document.getElementById("extFinalLink");
+if(finalLink){finalLink.onclick=function(){fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});};}
 btn.textContent="Lien débloqué !";
 btn.style.background="#10b981";
 };
+}
 }
 
 _renderLinks();
