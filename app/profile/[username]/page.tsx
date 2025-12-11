@@ -315,41 +315,58 @@ async function getProfileSettings(userId: string) {
   return data
 }
 
+async function fetchAllRows<T>(
+  supabase: Awaited<ReturnType<typeof createAdminClient>>,
+  table: string,
+  userId: string,
+  pageSize = 1000,
+): Promise<T[]> {
+  const allData: T[] = []
+  let page = 0
+  let hasMore = true
+
+  while (hasMore) {
+    const from = page * pageSize
+    const to = from + pageSize - 1
+
+    const { data, error } = await supabase
+      .from(table)
+      .select("*")
+      .eq("submitted_by", userId)
+      .eq("status", "approved")
+      .order("created_at", { ascending: false })
+      .range(from, to)
+
+    if (error || !data || data.length === 0) {
+      hasMore = false
+    } else {
+      allData.push(...(data as T[]))
+      if (data.length < pageSize) {
+        hasMore = false
+      } else {
+        page++
+      }
+    }
+  }
+
+  return allData
+}
+
 async function getUserLinks(userId: string) {
   const supabase = await createAdminClient()
 
-  const [downloadsRes, streamingRes, digitalRes, liveTVRes] = await Promise.all([
-    supabase
-      .from("download_links")
-      .select("*")
-      .eq("submitted_by", userId)
-      .eq("status", "approved")
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("streaming_links")
-      .select("*")
-      .eq("submitted_by", userId)
-      .eq("status", "approved")
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("digital_content")
-      .select("*")
-      .eq("submitted_by", userId)
-      .eq("status", "approved")
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("live_tv_channels")
-      .select("*")
-      .eq("submitted_by", userId)
-      .eq("status", "approved")
-      .order("created_at", { ascending: false }),
+  const [downloads, streaming, digital, liveTV] = await Promise.all([
+    fetchAllRows<any>(supabase, "download_links", userId),
+    fetchAllRows<any>(supabase, "streaming_links", userId),
+    fetchAllRows<any>(supabase, "digital_content", userId),
+    fetchAllRows<any>(supabase, "live_tv_channels", userId),
   ])
 
   return {
-    downloads: downloadsRes.data || [],
-    streaming: streamingRes.data || [],
-    digital: digitalRes.data || [],
-    liveTV: liveTVRes.data || [],
+    downloads,
+    streaming,
+    digital,
+    liveTV,
   }
 }
 
