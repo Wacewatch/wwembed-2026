@@ -633,10 +633,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .li-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .li-ep{background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700}
 .li-nm{font-weight:600;font-size:15px;color:#fff;flex:1}
-.li-up{font-size:12px;color:#6b7280;background:rgba(107,114,128,0.1);padding:4px 10px;border-radius:6px}
+.li-up{font-size:12px;color:#6b7280;background:rgba(107,114,128,0.1);padding:4px 10px;border-radius:6px;text-decoration:none}
+.li-up:hover{color:#14B8A6}
 .li-meta{display:flex;flex-wrap:wrap;gap:8px}
-.li-tag{padding:6px 10px;background:rgba(30,58,79,0.6);border-radius:6px;font-size:11px;color:#94a3b8;border:1px solid rgba(30,58,79,0.8)}
-.li-tag.quality{background:linear-gradient(135deg,rgba(20,184,166,0.2),rgba(20,184,166,0.1));color:#14B8A6;border-color:rgba(20,184,166,0.3)}
+.li-tag{padding:6px 10px;background:rgba(30,58,79,0.6);border-radius:6px;font-size:11px;color:#94a3b8;border:1px solid rgba(30,58,79,0.8);font-weight:600}
+/* Added colored badges for different metadata types */
+.li-tag.quality{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;font-weight:700}
+.li-tag.lang{background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none}
+.li-tag.video{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none}
+.li-tag.audio{background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;border:none}
+.li-tag.size{background:rgba(20,184,166,0.15);color:#14B8A6;border-color:rgba(20,184,166,0.3)}
+.li-tag.host{background:rgba(99,102,241,0.15);color:#818cf8;border-color:rgba(99,102,241,0.3)}
 .li-bottom{padding:12px 16px;background:rgba(30,58,79,0.2)}
 .li-btn{padding:12px 20px;background:linear-gradient(135deg,#14B8A6,#0d9488);color:#0c1520;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;width:100%}
 .li-btn:hover{transform:translateY(-1px)}
@@ -810,11 +817,62 @@ var release=l.release_name||l.source_name||"Téléchargement";
 var url=l.source_url||l.download_url||"";
 if(url&&!url.startsWith("http")){url="https://"+url;}
 
+var releaseLower=release.toLowerCase();
+
+// Quality detection
+var quality=l.quality||"";
+if(!quality){
+var qMatch=release.match(/(2160p|4K|UHD|1080p|FHD|720p|HD|480p|HDTV|WEB-?DL|WEBRip|BluRay|BDRip|DVDRip|HDRip|CAM|TS|HDCAM)/i);
+if(qMatch)quality=qMatch[1].toUpperCase();
+}
+
+// Language detection
+var lang=l.language||"";
+if(!lang){
+var lMatch=release.match(/(MULTI|TRUEFRENCH|FRENCH|VFF|VF2|VFQ|VF|VOSTFR|VO|ENGLISH|ENG|GERMAN|SPANISH|ITALIAN)/i);
+if(lMatch)lang=lMatch[1].toUpperCase();
+}
+
+// Video codec detection
+var videoCodec="";
+var vcMatch=release.match(/(x264|x265|H\.?264|H\.?265|HEVC|AVC|XVID|DIVX|AV1|VP9|MPEG)/i);
+if(vcMatch)videoCodec=vcMatch[1].toUpperCase().replace(".","");
+
+// Audio codec detection
+var audioCodec="";
+var acMatch=release.match(/(AAC|AC3|E-?AC-?3|EAC3|DTS|DTS-HD|ATMOS|TrueHD|FLAC|MP3|DD5\.?1|DD7\.?1|DD|5\.1|7\.1)/i);
+if(acMatch)audioCodec=acMatch[1].toUpperCase().replace(/-/g,"");
+
+// File size
+var fileSize=l.file_size||"";
+if(!fileSize){
+var sMatch=release.match(/(\\d+\\.?\\d*)\\s*(GB|MB|TB|Go|Mo|To)/i);
+if(sMatch)fileSize=sMatch[1]+" "+sMatch[2].toUpperCase();
+}
+
+// Host/source detection
+var host="";
+var hostMatch=release.match(/(1fichier|Uptobox|Rapidgator|Turbobit|Nitroflare|Uploaded|Mega|MediaFire|GoogleDrive|Streamtape)/i);
+if(hostMatch)host=hostMatch[1];
+
+// Resolution
+var resolution=l.resolution||"";
+if(!resolution&&quality){
+if(quality.includes("2160")||quality.includes("4K")||quality.includes("UHD"))resolution="3840x2160";
+else if(quality.includes("1080"))resolution="1920x1080";
+else if(quality.includes("720"))resolution="1280x720";
+else if(quality.includes("480"))resolution="854x480";
+}
+
+// Build metadata badges
 var meta='<div class="li-meta">';
-if(l.quality)meta+='<span class="li-tag quality">'+l.quality+'</span>';
-if(l.resolution)meta+='<span class="li-tag">'+l.resolution+'</span>';
-if(l.file_size)meta+='<span class="li-tag">'+l.file_size+'</span>';
-if(l.language)meta+='<span class="li-tag">'+l.language+'</span>';
+if(quality)meta+='<span class="li-tag quality">'+quality+'</span>';
+if(lang)meta+='<span class="li-tag lang">'+lang+'</span>';
+if(videoCodec)meta+='<span class="li-tag video">'+videoCodec+'</span>';
+if(audioCodec)meta+='<span class="li-tag audio">'+audioCodec+'</span>';
+if(fileSize)meta+='<span class="li-tag size">'+fileSize+'</span>';
+if(host)meta+='<span class="li-tag host">'+host+'</span>';
+if(resolution&&!quality)meta+='<span class="li-tag">'+resolution+'</span>';
 meta+='</div>';
 
 var btnText=url?'Télécharger':'Lien indisponible';
@@ -1096,6 +1154,7 @@ fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json
 window.open(_p,"_blank");_p=null;
 }
 };
+}
 }else{
 // No ads, direct link
 fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
