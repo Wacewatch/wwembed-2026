@@ -70,8 +70,23 @@ interface OnlineStats {
   usersOnline5min: number
   usersOnline15min: number
   usersOnline1hour: number
-  activePages: { ww_id: string; count: number; title?: string }[]
-  recentVisitors: { ip_hash: string; viewed_at: string; ww_id: string; media_type: string }[]
+  activePages: {
+    ww_id: string
+    count: number
+    title?: string
+    poster?: string
+    tmdb_id?: number
+    media_type?: string
+  }[]
+  recentVisitors: {
+    ip_hash: string
+    viewed_at: string
+    ww_id: string
+    media_type: string
+    title?: string
+    poster?: string
+    tmdb_id?: number
+  }[]
 }
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w92"
@@ -95,71 +110,140 @@ export function StatsViewer() {
   }, [period])
 
   const loadOnlineStats = async () => {
-    const supabase = createClient()
-
-    const now = new Date()
-    const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString()
-    const fifteenMinAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString()
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
-
     try {
-      // Get views from last 5 minutes
-      const { data: views5min } = await supabase.from("embed_views").select("ip_hash").gte("viewed_at", fiveMinAgo)
-
-      // Get views from last 15 minutes
-      const { data: views15min } = await supabase.from("embed_views").select("ip_hash").gte("viewed_at", fifteenMinAgo)
+      const supabase = createClient()
+      const now = new Date()
+      const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString()
+      const fifteenMinAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString()
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
 
       // Get views from last hour
-      const { data: views1hour } = await supabase.from("embed_views").select("ip_hash").gte("viewed_at", oneHourAgo)
-
-      // Get active pages (most viewed in last 15 minutes)
       const { data: recentViews } = await supabase
         .from("embed_views")
-        .select("ww_id, ip_hash, viewed_at, media_type, tmdb_id")
-        .gte("viewed_at", fifteenMinAgo)
+        .select("ip_hash, viewed_at, ww_id, media_type, tmdb_id")
+        .gte("viewed_at", oneHourAgo)
         .order("viewed_at", { ascending: false })
-        .limit(100)
 
-      // Count unique IPs
-      const uniqueIps5min = new Set(views5min?.map((v: any) => v.ip_hash) || []).size
-      const uniqueIps15min = new Set(views15min?.map((v: any) => v.ip_hash) || []).size
-      const uniqueIps1hour = new Set(views1hour?.map((v: any) => v.ip_hash) || []).size
+      // Count unique IPs per timeframe
+      const uniqueIps5min = new Set(
+        recentViews?.filter((v: any) => v.viewed_at >= fiveMinAgo).map((v: any) => v.ip_hash),
+      ).size
+      const uniqueIps15min = new Set(
+        recentViews?.filter((v: any) => v.viewed_at >= fifteenMinAgo).map((v: any) => v.ip_hash),
+      ).size
+      const uniqueIps1hour = new Set(recentViews?.map((v: any) => v.ip_hash)).size
 
-      // Count active pages
-      const pageCount: Record<string, number> = {}
-      recentViews?.forEach((v: any) => {
+      // Get most active pages in last 15 min
+      const recent15min = recentViews?.filter((v: any) => v.viewed_at >= fifteenMinAgo) || []
+      const pageCount: Record<string, { count: number; tmdb_id?: number; media_type?: string }> = {}
+      recent15min.forEach((v: any) => {
         if (v.ww_id) {
-          pageCount[v.ww_id] = (pageCount[v.ww_id] || 0) + 1
+          if (!pageCount[v.ww_id]) {
+            pageCount[v.ww_id] = { count: 0, tmdb_id: v.tmdb_id, media_type: v.media_type }
+          }
+          pageCount[v.ww_id].count++
         }
       })
 
       const activePages = Object.entries(pageCount)
-        .map(([ww_id, count]) => ({ ww_id, count }))
+        .map(([ww_id, data]) => ({ ww_id, count: data.count, tmdb_id: data.tmdb_id, media_type: data.media_type }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 10)
 
+      const activePagesWithTitles = await Promise.all(
+        activePages.map(async (page) => {
+          // Check if it's a live TV channel
+          if (page.ww_id?.startsWith("ww-live-")) {
+            const channelId = page.ww_id.replace("ww-live-", "")
+            const { data: channel } = await supabase
+              .from("live_tv_channels")
+              .select("name, logo_url")
+              .eq("id", channelId)
+              .single()
+            return {
+              ...page,
+              title: channel?.name || page.ww_id,
+              poster: channel?.logo_url || null,
+            }
+          }
+
+          // For movies/TV shows, fetch from TMDB
+          if (page.tmdb_id && page.media_type && (page.media_type === "movie" || page.media_type === "tv")) {
+            try {
+              const res = await fetch(`/api/tmdb/${page.media_type}/${page.tmdb_id}`)
+              if (res.ok) {
+                const data = await res.json()
+                return {
+                  ...page,
+                  title: data.title || data.name || page.ww_id,
+                  poster: data.poster || null,
+                }
+              }
+            } catch (e) {
+              // Ignore fetch errors
+            }
+          }
+
+          return { ...page, title: page.ww_id, poster: null }
+        }),
+      )
+
       // Get recent unique visitors
       const seenIps = new Set()
-      const recentVisitors =
+      const recentVisitorsRaw =
         recentViews
           ?.filter((v: any) => {
             if (seenIps.has(v.ip_hash)) return false
             seenIps.add(v.ip_hash)
             return true
           })
-          .slice(0, 10)
-          .map((v: any) => ({
+          .slice(0, 10) || []
+
+      const recentVisitors = await Promise.all(
+        recentVisitorsRaw.map(async (v: any) => {
+          let title = v.ww_id || "N/A"
+          let poster = null
+
+          // Check if it's a live TV channel
+          if (v.ww_id?.startsWith("ww-live-")) {
+            const channelId = v.ww_id.replace("ww-live-", "")
+            const { data: channel } = await supabase
+              .from("live_tv_channels")
+              .select("name, logo_url")
+              .eq("id", channelId)
+              .single()
+            title = channel?.name || v.ww_id
+            poster = channel?.logo_url || null
+          } else if (v.tmdb_id && v.media_type && (v.media_type === "movie" || v.media_type === "tv")) {
+            try {
+              const res = await fetch(`/api/tmdb/${v.media_type}/${v.tmdb_id}`)
+              if (res.ok) {
+                const data = await res.json()
+                title = data.title || data.name || v.ww_id
+                poster = data.poster || null
+              }
+            } catch (e) {
+              // Ignore fetch errors
+            }
+          }
+
+          return {
             ip_hash: v.ip_hash?.substring(0, 8) + "...",
             viewed_at: v.viewed_at,
             ww_id: v.ww_id || "N/A",
             media_type: v.media_type || "N/A",
-          })) || []
+            tmdb_id: v.tmdb_id,
+            title,
+            poster,
+          }
+        }),
+      )
 
       setOnlineStats({
         usersOnline5min: uniqueIps5min,
         usersOnline15min: uniqueIps15min,
         usersOnline1hour: uniqueIps1hour,
-        activePages,
+        activePages: activePagesWithTitles,
         recentVisitors,
       })
     } catch (error) {
@@ -870,15 +954,47 @@ export function StatsViewer() {
                   <Play className="w-4 h-4" />
                   Pages les plus actives (15 min)
                 </h4>
-                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
                   {onlineStats.activePages.length > 0 ? (
                     onlineStats.activePages.map((page, i) => (
-                      <div key={page.ww_id} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground truncate max-w-[200px]">
-                          {i + 1}. {page.ww_id}
-                        </span>
-                        <Badge variant="secondary" className="ml-2">
-                          {page.count} vue{page.count > 1 ? "s" : ""}
+                      <div key={page.ww_id} className="flex items-center gap-3 p-2 bg-background/50 rounded-lg">
+                        <span className="text-muted-foreground w-5 text-right font-medium text-sm">{i + 1}.</span>
+                        {page.poster ? (
+                          <img
+                            src={
+                              page.poster.startsWith("http")
+                                ? page.poster
+                                : `https://image.tmdb.org/t/p/w92${page.poster}`
+                            }
+                            alt={page.title}
+                            className="w-8 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-8 h-12 bg-muted rounded flex items-center justify-center">
+                            {page.media_type === "live" || page.ww_id?.includes("live") ? (
+                              <Tv className="w-4 h-4 text-muted-foreground" />
+                            ) : (
+                              <Film className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground truncate text-sm">{page.title || page.ww_id}</p>
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${
+                              page.media_type === "movie"
+                                ? "text-blue-400 border-blue-400/50"
+                                : page.media_type === "tv"
+                                  ? "text-purple-400 border-purple-400/50"
+                                  : "text-red-400 border-red-400/50"
+                            }`}
+                          >
+                            {page.media_type === "movie" ? "Film" : page.media_type === "tv" ? "Série" : "TV Live"}
+                          </Badge>
+                        </div>
+                        <Badge variant="secondary" className="text-primary font-bold">
+                          {page.count}
                         </Badge>
                       </div>
                     ))
@@ -894,25 +1010,63 @@ export function StatsViewer() {
                   <Users className="w-4 h-4" />
                   Visiteurs récents
                 </h4>
-                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
                   {onlineStats.recentVisitors.length > 0 ? (
                     onlineStats.recentVisitors.map((visitor, i) => (
-                      <div key={`${visitor.ip_hash}-${i}`} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full" />
-                          <span className="text-muted-foreground font-mono text-xs">{visitor.ip_hash}</span>
+                      <div
+                        key={`${visitor.ip_hash}-${i}`}
+                        className="flex items-center gap-3 p-2 bg-background/50 rounded-lg"
+                      >
+                        <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+                        {visitor.poster ? (
+                          <img
+                            src={
+                              visitor.poster.startsWith("http")
+                                ? visitor.poster
+                                : `https://image.tmdb.org/t/p/w92${visitor.poster}`
+                            }
+                            alt={visitor.title}
+                            className="w-8 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-8 h-12 bg-muted rounded flex items-center justify-center">
+                            {visitor.media_type === "live" || visitor.ww_id?.includes("live") ? (
+                              <Tv className="w-4 h-4 text-muted-foreground" />
+                            ) : (
+                              <Film className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground truncate text-sm">
+                            {visitor.title || visitor.ww_id}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground font-mono text-xs">{visitor.ip_hash}</span>
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${
+                                visitor.media_type === "movie"
+                                  ? "text-blue-400 border-blue-400/50"
+                                  : visitor.media_type === "tv"
+                                    ? "text-purple-400 border-purple-400/50"
+                                    : "text-red-400 border-red-400/50"
+                              }`}
+                            >
+                              {visitor.media_type === "movie"
+                                ? "Film"
+                                : visitor.media_type === "tv"
+                                  ? "Série"
+                                  : "TV Live"}
+                            </Badge>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            {visitor.media_type}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(visitor.viewed_at).toLocaleTimeString("fr-FR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(visitor.viewed_at).toLocaleTimeString("fr-FR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
                       </div>
                     ))
                   ) : (
