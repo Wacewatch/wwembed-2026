@@ -460,7 +460,6 @@ _showExtDetails(_allExtLinks[idx]);
 });
 }
 
-// FIX: Add btn variable and onclick handler for extUnlockBtn
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
@@ -473,7 +472,8 @@ html+='<div class="ext-link-result" id="extLinkResult" style="display:none"></di
 body.innerHTML=html;
 details.classList.add("show");
 
-document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
+var closeBtn=document.getElementById("extCloseBtn");
+if(closeBtn){closeBtn.onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};}
 
 var btn=document.getElementById("extUnlockBtn");
 btn.onclick=function(){
@@ -490,8 +490,6 @@ btn.textContent="Lien débloqué !";
 btn.style.background="#10b981";
 };
 }
-
-document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
 
 _bindButtons();
 _loadExternal();
@@ -987,16 +985,17 @@ _showExtDetails(_allExtLinks[idx]);
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
-var html='<div style="margin-bottom:16px"><strong>Provider:</strong> '+(link.provider||"N/A")+'</div>';
-html+='<div style="margin-bottom:16px"><strong>Qualité:</strong> '+(link.quality||"N/A")+'</div>';
-html+='<div style="margin-bottom:16px"><strong>Langue:</strong> '+(link.language||"N/A")+'</div>';
-html+='<div style="margin-bottom:16px"><strong>Taille:</strong> '+_formatSize(link.size)+'</div>';
+var html='<div class="ext-detail-row"><span class="ext-detail-label">Provider</span><span class="ext-detail-value">'+(link.provider||"N/A")+'</span></div>';
+html+='<div class="ext-detail-row"><span class="ext-detail-label">Qualité</span><span class="ext-detail-value">'+(link.quality||"N/A")+'</span></div>';
+html+='<div class="ext-detail-row"><span class="ext-detail-label">Langue</span><span class="ext-detail-value">'+(link.language||"N/A")+'</span></div>';
+html+='<div class="ext-detail-row"><span class="ext-detail-label">Taille</span><span class="ext-detail-value">'+_formatSize(link.size)+'</span></div>';
 html+='<button class="ext-unlock-btn" id="extUnlockBtn">Débloquer le lien</button>';
 html+='<div class="ext-link-result" id="extLinkResult" style="display:none"></div>';
 body.innerHTML=html;
 details.classList.add("show");
 
-document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
+var closeBtn=document.getElementById("extCloseBtn");
+if(closeBtn){closeBtn.onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};}
 
 var btn=document.getElementById("extUnlockBtn");
 btn.onclick=function(){
@@ -1013,9 +1012,6 @@ btn.textContent="Lien débloqué !";
 btn.style.background="#10b981";
 };
 }
-}
-
-document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
 
 _renderLinks();
 _loadExternal();
