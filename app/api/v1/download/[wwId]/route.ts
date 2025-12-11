@@ -1013,7 +1013,8 @@ var html='<div style="margin-bottom:16px"><strong>Provider:</strong> '+(link.pro
 html+='<div style="margin-bottom:16px"><strong>Qualité:</strong> '+(link.quality||"N/A")+'</div>';
 html+='<div style="margin-bottom:16px"><strong>Langue:</strong> '+(link.language||"N/A")+'</div>';
 html+='<div style="margin-bottom:16px"><strong>Taille:</strong> '+_formatSize(link.size)+'</div>';
-html+='<button class="ext-unlock-btn" id="extUnlockBtn">Débloquer le lien</button>';
+html+='<div id="extLinkLoading" style="text-align:center;padding:20px;color:#9ca3af"><svg style="animation:spin 1s linear infinite;width:24px;height:24px;margin:0 auto 10px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><div>Chargement du lien...</div></div>';
+html+='<button class="ext-unlock-btn" id="extUnlockBtn" style="display:none">Télécharger<span class="tag">PUB</span></button>';
 html+='<div class="ext-link-result" id="extLinkResult" style="display:none"></div>';
 body.innerHTML=html;
 details.classList.add("show");
@@ -1021,21 +1022,93 @@ details.classList.add("show");
 var closeBtn=document.getElementById("extCloseBtn");
 if(closeBtn){closeBtn.onclick=function(){details.classList.remove("show");};}
 
+fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
+.then(function(r){return r.json();})
+.then(function(decoded){
+var loading=document.getElementById("extLinkLoading");
 var btn=document.getElementById("extUnlockBtn");
+if(loading)loading.style.display="none";
+if(btn)btn.style.display="block";
+
+var decodedUrl=(decoded&&decoded.embed_url&&decoded.embed_url.lien)?decoded.embed_url.lien:(link.url||link.link||"#");
+
 if(btn){
 btn.onclick=function(){
-btn.disabled=true;
-btn.textContent="Chargement...";
-var result=document.getElementById("extLinkResult");
-result.style.display="block";
-var linkUrl=link.url||link.link||link.download_url||"#";
-result.innerHTML='<a href="'+linkUrl+'" target="_blank" id="extFinalLink">Accéder au lien</a>';
-var finalLink=document.getElementById("extFinalLink");
-if(finalLink){finalLink.onclick=function(){fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});};}
-btn.textContent="Lien débloqué !";
-btn.style.background="#10b981";
+if(_h&&_u){
+// Store decoded URL and show ad overlay
+_p=decodedUrl;
+var o=document.getElementById(_ids.overlay);
+var bt=document.getElementById(_ids.boxTime);
+var bh=document.getElementById(_ids.boxHelp);
+var bk=document.getElementById(_ids.boxThanks);
+var bd=document.getElementById(_ids.boxDone);
+var pr=document.getElementById(_ids.progress);
+var tm=document.getElementById(_ids.timer);
+var bu=document.getElementById(_ids.btnUnlock);
+var dn=document.getElementById(_ids.btnDownload);
+var s1=document.getElementById(_ids.step1);
+var s2=document.getElementById(_ids.step2);
+var s3=document.getElementById(_ids.step3);
+if(bt)bt.classList.remove("hi");
+if(bh)bh.classList.remove("hi");
+if(bk)bk.classList.add("hi");
+if(bd)bd.classList.add("hi");
+if(pr)pr.style.width="0";
+if(tm)tm.textContent="3";
+if(bu)bu.classList.remove("hi");
+if(dn)dn.classList.add("hi");
+if(s1){s1.classList.add("active");s1.classList.remove("done");}
+if(s2){s2.classList.remove("active");s2.classList.remove("done");}
+if(s3){s3.classList.remove("active");s3.classList.remove("done");}
+o.classList.add("sh");
+// Close external details modal
+details.classList.remove("show");
+
+bu.onclick=function(){
+fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
+window.open(_u,"_blank");
+bu.classList.add("hi");
+if(s1){s1.classList.remove("active");s1.classList.add("done");}
+if(s2)s2.classList.add("active");
+var s=3,pg=0;
+var iv=setInterval(function(){
+s--;pg+=33.33;
+if(tm)tm.textContent=s;
+if(pr)pr.style.width=pg+"%";
+if(s<=0){
+clearInterval(iv);
+if(s2){s2.classList.remove("active");s2.classList.add("done");}
+if(s3)s3.classList.add("active");
+if(bt)bt.classList.add("hi");
+if(bh)bh.classList.add("hi");
+if(bk)bk.classList.remove("hi");
+if(bd)bd.classList.remove("hi");
+if(pr)pr.style.width="100%";
+if(dn)dn.classList.remove("hi");
+}
+},1000);
+};
+
+dn.onclick=function(){
+o.classList.remove("sh");
+if(_p){
+fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
+window.open(_p,"_blank");_p=null;
+}
+};
+}else{
+// No ads, direct link
+fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
+window.open(decodedUrl,"_blank");
+}
 };
 }
+}).catch(function(){
+var loading=document.getElementById("extLinkLoading");
+var result=document.getElementById("extLinkResult");
+if(loading)loading.style.display="none";
+if(result){result.style.display="block";result.innerHTML='<div style="color:#ef4444">Erreur lors du chargement du lien</div>';}
+});
 }
 
 _renderLinks();
