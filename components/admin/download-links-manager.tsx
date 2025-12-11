@@ -24,6 +24,8 @@ import {
   AlertTriangle,
   Trash2,
   ImageIcon,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 import type { DownloadLink } from "@/lib/types"
 
@@ -34,6 +36,7 @@ interface DownloadLinkWithProfile extends DownloadLink {
 interface InvalidLinkWithMedia extends DownloadLinkWithProfile {
   mediaTitle?: string
   mediaPoster?: string
+  isDigital?: boolean
 }
 
 export function DownloadLinksManager() {
@@ -99,23 +102,67 @@ export function DownloadLinksManager() {
     setLoading(false)
   }
 
+  const fetchAllLinks = async (table: string) => {
+    const supabase = createClient()
+    const allLinks: any[] = []
+    let page = 0
+    const pageSize = 1000
+    let hasMore = true
+
+    while (hasMore) {
+      const { data } = await supabase
+        .from(table)
+        .select("id, source_url")
+        .not("source_url", "is", null)
+        .range(page * pageSize, (page + 1) * pageSize - 1)
+
+      if (data && data.length > 0) {
+        allLinks.push(...data)
+        hasMore = data.length === pageSize
+        page++
+      } else {
+        hasMore = false
+      }
+    }
+
+    return allLinks
+  }
+
   const loadInvalidLinks = async () => {
     setLoadingInvalid(true)
     const supabase = createClient()
 
-    // Get invalid download_links
-    const { data: downloadInvalid } = await supabase
-      .from("download_links")
-      .select("*, profiles:submitted_by(username)")
-      .eq("is_valid", false)
-      .order("last_checked", { ascending: false })
+    const fetchAllInvalidLinks = async (table: string, selectFields: string) => {
+      const allLinks: any[] = []
+      let page = 0
+      const pageSize = 1000
+      let hasMore = true
 
-    // Get invalid digital_download_links
-    const { data: digitalInvalid } = await supabase
-      .from("digital_download_links")
-      .select("*, profiles:submitted_by(username), digital_content(title, cover_url)")
-      .eq("is_valid", false)
-      .order("last_checked", { ascending: false })
+      while (hasMore) {
+        const { data } = await supabase
+          .from(table)
+          .select(selectFields)
+          .eq("is_valid", false)
+          .order("last_checked", { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1)
+
+        if (data && data.length > 0) {
+          allLinks.push(...data)
+          hasMore = data.length === pageSize
+          page++
+        } else {
+          hasMore = false
+        }
+      }
+
+      return allLinks
+    }
+
+    const downloadInvalid = await fetchAllInvalidLinks("download_links", "*, profiles:submitted_by(username)")
+    const digitalInvalid = await fetchAllInvalidLinks(
+      "digital_download_links",
+      "*, profiles:submitted_by(username), digital_content(title, cover_url)",
+    )
 
     // Fetch TMDB info for download links
     const invalidWithMedia: InvalidLinkWithMedia[] = []
@@ -139,6 +186,7 @@ export function DownloadLinksManager() {
         ...link,
         mediaTitle,
         mediaPoster,
+        isDigital: false,
       })
     }
 
@@ -148,6 +196,7 @@ export function DownloadLinksManager() {
         ...link,
         mediaTitle: (link as any).digital_content?.title || "Contenu Digital",
         mediaPoster: (link as any).digital_content?.cover_url || "",
+        isDigital: true,
       })
     }
 
@@ -242,31 +291,19 @@ export function DownloadLinksManager() {
     setIsCheckingAll(true)
     setCheckProgress(0)
 
-    const supabase = createClient()
+    const downloadLinks = await fetchAllLinks("download_links")
 
-    // Get ALL download links
-    const { data: allDownloadLinks } = await supabase
-      .from("download_links")
-      .select("id, source_url")
-      .not("source_url", "is", null)
-
-    // Get ALL digital download links
-    const { data: allDigitalLinks } = await supabase
-      .from("digital_download_links")
-      .select("id, source_url")
-      .not("source_url", "is", null)
+    const digitalLinks = await fetchAllLinks("digital_download_links")
 
     const allLinks = [
-      ...(allDownloadLinks || []).map((l) => ({ ...l, type: "download" })),
-      ...(allDigitalLinks || []).map((l) => ({ ...l, type: "digital" })),
+      ...downloadLinks.map((l) => ({ ...l, type: "download" })),
+      ...digitalLinks.map((l) => ({ ...l, type: "digital" })),
     ]
 
     setCheckTotal(allLinks.length)
 
-    let checked = 0
-    for (const link of allLinks) {
-      if (!link.source_url) continue
-
+    for (let i = 0; i < allLinks.length; i++) {
+      const link = allLinks[i]
       try {
         await fetch("/api/check-link", {
           method: "POST",
@@ -278,44 +315,34 @@ export function DownloadLinksManager() {
           }),
         })
       } catch (e) {
-        // Continue checking other links
+        console.error("Error checking link:", e)
       }
-
-      checked++
-      setCheckProgress(checked)
-
-      // Small delay to avoid overwhelming the server
-      await new Promise((r) => setTimeout(r, 100))
+      setCheckProgress(i + 1)
     }
 
     setIsCheckingAll(false)
-    loadLinks()
     loadInvalidLinks()
+    loadLinks()
   }
 
-  const getValidityBadge = (link: { is_valid?: boolean | null; last_checked?: string | null }) => {
-    if (link.is_valid === null || link.is_valid === undefined) {
-      return (
-        <Badge variant="outline" className="text-gray-400 border-gray-600">
-          <ShieldQuestion className="w-3 h-3 mr-1" />
-          Non vérifié
-        </Badge>
-      )
+  const recheckInvalidLink = async (link: InvalidLinkWithMedia) => {
+    setCheckingLinkId(link.id)
+    try {
+      await fetch("/api/check-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          linkId: link.id,
+          linkType: link.isDigital ? "digital" : "download",
+          url: link.source_url,
+        }),
+      })
+      loadInvalidLinks()
+    } catch (e) {
+      console.error("Error rechecking link:", e)
+    } finally {
+      setCheckingLinkId(null)
     }
-    if (link.is_valid) {
-      return (
-        <Badge variant="outline" className="text-emerald-500 border-emerald-500">
-          <ShieldCheck className="w-3 h-3 mr-1" />
-          Valide
-        </Badge>
-      )
-    }
-    return (
-      <Badge variant="outline" className="text-red-500 border-red-500">
-        <ShieldX className="w-3 h-3 mr-1" />
-        Invalide
-      </Badge>
-    )
   }
 
   const filteredLinks = links.filter(
@@ -333,55 +360,61 @@ export function DownloadLinksManager() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="border-red-500/50 bg-red-500/5">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      {/* Section Liens Invalides */}
+      <Card className="border-red-500/30 bg-red-500/5">
+        <CardHeader className="cursor-pointer" onClick={() => setShowInvalidSection(!showInvalidSection)}>
+          <CardTitle className="flex items-center justify-between text-red-400">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-              <CardTitle className="text-red-500">Liens Invalides</CardTitle>
-              <Badge variant="destructive">{invalidLinks.length}</Badge>
+              <AlertTriangle className="h-5 w-5" />
+              Liens Invalides ({invalidLinks.length})
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setShowInvalidSection(!showInvalidSection)}>
-                {showInvalidSection ? "Masquer" : "Afficher"}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  checkAllLinksInDatabase()
+                }}
+                disabled={isCheckingAll}
+                className="text-amber-400 border-amber-400/30"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isCheckingAll ? "animate-spin" : ""}`} />
+                Vérifier TOUS les liens
               </Button>
-              <Button variant="destructive" size="sm" onClick={checkAllLinksInDatabase} disabled={isCheckingAll}>
-                <RefreshCw className={`w-4 h-4 mr-2 ${isCheckingAll ? "animate-spin" : ""}`} />
-                {isCheckingAll ? "Vérification..." : "Vérifier TOUS les liens"}
-              </Button>
+              {showInvalidSection ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
             </div>
-          </div>
-
-          {/* Progress bar during check */}
-          {isCheckingAll && (
-            <div className="mt-4 space-y-2">
-              <Progress value={(checkProgress / checkTotal) * 100} className="h-2" />
-              <p className="text-sm text-muted-foreground text-center">
-                Vérification en cours... {checkProgress} / {checkTotal} liens
-              </p>
-            </div>
-          )}
+          </CardTitle>
         </CardHeader>
 
         {showInvalidSection && (
           <CardContent>
-            {loadingInvalid ? (
-              <div className="text-center py-4 text-muted-foreground">Chargement...</div>
-            ) : invalidLinks.length === 0 ? (
-              <div className="text-center py-4 text-emerald-500">
-                <ShieldCheck className="w-8 h-8 mx-auto mb-2" />
-                Aucun lien invalide trouvé
+            {isCheckingAll && (
+              <div className="mb-4 space-y-2">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Vérification en cours...</span>
+                  <span>
+                    {checkProgress} / {checkTotal}
+                  </span>
+                </div>
+                <Progress value={(checkProgress / checkTotal) * 100} className="h-2" />
               </div>
+            )}
+
+            {loadingInvalid ? (
+              <div className="text-center py-4 text-muted-foreground">Chargement des liens invalides...</div>
+            ) : invalidLinks.length === 0 ? (
+              <div className="text-center py-4 text-green-400">Aucun lien invalide détecté</div>
             ) : (
-              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              <div className="grid gap-3 max-h-[500px] overflow-y-auto">
                 {invalidLinks.map((link) => (
                   <div
                     key={link.id}
-                    className="flex items-center gap-4 p-3 bg-background/50 rounded-lg border border-red-500/30"
+                    className="flex items-center gap-3 p-3 bg-background/50 rounded-lg border border-red-500/20"
                   >
                     {/* Poster */}
-                    <div className="w-16 h-24 flex-shrink-0 bg-zinc-800 rounded overflow-hidden">
+                    <div className="w-12 h-16 bg-muted rounded overflow-hidden flex-shrink-0">
                       {link.mediaPoster ? (
                         <img
                           src={link.mediaPoster || "/placeholder.svg"}
@@ -390,40 +423,31 @@ export function DownloadLinksManager() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <ImageIcon className="w-6 h-6 text-zinc-600" />
+                          <ImageIcon className="h-6 w-6 text-muted-foreground" />
                         </div>
                       )}
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate">{link.mediaTitle}</h4>
-                      <p className="text-sm text-muted-foreground truncate">{link.source_name}</p>
-                      <div className="flex flex-wrap items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-red-500 border-red-500">
-                          <ShieldX className="w-3 h-3 mr-1" />
-                          Invalide
+                      <div className="font-medium truncate">{link.mediaTitle}</div>
+                      <div className="text-sm text-muted-foreground truncate">{link.source_name}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className={link.isDigital ? "text-amber-400" : "text-blue-400"}>
+                          {link.isDigital ? "Digital" : link.media_type === "movie" ? "Film" : "Série"}
                         </Badge>
-                        {link.profiles && (
-                          <Badge variant="outline" className="text-blue-500 border-blue-500">
-                            <User className="w-3 h-3 mr-1" />
+                        {link.profiles?.username && (
+                          <span className="text-xs text-green-400 flex items-center gap-1">
+                            <User className="h-3 w-3" />
                             {link.profiles.username}
-                          </Badge>
+                          </span>
                         )}
-                        {link.media_type && (
-                          <Badge variant="secondary">{link.media_type === "movie" ? "Film" : "Série"}</Badge>
-                        )}
-                        {!link.tmdb_id && (
-                          <Badge variant="secondary" className="bg-amber-500/20 text-amber-500">
-                            Digital
-                          </Badge>
+                        {link.last_checked && (
+                          <span className="text-xs text-muted-foreground">
+                            Vérifié: {new Date(link.last_checked).toLocaleDateString("fr-FR")}
+                          </span>
                         )}
                       </div>
-                      {link.last_checked && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Vérifié: {new Date(link.last_checked).toLocaleString("fr-FR")}
-                        </p>
-                      )}
                     </div>
 
                     {/* Actions */}
@@ -431,15 +455,16 @@ export function DownloadLinksManager() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() =>
-                          link.source_url &&
-                          checkLinkValidity(link.id, link.source_url, link.tmdb_id ? "download" : "digital")
-                        }
+                        onClick={() => recheckInvalidLink(link)}
                         disabled={checkingLinkId === link.id}
                       >
                         <RefreshCw className={`h-4 w-4 ${checkingLinkId === link.id ? "animate-spin" : ""}`} />
                       </Button>
-                      <Button size="sm" variant="destructive" onClick={() => deleteInvalidLink(link.id, !link.tmdb_id)}>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteInvalidLink(link.id, link.isDigital)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -450,26 +475,6 @@ export function DownloadLinksManager() {
           </CardContent>
         )}
       </Card>
-
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Download className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold">Liens Download</h2>
-          <Badge variant="secondary">{totalCount} liens</Badge>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            loadLinks()
-            loadInvalidLinks()
-          }}
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Actualiser
-        </Button>
-      </div>
 
       {/* Filtres */}
       <div className="flex flex-wrap gap-4 items-center">
@@ -505,104 +510,116 @@ export function DownloadLinksManager() {
             setPage(0)
           }}
         >
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Statut" />
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filtrer par statut" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous statuts</SelectItem>
+            <SelectItem value="all">Tous les statuts</SelectItem>
             <SelectItem value="approved">Approuvé</SelectItem>
             <SelectItem value="pending">En attente</SelectItem>
             <SelectItem value="rejected">Rejeté</SelectItem>
           </SelectContent>
         </Select>
-        <div className="text-sm text-muted-foreground">{totalCount} liens au total</div>
+        <div className="text-sm text-muted-foreground">Total: {totalCount} liens</div>
       </div>
 
-      {/* Liste */}
+      {/* Liste des liens */}
       <div className="space-y-2">
         {filteredLinks.map((link) => (
-          <Card key={link.id} className="border-zinc-800">
-            <CardContent className="p-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium">{link.source_name}</span>
-                    {link.quality && <Badge variant="outline">{link.quality}</Badge>}
-                    {link.language && <Badge variant="secondary">{link.language}</Badge>}
-                    {getValidityBadge(link)}
-                    {link.profiles && (
-                      <Badge variant="outline" className="text-emerald-500 border-emerald-500">
-                        <User className="w-3 h-3 mr-1" />
-                        {link.profiles.username}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    WW: {link.ww_id} | TMDB: {link.tmdb_id} | Type: {link.media_type}
-                  </div>
-                  {link.last_checked && (
-                    <div className="text-xs text-muted-foreground">
-                      Vérifié: {new Date(link.last_checked).toLocaleString("fr-FR")}
-                    </div>
-                  )}
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(link.created_at).toLocaleString("fr-FR")}
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => link.source_url && checkLinkValidity(link.id, link.source_url)}
-                    disabled={checkingLinkId === link.id}
+          <Card key={link.id} className="p-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium">{link.source_name}</span>
+                  <Badge variant="outline">{link.media_type === "movie" ? "Film" : "Série"}</Badge>
+                  <Badge variant="secondary">{link.quality}</Badge>
+                  <Badge
+                    className={
+                      link.status === "approved"
+                        ? "bg-green-500/20 text-green-400"
+                        : link.status === "pending"
+                          ? "bg-amber-500/20 text-amber-400"
+                          : "bg-red-500/20 text-red-400"
+                    }
                   >
-                    <RefreshCw className={`h-4 w-4 ${checkingLinkId === link.id ? "animate-spin" : ""}`} />
-                  </Button>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs">Actif</Label>
-                    <Switch checked={link.is_active} onCheckedChange={() => toggleActive(link.id, link.is_active)} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs">Vérifié</Label>
-                    <Switch
-                      checked={link.is_verified}
-                      onCheckedChange={() => toggleVerified(link.id, link.is_verified)}
-                    />
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => openEdit(link)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => deleteLink(link.id)}>
-                    X
-                  </Button>
+                    {link.status === "approved" ? "Approuvé" : link.status === "pending" ? "En attente" : "Rejeté"}
+                  </Badge>
+                  {/* Validation badge */}
+                  {link.is_valid === true && (
+                    <Badge className="bg-green-500/20 text-green-400">
+                      <ShieldCheck className="h-3 w-3 mr-1" />
+                      Valide
+                    </Badge>
+                  )}
+                  {link.is_valid === false && (
+                    <Badge className="bg-red-500/20 text-red-400">
+                      <ShieldX className="h-3 w-3 mr-1" />
+                      Invalide
+                    </Badge>
+                  )}
+                  {link.is_valid === null && (
+                    <Badge className="bg-gray-500/20 text-gray-400">
+                      <ShieldQuestion className="h-3 w-3 mr-1" />
+                      Non vérifié
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  WW: {link.ww_id} | TMDB: {link.tmdb_id}
+                  {link.profiles?.username && (
+                    <span className="text-green-400 ml-2">
+                      <User className="h-3 w-3 inline mr-1" />
+                      {link.profiles.username}
+                    </span>
+                  )}
                 </div>
               </div>
-            </CardContent>
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => checkLinkValidity(link.id, link.source_url, "download")}
+                  disabled={checkingLinkId === link.id}
+                >
+                  <RefreshCw className={`h-4 w-4 ${checkingLinkId === link.id ? "animate-spin" : ""}`} />
+                </Button>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs">Actif</Label>
+                  <Switch checked={link.is_active} onCheckedChange={() => toggleActive(link.id, link.is_active)} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs">Vérifié</Label>
+                  <Switch
+                    checked={link.is_verified}
+                    onCheckedChange={() => toggleVerified(link.id, link.is_verified)}
+                  />
+                </div>
+                <Button size="sm" variant="outline" onClick={() => openEdit(link)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => deleteLink(link.id)}>
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </Card>
         ))}
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4 pt-4">
-          <Button variant="outline" size="sm" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}>
-            <ChevronLeft className="w-4 h-4" />
-            Précédent
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Page {page + 1} sur {totalPages || 1}
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>
+            <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {page + 1} sur {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-            disabled={page >= totalPages - 1}
-          >
-            Suivant
-            <ChevronRight className="w-4 h-4" />
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-      )}
+      </div>
 
       {/* Modal d'édition */}
       <Dialog open={!!editingLink} onOpenChange={() => setEditingLink(null)}>
@@ -612,7 +629,7 @@ export function DownloadLinksManager() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Nom de la source</Label>
+              <Label>Source</Label>
               <Input
                 value={editData.source_name}
                 onChange={(e) => setEditData({ ...editData, source_name: e.target.value })}
@@ -634,6 +651,7 @@ export function DownloadLinksManager() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="CAM">CAM</SelectItem>
+                    <SelectItem value="TS">TS</SelectItem>
                     <SelectItem value="SD">SD</SelectItem>
                     <SelectItem value="HD">HD</SelectItem>
                     <SelectItem value="FHD">FHD</SelectItem>
@@ -642,22 +660,7 @@ export function DownloadLinksManager() {
                 </Select>
               </div>
               <div>
-                <Label>Langue</Label>
-                <Select value={editData.language} onValueChange={(v) => setEditData({ ...editData, language: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="vf">VF</SelectItem>
-                    <SelectItem value="vostfr">VOSTFR</SelectItem>
-                    <SelectItem value="vo">VO</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Type de lien</Label>
+                <Label>Type</Label>
                 <Select
                   value={editData.link_type}
                   onValueChange={(v) => setEditData({ ...editData, link_type: v as "direct" | "torrent" | "magnet" })}
@@ -672,12 +675,28 @@ export function DownloadLinksManager() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Langue</Label>
+                <Select value={editData.language} onValueChange={(v) => setEditData({ ...editData, language: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="vf">VF</SelectItem>
+                    <SelectItem value="vostfr">VOSTFR</SelectItem>
+                    <SelectItem value="vo">VO</SelectItem>
+                    <SelectItem value="multi">Multi</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label>Taille</Label>
                 <Input
                   value={editData.file_size}
                   onChange={(e) => setEditData({ ...editData, file_size: e.target.value })}
-                  placeholder="ex: 1.5 GB"
+                  placeholder="ex: 1.5 Go"
                 />
               </div>
             </div>

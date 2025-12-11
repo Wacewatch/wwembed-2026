@@ -291,7 +291,7 @@ export function DashboardContent({
   downloadLinks: initialDownloadLinks,
   liveTvChannels,
   liveTvSources,
-  digitalContents,
+  digitalContents: initialDigitalContents,
   digitalLinks: initialDigitalLinks,
   stats,
 }: DashboardContentProps) {
@@ -336,6 +336,8 @@ export function DashboardContent({
   const [downloadLinks, setDownloadLinks] = useState(initialDownloadLinks)
   const [digitalLinks, setDigitalLinks] = useState(initialDigitalLinks)
 
+  const [digitalContents, setDigitalContents] = useState(initialDigitalContents)
+
   // Use local state for downloadLinks and digitalLinks to manage is_valid and last_checked
   const [localDownloadLinks, setLocalDownloadLinks] = useState(initialDownloadLinks)
   const [localDigitalLinks, setLocalDigitalLinks] = useState(initialDigitalLinks)
@@ -377,6 +379,33 @@ export function DashboardContent({
       setLocalDigitalLinks(localDigitalLinks.filter((link) => link.id !== linkId)) // Update local state
     } else {
       alert("Erreur lors de la suppression")
+    }
+    setDeletingId(null)
+  }
+
+  const handleDeleteDigitalContent = async (contentId: string, wwId: string) => {
+    if (
+      !confirm(
+        "Êtes-vous sûr de vouloir supprimer ce contenu digital ET tous ses liens associés ? Cette action est irréversible.",
+      )
+    )
+      return
+    setDeletingId(contentId)
+    const supabase = createClient()
+
+    // First delete all associated links
+    await supabase.from("digital_download_links").delete().eq("content_id", contentId)
+
+    // Then delete the content itself
+    const { error } = await supabase.from("digital_content").delete().eq("id", contentId)
+
+    if (!error) {
+      setDigitalContents(digitalContents.filter((content) => content.id !== contentId))
+      // Also remove any links that were associated with this content
+      setDigitalLinks(digitalLinks.filter((link) => link.content_id !== contentId))
+      setLocalDigitalLinks(localDigitalLinks.filter((link) => link.content_id !== contentId))
+    } else {
+      alert("Erreur lors de la suppression du contenu")
     }
     setDeletingId(null)
   }
@@ -817,7 +846,7 @@ export function DashboardContent({
               </div>
               <div>
                 <CardTitle className="text-lg">Devenir Uploader</CardTitle>
-                <CardDescription>Debloquez des fonctionnalites avancees</CardDescription>
+                <CardDescription>Debloquez des fonctionnalites ancees</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -1390,7 +1419,7 @@ export function DashboardContent({
 
             {/* Download Tab */}
             <TabsContent value="download" className="mt-0">
-              {localDownloadLinks.length === 0 && digitalLinks.length === 0 ? (
+              {localDownloadLinks.length === 0 && localDigitalLinks.length === 0 ? (
                 <div className="text-center py-12">
                   <Download className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">Aucun lien telechargement soumis</p>
@@ -1914,6 +1943,7 @@ export function DashboardContent({
                                 className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
                                 onClick={() => handleDeleteDigitalLink(content.id)}
                                 disabled={deletingId === content.id}
+                                title="Supprimer le lien"
                               >
                                 {deletingId === content.id ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1921,6 +1951,27 @@ export function DashboardContent({
                                   <Trash2 className="h-4 w-4" />
                                 )}
                               </Button>
+                              {canEdit && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
+                                  onClick={() =>
+                                    handleDeleteDigitalContent(
+                                      content.digital_content?.id || content.content_id,
+                                      content.ww_id,
+                                    )
+                                  }
+                                  disabled={deletingId === content.id}
+                                  title="Supprimer le contenu + tous les liens"
+                                >
+                                  {deletingId === content.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Package className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              )}
                             </div>
                           </td>
                         </tr>

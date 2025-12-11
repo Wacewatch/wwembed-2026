@@ -87,7 +87,6 @@ export function StatsViewer() {
 
     let allViews: any[] = []
     let page = 0
-    const pageSize = 1000
     let hasMore = true
 
     while (hasMore) {
@@ -95,13 +94,13 @@ export function StatsViewer() {
         .from("embed_views")
         .select("viewed_at, tmdb_id, media_type, referrer, ww_id, user_agent, embed_type")
         .gte("viewed_at", startDate)
-        .range(page * pageSize, (page + 1) * pageSize - 1)
+        .range(page * 10000, (page + 1) * 10000 - 1)
         .order("viewed_at", { ascending: false })
 
       if (viewsPage && viewsPage.length > 0) {
         allViews = [...allViews, ...viewsPage]
         page++
-        hasMore = viewsPage.length === pageSize
+        hasMore = viewsPage.length === 10000
       } else {
         hasMore = false
       }

@@ -128,7 +128,12 @@ export async function POST(request: NextRequest) {
     // Update database if linkId provided
     if (linkId && linkType) {
       const supabase = await createClient()
-      const table = linkType === "digital" ? "digital_download_links" : "download_links"
+      let table = "download_links"
+      if (linkType === "digital") {
+        table = "digital_download_links"
+      } else if (linkType === "streaming") {
+        table = "streaming_links"
+      }
 
       await supabase
         .from(table)
@@ -174,6 +179,13 @@ export async function GET(request: NextRequest) {
     .eq("is_active", true)
     .limit(50)
 
+  const { data: streamingLinks } = await supabase
+    .from("streaming_links")
+    .select("id, source_url")
+    .or(`last_checked.is.null,last_checked.lt.${twelveHoursAgo.toISOString()}`)
+    .eq("is_active", true)
+    .limit(50)
+
   const results: { checked: number; valid: number; invalid: number } = {
     checked: 0,
     valid: 0,
@@ -204,6 +216,23 @@ export async function GET(request: NextRequest) {
       const result = await checkLinkValidity(link.source_url)
       await supabase
         .from("digital_download_links")
+        .update({
+          is_valid: result.isValid,
+          last_checked: new Date().toISOString(),
+        })
+        .eq("id", link.id)
+
+      results.checked++
+      if (result.isValid) results.valid++
+      else results.invalid++
+    }
+  }
+
+  for (const link of streamingLinks || []) {
+    if (link.source_url) {
+      const result = await checkLinkValidity(link.source_url)
+      await supabase
+        .from("streaming_links")
         .update({
           is_valid: result.isValid,
           last_checked: new Date().toISOString(),

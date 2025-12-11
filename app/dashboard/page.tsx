@@ -3,6 +3,35 @@ import { redirect } from "next/navigation"
 import { Header } from "@/components/header"
 import { DashboardContent } from "@/components/dashboard/dashboard-content"
 
+async function fetchAllRows(supabase: any, table: string, userId: string, orderBy = "created_at") {
+  const allRows: any[] = []
+  const pageSize = 1000
+  let page = 0
+  let hasMore = true
+
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from(table)
+      .select("*")
+      .eq("submitted_by", userId)
+      .order(orderBy, { ascending: false })
+      .range(page * pageSize, (page + 1) * pageSize - 1)
+
+    if (error || !data || data.length === 0) {
+      hasMore = false
+    } else {
+      allRows.push(...data)
+      if (data.length < pageSize) {
+        hasMore = false
+      } else {
+        page++
+      }
+    }
+  }
+
+  return allRows
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   const {
@@ -19,25 +48,15 @@ export default async function DashboardPage() {
     redirect("/auth/login")
   }
 
-  const [
-    { data: streamingLinks },
-    { data: downloadLinks },
-    { data: liveTvChannels },
-    { data: liveTvSources },
-    { data: digitalContents },
-    { data: digitalLinks },
-  ] = await Promise.all([
-    supabase.from("streaming_links").select("*").eq("submitted_by", user.id).order("created_at", { ascending: false }),
-    supabase.from("download_links").select("*").eq("submitted_by", user.id).order("created_at", { ascending: false }),
-    supabase.from("live_tv_channels").select("*").eq("submitted_by", user.id).order("created_at", { ascending: false }),
-    supabase.from("live_tv_sources").select("*").eq("submitted_by", user.id).order("created_at", { ascending: false }),
-    supabase.from("digital_content").select("*").eq("submitted_by", user.id).order("created_at", { ascending: false }),
-    supabase
-      .from("digital_download_links")
-      .select("*")
-      .eq("submitted_by", user.id)
-      .order("created_at", { ascending: false }),
-  ])
+  const [streamingLinks, downloadLinks, liveTvChannels, liveTvSources, digitalContents, digitalLinks] =
+    await Promise.all([
+      fetchAllRows(supabase, "streaming_links", user.id),
+      fetchAllRows(supabase, "download_links", user.id),
+      fetchAllRows(supabase, "live_tv_channels", user.id),
+      fetchAllRows(supabase, "live_tv_sources", user.id),
+      fetchAllRows(supabase, "digital_content", user.id),
+      fetchAllRows(supabase, "digital_download_links", user.id),
+    ])
 
   // Then count views based on the fetched links
   const wwIds = [
@@ -53,15 +72,35 @@ export default async function DashboardPage() {
     const { count } = await supabase.from("embed_views").select("*", { count: "exact", head: true }).in("ww_id", wwIds)
     viewCount = count || 0
 
-    const { data: viewsData } = await supabase.from("embed_views").select("ww_id").in("ww_id", wwIds)
+    const allViews: any[] = []
+    const pageSize = 1000
+    let page = 0
+    let hasMore = true
 
-    if (viewsData) {
-      viewsData.forEach((view) => {
-        if (view.ww_id) {
-          viewsPerLink[view.ww_id] = (viewsPerLink[view.ww_id] || 0) + 1
+    while (hasMore) {
+      const { data: viewsData } = await supabase
+        .from("embed_views")
+        .select("ww_id")
+        .in("ww_id", wwIds)
+        .range(page * pageSize, (page + 1) * pageSize - 1)
+
+      if (!viewsData || viewsData.length === 0) {
+        hasMore = false
+      } else {
+        allViews.push(...viewsData)
+        if (viewsData.length < pageSize) {
+          hasMore = false
+        } else {
+          page++
         }
-      })
+      }
     }
+
+    allViews.forEach((view) => {
+      if (view.ww_id) {
+        viewsPerLink[view.ww_id] = (viewsPerLink[view.ww_id] || 0) + 1
+      }
+    })
   }
 
   const streamingLinksWithViews = (streamingLinks || []).map((link) => ({
@@ -118,7 +157,7 @@ export default async function DashboardPage() {
           downloadLinks={downloadLinksWithViews}
           liveTvChannels={liveTvChannels || []}
           liveTvSources={liveTvSources || []}
-          digitalContents={digitalContentsWithViews}
+          initialDigitalContents={digitalContentsWithViews}
           digitalLinks={digitalLinks || []}
           stats={{
             totalStreaming,

@@ -469,46 +469,53 @@ async function getUserLinks(userId: string) {
   try {
     const supabase = createAdminClient()
 
-    const [downloadResult, streamingResult, digitalResult, liveTvResult] = await Promise.all([
-      supabase
-        .from("download_links")
-        .select("*")
-        .eq("submitted_by", userId)
-        .eq("status", "approved")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(1000),
-      supabase
-        .from("streaming_links")
-        .select("*")
-        .eq("submitted_by", userId)
-        .eq("status", "approved")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(1000),
-      supabase
-        .from("digital_content")
-        .select("*")
-        .eq("submitted_by", userId)
-        .eq("status", "approved")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(1000),
-      supabase
-        .from("live_tv_channels")
-        .select("*")
-        .eq("submitted_by", userId)
-        .eq("status", "approved")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(1000),
+    const fetchAllRows = async (table: string, filters: Record<string, any>) => {
+      const allRows: any[] = []
+      const pageSize = 1000
+      let page = 0
+      let hasMore = true
+
+      while (hasMore) {
+        let query = supabase
+          .from(table)
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1)
+
+        // Apply filters
+        for (const [key, value] of Object.entries(filters)) {
+          query = query.eq(key, value)
+        }
+
+        const { data, error } = await query
+
+        if (error || !data || data.length === 0) {
+          hasMore = false
+        } else {
+          allRows.push(...data)
+          if (data.length < pageSize) {
+            hasMore = false
+          } else {
+            page++
+          }
+        }
+      }
+
+      return allRows
+    }
+
+    const [downloads, streaming, digital, liveTV] = await Promise.all([
+      fetchAllRows("download_links", { submitted_by: userId, status: "approved", is_active: true }),
+      fetchAllRows("streaming_links", { submitted_by: userId, status: "approved", is_active: true }),
+      fetchAllRows("digital_content", { submitted_by: userId, status: "approved", is_active: true }),
+      fetchAllRows("live_tv_channels", { submitted_by: userId, status: "approved", is_active: true }),
     ])
 
     return {
-      downloads: downloadResult.data || [],
-      streaming: streamingResult.data || [],
-      digital: digitalResult.data || [],
-      liveTV: liveTvResult.data || [],
+      downloads,
+      streaming,
+      digital,
+      liveTV,
     }
   } catch {
     return { downloads: [], streaming: [], digital: [], liveTV: [] }
