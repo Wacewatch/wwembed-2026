@@ -261,7 +261,7 @@ export function StatsViewer() {
                 return {
                   ...m,
                   title: data.title || data.name || `#${m.tmdb_id}`,
-                  poster: data.poster_path || undefined,
+                  poster: data.poster || undefined,
                 }
               }
             } catch (e) {
@@ -330,7 +330,7 @@ export function StatsViewer() {
                   return {
                     ...m,
                     title: data.title || data.name || `#${m.tmdb_id}`,
-                    poster: data.poster_path || undefined,
+                    poster: data.poster || undefined,
                   }
                 }
               } catch (e) {
