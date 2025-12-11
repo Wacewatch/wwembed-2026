@@ -835,34 +835,25 @@ if(lMatch)lang=lMatch[1].toUpperCase();
 
 // Video codec detection
 var videoCodec="";
-var vcMatch=release.match(/(x264|x265|H\.?264|H\.?265|HEVC|AVC|XVID|DIVX|AV1|VP9|MPEG)/i);
-if(vcMatch)videoCodec=vcMatch[1].toUpperCase().replace(".","");
+var vcMatch=release.match(/(x264|x265|H264|H265|HEVC|AVC|XVID|DIVX|AV1|VP9|MPEG)/i);
+if(vcMatch)videoCodec=vcMatch[1].toUpperCase();
 
 // Audio codec detection
 var audioCodec="";
-var acMatch=release.match(/(AAC|AC3|E-?AC-?3|EAC3|DTS|DTS-HD|ATMOS|TrueHD|FLAC|MP3|DD5\.?1|DD7\.?1|DD|5\.1|7\.1)/i);
-if(acMatch)audioCodec=acMatch[1].toUpperCase().replace(/-/g,"");
+var acMatch=release.match(/(AAC|AC3|EAC3|DTS|DTSHD|ATMOS|TrueHD|FLAC|MP3|DD51|DD71|DD|51|71)/i);
+if(acMatch)audioCodec=acMatch[1].toUpperCase();
 
-// File size
+// File size - simplified regex without problematic escapes
 var fileSize=l.file_size||"";
 if(!fileSize){
-var sMatch=release.match(/(\\d+\\.?\\d*)\\s*(GB|MB|TB|Go|Mo|To)/i);
-if(sMatch)fileSize=sMatch[1]+" "+sMatch[2].toUpperCase();
+var sizePatterns=release.match(/([0-9]+[.]?[0-9]*).?(GB|MB|TB|Go|Mo|To)/i);
+if(sizePatterns)fileSize=sizePatterns[1]+" "+sizePatterns[2].toUpperCase();
 }
 
 // Host/source detection
 var host="";
 var hostMatch=release.match(/(1fichier|Uptobox|Rapidgator|Turbobit|Nitroflare|Uploaded|Mega|MediaFire|GoogleDrive|Streamtape)/i);
 if(hostMatch)host=hostMatch[1];
-
-// Resolution
-var resolution=l.resolution||"";
-if(!resolution&&quality){
-if(quality.includes("2160")||quality.includes("4K")||quality.includes("UHD"))resolution="3840x2160";
-else if(quality.includes("1080"))resolution="1920x1080";
-else if(quality.includes("720"))resolution="1280x720";
-else if(quality.includes("480"))resolution="854x480";
-}
 
 // Build metadata badges
 var meta='<div class="li-meta">';
@@ -872,7 +863,6 @@ if(videoCodec)meta+='<span class="li-tag video">'+videoCodec+'</span>';
 if(audioCodec)meta+='<span class="li-tag audio">'+audioCodec+'</span>';
 if(fileSize)meta+='<span class="li-tag size">'+fileSize+'</span>';
 if(host)meta+='<span class="li-tag host">'+host+'</span>';
-if(resolution&&!quality)meta+='<span class="li-tag">'+resolution+'</span>';
 meta+='</div>';
 
 var btnText=url?'Télécharger':'Lien indisponible';
