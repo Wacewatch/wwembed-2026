@@ -332,15 +332,14 @@ export function DashboardContent({
 
   const canEdit = profile.role === "uploader" || profile.role === "admin"
 
-  const [streamingLinks, setStreamingLinks] = useState(initialStreamingLinks)
-  const [downloadLinks, setDownloadLinks] = useState(initialDownloadLinks)
-  const [digitalLinks, setDigitalLinks] = useState(initialDigitalLinks)
-
-  const [digitalContents, setDigitalContents] = useState(initialDigitalContents)
+  const [streamingLinks, setStreamingLinks] = useState(initialStreamingLinks || [])
+  const [downloadLinks, setDownloadLinks] = useState(initialDownloadLinks || [])
+  const [digitalLinks, setDigitalLinks] = useState(initialDigitalLinks || [])
+  const [digitalContents, setDigitalContents] = useState(initialDigitalContents || [])
 
   // Use local state for downloadLinks and digitalLinks to manage is_valid and last_checked
-  const [localDownloadLinks, setLocalDownloadLinks] = useState(initialDownloadLinks)
-  const [localDigitalLinks, setLocalDigitalLinks] = useState(initialDigitalLinks)
+  const [localDownloadLinks, setLocalDownloadLinks] = useState(initialDownloadLinks || [])
+  const [localDigitalLinks, setLocalDigitalLinks] = useState(initialDigitalLinks || [])
 
   const handleDeleteStreamingLink = async (linkId: string) => {
     if (!confirm("Êtes-vous sûr de vouloir supprimer ce lien streaming ?")) return
