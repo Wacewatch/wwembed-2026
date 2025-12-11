@@ -790,7 +790,11 @@ Recherche de sources externes...
 
 <script>
 (function(){
+console.log("[v0] Download page loaded");
+
 var _lks=${linksJson};
+console.log("[v0] Links loaded:", _lks);
+
 var _u="${adUrl}";
 var _i="${adId}";
 var _h=${hasAds};
@@ -806,7 +810,10 @@ var _episodeNum=${episodeNumber !== undefined ? episodeNumber : "null"};
 var _wwId="${wwId}";
 var _allExtLinks=[];
 
+console.log("[v0] Variables initialized");
+
 function _renderLink(l){
+console.log("[v0] Rendering link:", l);
 var ep="";
 if(_isSeries){
 if(l.is_full_season){ep='<span class="li-ep">Saison '+l.season_number+' Complete</span>';}
@@ -872,12 +879,15 @@ return '<div class="li"><div class="li-top"><div class="li-header">'+ep+'<div cl
 }
 
 function _renderLinks(){
+console.log("[v0] _renderLinks called");
 var c=document.getElementById(_ids.linksContainer);
-if(!c)return;
-if(_lks.length===0){c.innerHTML='<div class="em">Aucun lien direct disponible</div>';return;}
+console.log("[v0] Links container:", c);
+if(!c){console.log("[v0] ERROR: Links container not found");return;}
+if(_lks.length===0){c.innerHTML='<div class="em">Aucun lien direct disponible</div>';console.log("[v0] No links available");return;}
 var html='';
 for(var i=0;i<_lks.length;i++){html+=_renderLink(_lks[i]);}
 c.innerHTML=html;
+console.log("[v0] Links rendered, binding buttons");
 _bindBtns();
 }
 
@@ -1160,8 +1170,11 @@ if(result){result.style.display="block";result.innerHTML='<div style="color:#ef4
 });
 }
 
+console.log("[v0] Calling _renderLinks()");
 _renderLinks();
+console.log("[v0] Calling _loadExternal()");
 _loadExternal();
+console.log("[v0] Script execution complete");
 })();
 </script>
 </body>
