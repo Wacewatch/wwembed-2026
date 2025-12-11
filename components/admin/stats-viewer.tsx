@@ -70,12 +70,12 @@ interface OnlineStats {
   usersOnline5min: number
   usersOnline15min: number
   usersOnline1hour: number
+  usersOnline24h: number
   activePages: {
     ww_id: string
     count: number
-    title?: string
-    poster?: string
-    tmdb_id?: number
+    title: string
+    poster: string | null
     media_type?: string
   }[]
   recentVisitors: {
@@ -83,9 +83,8 @@ interface OnlineStats {
     viewed_at: string
     ww_id: string
     media_type: string
-    title?: string
-    poster?: string
-    tmdb_id?: number
+    title: string
+    poster: string | null
   }[]
 }
 
@@ -116,26 +115,40 @@ export function StatsViewer() {
       const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString()
       const fifteenMinAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString()
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
 
-      // Get views from last hour
       const { data: recentViews, error } = await supabase
         .from("embed_views")
         .select("ip_hash, viewed_at, ww_id, media_type, tmdb_id")
-        .gte("viewed_at", oneHourAgo)
+        .gte("viewed_at", twentyFourHoursAgo)
         .order("viewed_at", { ascending: false })
+        .limit(5000)
 
       console.log("[v0] Recent views count:", recentViews?.length, "Error:", error)
-      console.log("[v0] Time ranges - 5min:", fiveMinAgo, "15min:", fifteenMinAgo, "1hour:", oneHourAgo)
+      console.log(
+        "[v0] Time ranges - 5min:",
+        fiveMinAgo,
+        "15min:",
+        fifteenMinAgo,
+        "1hour:",
+        oneHourAgo,
+        "24h:",
+        twentyFourHoursAgo,
+      )
 
       const views5min = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(fiveMinAgo)) || []
       const views15min = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(fifteenMinAgo)) || []
+      // Get views from last hour for recency
+      const views1hour = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(oneHourAgo)) || []
 
       console.log(
         "[v0] Views in 5min:",
         views5min.length,
         "Views in 15min:",
         views15min.length,
-        "Views in 1hour:",
+        "Views in 1 hour:",
+        views1hour.length,
+        "Views in 24 hours:",
         recentViews?.length,
       )
 
@@ -146,11 +159,23 @@ export function StatsViewer() {
         new Set(views15min.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size || views15min.length
 
       const uniqueIps1hour =
+        new Set(views1hour.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size || views1hour.length
+
+      const uniqueIps24h =
         new Set(recentViews?.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size ||
         recentViews?.length ||
         0
 
-      console.log("[v0] Unique IPs - 5min:", uniqueIps5min, "15min:", uniqueIps15min, "1hour:", uniqueIps1hour)
+      console.log(
+        "[v0] Unique IPs - 5min:",
+        uniqueIps5min,
+        "15min:",
+        uniqueIps15min,
+        "1hour:",
+        uniqueIps1hour,
+        "24h:",
+        uniqueIps24h,
+      )
 
       // Get most active pages in last 15 min
       const pageCount: Record<string, { count: number; tmdb_id?: number; media_type?: string }> = {}
@@ -207,14 +232,15 @@ export function StatsViewer() {
       )
 
       // Get recent unique visitors
-      const seenIps = new Set<string>()
+      const seenKeys = new Set<string>()
       const recentVisitorsRaw =
-        recentViews
-          ?.filter((v: any) => {
-            // If ip_hash is null/undefined, generate a unique key from timestamp + ww_id
-            const uniqueKey = v.ip_hash || `${v.viewed_at}-${v.ww_id}`
-            if (seenIps.has(uniqueKey)) return false
-            seenIps.add(uniqueKey)
+        views1hour
+          ?.sort((a: any, b: any) => new Date(b.viewed_at).getTime() - new Date(a.viewed_at).getTime())
+          .filter((v: any) => {
+            // Use ww_id as unique key to show different pages visited
+            const uniqueKey = v.ww_id || `${v.viewed_at}`
+            if (seenKeys.has(uniqueKey)) return false
+            seenKeys.add(uniqueKey)
             return true
           })
           .slice(0, 10) || []
@@ -263,6 +289,7 @@ export function StatsViewer() {
         usersOnline5min: uniqueIps5min,
         usersOnline15min: uniqueIps15min,
         usersOnline1hour: uniqueIps1hour,
+        usersOnline24h: uniqueIps24h,
         activePages: activePagesWithTitles,
         recentVisitors,
       })
@@ -942,7 +969,7 @@ export function StatsViewer() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/20">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -965,6 +992,14 @@ export function StatsViewer() {
                   <span className="text-sm text-muted-foreground">Dernière heure</span>
                 </div>
                 <p className="text-3xl font-bold text-blue-500">{onlineStats.usersOnline1hour}</p>
+                <p className="text-xs text-muted-foreground mt-1">visiteurs uniques</p>
+              </div>
+              <div className="text-center p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Calendar className="w-4 h-4 text-purple-500" />
+                  <span className="text-sm text-muted-foreground">24 dernières heures</span>
+                </div>
+                <p className="text-3xl font-bold text-purple-500">{onlineStats.usersOnline24h}</p>
                 <p className="text-xs text-muted-foreground mt-1">visiteurs uniques</p>
               </div>
             </div>

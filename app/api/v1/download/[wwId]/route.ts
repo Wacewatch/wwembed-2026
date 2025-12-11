@@ -472,17 +472,16 @@ html+='<div class="ext-link-result" id="extLinkResult" style="display:none"></di
 body.innerHTML=html;
 details.classList.add("show");
 
-document.getElementById("extUnlockBtn").onclick=function(){
-var btn=this;btn.textContent="Ouverture...";btn.style.opacity="0.7";
-if(_h&&_u){
-window.open(_u,"_blank");
-fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
-}
+document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
+
 setTimeout(function(){
 var result=document.getElementById("extLinkResult");
 result.style.display="block";
 var linkUrl=link.url||link.link||link.download_url||"#";
-result.innerHTML='<a href="'+linkUrl+'" target="_blank" onclick="fetch(\\'/api/link-click\\',{method:\\'POST\\',headers:{\\'Content-Type\\':\\'application/json\\'},body:JSON.stringify({linkType:\\'external\\',wwId:\\'${digitalContent.ww_id}\\'})})">Accéder au lien</a>';
+result.innerHTML='<a href="'+linkUrl+'" target="_blank" id="extFinalLink">Accéder au lien</a>';
+document.getElementById("extFinalLink").onclick=function(){
+fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});
+};
 btn.textContent="Lien débloqué !";
 btn.style.background="#10b981";
 },500);
@@ -994,20 +993,18 @@ html+='<div class="ext-link-result" id="extLinkResult" style="display:none"></di
 body.innerHTML=html;
 details.classList.add("show");
 
-document.getElementById("extUnlockBtn").onclick=function(){
-var btn=this;btn.textContent="Ouverture...";btn.style.opacity="0.7";
-if(_h&&_u){
-window.open(_u,"_blank");
-fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
-}
+document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
+
 setTimeout(function(){
 var result=document.getElementById("extLinkResult");
 result.style.display="block";
 var linkUrl=link.url||link.link||link.download_url||"#";
-result.innerHTML='<a href="'+linkUrl+'" target="_blank">Accéder au lien</a>';
+result.innerHTML='<a href="'+linkUrl+'" target="_blank" id="extFinalLink">Accéder au lien</a>';
+document.getElementById("extFinalLink").onclick=function(){
+fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});
+};
 btn.textContent="Lien débloqué !";
 btn.style.background="#10b981";
-fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
 },500);
 };
 }
