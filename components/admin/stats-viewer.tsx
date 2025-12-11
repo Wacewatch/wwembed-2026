@@ -151,19 +151,19 @@ export function StatsViewer() {
         .slice(0, 10)
 
       const activePagesWithTitles = await Promise.all(
-        activePages.map(async (page) => {
+        activePages.map(async (page: any) => {
           // Check if it's a live TV channel
           if (page.ww_id?.startsWith("ww-live-")) {
             const channelId = page.ww_id.replace("ww-live-", "")
             const { data: channel } = await supabase
               .from("live_tv_channels")
-              .select("name, logo_url")
+              .select("channel_name, channel_logo")
               .eq("id", channelId)
               .single()
             return {
               ...page,
-              title: channel?.name || page.ww_id,
-              poster: channel?.logo_url || null,
+              title: channel?.channel_name || page.ww_id,
+              poster: channel?.channel_logo || null,
             }
           }
 
@@ -209,11 +209,11 @@ export function StatsViewer() {
             const channelId = v.ww_id.replace("ww-live-", "")
             const { data: channel } = await supabase
               .from("live_tv_channels")
-              .select("name, logo_url")
+              .select("channel_name, channel_logo")
               .eq("id", channelId)
               .single()
-            title = channel?.name || v.ww_id
-            poster = channel?.logo_url || null
+            title = channel?.channel_name || v.ww_id
+            poster = channel?.channel_logo || null
           } else if (v.tmdb_id && v.media_type && (v.media_type === "movie" || v.media_type === "tv")) {
             try {
               const res = await fetch(`/api/tmdb/${v.media_type}/${v.tmdb_id}`)
@@ -228,7 +228,7 @@ export function StatsViewer() {
           }
 
           return {
-            ip_hash: v.ip_hash?.substring(0, 8) + "...",
+            ip_hash: v.ip_hash ? v.ip_hash.substring(0, 8) + "..." : "Anonyme",
             viewed_at: v.viewed_at,
             ww_id: v.ww_id || "N/A",
             media_type: v.media_type || "N/A",
@@ -641,7 +641,9 @@ export function StatsViewer() {
               <div className="flex items-center gap-3">
                 <Users className="w-8 h-8 text-green-500" />
                 <div>
-                  <p className="text-2xl font-bold text-green-500">{detailedStats.uniqueVisitors.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-green-foreground">
+                    {detailedStats.uniqueVisitors.toLocaleString()}
+                  </p>
                   <p className="text-xs text-muted-foreground">Visiteurs uniques</p>
                 </div>
               </div>
