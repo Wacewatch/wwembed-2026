@@ -322,25 +322,25 @@ async function getUserLinks(userId: string) {
     supabase
       .from("download_links")
       .select("*")
-      .eq("user_id", userId)
+      .eq("submitted_by", userId)
       .eq("status", "approved")
       .order("created_at", { ascending: false }),
     supabase
       .from("streaming_links")
       .select("*")
-      .eq("user_id", userId)
+      .eq("submitted_by", userId)
       .eq("status", "approved")
       .order("created_at", { ascending: false }),
     supabase
       .from("digital_content")
       .select("*")
-      .eq("user_id", userId)
+      .eq("submitted_by", userId)
       .eq("status", "approved")
       .order("created_at", { ascending: false }),
     supabase
       .from("live_tv_channels")
       .select("*")
-      .eq("user_id", userId)
+      .eq("submitted_by", userId)
       .eq("status", "approved")
       .order("created_at", { ascending: false }),
   ])
