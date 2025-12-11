@@ -207,12 +207,14 @@ export function StatsViewer() {
       )
 
       // Get recent unique visitors
-      const seenIps = new Set()
+      const seenIps = new Set<string>()
       const recentVisitorsRaw =
         recentViews
           ?.filter((v: any) => {
-            if (seenIps.has(v.ip_hash)) return false
-            seenIps.add(v.ip_hash)
+            // If ip_hash is null/undefined, generate a unique key from timestamp + ww_id
+            const uniqueKey = v.ip_hash || `${v.viewed_at}-${v.ww_id}`
+            if (seenIps.has(uniqueKey)) return false
+            seenIps.add(uniqueKey)
             return true
           })
           .slice(0, 10) || []
