@@ -19,11 +19,13 @@ import {
   Loader2,
   Download,
 } from "lucide-react"
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts"
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts"
 
 interface ViewsByDay {
   date: string
   count: number
+  streamingCount: number
+  downloadCount: number
   formattedDate: string
 }
 
@@ -123,280 +125,273 @@ export function StatsViewer() {
 
   const loadStats = async () => {
     setLoading(true)
-    setLoadingProgress("Initialisation...")
+    setLoadingProgress("")
     const supabase = createClient()
-    const daysAgo = Number.parseInt(period)
-    const startDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString()
 
-    setLoadingProgress("Récupération des totaux...")
-    const [
-      { count: totalViewsCount },
-      { count: totalClicksCount },
-      { count: totalAdClicksCount },
-      { count: movieViewsCount },
-      { count: tvViewsCount },
-      { count: liveViewsCount },
-    ] = await Promise.all([
-      supabase.from("embed_views").select("*", { count: "exact", head: true }).gte("viewed_at", startDate),
-      supabase.from("link_clicks").select("*", { count: "exact", head: true }).gte("clicked_at", startDate),
-      supabase.from("ad_clicks").select("*", { count: "exact", head: true }).gte("clicked_at", startDate),
-      supabase
-        .from("embed_views")
-        .select("*", { count: "exact", head: true })
-        .gte("viewed_at", startDate)
-        .eq("media_type", "movie"),
-      supabase
-        .from("embed_views")
-        .select("*", { count: "exact", head: true })
-        .gte("viewed_at", startDate)
-        .eq("media_type", "tv"),
-      supabase
-        .from("embed_views")
-        .select("*", { count: "exact", head: true })
-        .gte("viewed_at", startDate)
-        .or("media_type.eq.live,media_type.eq.live_tv,embed_type.eq.live"),
-    ])
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - Number.parseInt(period))
+    const startDateStr = startDate.toISOString()
 
-    setLoadingProgress("Récupération des vues détaillées...")
-    const allViews = await fetchAllRowsPaginated(
-      supabase,
-      "embed_views",
-      "viewed_at, tmdb_id, media_type, referrer, ww_id, user_agent, embed_type",
-      startDate,
-      "viewed_at",
-    )
+    try {
+      // Fetch all embed_views with pagination
+      const allViews = await fetchAllRowsPaginated(
+        supabase,
+        "embed_views",
+        "id, viewed_at, media_type, tmdb_id, ww_id, referrer, ip_hash, embed_type",
+        startDateStr,
+        "viewed_at",
+      )
 
-    setLoadingProgress("Récupération des clics téléchargement...")
-    const allLinkClicks = await fetchAllRowsPaginated(
-      supabase,
-      "link_clicks",
-      "clicked_at, tmdb_id, media_type, ww_id, link_type",
-      startDate,
-      "clicked_at",
-    )
+      // Fetch all link_clicks with pagination
+      const allLinkClicks = await fetchAllRowsPaginated(
+        supabase,
+        "link_clicks",
+        "clicked_at, tmdb_id, media_type, ww_id, link_type",
+        startDateStr,
+        "clicked_at",
+      )
 
-    console.log("[v0] Total views from count:", totalViewsCount)
-    console.log("[v0] Total views fetched:", allViews.length)
-    console.log("[v0] Total link clicks fetched:", allLinkClicks.length)
+      // Fetch all ad_clicks with pagination
+      const allAdClicks = await fetchAllRowsPaginated(supabase, "ad_clicks", "clicked_at", startDateStr, "clicked_at")
 
-    // Préparer les dates pour le graphique
-    const byDay: Record<string, number> = {}
-    const today = new Date()
-    for (let i = daysAgo - 1; i >= 0; i--) {
-      const d = new Date(today)
-      d.setDate(d.getDate() - i)
-      const dateStr = d.toISOString().split("T")[0]
-      byDay[dateStr] = 0
-    }
+      const viewsPerDay: Record<string, { total: number; streaming: number; download: number }> = {}
 
-    const mediaCount: Record<string, { tmdb_id: number | null; media_type: string; views: number; ww_id?: string }> = {}
-    const refCount: Record<string, number> = {}
-    const uniqueIps = new Set<string>()
-
-    setLoadingProgress("Analyse des données...")
-    allViews.forEach((v) => {
-      const date = new Date(v.viewed_at).toISOString().split("T")[0]
-      if (byDay.hasOwnProperty(date)) {
-        byDay[date] = (byDay[date] || 0) + 1
+      // Generate all dates in the period
+      const today = new Date()
+      for (let i = Number.parseInt(period) - 1; i >= 0; i--) {
+        const d = new Date(today)
+        d.setDate(d.getDate() - i)
+        const dateKey = d.toISOString().split("T")[0]
+        viewsPerDay[dateKey] = { total: 0, streaming: 0, download: 0 }
       }
 
-      const isLive =
-        v.media_type === "live" ||
-        v.media_type === "live_tv" ||
-        v.embed_type === "live" ||
-        (v.ww_id && v.ww_id.toLowerCase().includes("live"))
-      const mediaKey = isLive ? `live-${v.ww_id}` : `${v.media_type}-${v.tmdb_id}`
-
-      if (!mediaCount[mediaKey]) {
-        mediaCount[mediaKey] = {
-          tmdb_id: isLive ? null : v.tmdb_id,
-          media_type: isLive ? "live" : v.media_type,
-          views: 0,
-          ww_id: v.ww_id,
-        }
-      }
-      mediaCount[mediaKey].views++
-
-      let ref = "Direct"
-      if (v.referrer) {
-        try {
-          const url = new URL(v.referrer)
-          ref = url.origin
-        } catch {
-          ref = v.referrer
-        }
-      }
-      refCount[ref] = (refCount[ref] || 0) + 1
-
-      if (v.user_agent) {
-        uniqueIps.add(v.user_agent.substring(0, 50))
-      }
-    })
-
-    const downloadCount: Record<
-      string,
-      { tmdb_id: number | null; media_type: string; downloads: number; ww_id?: string }
-    > = {}
-    allLinkClicks.forEach((click) => {
-      const isDigital =
-        click.ww_id &&
-        (click.ww_id.startsWith("ww-ebook-") ||
-          click.ww_id.startsWith("ww-music-") ||
-          click.ww_id.startsWith("ww-software-") ||
-          click.ww_id.startsWith("ww-game-"))
-      const mediaKey = isDigital
-        ? `digital-${click.ww_id}`
-        : `${click.media_type || "unknown"}-${click.tmdb_id || click.ww_id}`
-
-      if (!downloadCount[mediaKey]) {
-        downloadCount[mediaKey] = {
-          tmdb_id: isDigital ? null : click.tmdb_id,
-          media_type: isDigital ? "digital" : click.media_type || "unknown",
-          downloads: 0,
-          ww_id: click.ww_id,
-        }
-      }
-      downloadCount[mediaKey].downloads++
-    })
-
-    const totalFromChart = Object.values(byDay).reduce((sum, count) => sum + count, 0)
-    console.log("[v0] Total from chart data:", totalFromChart)
-
-    setViewsByDay(
-      Object.entries(byDay)
-        .map(([date, count]) => {
-          const dateObj = new Date(date)
-          const formattedDate = `${dateObj.getDate().toString().padStart(2, "0")}/${(dateObj.getMonth() + 1).toString().padStart(2, "0")}`
-          return { date, count, formattedDate }
-        })
-        .sort((a, b) => a.date.localeCompare(b.date)),
-    )
-
-    setLoadingProgress("Chargement des métadonnées...")
-    const topMediaList = Object.values(mediaCount)
-      .sort((a, b) => b.views - a.views)
-      .slice(0, 50)
-
-    const topMediaWithDetails: TopMedia[] = await Promise.all(
-      topMediaList.map(async (m) => {
-        if (m.media_type === "live" && m.ww_id) {
-          const channelId = m.ww_id.replace(/^ww-live-/i, "")
-          const { data: channel } = await supabase
-            .from("live_tv_channels")
-            .select("channel_name, channel_logo")
-            .eq("id", channelId)
-            .single()
-          return {
-            ...m,
-            title: channel?.channel_name || "Chaine TV",
-            poster: channel?.channel_logo || undefined,
+      allViews.forEach((view: any) => {
+        const date = new Date(view.viewed_at).toISOString().split("T")[0]
+        if (viewsPerDay[date]) {
+          viewsPerDay[date].total++
+          // Count streaming views separately (embed_type === 'streaming' or media accessed via streaming)
+          if (view.embed_type === "streaming" || view.ww_id?.includes("streaming")) {
+            viewsPerDay[date].streaming++
           }
-        } else if (m.tmdb_id && m.media_type && m.media_type !== "live") {
+        }
+      })
+
+      allLinkClicks.forEach((click: any) => {
+        const date = new Date(click.clicked_at).toISOString().split("T")[0]
+        if (viewsPerDay[date]) {
+          viewsPerDay[date].download++
+        }
+      })
+
+      const viewsByDayData: ViewsByDay[] = Object.entries(viewsPerDay)
+        .map(([date, data]) => ({
+          date,
+          count: data.total,
+          streamingCount: data.streaming,
+          downloadCount: data.download,
+          formattedDate: new Date(date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date))
+
+      setViewsByDay(viewsByDayData)
+
+      // Process top media
+      const mediaCount: Record<string, { tmdb_id: number | null; media_type: string; views: number; ww_id?: string }> =
+        {}
+      const refCount: Record<string, number> = {}
+      const uniqueIps = new Set<string>()
+
+      allViews.forEach((v) => {
+        const isLive =
+          v.media_type === "live" ||
+          v.media_type === "live_tv" ||
+          v.embed_type === "live" ||
+          (v.ww_id && v.ww_id.toLowerCase().includes("live"))
+        const mediaKey = isLive ? `live-${v.ww_id}` : `${v.media_type}-${v.tmdb_id}`
+
+        if (!mediaCount[mediaKey]) {
+          mediaCount[mediaKey] = {
+            tmdb_id: isLive ? null : v.tmdb_id,
+            media_type: isLive ? "live" : v.media_type,
+            views: 0,
+            ww_id: v.ww_id,
+          }
+        }
+        mediaCount[mediaKey].views++
+
+        let ref = "Direct"
+        if (v.referrer) {
           try {
-            const res = await fetch(`/api/tmdb/${m.media_type}/${m.tmdb_id}`)
-            if (res.ok) {
-              const data = await res.json()
-              return {
-                ...m,
-                title: data.title || data.name || `#${m.tmdb_id}`,
-                poster: data.poster || undefined,
-              }
-            }
-          } catch (e) {
-            // Ignore errors
+            const url = new URL(v.referrer)
+            ref = url.origin
+          } catch {
+            ref = v.referrer
           }
         }
-        return { ...m, title: m.media_type === "live" ? "Chaine TV" : `#${m.tmdb_id}` }
-      }),
-    )
+        refCount[ref] = (refCount[ref] || 0) + 1
 
-    setTopMedia(topMediaWithDetails)
+        if (v.ip_hash) {
+          uniqueIps.add(v.ip_hash)
+        }
+      })
 
-    setLoadingProgress("Chargement des métadonnées téléchargements...")
-    const topDownloadList = Object.values(downloadCount)
-      .sort((a, b) => b.downloads - a.downloads)
-      .slice(0, 50)
+      const topMediaList = Object.values(mediaCount)
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 50)
 
-    console.log("[v0] Top download list:", topDownloadList)
-
-    const topDownloadWithDetails: TopMediaDownload[] = await Promise.all(
-      topDownloadList.map(async (m) => {
-        console.log("[v0] Processing download media:", m)
-
-        if (m.media_type === "digital" && m.ww_id) {
-          const { data: digital } = await supabase
-            .from("digital_content")
-            .select("title, cover_url")
-            .eq("ww_id", m.ww_id)
-            .single()
-          console.log("[v0] Digital content found:", digital)
-          return {
-            ...m,
-            title: digital?.title || "Contenu Digital",
-            poster: digital?.cover_url || undefined,
-          }
-        } else if (m.tmdb_id && m.media_type) {
-          // Normalize media_type for TMDB API (should be "movie" or "tv")
-          const tmdbType = m.media_type === "movie" || m.media_type === "tv" ? m.media_type : null
-          console.log("[v0] TMDB fetch for:", m.tmdb_id, "type:", tmdbType)
-
-          if (tmdbType) {
+      const topMediaWithDetails: TopMedia[] = await Promise.all(
+        topMediaList.map(async (m) => {
+          if (m.media_type === "live" && m.ww_id) {
+            const channelId = m.ww_id.replace(/^ww-live-/i, "")
+            const { data: channel } = await supabase
+              .from("live_tv_channels")
+              .select("channel_name, channel_logo")
+              .eq("id", channelId)
+              .single()
+            return {
+              ...m,
+              title: channel?.channel_name || "Chaine TV",
+              poster: channel?.channel_logo || undefined,
+            }
+          } else if (m.tmdb_id && m.media_type && m.media_type !== "live") {
             try {
-              const res = await fetch(`/api/tmdb/${tmdbType}/${m.tmdb_id}`)
-              console.log("[v0] TMDB response status:", res.status)
+              const res = await fetch(`/api/tmdb/${m.media_type}/${m.tmdb_id}`)
               if (res.ok) {
                 const data = await res.json()
-                console.log("[v0] TMDB data:", data)
                 return {
                   ...m,
                   title: data.title || data.name || `#${m.tmdb_id}`,
-                  poster: data.poster || undefined,
+                  poster: data.poster_path || undefined,
                 }
               }
             } catch (e) {
-              console.error("[v0] TMDB fetch error:", e)
+              // Ignore errors
             }
           }
+          return { ...m, title: m.media_type === "live" ? "Chaine TV" : `#${m.tmdb_id}` }
+        }),
+      )
+
+      setTopMedia(topMediaWithDetails)
+
+      // Process top media downloads
+      const downloadCount: Record<
+        string,
+        { tmdb_id: number | null; media_type: string; downloads: number; ww_id?: string }
+      > = {}
+      allLinkClicks.forEach((click) => {
+        const isDigital =
+          click.ww_id &&
+          (click.ww_id.startsWith("ww-ebook-") ||
+            click.ww_id.startsWith("ww-music-") ||
+            click.ww_id.startsWith("ww-software-") ||
+            click.ww_id.startsWith("ww-game-"))
+        const mediaKey = isDigital
+          ? `digital-${click.ww_id}`
+          : `${click.media_type || "unknown"}-${click.tmdb_id || click.ww_id}`
+
+        if (!downloadCount[mediaKey]) {
+          downloadCount[mediaKey] = {
+            tmdb_id: isDigital ? null : click.tmdb_id,
+            media_type: isDigital ? "digital" : click.media_type || "unknown",
+            downloads: 0,
+            ww_id: click.ww_id,
+          }
         }
-        return { ...m, title: m.media_type === "digital" ? "Contenu Digital" : `#${m.tmdb_id || m.ww_id}` }
-      }),
-    )
+        downloadCount[mediaKey].downloads++
+      })
 
-    console.log("[v0] Top download with details:", topDownloadWithDetails)
-    setTopMediaDownload(topDownloadWithDetails)
+      const topDownloadList = Object.values(downloadCount)
+        .sort((a, b) => b.downloads - a.downloads)
+        .slice(0, 50)
 
-    const totalFromReferrers = Object.values(refCount).reduce((sum, count) => sum + count, 0)
-    console.log("[v0] Total from referrers:", totalFromReferrers)
+      const topDownloadWithDetails: TopMediaDownload[] = await Promise.all(
+        topDownloadList.map(async (m) => {
+          if (m.media_type === "digital" && m.ww_id) {
+            const { data: digital } = await supabase
+              .from("digital_content")
+              .select("title, cover_url")
+              .eq("ww_id", m.ww_id)
+              .single()
+            return {
+              ...m,
+              title: digital?.title || "Contenu Digital",
+              poster: digital?.cover_url || undefined,
+            }
+          } else if (m.tmdb_id && m.media_type) {
+            // Normalize media_type for TMDB API (should be "movie" or "tv")
+            const tmdbType = m.media_type === "movie" || m.media_type === "tv" ? m.media_type : null
 
-    setTopReferrers(
-      Object.entries(refCount)
+            if (tmdbType) {
+              try {
+                const res = await fetch(`/api/tmdb/${tmdbType}/${m.tmdb_id}`)
+                if (res.ok) {
+                  const data = await res.json()
+                  return {
+                    ...m,
+                    title: data.title || data.name || `#${m.tmdb_id}`,
+                    poster: data.poster_path || undefined,
+                  }
+                }
+              } catch (e) {
+                console.error("[v0] TMDB fetch error:", e)
+              }
+            }
+          }
+          return { ...m, title: m.media_type === "digital" ? "Contenu Digital" : `#${m.tmdb_id || m.ww_id}` }
+        }),
+      )
+
+      setTopMediaDownload(topDownloadWithDetails)
+
+      // Process top referrers
+      const topReferrersList = Object.entries(refCount)
         .map(([referrer, count]) => ({ referrer, count }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 50),
-    )
+        .slice(0, 50)
 
-    const totalViews = totalViewsCount || 0
-    setDetailedStats({
-      totalViews,
-      totalClicks: totalClicksCount || 0,
-      totalAdClicks: totalAdClicksCount || 0,
-      uniqueVisitors: uniqueIps.size,
-      avgViewsPerDay: daysAgo > 0 ? totalViews / daysAgo : 0,
-      topCountries: [],
-      viewsByType: [
-        { type: "Films", count: movieViewsCount || 0 },
-        { type: "Series", count: tvViewsCount || 0 },
-        { type: "TV Live", count: liveViewsCount || 0 },
-      ],
-      recentActivity: allViews.slice(0, 5).map((v) => ({
-        action: "Vue",
-        timestamp: v.viewed_at,
-        details: `${v.media_type} #${v.tmdb_id || v.ww_id}`,
-      })),
-    })
+      setTopReferrers(topReferrersList)
 
-    setLoading(false)
-    setLoadingProgress("")
+      // Calculate detailed stats
+      const totalViews = Object.values(viewsPerDay).reduce((sum, day) => sum + day.total, 0)
+      const totalStreamingViews = Object.values(viewsPerDay).reduce((sum, day) => sum + day.streaming, 0)
+      const totalClicks = allLinkClicks.length
+      const totalAdClicks = allAdClicks.length
+      const uniqueVisitors = uniqueIps.size
+      const avgViewsPerDay = period > 0 ? totalViews / Number.parseInt(period) : 0
+
+      setDetailedStats({
+        totalViews,
+        totalClicks,
+        totalAdClicks,
+        uniqueVisitors,
+        avgViewsPerDay,
+        topCountries: [],
+        viewsByType: [
+          { type: "Films", count: allViews.filter((v) => v.media_type === "movie").length },
+          { type: "Series", count: allViews.filter((v) => v.media_type === "tv").length },
+          {
+            type: "TV Live",
+            count: allViews.filter(
+              (v) => v.media_type === "live" || v.media_type === "live_tv" || v.embed_type === "live",
+            ).length,
+          },
+          { type: "Streaming", count: totalStreamingViews },
+        ],
+        recentActivity: allViews.slice(0, 5).map((v) => ({
+          action: "Vue",
+          timestamp: v.viewed_at,
+          details: `${v.media_type} #${v.tmdb_id || v.ww_id}`,
+        })),
+      })
+
+      setLoading(false)
+      setLoadingProgress("")
+    } catch (error) {
+      console.error("[v0] Error loading stats:", error)
+      setLoading(false)
+      setLoadingProgress("")
+    }
   }
 
   if (loading) {
@@ -511,6 +506,7 @@ export function StatsViewer() {
                   {item.type === "Films" && <Film className="w-8 h-8 mx-auto mb-2 text-blue-500" />}
                   {item.type === "Series" && <Tv className="w-8 h-8 mx-auto mb-2 text-purple-500" />}
                   {item.type === "TV Live" && <Play className="w-8 h-8 mx-auto mb-2 text-red-500" />}
+                  {item.type === "Streaming" && <Play className="w-8 h-8 mx-auto mb-2 text-yellow-500" />}
                   <p className="text-xl font-bold text-foreground">{item.count.toLocaleString()}</p>
                   <p className="text-sm text-muted-foreground">{item.type}</p>
                 </div>
@@ -561,6 +557,9 @@ export function StatsViewer() {
                     formatter={(value: number) => [`${value.toLocaleString()} vues`, "Vues"]}
                   />
                   <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} name="Vues" />
+                  <Bar dataKey="streamingCount" fill="#fde047" radius={[4, 4, 0, 0]} name="Streaming" />
+                  <Bar dataKey="downloadCount" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Downloads" />
+                  <Legend />
                 </BarChart>
               </ResponsiveContainer>
             </div>
