@@ -284,6 +284,8 @@ Recherche de sources externes...
 
 <script>
 (function(){
+try {
+console.log("[v0] Starting digital download script");
 var _u="${adUrl}";
 var _i="${adId}";
 var _h=${hasAds};
@@ -517,6 +519,10 @@ body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Err
 
 _bindButtons();
 _loadExternal();
+} catch(err) {
+console.error("[v0] Script error:", err.message, err.stack);
+alert("[v0 Debug] Error: " + err.message);
+}
 })();
 </script>
 </body>
@@ -626,7 +632,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ps{width:70px;height:100px;object-fit:cover;border-radius:8px}
 .tt{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px}
 .tg{font-size:13px;color:#14B8A6}
-.li{background:rgba(22,34,48,0.8);border-radius:12px;border:1px solid rgba(30,58,79,0.6);margin-bottom:12px;overflow:hidden}
+.li{background:rgba(22,34,48,0.8);border-radius:12px;margin-bottom:12px;overflow:hidden;border:1px solid rgba(30,58,79,0.6)}
 .li-top{padding:16px;border-bottom:1px solid rgba(30,58,79,0.4)}
 .li-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .li-ep{background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700}
@@ -780,7 +786,10 @@ Recherche de sources externes...
 
 <script>
 (function(){
+try {
+console.log("[v0] Starting movie/series download script");
 var _lks=JSON.parse(atob('${linksJsonBase64}'));
+console.log("[v0] Parsed links:", _lks.length);
 var _u="${adUrl}";
 var _i="${adId}";
 var _h=${hasAds};
@@ -1121,6 +1130,10 @@ if(result){result.style.display="block";result.innerHTML='<div style="color:#ef4
 
 _renderLinks();
 _loadExternal();
+} catch(err) {
+console.error("[v0] Script error:", err.message, err.stack);
+alert("[v0 Debug] Error: " + err.message);
+}
 })();
 </script>
 </body>
