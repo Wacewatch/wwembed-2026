@@ -1,6 +1,5 @@
 // Existing code block with updates merged
 
-// Find the CSS section in the film/series HTML and add:
 const css = `
 .nfo-btn{background:#6366f1;color:#fff;padding:4px 10px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:4px}
 .nfo-btn:hover{background:#4f46e5}
@@ -11,10 +10,15 @@ const css = `
 .nfo-close{background:#ef4444;color:#fff;padding:8px 16px;border-radius:6px;border:none;cursor:pointer;margin-top:12px}
 `
 
-// Insert CSS into the document
-const style = document.createElement("style")
-style.innerHTML = css
-document.head.appendChild(style)
+const nfoModalHtml = `
+  <div id="nfoModal" class="nfo-modal" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="nfo-content">
+      <h3 style="color:#fff;margin:0 0 8px 0">Informations NFO</h3>
+      <pre id="nfoText"></pre>
+      <button class="nfo-close" onclick="document.getElementById('nfoModal').classList.remove('show')">Fermer</button>
+    </div>
+  </div>
+`
 
 function _renderLink(l) {
   var meta = ""
@@ -55,3 +59,21 @@ function _showNfo(b64) {
     alert("Erreur lecture NFO")
   }
 }
+
+// Include CSS in the HTML template and NFO modal
+const scriptContent = "console.log('Script content here');" // Declare scriptContent variable
+const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<style>${css}</style>
+</head>
+<body>
+... existing HTML content ...
+${nfoModalHtml}
+<script>
+${scriptContent}
+</script>
+</body>
+</html>
+`
