@@ -460,6 +460,7 @@ _showExtDetails(_allExtLinks[idx]);
 });
 }
 
+// ** START OF UPDATES **
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
@@ -479,41 +480,19 @@ return;
 var embed=data.embed_url;
 var finalUrl=embed.lien||"#";
 
-var html='<div style="margin-bottom:16px"><strong>Provider:</strong> '+(link.provider||"N/A")+'</div>';
-html+='<div style="margin-bottom:16px"><strong>Qualité:</strong> '+(link.quality||"N/A")+'</div>';
-html+='<div style="margin-bottom:16px"><strong>Langue:</strong> '+(link.language||"N/A")+'</div>';
-html+='<div style="margin-bottom:16px"><strong>Taille:</strong> '+(embed.taille?_formatSize(embed.taille):_formatSize(link.size))+'</div>';
-html+='<div id="extUnlockSection"><div style="text-align:center;padding:20px;background:rgba(102,126,234,0.1);border-radius:12px;margin-bottom:16px"><div style="font-size:48px;margin-bottom:12px">🔒</div><h4 style="color:#e0e7ff;margin-bottom:8px">Lien protégé</h4><p style="color:#a5b4fc;font-size:13px;margin-bottom:16px">Débloquez ce lien en ouvrant une courte publicité</p><button class="ext-unlock-btn" id="extUnlockBtn">🔓 Débloquer maintenant</button></div></div>';
-html+='<div id="extLinkSection" style="display:none"><div style="text-align:center;padding:20px;background:rgba(16,185,129,0.1);border-radius:12px"><div style="font-size:48px;margin-bottom:12px">✅</div><h4 style="color:#10b981;margin-bottom:12px">Lien débloqué !</h4><a href="'+finalUrl+'" target="_blank" id="extFinalLink" style="display:inline-block;padding:14px 28px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:10px;font-weight:700;text-decoration:none">📥 Accéder au téléchargement</a><p style="margin-top:12px;font-size:11px;color:#6b7280;word-break:break-all">'+finalUrl+'</p></div></div>';
-body.innerHTML=html;
-
-var closeBtn=document.getElementById("extCloseBtn");
-if(closeBtn){closeBtn.onclick=function(){details.classList.remove("show");};}
-
-var unlockBtn=document.getElementById("extUnlockBtn");
-if(unlockBtn){
-unlockBtn.onclick=function(){
-unlockBtn.disabled=true;
-unlockBtn.innerHTML="⏳ Ouverture...";
-// Open ad popup
+details.classList.remove("show");
 if(_h&&_u){
-fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
-window.open(_u,"_blank");
-}
-// Show link after 500ms
-setTimeout(function(){
-document.getElementById("extUnlockSection").style.display="none";
-document.getElementById("extLinkSection").style.display="block";
-var finalLink=document.getElementById("extFinalLink");
-if(finalLink){finalLink.onclick=function(){fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});};}
-},500);
-};
+  _showAdModal(finalUrl);
+}else{
+  fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});
+  window.open(finalUrl,"_blank");
 }
 })
 .catch(function(err){
 body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
 });
 }
+// ** END OF UPDATES **
 
 _bindButtons();
 _loadExternal();
@@ -816,12 +795,12 @@ if(url&&!url.startsWith("http")){url="https://"+url;}
 
 var meta='<div class="li-meta">';
 if(l.quality)meta+='<span class="li-tag quality">'+l.quality+'</span>';
-if(l.resolution)meta+='<span class="li-tag" style="background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(139,92,246,0.1));color:#a78bfa;border-color:rgba(139,92,246,0.3)">'+l.resolution+'</span>';
-if(l.file_size)meta+='<span class="li-tag" style="background:linear-gradient(135deg,rgba(34,197,94,0.2),rgba(34,197,94,0.1));color:#4ade80;border-color:rgba(34,197,94,0.3)">'+l.file_size+'</span>';
-if(l.language)meta+='<span class="li-tag" style="background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(59,130,246,0.1));color:#60a5fa;border-color:rgba(59,130,246,0.3)">'+l.language+'</span>';
-if(l.video_codec)meta+='<span class="li-tag" style="background:linear-gradient(135deg,rgba(236,72,153,0.2),rgba(236,72,153,0.1));color:#f472b6;border-color:rgba(236,72,153,0.3)">'+l.video_codec+'</span>';
-if(l.audio_codec)meta+='<span class="li-tag" style="background:linear-gradient(135deg,rgba(249,115,22,0.2),rgba(249,115,22,0.1));color:#fb923c;border-color:rgba(249,115,22,0.3)">'+l.audio_codec+'</span>';
-if(l.source_type)meta+='<span class="li-tag" style="background:linear-gradient(135deg,rgba(239,68,68,0.2),rgba(239,68,68,0.1));color:#f87171;border-color:rgba(239,68,68,0.3)">'+l.source_type+'</span>';
+if(l.resolution)meta+='<span class="li-tag" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed,rgba(139,92,246,0.2));color:#a78bfa;border-color:rgba(139,92,246,0.3)">'+l.resolution+'</span>';
+if(l.file_size)meta+='<span class="li-tag" style="background:linear-gradient(135deg,#22c55e,#22c55e,rgba(34,197,94,0.2));color:#4ade80;border-color:rgba(34,197,94,0.3)">'+l.file_size+'</span>';
+if(l.language)meta+='<span class="li-tag" style="background:linear-gradient(135deg,#3b82f6,#3b82f6,rgba(59,130,246,0.2));color:#60a5fa;border-color:rgba(59,130,246,0.3)">'+l.language+'</span>';
+if(l.video_codec)meta+='<span class="li-tag" style="background:linear-gradient(135deg,#ec4899,#ec4899,rgba(236,72,153,0.2));color:#f472b6;border-color:rgba(236,72,153,0.3)">'+l.video_codec+'</span>';
+if(l.audio_codec)meta+='<span class="li-tag" style="background:linear-gradient(135deg,#f97316,#f97316,rgba(249,115,22,0.2));color:#fb923c;border-color:rgba(249,115,22,0.3)">'+l.audio_codec+'</span>';
+if(l.source_type)meta+='<span class="li-tag" style="background:linear-gradient(135deg,#ef4444,#ef4444,rgba(239,68,68,0.2));color:#f87171;border-color:rgba(239,68,68,0.3)">'+l.source_type+'</span>';
 meta+='</div>';
 
 var btnText=url?'Télécharger':'Lien indisponible';
@@ -1013,6 +992,7 @@ _showExtDetails(_allExtLinks[idx]);
 });
 }
 
+// ** START OF UPDATES **
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
@@ -1032,65 +1012,19 @@ return;
 var embed=data.embed_url;
 var finalUrl=embed.lien||"#";
 
-var html='<div style="margin-bottom:16px"><strong>Provider:</strong> '+(link.provider||"N/A")+'</div>';
-html+='<div style="margin-bottom:16px"><strong>Qualité:</strong> '+(link.quality||"N/A")+'</div>';
-html+='<div style="margin-bottom:16px"><strong>Langue:</strong> '+(link.language||"N/A")+'</div>';
-html+='<div style="margin-bottom:16px"><strong>Taille:</strong> '+(embed.taille?_formatSize(embed.taille):_formatSize(link.size))+'</div>';
-
-// Unlock section with pub system
-html+='<div id="extUnlockSection"><div style="text-align:center;padding:20px;background:rgba(102,126,234,0.1);border-radius:12px;margin-bottom:16px">';
-html+='<div style="font-size:48px;margin-bottom:12px">🔒</div>';
-html+='<h4 style="color:#e0e7ff;margin-bottom:8px">Lien protégé</h4>';
-html+='<p style="color:#a5b4fc;font-size:13px;margin-bottom:16px">Débloquez ce lien en ouvrant une courte publicité</p>';
-html+='<button class="ext-unlock-btn" id="extUnlockBtn">🔓 Débloquer maintenant</button>';
-html+='<div id="extCountdown" style="display:none;margin-top:12px"><div style="font-size:24px;font-weight:700;color:#667eea" id="extTimer">3</div><div style="font-size:12px;color:#a5b4fc">secondes restantes</div></div>';
-html+='</div></div>';
-
-// Link section (hidden initially)
-html+='<div id="extLinkSection" style="display:none"><div style="text-align:center;padding:20px;background:rgba(16,185,129,0.1);border-radius:12px">';
-html+='<div style="font-size:48px;margin-bottom:12px">✅</div>';
-html+='<h4 style="color:#10b981;margin-bottom:12px">Lien débloqué !</h4>';
-html+='<a href="'+finalUrl+'" target="_blank" id="extFinalLink" style="display:inline-block;padding:14px 28px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:10px;font-weight:700;text-decoration:none">📥 Accéder au téléchargement</a>';
-html+='<p style="margin-top:12px;font-size:11px;color:#6b7280;word-break:break-all">'+finalUrl+'</p>';
-html+='</div></div>';
-
-body.innerHTML=html;
-
-var closeBtn=document.getElementById("extCloseBtn");
-if(closeBtn){closeBtn.onclick=function(){details.classList.remove("show");};}
-
-var unlockBtn=document.getElementById("extUnlockBtn");
-if(unlockBtn){
-unlockBtn.onclick=function(){
-// Open ad popup if ads enabled
+details.classList.remove("show");
 if(_h&&_u){
-fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
-window.open(_u,"_blank");
-}
-// Show countdown
-unlockBtn.style.display="none";
-var countdown=document.getElementById("extCountdown");
-countdown.style.display="block";
-var timerEl=document.getElementById("extTimer");
-var sec=3;
-var iv=setInterval(function(){
-sec--;
-timerEl.textContent=sec;
-if(sec<=0){
-clearInterval(iv);
-document.getElementById("extUnlockSection").style.display="none";
-document.getElementById("extLinkSection").style.display="block";
-var finalLink=document.getElementById("extFinalLink");
-if(finalLink){finalLink.onclick=function(){fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});};}
-}
-},1000);
-};
+  _showAdModal(finalUrl);
+}else{
+  fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});
+  window.open(finalUrl,"_blank");
 }
 })
 .catch(function(err){
 body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
 });
 }
+// ** END OF UPDATES **
 
 _renderLinks();
 _loadExternal();
