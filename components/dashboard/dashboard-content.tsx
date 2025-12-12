@@ -40,7 +40,6 @@ import {
   Plus,
   LayoutDashboard,
   Link2,
-  Sparkles,
   BarChart3,
   Calendar,
   Award,
@@ -58,6 +57,8 @@ import {
   ShieldQuestion,
   Film,
   FileDown,
+  Activity,
+  FileDownIcon,
 } from "lucide-react"
 import type {
   Profile,
@@ -327,6 +328,9 @@ export function DashboardContent({
   const [downloadStatusFilter, setDownloadStatusFilter] = useState<string>("all")
   const [downloadTypeFilter, setDownloadTypeFilter] = useState<string>("all")
   const [downloadQualityFilter, setDownloadQualityFilter] = useState<string>("all")
+
+  // Add state for recent activity
+  const [recentClicks, setRecentClicks] = useState<any[]>([])
 
   const supabase = createClient()
 
@@ -677,6 +681,79 @@ export function DashboardContent({
       setLoadingBugReports(false)
     }
     fetchBugReports()
+  }, [])
+
+  // Add useEffect to load recent clicks
+  useEffect(() => {
+    const loadRecentClicks = async () => {
+      const { data } = await supabase
+        .from("link_clicks")
+        .select("*")
+        .order("clicked_at", { ascending: false })
+        .limit(10)
+
+      if (data) {
+        // Fetch titles for each click
+        const clicksWithTitles = await Promise.all(
+          data.map(async (click) => {
+            let title = click.ww_id
+            let mediaTypeLabel = "Inconnu"
+
+            // Determine media type label
+            if (click.ww_id?.startsWith("ww-movie-")) {
+              mediaTypeLabel = "Film"
+            } else if (click.ww_id?.startsWith("ww-tv-") || click.ww_id?.startsWith("ww-series-")) {
+              mediaTypeLabel = "Série"
+            } else if (
+              click.ww_id?.startsWith("ww-ebook-") ||
+              click.ww_id?.startsWith("ww-music-") ||
+              click.ww_id?.startsWith("ww-software-") ||
+              click.ww_id?.startsWith("ww-game-")
+            ) {
+              mediaTypeLabel = "Digital"
+            } else if (click.ww_id?.startsWith("ww-live-")) {
+              mediaTypeLabel = "TV Live"
+            }
+
+            // Determine link type label
+            const linkTypeLabel = click.is_external ? "Externe" : "Direct"
+
+            // Get title from TMDB or digital_content
+            if (click.tmdb_id && click.media_type) {
+              try {
+                const res = await fetch(`/api/tmdb/${click.media_type}/${click.tmdb_id}`)
+                if (res.ok) {
+                  const data = await res.json()
+                  title = data.title || data.name || click.ww_id
+                }
+              } catch (e) {}
+            } else if (
+              click.ww_id?.startsWith("ww-ebook-") ||
+              click.ww_id?.startsWith("ww-music-") ||
+              click.ww_id?.startsWith("ww-software-") ||
+              click.ww_id?.startsWith("ww-game-")
+            ) {
+              const { data: digital } = await supabase
+                .from("digital_content")
+                .select("title")
+                .eq("ww_id", click.ww_id)
+                .single()
+              if (digital) title = digital.title
+            }
+
+            return {
+              ...click,
+              title,
+              mediaTypeLabel,
+              linkTypeLabel,
+            }
+          }),
+        )
+        setRecentClicks(clicksWithTitles)
+      }
+    }
+
+    loadRecentClicks()
   }, [])
 
   async function handleRequestUploader() {
@@ -1147,46 +1224,55 @@ export function DashboardContent({
 
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Recent Activity */}
-                <Card className="border-zinc-800 bg-zinc-900/50">
+                <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                      Activite recente
+                      <Activity className="w-4 h-4 text-primary" />
+                      Activité récente
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {[...streamingLinks, ...downloadLinks].slice(0, 5).map((link, i) => {
-                        const mediaInfo = getMediaInfo(link)
-                        const episodeInfo = formatEpisodeInfo(link)
-                        return (
-                          <div
-                            key={link.id}
-                            className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0"
-                          >
-                            <div className="flex items-center gap-3">
-                              {mediaInfo.poster && (
-                                <img
-                                  src={mediaInfo.poster || "/placeholder.svg"}
-                                  alt={mediaInfo.title}
-                                  className="w-10 h-12 object-cover rounded"
-                                />
+                      {recentClicks.slice(0, 5).map((click, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between py-2 border-b border-border/30 last:border-0"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-primary/10">
+                              {click.linkTypeLabel === "Download" ? ( // Corrected to use linkTypeLabel
+                                <FileDownIcon className="w-4 h-4 text-primary" /> // Use renamed icon
+                              ) : (
+                                <Play className="w-4 h-4 text-primary" />
                               )}
-                              <div>
-                                <p className="text-sm font-medium truncate max-w-[150px]">
-                                  {mediaInfo.title} {episodeInfo}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {new Date(link.created_at).toLocaleDateString("fr-FR")}
-                                </p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium truncate max-w-[200px]">{click.title}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                  {click.mediaTypeLabel}
+                                </Badge>
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[10px] px-1.5 py-0 ${click.is_external ? "border-orange-500/50 text-orange-500" : "border-emerald-500/50 text-emerald-500"}`}
+                                >
+                                  {click.linkTypeLabel}
+                                </Badge>
                               </div>
                             </div>
-                            {getStatusBadge(link.status)}
                           </div>
-                        )
-                      })}
-                      {streamingLinks.length === 0 && downloadLinks.length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-4">Aucune activite recente</p>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(click.clicked_at).toLocaleDateString("fr-FR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      ))}
+                      {recentClicks.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">Aucune activité récente</p>
                       )}
                     </div>
                   </CardContent>

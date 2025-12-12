@@ -19,6 +19,8 @@ import {
   ExternalLink,
   CheckCheck,
   Loader2,
+  Book,
+  FileDown,
 } from "lucide-react"
 import type { StreamingLink, DownloadLink, LiveTVChannel, LiveTVSource } from "@/lib/types"
 
@@ -39,11 +41,41 @@ interface PendingLiveTVSource extends LiveTVSource {
   channel_name?: string
 }
 
+interface PendingDigitalContent {
+  id: string
+  ww_id: string
+  title: string
+  content_type: string
+  author?: string
+  cover_url?: string
+  status: string
+  created_at: string
+  submitter_email?: string
+}
+
+interface PendingDigitalLink {
+  id: string
+  content_id: string
+  ww_id: string
+  source_name: string
+  source_url: string
+  quality: string
+  link_type: string
+  file_format?: string
+  file_size?: string
+  status: string
+  created_at: string
+  submitter_email?: string
+  content_title?: string
+}
+
 export function PendingLinksManager() {
   const [streamingLinks, setStreamingLinks] = useState<PendingLink[]>([])
   const [downloadLinks, setDownloadLinks] = useState<PendingDownloadLink[]>([])
   const [liveTvChannels, setLiveTvChannels] = useState<PendingLiveTVChannel[]>([])
   const [liveTvSources, setLiveTvSources] = useState<PendingLiveTVSource[]>([])
+  const [digitalContents, setDigitalContents] = useState<PendingDigitalContent[]>([])
+  const [digitalLinks, setDigitalLinks] = useState<PendingDigitalLink[]>([])
   const [loading, setLoading] = useState(true)
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
 
@@ -54,7 +86,7 @@ export function PendingLinksManager() {
   const loadPendingLinks = async () => {
     const supabase = createClient()
 
-    const [streaming, download, livetv, tvSources] = await Promise.all([
+    const [streaming, download, livetv, tvSources, digital, digitalDl] = await Promise.all([
       supabase
         .from("streaming_links")
         .select("*, profiles(email)")
@@ -73,6 +105,16 @@ export function PendingLinksManager() {
       supabase
         .from("live_tv_sources")
         .select("*, profiles(email), live_tv_channels(channel_name)")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("digital_content")
+        .select("*, profiles(email)")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("digital_download_links")
+        .select("*, profiles(email), digital_content(title)")
         .eq("status", "pending")
         .order("created_at", { ascending: false }),
     ])
@@ -102,6 +144,19 @@ export function PendingLinksManager() {
         channel_name: (l.live_tv_channels as { channel_name: string } | null)?.channel_name,
       })) as PendingLiveTVSource[],
     )
+    setDigitalContents(
+      (digital.data || []).map((l: Record<string, unknown>) => ({
+        ...l,
+        submitter_email: (l.profiles as { email: string } | null)?.email,
+      })) as PendingDigitalContent[],
+    )
+    setDigitalLinks(
+      (digitalDl.data || []).map((l: Record<string, unknown>) => ({
+        ...l,
+        submitter_email: (l.profiles as { email: string } | null)?.email,
+        content_title: (l.digital_content as { title: string } | null)?.title,
+      })) as PendingDigitalLink[],
+    )
     setLoading(false)
   }
 
@@ -117,7 +172,7 @@ export function PendingLinksManager() {
     })
   }
 
-  const approveAll = async (type: "streaming" | "download" | "livetv" | "tvsources") => {
+  const approveAll = async (type: "streaming" | "download" | "livetv" | "tvsources" | "digital" | "digitallinks") => {
     const supabase = createClient()
     const table =
       type === "streaming"
@@ -126,7 +181,11 @@ export function PendingLinksManager() {
           ? "download_links"
           : type === "livetv"
             ? "live_tv_channels"
-            : "live_tv_sources"
+            : type === "tvsources"
+              ? "live_tv_sources"
+              : type === "digital"
+                ? "digital_content"
+                : "digital_download_links"
     await supabase.from(table).update({ status: "approved" }).eq("status", "pending")
     loadPendingLinks()
   }
@@ -139,7 +198,13 @@ export function PendingLinksManager() {
     )
   }
 
-  const totalPending = streamingLinks.length + downloadLinks.length + liveTvChannels.length + liveTvSources.length
+  const totalPending =
+    streamingLinks.length +
+    downloadLinks.length +
+    liveTvChannels.length +
+    liveTvSources.length +
+    digitalContents.length +
+    digitalLinks.length
 
   return (
     <div className="space-y-6">
@@ -155,7 +220,7 @@ export function PendingLinksManager() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-3">
@@ -196,6 +261,28 @@ export function PendingLinksManager() {
               <div>
                 <p className="text-2xl font-bold">{liveTvSources.length}</p>
                 <p className="text-xs text-muted-foreground">Sources TV</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-3">
+              <Book className="w-8 h-8 text-amber-500" />
+              <div>
+                <p className="text-2xl font-bold">{digitalContents.length}</p>
+                <p className="text-xs text-muted-foreground">Digital</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-pink-500/10 to-pink-500/5 border-pink-500/20">
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-3">
+              <FileDown className="w-8 h-8 text-pink-500" />
+              <div>
+                <p className="text-2xl font-bold">{digitalLinks.length}</p>
+                <p className="text-xs text-muted-foreground">Liens Digital</p>
               </div>
             </div>
           </CardContent>
@@ -246,6 +333,24 @@ export function PendingLinksManager() {
               {liveTvSources.length > 0 && (
                 <Badge variant="secondary" className="ml-1">
                   {liveTvSources.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="digital" className="gap-2">
+              <Book className="w-4 h-4" />
+              Digital
+              {digitalContents.length > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {digitalContents.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="digitallinks" className="gap-2">
+              <FileDown className="w-4 h-4" />
+              Liens Digital
+              {digitalLinks.length > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {digitalLinks.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -565,6 +670,177 @@ export function PendingLinksManager() {
                 <div className="text-center py-8 text-muted-foreground">
                   <Link2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Aucune source TV en attente</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Digital Content */}
+          <TabsContent value="digital" className="mt-0 space-y-4">
+            {digitalContents.length > 0 && (
+              <div className="flex justify-end">
+                <Button onClick={() => approveAll("digital")} variant="outline" size="sm" className="gap-2">
+                  <CheckCheck className="w-4 h-4" />
+                  Tout approuver ({digitalContents.length})
+                </Button>
+              </div>
+            )}
+            <div className="space-y-3">
+              {digitalContents.map((content) => (
+                <Card key={content.id} className="hover:border-amber-500/30 transition-colors">
+                  <CardContent className="py-4">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        {content.cover_url ? (
+                          <img
+                            src={content.cover_url || "/placeholder.svg"}
+                            alt={content.title}
+                            className="w-12 h-16 object-cover rounded-lg bg-muted"
+                          />
+                        ) : (
+                          <div className="w-12 h-16 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                            <Book className="w-6 h-6 text-amber-500" />
+                          </div>
+                        )}
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-foreground">{content.title}</h3>
+                            <Badge variant="outline" className="capitalize">
+                              {content.content_type}
+                            </Badge>
+                            {content.author && (
+                              <span className="text-xs text-muted-foreground">par {content.author}</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            WW ID: <span className="font-mono text-primary">{content.ww_id}</span>
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <User className="w-3 h-3" />
+                              {content.submitter_email || "Inconnu"}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(content.created_at).toLocaleString("fr-FR")}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          onClick={() => handleAction("digital_content", content.id, "approved")}
+                          size="sm"
+                          className="bg-emerald-600 hover:bg-emerald-700 gap-1"
+                          disabled={processingIds.has(content.id)}
+                        >
+                          {processingIds.has(content.id) ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4" />
+                          )}
+                          Approuver
+                        </Button>
+                        <Button
+                          onClick={() => handleAction("digital_content", content.id, "rejected")}
+                          variant="destructive"
+                          size="sm"
+                          className="gap-1"
+                          disabled={processingIds.has(content.id)}
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Rejeter
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {digitalContents.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Book className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Aucun contenu digital en attente</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Digital Links */}
+          <TabsContent value="digitallinks" className="mt-0 space-y-4">
+            {digitalLinks.length > 0 && (
+              <div className="flex justify-end">
+                <Button onClick={() => approveAll("digitallinks")} variant="outline" size="sm" className="gap-2">
+                  <CheckCheck className="w-4 h-4" />
+                  Tout approuver ({digitalLinks.length})
+                </Button>
+              </div>
+            )}
+            <div className="space-y-3">
+              {digitalLinks.map((link) => (
+                <Card key={link.id} className="hover:border-pink-500/30 transition-colors">
+                  <CardContent className="py-4">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      <div className="space-y-2 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold text-foreground">{link.source_name}</h3>
+                          <Badge variant="outline">{link.content_title || "Digital"}</Badge>
+                          <Badge className="bg-pink-500/20 text-pink-500 border-pink-500/30">{link.link_type}</Badge>
+                          {link.quality && <Badge variant="secondary">{link.quality}</Badge>}
+                          {link.file_size && <span className="text-xs text-muted-foreground">{link.file_size}</span>}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          WW ID: <span className="font-mono text-primary">{link.ww_id}</span>
+                        </p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <ExternalLink className="w-3 h-3" />
+                            <span className="truncate max-w-[300px]">{link.source_url}</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {link.submitter_email || "Inconnu"}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(link.created_at).toLocaleString("fr-FR")}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          onClick={() => handleAction("digital_download_links", link.id, "approved")}
+                          size="sm"
+                          className="bg-emerald-600 hover:bg-emerald-700 gap-1"
+                          disabled={processingIds.has(link.id)}
+                        >
+                          {processingIds.has(link.id) ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4" />
+                          )}
+                          Approuver
+                        </Button>
+                        <Button
+                          onClick={() => handleAction("digital_download_links", link.id, "rejected")}
+                          variant="destructive"
+                          size="sm"
+                          className="gap-1"
+                          disabled={processingIds.has(link.id)}
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Rejeter
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {digitalLinks.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileDown className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Aucun lien digital en attente</p>
                 </div>
               )}
             </div>

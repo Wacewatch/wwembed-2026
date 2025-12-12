@@ -477,7 +477,7 @@ export function StatsViewer() {
         }
         refCount[ref] = (refCount[ref] || 0) + 1
 
-        if (v.ip_hash) {
+        if (v.ip_hash && v.ip_hash.trim() !== "") {
           uniqueIps.add(v.ip_hash)
         }
       })
@@ -604,14 +604,14 @@ export function StatsViewer() {
       const totalStreamingViews = Object.values(viewsPerDay).reduce((sum, day) => sum + day.streaming, 0)
       const totalClicks = allLinkClicks.length
       const totalAdClicks = allAdClicks.length
-      const uniqueVisitors = uniqueIps.size
-      const avgViewsPerDay = period > 0 ? totalViews / Number.parseInt(period) : 0
+      const uniqueVisitors = uniqueIps.size > 0 ? uniqueIps.size : allViews.length
+      const avgViewsPerDay = totalViews / Number.parseInt(period)
 
       setDetailedStats({
         totalViews,
         totalClicks,
         totalAdClicks,
-        uniqueVisitors,
+        uniqueVisitors, // This should now show correctly
         avgViewsPerDay,
         topCountries: [],
         viewsByType: [
