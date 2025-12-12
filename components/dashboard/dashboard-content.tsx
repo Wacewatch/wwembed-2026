@@ -40,6 +40,7 @@ import {
   Plus,
   LayoutDashboard,
   Link2,
+  Sparkles,
   BarChart3,
   Calendar,
   Award,
@@ -57,8 +58,6 @@ import {
   ShieldQuestion,
   Film,
   FileDown,
-  Activity,
-  FileDownIcon,
 } from "lucide-react"
 import type {
   Profile,
@@ -328,8 +327,6 @@ export function DashboardContent({
   const [downloadStatusFilter, setDownloadStatusFilter] = useState<string>("all")
   const [downloadTypeFilter, setDownloadTypeFilter] = useState<string>("all")
   const [downloadQualityFilter, setDownloadQualityFilter] = useState<string>("all")
-
-  const [userAddedLinks, setUserAddedLinks] = useState<any[]>([])
 
   const supabase = createClient()
 
@@ -681,79 +678,6 @@ export function DashboardContent({
     }
     fetchBugReports()
   }, [])
-
-  useEffect(() => {
-    const loadUserAddedLinks = async () => {
-      try {
-        // Fetch streaming links
-        const { data: streamingLinks } = await supabase
-          .from("streaming_links")
-          .select("*, movies(title), series(title)")
-          .eq("user_id", profile.id)
-          .order("created_at", { ascending: false })
-          .limit(10)
-
-        // Fetch download links
-        const { data: downloadLinks } = await supabase
-          .from("download_links")
-          .select("*")
-          .eq("user_id", profile.id)
-          .order("created_at", { ascending: false })
-          .limit(10)
-
-        // Fetch digital download links
-        const { data: digitalLinks } = await supabase
-          .from("digital_download_links")
-          .select("*")
-          .eq("user_id", profile.id)
-          .order("created_at", { ascending: false })
-          .limit(10)
-
-        // Combine and format all user-added links
-        const allLinks = []
-
-        streamingLinks?.forEach((link) => {
-          allLinks.push({
-            id: link.id,
-            title: link.movies?.title || link.series?.title || link.ww_id,
-            type: "Streaming",
-            mediaType: link.ww_id?.includes("series") ? "Série" : "Film",
-            createdAt: link.created_at,
-          })
-        })
-
-        downloadLinks?.forEach((link) => {
-          allLinks.push({
-            id: link.id,
-            title: link.release_name || link.ww_id,
-            type: "Téléchargement",
-            mediaType: link.ww_id?.includes("series") ? "Série" : "Film",
-            createdAt: link.created_at,
-          })
-        })
-
-        digitalLinks?.forEach((link) => {
-          allLinks.push({
-            id: link.id,
-            title: link.title || "Digital",
-            type: "Téléchargement",
-            mediaType: "Digital",
-            createdAt: link.created_at,
-          })
-        })
-
-        // Sort by creation date and take latest 5
-        allLinks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        setUserAddedLinks(allLinks.slice(0, 5))
-      } catch (err) {
-        console.error("Error loading user links:", err)
-      }
-    }
-
-    if (profile.id) {
-      loadUserAddedLinks()
-    }
-  }, [profile.id])
 
   async function handleRequestUploader() {
     setRequestingUploader(true)
@@ -1222,56 +1146,47 @@ export function DashboardContent({
               {/* End Invalid Links Section */}
 
               <div className="grid gap-6 md:grid-cols-2">
-                {/* Recent Activity - Changed to show user-added links */}
-                <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                {/* Recent Activity */}
+                <Card className="border-zinc-800 bg-zinc-900/50">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-primary" />
-                      Contenu Ajouté
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Activite recente
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {userAddedLinks.map((link, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between py-2 border-b border-border/30 last:border-0"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="p-1.5 rounded-lg bg-primary/10">
-                              {link.type === "Téléchargement" ? (
-                                <FileDownIcon className="w-4 h-4 text-primary" />
-                              ) : (
-                                <Play className="w-4 h-4 text-primary" />
+                      {[...streamingLinks, ...downloadLinks].slice(0, 5).map((link, i) => {
+                        const mediaInfo = getMediaInfo(link)
+                        const episodeInfo = formatEpisodeInfo(link)
+                        return (
+                          <div
+                            key={link.id}
+                            className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0"
+                          >
+                            <div className="flex items-center gap-3">
+                              {mediaInfo.poster && (
+                                <img
+                                  src={mediaInfo.poster || "/placeholder.svg"}
+                                  alt={mediaInfo.title}
+                                  className="w-10 h-12 object-cover rounded"
+                                />
                               )}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium truncate max-w-[200px]">{link.title}</p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                  {link.mediaType}
-                                </Badge>
-                                <Badge
-                                  variant="outline"
-                                  className={`text-[10px] px-1.5 py-0 ${link.type === "Téléchargement" ? "border-orange-500/50 text-orange-500" : "border-emerald-500/50 text-emerald-500"}`}
-                                >
-                                  {link.type}
-                                </Badge>
+                              <div>
+                                <p className="text-sm font-medium truncate max-w-[150px]">
+                                  {mediaInfo.title} {episodeInfo}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(link.created_at).toLocaleDateString("fr-FR")}
+                                </p>
                               </div>
                             </div>
+                            {getStatusBadge(link.status)}
                           </div>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(link.createdAt).toLocaleDateString("fr-FR", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </div>
-                      ))}
-                      {userAddedLinks.length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-4">Aucun contenu ajouté</p>
+                        )
+                      })}
+                      {streamingLinks.length === 0 && downloadLinks.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">Aucune activite recente</p>
                       )}
                     </div>
                   </CardContent>
