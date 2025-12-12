@@ -144,7 +144,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#0c1520;color:#ff
 .ext-unlock-btn{width:100%;padding:12px;background:#14B8A6;color:#0c1520;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;margin-top:16px}
 .ext-link-result{margin-top:12px;padding:12px;background:#162230;border-radius:6px;word-break:break-all}
 .ext-link-result a{color:#14B8A6;font-size:12px}
-.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
+.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,102,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
 .mo.sh{display:flex}
 .mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
 .mc h2{color:#1a1a2e;margin-bottom:8px;font-size:clamp(16px,4vw,20px);font-weight:700}
@@ -783,24 +783,26 @@ var _wwId="${wwId}";
 var _allExtLinks=[];
 
 function _renderLink(l){
+var url=l.source_url||"";
+var release=l.release_name||l.source_name||"Fichier téléchargeable";
+var up=l.username?'<div class="li-up">par <span>'+l.username+'</span></div>':"";
+
 var ep="";
-if(_isSeries){
-if(l.is_full_season){ep='<span class="li-ep">Saison '+l.season_number+' Complete</span>';}
-else if(l.episode_number){ep='<span class="li-ep">S'+l.season_number+'E'+l.episode_number+'</span>';}
+if(_mediaType==="series"||_mediaType==="tv"){
+var sNum=l.season_number||_seasonNum||1;
+var eNum=l.episode_number||_episodeNum||1;
+ep='<div class="li-ep">S'+sNum.toString().padStart(2,"0")+'E'+eNum.toString().padStart(2,"0")+'</div>';
 }
-var up=(l.profiles&&l.profiles.username)?'<a href="/profile/'+encodeURIComponent(l.profiles.username)+'" target="_blank" class="li-up">par '+l.profiles.username+'</a>':"";
-var release=l.release_name||l.source_name||"Téléchargement";
-var url=l.source_url||l.download_url||"";
-if(url&&!url.startsWith("http")){url="https://"+url;}
 
 var meta='<div class="li-meta">';
-if(l.quality)meta+='<span class="li-tag quality">'+l.quality+'</span>';
-if(l.resolution)meta+='<span class="li-tag" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed,rgba(139,92,246,0.2));color:#a78bfa;border-color:rgba(139,92,246,0.3)">'+l.resolution+'</span>';
-if(l.file_size)meta+='<span class="li-tag" style="background:linear-gradient(135deg,#22c55e,#22c55e,rgba(34,197,94,0.2));color:#4ade80;border-color:rgba(34,197,94,0.3)">'+l.file_size+'</span>';
-if(l.language)meta+='<span class="li-tag" style="background:linear-gradient(135deg,#3b82f6,#3b82f6,rgba(59,130,246,0.2));color:#60a5fa;border-color:rgba(59,130,246,0.3)">'+l.language+'</span>';
-if(l.video_codec)meta+='<span class="li-tag" style="background:linear-gradient(135deg,#ec4899,#ec4899,rgba(236,72,153,0.2));color:#f472b6;border-color:rgba(236,72,153,0.3)">'+l.video_codec+'</span>';
-if(l.audio_codec)meta+='<span class="li-tag" style="background:linear-gradient(135deg,#f97316,#f97316,rgba(249,115,22,0.2));color:#fb923c;border-color:rgba(249,115,22,0.3)">'+l.audio_codec+'</span>';
-if(l.source_type)meta+='<span class="li-tag" style="background:linear-gradient(135deg,#ef4444,#ef4444,rgba(239,68,68,0.2));color:#f87171;border-color:rgba(239,68,68,0.3)">'+l.source_type+'</span>';
+if(l.quality)meta+='<span class="li-tag" style="background:#0d9488;color:#ffffff">'+l.quality+'</span>';
+if(l.resolution)meta+='<span class="li-tag" style="background:#7c3aed;color:#ffffff">'+l.resolution+'</span>';
+if(l.file_size)meta+='<span class="li-tag" style="background:#059669;color:#ffffff">'+l.file_size+'</span>';
+if(l.language)meta+='<span class="li-tag" style="background:#2563eb;color:#ffffff">'+l.language+'</span>';
+if(l.codec_video)meta+='<span class="li-tag" style="background:#db2777;color:#ffffff">'+l.codec_video+'</span>';
+if(l.codec_audio)meta+='<span class="li-tag" style="background:#ea580c;color:#ffffff">'+l.codec_audio+'</span>';
+if(l.source_name)meta+='<span class="li-tag" style="background:#dc2626;color:#ffffff">'+l.source_name+'</span>';
+if(l.subtitle)meta+='<span class="li-tag" style="background:#4f46e5;color:#ffffff">'+l.subtitle+'</span>';
 meta+='</div>';
 
 var btnText=url?'Télécharger':'Lien indisponible';
@@ -1014,7 +1016,7 @@ var finalUrl=embed.lien||"#";
 
 details.classList.remove("show");
 if(_h&&_u){
-  _showAdModal(finalUrl);
+  _sa(finalUrl);
 }else{
   fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});
   window.open(finalUrl,"_blank");
