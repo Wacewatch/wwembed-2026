@@ -507,13 +507,13 @@ setTimeout(function(){
 document.getElementById("extUnlockSection").style.display="none";
 document.getElementById("extLinkSection").style.display="block";
 var finalLink=document.getElementById("extFinalLink");
-if(finalLink){finalLink.onclick=function(){fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});};}
+if(finalLink){finalLink.onclick=function(){fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"digital",wwId:_wwId})});};}
 },500);
 };
 }
 })
 .catch(function(err){
-body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
 });
 }
 
