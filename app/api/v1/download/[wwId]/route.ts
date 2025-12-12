@@ -1,13 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { fetch } from "node-fetch"
 
 function generateRandomId(prefix = "x"): string {
   return prefix + Math.random().toString(36).substring(2, 10)
 }
 
 export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
-  const { wwId } = await params
+  const { wwId } = params
   const supabase = createAdminClient()
 
   const isDigitalContent =
@@ -679,7 +678,7 @@ ${cover ? `<img src="${cover}" alt="${title}" class="ps">` : ""}
 <div id="${ids.linksContainer}"></div>
 
 <h2 class="sec-title">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
 Sources externes
 <span class="badge">PUB</span>
 </h2>
@@ -722,13 +721,6 @@ Sources externes
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
 <div class="bx-content"><b>Merci pour votre soutien!</b><span>Retournez sur cette page pour continuer</span></div>
 </div>
-<svg width="120" height="120" style="margin:16px auto;display:block">
-<circle cx="60" cy="60" r="54" fill="none" stroke="#e5e7eb" stroke-width="8"/>
-<circle id="${ids.progress}" class="progress-ring-circle" cx="60" cy="60" r="54" fill="none" stroke="url(#gradient)" stroke-width="8" stroke-dasharray="339.292" stroke-dashoffset="339.292" stroke-linecap="round"/>
-<defs><linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#667eea"/><stop offset="100%" style="stop-color:#764ba2"/></linearGradient></defs>
-</svg>
-<div id="${ids.timer}" class="timer-display">10</div>
-<button id="${ids.btnUnlock}" class="btn-primary" disabled style="opacity:0.5;cursor:not-allowed">Débloquer maintenant</button>
 <div id="${ids.boxDone}" style="display:none;margin-top:16px">
 <button id="${ids.btnDownload}" class="btn-primary">Télécharger maintenant</button>
 </div>
