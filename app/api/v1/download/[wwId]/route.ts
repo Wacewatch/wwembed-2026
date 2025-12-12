@@ -54,8 +54,6 @@ export async function GET(request: NextRequest, { params }: { params: { wwId: st
       container: generateRandomId("ext"),
       loading: generateRandomId("extl"),
       content: generateRandomId("extc"),
-      filters: generateRandomId("extf"),
-      count: generateRandomId("extn"),
       details: generateRandomId("extd"),
       detailsContent: generateRandomId("extdc"),
     }
@@ -250,19 +248,19 @@ Recherche de sources externes...
 <div class="bx-content"><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
 </div>
 <div class="bx bh" id="${ids.boxHelp}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-<div class="bx-content"><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+<div class="bx-content"><b>Cliquez sur le bouton ci-dessous</b><span>Une pub s'ouvrira dans un nouvel onglet</span></div>
 </div>
 <div class="bx bi" id="${ids.boxTime}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 <div class="bx-content"><b>Temps restant: <span id="${ids.timer}">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div>
 </div>
 <div class="bx bo hi" id="${ids.boxThanks}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
 <div class="bx-content"><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div>
 </div>
 <div class="bx bo hi" id="${ids.boxDone}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 <div class="bx-content"><b>Tout est prêt !</b><span>Cliquez pour télécharger</span></div>
 </div>
 <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
@@ -496,19 +494,24 @@ _loadExternal();
   }
 
   const table = isMovie ? "movies" : "series"
-  const { data: content } = await supabase.from(table).select("*").eq("ww_id", wwId).single()
+  const { data: content, error: contentError } = await supabase.from(table).select("*").eq("ww_id", wwId).single()
 
-  if (!content) {
+  if (contentError || !content) {
+    console.error("[v0] Content not found:", contentError)
     return NextResponse.json({ error: "Content not found" }, { status: 404 })
   }
 
-  const { data: downloadLinks } = await supabase
+  const { data: downloadLinks, error: linksError } = await supabase
     .from("download_links")
     .select("*")
-    .eq(isMovie ? "movie_id" : "series_id", content.id)
+    .eq("ww_id", wwId)
     .eq("is_active", true)
     .eq("status", "approved")
     .order("quality", { ascending: false })
+
+  if (linksError) {
+    console.error("[v0] Error fetching download links:", linksError)
+  }
 
   const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
   const hasAds = ads && ads.length > 0
@@ -697,7 +700,7 @@ Sources externes
 <div class="bx-content"><b>Cliquez sur le bouton ci-dessous</b><span>Une pub s'ouvrira dans un nouvel onglet</span></div>
 </div>
 <div id="${ids.boxThanks}" class="bx bp" style="display:none">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
 <div class="bx-content"><b>Merci pour votre soutien!</b><span>Retournez sur cette page pour continuer</span></div>
 </div>
 <svg width="120" height="120" style="margin:16px auto;display:block">
