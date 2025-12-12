@@ -600,9 +600,7 @@ _loadExternal();
     linksContainer: generateRandomId("lc"),
   }
 
-  const linksJson = JSON.stringify(links || [])
-    .replace(/'/g, "\\'")
-    .replace(/</g, "\\u003c")
+  const linksJsonBase64 = Buffer.from(JSON.stringify(links || [])).toString("base64")
   const isSeries = mediaType === "tv"
 
   const externalIds = {
@@ -782,7 +780,7 @@ Recherche de sources externes...
 
 <script>
 (function(){
-var _lks=${linksJson};
+var _lks=JSON.parse(atob('${linksJsonBase64}'));
 var _u="${adUrl}";
 var _i="${adId}";
 var _h=${hasAds};
