@@ -329,8 +329,7 @@ export function DashboardContent({
   const [downloadTypeFilter, setDownloadTypeFilter] = useState<string>("all")
   const [downloadQualityFilter, setDownloadQualityFilter] = useState<string>("all")
 
-  // Add state for recent activity
-  const [recentClicks, setRecentClicks] = useState<any[]>([])
+  const [userAddedLinks, setUserAddedLinks] = useState<any[]>([])
 
   const supabase = createClient()
 
@@ -683,78 +682,78 @@ export function DashboardContent({
     fetchBugReports()
   }, [])
 
-  // Add useEffect to load recent clicks
   useEffect(() => {
-    const loadRecentClicks = async () => {
-      const { data } = await supabase
-        .from("link_clicks")
-        .select("*")
-        .order("clicked_at", { ascending: false })
-        .limit(10)
+    const loadUserAddedLinks = async () => {
+      try {
+        // Fetch streaming links
+        const { data: streamingLinks } = await supabase
+          .from("streaming_links")
+          .select("*, movies(title), series(title)")
+          .eq("user_id", profile.id)
+          .order("created_at", { ascending: false })
+          .limit(10)
 
-      if (data) {
-        // Fetch titles for each click
-        const clicksWithTitles = await Promise.all(
-          data.map(async (click) => {
-            let title = click.ww_id
-            let mediaTypeLabel = "Inconnu"
+        // Fetch download links
+        const { data: downloadLinks } = await supabase
+          .from("download_links")
+          .select("*")
+          .eq("user_id", profile.id)
+          .order("created_at", { ascending: false })
+          .limit(10)
 
-            // Determine media type label
-            if (click.ww_id?.startsWith("ww-movie-")) {
-              mediaTypeLabel = "Film"
-            } else if (click.ww_id?.startsWith("ww-tv-") || click.ww_id?.startsWith("ww-series-")) {
-              mediaTypeLabel = "Série"
-            } else if (
-              click.ww_id?.startsWith("ww-ebook-") ||
-              click.ww_id?.startsWith("ww-music-") ||
-              click.ww_id?.startsWith("ww-software-") ||
-              click.ww_id?.startsWith("ww-game-")
-            ) {
-              mediaTypeLabel = "Digital"
-            } else if (click.ww_id?.startsWith("ww-live-")) {
-              mediaTypeLabel = "TV Live"
-            }
+        // Fetch digital download links
+        const { data: digitalLinks } = await supabase
+          .from("digital_download_links")
+          .select("*")
+          .eq("user_id", profile.id)
+          .order("created_at", { ascending: false })
+          .limit(10)
 
-            // Determine link type label
-            const linkTypeLabel = click.is_external ? "Externe" : "Direct"
+        // Combine and format all user-added links
+        const allLinks = []
 
-            // Get title from TMDB or digital_content
-            if (click.tmdb_id && click.media_type) {
-              try {
-                const res = await fetch(`/api/tmdb/${click.media_type}/${click.tmdb_id}`)
-                if (res.ok) {
-                  const data = await res.json()
-                  title = data.title || data.name || click.ww_id
-                }
-              } catch (e) {}
-            } else if (
-              click.ww_id?.startsWith("ww-ebook-") ||
-              click.ww_id?.startsWith("ww-music-") ||
-              click.ww_id?.startsWith("ww-software-") ||
-              click.ww_id?.startsWith("ww-game-")
-            ) {
-              const { data: digital } = await supabase
-                .from("digital_content")
-                .select("title")
-                .eq("ww_id", click.ww_id)
-                .single()
-              if (digital) title = digital.title
-            }
+        streamingLinks?.forEach((link) => {
+          allLinks.push({
+            id: link.id,
+            title: link.movies?.title || link.series?.title || link.ww_id,
+            type: "Streaming",
+            mediaType: link.ww_id?.includes("series") ? "Série" : "Film",
+            createdAt: link.created_at,
+          })
+        })
 
-            return {
-              ...click,
-              title,
-              mediaTypeLabel,
-              linkTypeLabel,
-            }
-          }),
-        )
-        setRecentClicks(clicksWithTitles)
+        downloadLinks?.forEach((link) => {
+          allLinks.push({
+            id: link.id,
+            title: link.release_name || link.ww_id,
+            type: "Téléchargement",
+            mediaType: link.ww_id?.includes("series") ? "Série" : "Film",
+            createdAt: link.created_at,
+          })
+        })
+
+        digitalLinks?.forEach((link) => {
+          allLinks.push({
+            id: link.id,
+            title: link.title || "Digital",
+            type: "Téléchargement",
+            mediaType: "Digital",
+            createdAt: link.created_at,
+          })
+        })
+
+        // Sort by creation date and take latest 5
+        allLinks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        setUserAddedLinks(allLinks.slice(0, 5))
+      } catch (err) {
+        console.error("Error loading user links:", err)
       }
     }
 
-    loadRecentClicks()
-  }, [])
+    if (profile.id) {
+      loadUserAddedLinks()
+    }
+  }, [profile.id])
 
   async function handleRequestUploader() {
     setRequestingUploader(true)
@@ -1223,46 +1222,46 @@ export function DashboardContent({
               {/* End Invalid Links Section */}
 
               <div className="grid gap-6 md:grid-cols-2">
-                {/* Recent Activity */}
+                {/* Recent Activity - Changed to show user-added links */}
                 <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Activity className="w-4 h-4 text-primary" />
-                      Activité récente
+                      Contenu Ajouté
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {recentClicks.slice(0, 5).map((click, idx) => (
+                      {userAddedLinks.map((link, idx) => (
                         <div
                           key={idx}
                           className="flex items-center justify-between py-2 border-b border-border/30 last:border-0"
                         >
                           <div className="flex items-center gap-3">
                             <div className="p-1.5 rounded-lg bg-primary/10">
-                              {click.linkTypeLabel === "Download" ? ( // Corrected to use linkTypeLabel
-                                <FileDownIcon className="w-4 h-4 text-primary" /> // Use renamed icon
+                              {link.type === "Téléchargement" ? (
+                                <FileDownIcon className="w-4 h-4 text-primary" />
                               ) : (
                                 <Play className="w-4 h-4 text-primary" />
                               )}
                             </div>
                             <div>
-                              <p className="text-sm font-medium truncate max-w-[200px]">{click.title}</p>
+                              <p className="text-sm font-medium truncate max-w-[200px]">{link.title}</p>
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                  {click.mediaTypeLabel}
+                                  {link.mediaType}
                                 </Badge>
                                 <Badge
                                   variant="outline"
-                                  className={`text-[10px] px-1.5 py-0 ${click.is_external ? "border-orange-500/50 text-orange-500" : "border-emerald-500/50 text-emerald-500"}`}
+                                  className={`text-[10px] px-1.5 py-0 ${link.type === "Téléchargement" ? "border-orange-500/50 text-orange-500" : "border-emerald-500/50 text-emerald-500"}`}
                                 >
-                                  {click.linkTypeLabel}
+                                  {link.type}
                                 </Badge>
                               </div>
                             </div>
                           </div>
                           <span className="text-xs text-muted-foreground">
-                            {new Date(click.clicked_at).toLocaleDateString("fr-FR", {
+                            {new Date(link.createdAt).toLocaleDateString("fr-FR", {
                               day: "2-digit",
                               month: "2-digit",
                               hour: "2-digit",
@@ -1271,8 +1270,8 @@ export function DashboardContent({
                           </span>
                         </div>
                       ))}
-                      {recentClicks.length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-4">Aucune activité récente</p>
+                      {userAddedLinks.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">Aucun contenu ajouté</p>
                       )}
                     </div>
                   </CardContent>
