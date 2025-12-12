@@ -813,8 +813,11 @@ if(url&&!url.startsWith("http")){url="https://"+url;}
 var meta='<div class="li-meta">';
 if(l.quality)meta+='<span class="li-tag quality">'+l.quality+'</span>';
 if(l.resolution)meta+='<span class="li-tag">'+l.resolution+'</span>';
+if(l.video_codec)meta+='<span class="li-tag">'+l.video_codec+'</span>';
+if(l.audio_codec)meta+='<span class="li-tag">'+l.audio_codec+'</span>';
 if(l.file_size)meta+='<span class="li-tag">'+l.file_size+'</span>';
 if(l.language)meta+='<span class="li-tag">'+l.language+'</span>';
+if(l.source_type)meta+='<span class="li-tag">'+l.source_type+'</span>';
 meta+='</div>';
 
 var btnText=url?'Télécharger':'Lien indisponible';
@@ -823,154 +826,47 @@ var btnDisabled=!url?' disabled style="opacity:0.5;cursor:not-allowed"':'';
 return '<div class="li"><div class="li-top"><div class="li-header">'+ep+'<div class="li-nm">'+release+'</div>'+up+'</div>'+meta+'</div><div class="li-bottom"><button class="li-btn"'+btnDisabled+' data-url="'+encodeURIComponent(url)+'">'+btnText+'</button></div></div>';
 }
 
-function _renderLinks(){
-var c=document.getElementById(_ids.linksContainer);
-if(!c)return;
-if(_lks.length===0){c.innerHTML='<div class="em">Aucun lien direct disponible</div>';return;}
-var html='';
-for(var i=0;i<_lks.length;i++){html+=_renderLink(_lks[i]);}
-c.innerHTML=html;
-_bindBtns();
-}
-
-function _bindBtns(){
-var bs=document.querySelectorAll(".li-btn");
-for(var j=0;j<bs.length;j++){
-(function(btn){
-btn.onclick=function(e){
-e.preventDefault();
-var url=btn.getAttribute("data-url");
-if(!url||url==="undefined"){alert("Lien non disponible");return;}
-if(_h&&_u){_sa(decodeURIComponent(url));}
-else{
-fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
-window.open(decodeURIComponent(url),"_blank");
-}
-};
-})(bs[j]);
-}
-}
-
-function _sa(url){
-_p=url;
-var o=document.getElementById(_ids.overlay);
-var bt=document.getElementById(_ids.boxTime);
-var bh=document.getElementById(_ids.boxHelp);
-var bk=document.getElementById(_ids.boxThanks);
-var bd=document.getElementById(_ids.boxDone);
-var pr=document.getElementById(_ids.progress);
-var tm=document.getElementById(_ids.timer);
-var bu=document.getElementById(_ids.btnUnlock);
-var dn=document.getElementById(_ids.btnDownload);
-var s1=document.getElementById(_ids.step1);
-var s2=document.getElementById(_ids.step2);
-var s3=document.getElementById(_ids.step3);
-if(bt)bt.classList.remove("hi");
-if(bh)bh.classList.remove("hi");
-if(bk)bk.classList.add("hi");
-if(bd)bd.classList.add("hi");
-if(pr)pr.style.width="0";
-if(tm)tm.textContent="3";
-if(bu)bu.classList.remove("hi");
-if(dn)dn.classList.add("hi");
-if(s1){s1.classList.add("active");s1.classList.remove("done");}
-if(s2){s2.classList.remove("active");s2.classList.remove("done");}
-if(s3){s3.classList.remove("active");s3.classList.remove("done");}
-o.classList.add("sh");
-
-bu.onclick=function(){
-fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
-window.open(_u,"_blank");
-bu.classList.add("hi");
-if(s1){s1.classList.remove("active");s1.classList.add("done");}
-if(s2)s2.classList.add("active");
-var s=3,pg=0;
-var iv=setInterval(function(){
-s--;pg+=33.33;
-if(tm)tm.textContent=s;
-if(pr)pr.style.width=pg+"%";
-if(s<=0){
-clearInterval(iv);
-if(s2){s2.classList.remove("active");s2.classList.add("done");}
-if(s3)s3.classList.add("active");
-if(bt)bt.classList.add("hi");
-if(bh)bh.classList.add("hi");
-if(bk)bk.classList.remove("hi");
-if(bd)bd.classList.remove("hi");
-if(pr)pr.style.width="100%";
-if(dn)dn.classList.remove("hi");
-}
-},1000);
-};
-
-dn.onclick=function(){
-o.classList.remove("sh");
-if(_p){
-fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
-window.open(_p,"_blank");_p=null;
-}
-};
-}
-
 function _loadExternal(){
-var loading=document.getElementById(_extIds.loading);
-var content=document.getElementById(_extIds.content);
-var filters=document.getElementById(_extIds.filters);
-var countBadge=document.getElementById(_extIds.count);
-
-fetch("https://api.movix.site/api/search?title="+encodeURIComponent(_title))
+fetch("/api/download/external/"+_wwId)
 .then(function(r){return r.json();})
-.then(function(data){
-var results=data;
-if(data&&typeof data==="object"&&!Array.isArray(data)){
-if(data.results)results=data.results;
-else if(data.data)results=data.data;
-}
-if(!Array.isArray(results)||results.length===0){
-loading.style.display="none";
-content.innerHTML='<div class="em">Aucune source externe trouvée</div>';
-countBadge.textContent="0";
-return;
-}
-var first=results[0];
-var movieId=first.id||first.movie_id||first.tmdb_id||_tmdbId;
-var isSeries=first.is_series||first.type==="series"||_mediaType==="tv";
-var dlUrl;
-if(isSeries){
-var s=_seasonNum||1;
-var e=_episodeNum||1;
-dlUrl="https://api.movix.site/api/darkiworld/download/tv/"+movieId+"?season="+s+"&episode="+e;
-}else{
-dlUrl="https://api.movix.site/api/darkiworld/download/movie/"+movieId;
-}
-fetch(dlUrl).then(function(r){return r.json();}).then(function(dlData){
-loading.style.display="none";
+.then(function(dlData){
+var loading=document.getElementById(_ids.loading);
+var content=document.getElementById(_ids.content);
+var countBadge=document.getElementById(_ids.count);
+var filters=document.getElementById(_ids.filters);
+if(loading)loading.style.display="none";
 var links=(dlData&&dlData.success&&dlData.all)?dlData.all:null;
 if(!links||links.length===0){
-content.innerHTML='<div class="em">Aucun lien externe disponible</div>';
-countBadge.textContent="0";
+if(content)content.innerHTML='<div class="em">Aucun lien externe disponible</div>';
+if(countBadge)countBadge.textContent="0";
 return;
 }
 _allExtLinks=links;
-countBadge.textContent=links.length;
-_populateExtFilters(links);
-filters.style.display="flex";
+if(countBadge)countBadge.textContent=links.length;
+_populateFilters(links);
+if(filters)filters.style.display="flex";
 _renderExtLinks(links);
-}).catch(function(){loading.style.display="none";content.innerHTML='<div class="em">Erreur</div>';countBadge.textContent="0";});
-}).catch(function(){loading.style.display="none";content.innerHTML='<div class="em">Erreur</div>';countBadge.textContent="0";});
+}).catch(function(err){
+var loading=document.getElementById(_ids.loading);
+var content=document.getElementById(_ids.content);
+var countBadge=document.getElementById(_ids.count);
+if(loading)loading.style.display="none";
+if(content)content.innerHTML='<div class="em">Erreur de chargement</div>';
+if(countBadge)countBadge.textContent="0";
+});
 }
 
-function _populateExtFilters(links){
+function _populateFilters(links){
 var qualities=new Set(),languages=new Set(),providers=new Set();
 links.forEach(function(l){if(l.quality)qualities.add(l.quality);if(l.language)languages.add(l.language);if(l.provider)providers.add(l.provider);});
 var qf=document.getElementById("extQualityFilter"),lf=document.getElementById("extLanguageFilter"),pf=document.getElementById("extProviderFilter");
 qualities.forEach(function(q){var o=document.createElement("option");o.value=q;o.textContent=q;qf.appendChild(o);});
 languages.forEach(function(l){var o=document.createElement("option");o.value=l;o.textContent=l;lf.appendChild(o);});
 providers.forEach(function(p){var o=document.createElement("option");o.value=p;o.textContent=p;pf.appendChild(o);});
-qf.onchange=lf.onchange=pf.onchange=_applyExtFilters;
+qf.onchange=lf.onchange=pf.onchange=_applyFilters;
 }
 
-function _applyExtFilters(){
+function _applyFilters(){
 var qf=document.getElementById("extQualityFilter").value,lf=document.getElementById("extLanguageFilter").value,pf=document.getElementById("extProviderFilter").value;
 var filtered=_allExtLinks.filter(function(l){
 if(qf&&l.quality!==qf)return false;
@@ -981,11 +877,11 @@ return true;
 _renderExtLinks(filtered);
 }
 
-function _formatSize(bytes){if(!bytes)return"N/A";var gb=bytes/(1024*1024*1024);if(gb>=1)return gb.toFixed(2)+" GB";return(bytes/(1024*1024)).toFixed(0)+" MB";}
+function _formatSize(bytes){if(!bytes)return"N/A";var gb=bytes/(1024*1024*1024);if(gb>=1)return gb.toFixed(2)+" GB";var mb=bytes/(1024*1024);return mb.toFixed(0)+" MB";}
 
 function _renderExtLinks(links){
 var content=document.getElementById(_extIds.content);
-if(links.length===0){content.innerHTML='<div class="em">Aucun résultat</div>';return;}
+if(links.length===0){if(content)content.innerHTML='<div class="em">Aucun résultat</div>';return;}
 var html="";
 links.forEach(function(l,idx){
 html+='<div class="ext-card" data-idx="'+idx+'"><div class="ext-card-body">';
@@ -996,8 +892,8 @@ if(l.host_name)html+='<div class="ext-host"><span>'+l.host_name+'</span></div>';
 if(l.size)html+='<div class="ext-stats"><div class="ext-stat"><span class="ext-stat-label">Taille</span><span class="ext-stat-value">'+_formatSize(l.size)+'</span></div></div>';
 html+='<button class="ext-btn">Voir le lien</button></div></div>';
 });
-content.innerHTML=html;
-content.querySelectorAll(".ext-card").forEach(function(card){
+if(content)content.innerHTML=html;
+if(content)content.querySelectorAll(".ext-card").forEach(function(card){
 card.querySelector(".ext-btn").onclick=function(e){
 e.stopPropagation();
 var idx=parseInt(card.getAttribute("data-idx"));
@@ -1009,33 +905,53 @@ _showExtDetails(_allExtLinks[idx]);
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
+if(!details||!body)return;
+
+body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg style="animation:spin 1s linear infinite;width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="margin-top:12px">Chargement du lien...</p></div>';
+details.classList.add("show");
+
+fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
+.then(function(r){return r.json();})
+.then(function(data){
+if(!data||!data.success||!data.embed_url){
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
+return;
+}
+var embed=data.embed_url;
+var finalUrl=embed.lien||"#";
+
 var html='<div style="margin-bottom:16px"><strong>Provider:</strong> '+(link.provider||"N/A")+'</div>';
 html+='<div style="margin-bottom:16px"><strong>Qualité:</strong> '+(link.quality||"N/A")+'</div>';
 html+='<div style="margin-bottom:16px"><strong>Langue:</strong> '+(link.language||"N/A")+'</div>';
-html+='<div style="margin-bottom:16px"><strong>Taille:</strong> '+_formatSize(link.size)+'</div>';
-html+='<button class="ext-unlock-btn" id="extUnlockBtn">Débloquer le lien</button>';
-html+='<div class="ext-link-result" id="extLinkResult" style="display:none"></div>';
+html+='<div style="margin-bottom:16px"><strong>Taille:</strong> '+(embed.taille?_formatSize(embed.taille):_formatSize(link.size))+'</div>';
+html+='<div id="extUnlockSection"><div style="text-align:center;padding:20px;background:rgba(102,126,234,0.1);border-radius:12px;margin-bottom:16px"><div style="font-size:48px;margin-bottom:12px">🔒</div><h4 style="color:#e0e7ff;margin-bottom:8px">Lien protégé</h4><p style="color:#a5b4fc;font-size:13px;margin-bottom:16px">Débloquez ce lien en ouvrant une courte publicité</p><button class="ext-unlock-btn" id="extUnlockBtn">🔓 Débloquer maintenant</button></div></div>';
+html+='<div id="extLinkSection" style="display:none"><div style="text-align:center;padding:20px;background:rgba(16,185,129,0.1);border-radius:12px"><div style="font-size:48px;margin-bottom:12px">✅</div><h4 style="color:#10b981;margin-bottom:12px">Lien débloqué !</h4><a href="'+finalUrl+'" target="_blank" id="extFinalLink" style="display:inline-block;padding:14px 28px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:10px;font-weight:700;text-decoration:none">📥 Accéder au téléchargement</a><p style="margin-top:12px;font-size:11px;color:#6b7280;word-break:break-all">'+finalUrl+'</p></div></div>';
 body.innerHTML=html;
-details.classList.add("show");
 
 var closeBtn=document.getElementById("extCloseBtn");
 if(closeBtn){closeBtn.onclick=function(){details.classList.remove("show");};}
 
-var btn=document.getElementById("extUnlockBtn");
-if(btn){
-btn.onclick=function(){
-btn.disabled=true;
-btn.textContent="Chargement...";
-var result=document.getElementById("extLinkResult");
-result.style.display="block";
-var linkUrl=link.url||link.link||link.download_url||"#";
-result.innerHTML='<a href="'+linkUrl+'" target="_blank" id="extFinalLink">Accéder au lien</a>';
-var finalLink=document.getElementById("extFinalLink");
-if(finalLink){finalLink.onclick=function(){fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});};}
-btn.textContent="Lien débloqué !";
-btn.style.background="#10b981";
+var unlockBtn=document.getElementById("extUnlockBtn");
+if(unlockBtn){
+unlockBtn.onclick=function(){
+unlockBtn.disabled=true;
+unlockBtn.innerHTML="⏳ Ouverture...";
+if(_h&&_u){
+fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
+window.open(_u,"_blank");
+setTimeout(function(){
+document.getElementById("extUnlockSection").style.display="none";
+document.getElementById("extLinkSection").style.display="block";
+},3000);
+}else{
+document.getElementById("extUnlockSection").style.display="none";
+document.getElementById("extLinkSection").style.display="block";
+}
 };
 }
+}).catch(function(){
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
+});
 }
 
 _renderLinks();
