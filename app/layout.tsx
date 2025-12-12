@@ -13,7 +13,21 @@ export const metadata: Metadata = {
   keywords: ["embed", "streaming", "download", "tmdb", "movies", "tv shows"],
   generator: "v0.app",
   icons: {
-    icon: "/favicon.ico", // ou "/icon.png" si tu préfères
+    icon: [
+      {
+        url: "/icon-light-32x32.png",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/icon-dark-32x32.png",
+        media: "(prefers-color-scheme: dark)",
+      },
+      {
+        url: "/icon.svg",
+        type: "image/svg+xml",
+      },
+    ],
+    apple: "/apple-icon.png",
   },
 }
 
@@ -24,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="dark">
-      <body className="font-sans antialiased">
+      <body className={`font-sans antialiased`}>
         {children}
         <Analytics />
       </body>

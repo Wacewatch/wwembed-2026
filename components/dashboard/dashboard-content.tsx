@@ -1156,35 +1156,52 @@ export function DashboardContent({
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {[...streamingLinks, ...downloadLinks].slice(0, 5).map((link, i) => {
-                        const mediaInfo = getMediaInfo(link)
-                        const episodeInfo = formatEpisodeInfo(link)
-                        return (
-                          <div
-                            key={link.id}
-                            className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0"
-                          >
-                            <div className="flex items-center gap-3">
-                              {mediaInfo.poster && (
-                                <img
-                                  src={mediaInfo.poster || "/placeholder.svg"}
-                                  alt={mediaInfo.title}
-                                  className="w-10 h-12 object-cover rounded"
-                                />
-                              )}
-                              <div>
-                                <p className="text-sm font-medium truncate max-w-[150px]">
-                                  {mediaInfo.title} {episodeInfo}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {new Date(link.created_at).toLocaleDateString("fr-FR")}
-                                </p>
+                      {[
+                        ...streamingLinks.map((link) => ({ ...link, linkType: "streaming" as const })),
+                        ...downloadLinks.map((link) => ({ ...link, linkType: "download" as const })),
+                      ]
+                        .slice(0, 5)
+                        .map((link, i) => {
+                          const mediaInfo = getMediaInfo(link)
+                          const episodeInfo = formatEpisodeInfo(link)
+                          return (
+                            <div
+                              key={link.id}
+                              className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0"
+                            >
+                              <div className="flex items-center gap-3">
+                                {mediaInfo.poster && (
+                                  <img
+                                    src={mediaInfo.poster || "/placeholder.svg"}
+                                    alt={mediaInfo.title}
+                                    className="w-10 h-12 object-cover rounded"
+                                  />
+                                )}
+                                <div>
+                                  <p className="text-sm font-medium truncate max-w-[150px]">
+                                    {mediaInfo.title} {episodeInfo}
+                                  </p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-xs text-muted-foreground">
+                                      {new Date(link.created_at).toLocaleDateString("fr-FR")}
+                                    </p>
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-xs ${
+                                        link.linkType === "streaming"
+                                          ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
+                                          : "bg-teal-500/10 text-teal-400 border-teal-500/30"
+                                      }`}
+                                    >
+                                      {link.linkType === "streaming" ? "Streaming" : "Téléchargement"}
+                                    </Badge>
+                                  </div>
+                                </div>
                               </div>
+                              {getStatusBadge(link.status)}
                             </div>
-                            {getStatusBadge(link.status)}
-                          </div>
-                        )
-                      })}
+                          )
+                        })}
                       {streamingLinks.length === 0 && downloadLinks.length === 0 && (
                         <p className="text-sm text-muted-foreground text-center py-4">Aucune activite recente</p>
                       )}
@@ -1542,7 +1559,6 @@ export function DashboardContent({
                                   </td>
                                   <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
                                   <td className="py-3 px-4">
-                                    {" "}
                                     {/* Validity Column */}
                                     {checkingLinkId === link.id ? (
                                       <div className="flex items-center gap-1 text-blue-500">
@@ -1690,7 +1706,6 @@ export function DashboardContent({
                                   </td>
                                   <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
                                   <td className="py-3 px-4">
-                                    {" "}
                                     {/* Validity Column */}
                                     {checkingLinkId === link.id ? (
                                       <div className="flex items-center gap-1 text-blue-500">
