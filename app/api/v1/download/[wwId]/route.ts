@@ -20,32 +20,18 @@ export async function GET(req, { params }) {
       },
     )
 
-    let contentType = ""
-    let content = null
+    const { data: links } = await supabase.from("download_links").select("*").eq("ww_id", wwId).eq("is_active", true)
 
-    if (wwId.startsWith("ww-digital-")) {
-      contentType = "digital"
-      const digitalId = wwId.replace("ww-digital-", "")
-      const { data } = await supabase.from("digital_content").select("*").eq("id", digitalId).single()
-      content = data
-    } else if (wwId.startsWith("ww-movie-")) {
-      contentType = "movie"
-      const tmdbId = wwId.replace("ww-movie-", "")
-      const { data } = await supabase.rpc("get_movie_by_tmdb", { p_tmdb_id: tmdbId })
-      content = data?.[0] || null
-    } else if (wwId.startsWith("ww-series-")) {
-      contentType = "series"
-      const tmdbId = wwId.replace("ww-series-", "")
-      const { data } = await supabase.rpc("get_series_by_tmdb", { p_tmdb_id: tmdbId })
-      content = data?.[0] || null
+    if (!links || links.length === 0) {
+      return NextResponse.json({ error: "Content not found" }, { status: 404 })
     }
 
-    if (!content) return NextResponse.json({ error: "Content not found" }, { status: 404 })
+    // Get content info from first link's metadata
+    const firstLink = links[0]
+    const contentType = firstLink.media_type || (wwId.includes("series") ? "series" : "movie")
+    const title = firstLink.release_name || "Content"
 
-    // Fetch download links
-    const { data: links } = await supabase.from("download_links").select("*").eq("ww_id", wwId)
-
-    const html = generateDownloadHTML(content, links || [], contentType)
+    const html = generateDownloadHTML(title, links, contentType, wwId)
     return new NextResponse(html, { headers: { "content-type": "text/html;charset=utf-8" } })
   } catch (err) {
     console.error("Download error:", err)
@@ -53,24 +39,20 @@ export async function GET(req, { params }) {
   }
 }
 
-function generateDownloadHTML(content, links, type) {
-  const isDigital = type === "digital"
-  const title = isDigital ? content.title : content.title || "Content"
-  const poster = isDigital ? content.thumbnail : content.poster_path
-  const contentTypeLabel = isDigital ? "Digital" : type === "movie" ? "Film" : "Série"
+function generateDownloadHTML(title, links, type, wwId) {
+  const contentTypeLabel = type === "digital" ? "Digital" : type === "movie" ? "Film" : "Série"
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title}</title>
+  <title>${escapeHtml(title)}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; }
     .container { max-width: 900px; margin: 0 auto; }
     .header { display: flex; gap: 20px; margin-bottom: 30px; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 12px; padding: 20px; backdrop-filter: blur(8px); }
-    .poster { width: 120px; height: 180px; border-radius: 8px; object-fit: cover; }
     .info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
     .title { font-size: 24px; font-weight: bold; margin-bottom: 8px; }
     .type { color: #64748b; font-size: 14px; }
@@ -97,14 +79,13 @@ function generateDownloadHTML(content, links, type) {
 <body>
   <div class="container">
     <div class="header">
-      ${poster ? `<img src="${poster}" alt="${title}" class="poster" onerror="this.style.display='none'">` : ""}
       <div class="info">
         <h1 class="title">${escapeHtml(title)}</h1>
         <p class="type">${contentTypeLabel}</p>
       </div>
     </div>
 
-    ${generateLinksSection(links, type)}
+    ${generateLinksSection(links)}
   </div>
 
   <div id="nfoModal" class="modal" onclick="if(event.target===this)this.classList.remove('show')">
@@ -130,7 +111,7 @@ function generateDownloadHTML(content, links, type) {
 </html>`
 }
 
-function generateLinksSection(links, type) {
+function generateLinksSection(links) {
   if (!links.length) return ""
 
   const internalLinks = links.filter((l) => !l.external_url)
