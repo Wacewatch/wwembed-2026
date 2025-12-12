@@ -666,15 +666,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ext-stat-label{font-size:10px;color:#6b7280}
 .ext-stat-value{font-size:13px;font-weight:600;color:#e5e7eb}
 .ext-btn{display:block;width:100%;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-top:12px}
-.ext-details{margin-top:16px;background:rgba(22,34,48,0.9);border-radius:12px;border:1px solid rgba(102,126,234,0.4);overflow:hidden;display:none}
-.ext-details.show{display:block}
-.ext-details-header{display:flex;justify-content:space-between;align-items:center;padding:16px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
-.ext-details-header h3{font-size:16px;font-weight:700}
-.ext-close{background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px}
+/* Fixed modal CSS to be centered overlay like digital */
+.ext-details{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
+.ext-details.show{display:flex}
+.ext-details-inner{background:linear-gradient(135deg,#0c1520,#162230);border:1px solid rgba(102,126,234,0.4);border-radius:16px;max-width:420px;width:100%;max-height:85vh;overflow:auto}
+.ext-details-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:16px 16px 0 0}
+.ext-details-header h3{font-size:16px;font-weight:700;color:#fff}
+.ext-close{background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center}
+.ext-close:hover{background:rgba(255,255,255,0.3)}
 .ext-details-body{padding:20px}
 .ext-unlock-btn{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:14px 28px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-top:16px}
 .ext-link-result{margin-top:12px;padding:12px;background:rgba(30,58,79,0.3);border-radius:6px}
 .ext-link-result a{color:#14B8A6;font-size:12px}
+/* Added modal styles for internal links pub system */
 .mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
 .mo.sh{display:flex}
 .mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center}
