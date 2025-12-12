@@ -636,7 +636,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .li-up{font-size:12px;color:#6b7280;background:rgba(107,114,128,0.1);padding:4px 10px;border-radius:6px}
 .li-meta{display:flex;flex-wrap:wrap;gap:8px}
 .li-tag{padding:6px 10px;background:rgba(30,58,79,0.6);border-radius:6px;font-size:11px;color:#94a3b8;border:1px solid rgba(30,58,79,0.8)}
-.li-tag.quality{background:linear-gradient(135deg,rgba(20,184,166,0.2),rgba(20,184,166,0.1));color:#14B8A6;border-color:rgba(20,184,166,0.3)}
 .li-bottom{padding:12px 16px;background:rgba(30,58,79,0.2)}
 .li-btn{padding:12px 20px;background:linear-gradient(135deg,#14B8A6,#0d9488);color:#0c1520;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;width:100%}
 .li-btn:hover{transform:translateY(-1px)}
@@ -811,10 +810,20 @@ var url=l.source_url||l.download_url||"";
 if(url&&!url.startsWith("http")){url="https://"+url;}
 
 var meta='<div class="li-meta">';
-if(l.quality)meta+='<span class="li-tag quality">'+l.quality+'</span>';
-if(l.resolution)meta+='<span class="li-tag">'+l.resolution+'</span>';
-if(l.file_size)meta+='<span class="li-tag">'+l.file_size+'</span>';
-if(l.language)meta+='<span class="li-tag">'+l.language+'</span>';
+// Quality badge - teal/turquoise
+if(l.quality)meta+='<span class="li-tag" style="background:linear-gradient(135deg,rgba(20,184,166,0.2),rgba(20,184,166,0.1));color:#14B8A6;border-color:rgba(20,184,166,0.3)">'+l.quality+'</span>';
+// Resolution badge - violet
+if(l.resolution)meta+='<span class="li-tag" style="background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(124,58,237,0.1));color:#a78bfa;border-color:rgba(139,92,246,0.3)">'+l.resolution+'</span>';
+// Language badge - blue
+if(l.language)meta+='<span class="li-tag" style="background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(37,99,235,0.1));color:#60a5fa;border-color:rgba(59,130,246,0.3)">'+l.language+'</span>';
+// Video codec badge - pink
+if(l.video_codec)meta+='<span class="li-tag" style="background:linear-gradient(135deg,rgba(236,72,153,0.2),rgba(219,39,119,0.1));color:#f472b6;border-color:rgba(236,72,153,0.3)">'+l.video_codec+'</span>';
+// Audio codec badge - orange/yellow
+if(l.audio_codec)meta+='<span class="li-tag" style="background:linear-gradient(135deg,rgba(251,146,60,0.2),rgba(249,115,22,0.1));color:#fb923c;border-color:rgba(251,146,60,0.3)">'+l.audio_codec+'</span>';
+// File size badge - green
+if(l.file_size)meta+='<span class="li-tag" style="background:linear-gradient(135deg,rgba(34,197,94,0.2),rgba(22,163,74,0.1));color:#4ade80;border-color:rgba(34,197,94,0.3)">'+l.file_size+'</span>';
+// Source type badge - red
+if(l.source_type)meta+='<span class="li-tag" style="background:linear-gradient(135deg,rgba(239,68,68,0.2),rgba(220,38,38,0.1));color:#f87171;border-color:rgba(239,68,68,0.3)">'+l.source_type+'</span>';
 meta+='</div>';
 
 var btnText=url?'Télécharger':'Lien indisponible';
@@ -1096,6 +1105,7 @@ fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json
 window.open(_p,"_blank");_p=null;
 }
 };
+}
 }else{
 // No ads, direct link
 fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
