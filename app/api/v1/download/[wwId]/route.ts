@@ -790,7 +790,9 @@ Recherche de sources externes...
 
 <script>
 (function(){
+console.log("[v0] Download script starting...");
 var _lks=${linksJson};
+console.log("[v0] Links loaded:", _lks.length);
 var _u="${adUrl}";
 var _i="${adId}";
 var _h=${hasAds};
@@ -798,7 +800,7 @@ var _p=null;
 var _ids=${JSON.stringify(ids)};
 var _extIds=${JSON.stringify(externalIds)};
 var _isSeries=${isSeries};
-var _title="${title.replace(/"/g, '\\"')}";
+var _title="${title.replace(/"/g, '\\"').replace(/\n/g, " ")}";
 var _mediaType="${mediaType}";
 var _tmdbId=${tmdbId};
 var _seasonNum=${seasonNumber !== undefined ? seasonNumber : "null"};
@@ -809,7 +811,7 @@ var _allExtLinks=[];
 function _renderLink(l){
 var ep="";
 if(_isSeries){
-if(l.is_full_season){ep='<span class="li-ep">Saison '+l.season_number+' Complete</span>';}
+if(l.is_full_season){ep='<span class="li-ep">Saison '+l.season_number+' Complète</span>';}
 else if(l.episode_number){ep='<span class="li-ep">S'+l.season_number+'E'+l.episode_number+'</span>';}
 }
 var up=(l.profiles&&l.profiles.username)?'<a href="/profile/'+encodeURIComponent(l.profiles.username)+'" target="_blank" class="li-up">par '+l.profiles.username+'</a>':"";
@@ -827,19 +829,21 @@ if(l.file_size)meta+='<span class="li-tag size">'+l.file_size+'</span>';
 if(l.source_type)meta+='<span class="li-tag source">'+l.source_type+'</span>';
 meta+='</div>';
 
-var btnText=url?'Télécharger':'Lien indisponible';
+var btnText=url?'Télécharger<span class="tag">PUB</span>':'Lien indisponible';
 var btnDisabled=!url?' disabled style="opacity:0.5;cursor:not-allowed"':'';
 
 return '<div class="li"><div class="li-top"><div class="li-header">'+ep+'<div class="li-nm">'+release+'</div>'+up+'</div>'+meta+'</div><div class="li-bottom"><button class="li-btn"'+btnDisabled+' data-url="'+encodeURIComponent(url)+'">'+btnText+'</button></div></div>';
 }
 
 function _renderLinks(){
+console.log("[v0] _renderLinks called");
 var c=document.getElementById(_ids.linksContainer);
-if(!c)return;
-if(_lks.length===0){c.innerHTML='<div class="em">Aucun lien direct disponible</div>';return;}
-var html='';
+if(!c){console.log("[v0] Container not found:", _ids.linksContainer);return;}
+if(!_lks||_lks.length===0){c.innerHTML='<div class="em">Aucun lien direct disponible</div>';return;}
+var html='<div class="sec-title" style="margin-top:0;margin-bottom:16px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>Liens directs<span class="badge">'+_lks.length+'</span></div>';
 for(var i=0;i<_lks.length;i++){html+=_renderLink(_lks[i]);}
 c.innerHTML=html;
+console.log("[v0] Links rendered:", _lks.length);
 _bindBtns();
 }
 
@@ -1122,8 +1126,9 @@ if(result){result.style.display="block";result.innerHTML='<div style="color:#ef4
 });
 }
 
-_renderLinks();
-_loadExternal();
+console.log("[v0] Calling _renderLinks and _loadExternal");
+try{_renderLinks();}catch(e){console.log("[v0] _renderLinks error:",e);}
+try{_loadExternal();}catch(e){console.log("[v0] _loadExternal error:",e);}
 })();
 </script>
 </body>
