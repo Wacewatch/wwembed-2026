@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { fetch } from "node-fetch"
 
 function generateRandomId(prefix = "x"): string {
   return prefix + Math.random().toString(36).substring(2, 10)
@@ -248,7 +249,7 @@ Recherche de sources externes...
 <div class="bx-content"><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
 </div>
 <div class="bx bh" id="${ids.boxHelp}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
 <div class="bx-content"><b>Cliquez sur le bouton ci-dessous</b><span>Une pub s'ouvrira dans un nouvel onglet</span></div>
 </div>
 <div class="bx bi" id="${ids.boxTime}">
@@ -493,12 +494,30 @@ _loadExternal();
     return NextResponse.json({ error: "Invalid content type" }, { status: 400 })
   }
 
-  const table = isMovie ? "movies" : "series"
-  const { data: content, error: contentError } = await supabase.from(table).select("*").eq("ww_id", wwId).single()
+  // Extract tmdb_id from ww_id (format: ww-movie-123456 or ww-series-123456)
+  const tmdbIdMatch = wwId.match(/ww-(movie|series)-(\d+)/)
+  if (!tmdbIdMatch) {
+    return NextResponse.json({ error: "Invalid ww_id format" }, { status: 400 })
+  }
 
-  if (contentError || !content) {
-    console.error("[v0] Content not found:", contentError)
+  const mediaType = tmdbIdMatch[1]
+  const tmdbId = Number.parseInt(tmdbIdMatch[2])
+
+  // Fetch TMDB data
+  const tmdbResponse = await fetch(
+    `https://api.themoviedb.org/3/${mediaType === "movie" ? "movie" : "tv"}/${tmdbId}?api_key=${process.env.TMDB_API_KEY}&language=fr-FR`,
+  )
+
+  if (!tmdbResponse.ok) {
     return NextResponse.json({ error: "Content not found" }, { status: 404 })
+  }
+
+  const tmdbData = await tmdbResponse.json()
+  const content = {
+    title: tmdbData.title || tmdbData.name,
+    poster: tmdbData.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}` : null,
+    tmdb_id: tmdbId,
+    media_type: mediaType,
   }
 
   const { data: downloadLinks, error: linksError } = await supabase
@@ -519,7 +538,7 @@ _loadExternal();
   const adId = hasAds ? ads[0].id : ""
 
   const title = content.title
-  const cover = content.poster_url || ""
+  const cover = content.poster || ""
   const contentType = isMovie ? "Film" : "Série"
   const internalLinks = downloadLinks?.filter((l) => l.source_url) || []
 
