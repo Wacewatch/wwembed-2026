@@ -453,6 +453,7 @@ _showExtDetails(_allExtLinks[idx]);
 });
 }
 
+// ** START OF UPDATES **
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
@@ -471,10 +472,31 @@ var embed=data.embed_url;
 var finalUrl=embed.lien||"#";
 
 details.classList.remove("show");
+
+// ** CHANGE ** Track external link click with full info
+fetch("/api/link-click",{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({
+    linkType:"external",
+    wwId:_wwId,
+    tmdbId:_tmdbId,
+    mediaType:_mediaType,
+    seasonNumber:_seasonNum||null,
+    episodeNumber:_episodeNum||null,
+    isExternal:true,
+    provider:link.provider||null,
+    hostName:link.host_name||null,
+    quality:link.quality||null,
+    language:link.language||null,
+    fileSize:link.size||null,
+    externalLinkId:link.id||null
+  })
+});
+
 if(_h&&_u){
   _showAdModal(finalUrl);
 }else{
-  fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});
   window.open(finalUrl,"_blank");
 }
 })
@@ -482,6 +504,7 @@ if(_h&&_u){
 body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
 });
 }
+// ** END OF UPDATES **
 
 document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
 
@@ -1006,10 +1029,31 @@ var embed=data.embed_url;
 var finalUrl=embed.lien||"#";
 
 details.classList.remove("show");
+
+// ** CHANGE ** Track external link click with full info
+fetch("/api/link-click",{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({
+    linkType:"external",
+    wwId:_wwId,
+    tmdbId:_tmdbId,
+    mediaType:_mediaType,
+    seasonNumber:_seasonNum||null,
+    episodeNumber:_episodeNum||null,
+    isExternal:true,
+    provider:link.provider||null,
+    hostName:link.host_name||null,
+    quality:link.quality||null,
+    language:link.language||null,
+    fileSize:link.size||null,
+    externalLinkId:link.id||null
+  })
+});
+
 if(_h&&_u){
   _sa(finalUrl);
 }else{
-  fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"external",wwId:_wwId})});
   window.open(finalUrl,"_blank");
 }
 })

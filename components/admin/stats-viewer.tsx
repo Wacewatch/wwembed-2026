@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Eye,
   MousePointer,
@@ -23,6 +24,7 @@ import {
   Clock,
 } from "lucide-react"
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts"
+import { ExternalLinksStats } from "./external-links-stats"
 
 interface ViewsByDay {
   date: string
@@ -656,511 +658,534 @@ export function StatsViewer() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-          <BarChart3 className="w-6 h-6 text-primary" />
-          Statistiques Detaillees
-        </h2>
-        <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7">7 derniers jours</SelectItem>
-            <SelectItem value="14">14 derniers jours</SelectItem>
-            <SelectItem value="30">30 derniers jours</SelectItem>
-            <SelectItem value="90">90 derniers jours</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="general" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Statistiques Générales
+          </TabsTrigger>
+          <TabsTrigger value="external" className="gap-2">
+            <Globe className="h-4 w-4" />
+            Liens Externes
+          </TabsTrigger>
+        </TabsList>
 
-      {detailedStats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Eye className="w-8 h-8 text-primary" />
-                <div>
-                  <p className="text-2xl font-bold text-primary">{detailedStats.totalViews.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Vues totales</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <MousePointer className="w-8 h-8 text-blue-500" />
-                <div>
-                  <p className="text-2xl font-bold text-blue-500">{detailedStats.totalClicks.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Clics liens</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <MousePointer className="w-8 h-8 text-purple-500" />
-                <div>
-                  <p className="text-2xl font-bold text-purple-500">{detailedStats.totalAdClicks.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Clics pubs</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Users className="w-8 h-8 text-green-500" />
-                <div>
-                  <p className="text-2xl font-bold text-green-foreground">
-                    {detailedStats.uniqueVisitors.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Visiteurs uniques</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <TrendingUp className="w-8 h-8 text-orange-500" />
-                <div>
-                  <p className="text-2xl font-bold text-foreground">
-                    {Math.round(detailedStats.avgViewsPerDay).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Moy. vues/jour</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        <TabsContent value="general" className="space-y-6">
+          {/* Keep all existing content here - online stats, period selector, cards, charts, etc. */}
+          {/* ... existing code for general stats ... */}
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <BarChart3 className="w-6 h-6 text-primary" />
+              Statistiques Detaillees
+            </h2>
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">7 derniers jours</SelectItem>
+                <SelectItem value="14">14 derniers jours</SelectItem>
+                <SelectItem value="30">30 derniers jours</SelectItem>
+                <SelectItem value="90">90 derniers jours</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-      {detailedStats && (
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Film className="w-5 h-5 text-primary" />
-              Repartition par type
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              {detailedStats.viewsByType.map((item) => (
-                <div key={item.type} className="text-center p-4 bg-muted/50 rounded-lg">
-                  {item.type === "Films" && <Film className="w-8 h-8 mx-auto mb-2 text-blue-500" />}
-                  {item.type === "Series" && <Tv className="w-8 h-8 mx-auto mb-2 text-purple-500" />}
-                  {item.type === "TV Live" && <Play className="w-8 h-8 mx-auto mb-2 text-red-500" />}
-                  {item.type === "Streaming" && <Play className="w-8 h-8 mx-auto mb-2 text-yellow-500" />}
-                  <p className="text-xl font-bold text-foreground">{item.count.toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground">{item.type}</p>
-                </div>
-              ))}
+          {detailedStats && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <Eye className="w-8 h-8 text-primary" />
+                    <div>
+                      <p className="text-2xl font-bold text-primary">{detailedStats.totalViews.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Vues totales</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <MousePointer className="w-8 h-8 text-blue-500" />
+                    <div>
+                      <p className="text-2xl font-bold text-blue-500">{detailedStats.totalClicks.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Clics liens</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <MousePointer className="w-8 h-8 text-purple-500" />
+                    <div>
+                      <p className="text-2xl font-bold text-purple-500">
+                        {detailedStats.totalAdClicks.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Clics pubs</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <Users className="w-8 h-8 text-green-500" />
+                    <div>
+                      <p className="text-2xl font-bold text-green-foreground">
+                        {detailedStats.uniqueVisitors.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Visiteurs uniques</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <TrendingUp className="w-8 h-8 text-orange-500" />
+                    <div>
+                      <p className="text-2xl font-bold text-foreground">
+                        {Math.round(detailedStats.avgViewsPerDay).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Moy. vues/jour</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
-              Vues par jour
-            </span>
-            <Badge variant="outline" className="text-primary">
-              Total: {chartTotal.toLocaleString()} vues
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {viewsByDay.length > 0 ? (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={viewsByDay} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis
-                    dataKey="formattedDate"
-                    stroke="#9ca3af"
-                    tick={{ fill: "#9ca3af", fontSize: 11 }}
-                    interval={viewsByDay.length > 14 ? Math.floor(viewsByDay.length / 10) : 0}
-                  />
-                  <YAxis
-                    stroke="#9ca3af"
-                    tick={{ fill: "#9ca3af", fontSize: 12 }}
-                    allowDecimals={false}
-                    tickFormatter={(value) => value.toLocaleString()}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#1f2937",
-                      border: "1px solid #374151",
-                      borderRadius: "8px",
-                      color: "#fff",
-                    }}
-                    labelStyle={{ color: "#9ca3af" }}
-                    formatter={(value: number) => [`${value.toLocaleString()} vues`, "Vues"]}
-                  />
-                  <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} name="Vues" />
-                  <Bar dataKey="streamingCount" fill="#fde047" radius={[4, 4, 0, 0]} name="Streaming" />
-                  <Bar dataKey="downloadCount" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Downloads" />
-                  <Legend />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="text-center text-muted-foreground py-8">Aucune donnee disponible</p>
           )}
-        </CardContent>
-      </Card>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Film className="w-5 h-5 text-primary" />
-                Top Medias (Vues)
-              </span>
-              <Badge variant="outline" className="text-primary">
-                {mediaTotal.toLocaleString()} vues
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
-              {topMedia.length > 0 ? (
-                topMedia.map((media, i) => (
-                  <div
-                    key={`${media.media_type}-${media.tmdb_id || media.ww_id}-${i}`}
-                    className="flex items-center gap-3"
-                  >
-                    <span className="text-muted-foreground w-6 text-right font-medium">{i + 1}.</span>
-                    {media.poster ? (
-                      <img
-                        src={media.poster.startsWith("http") ? media.poster : `${TMDB_IMAGE_BASE}${media.poster}`}
-                        alt={media.title}
-                        className="w-10 h-14 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
-                        {media.media_type === "live" ? (
-                          <Play className="w-5 h-5 text-muted-foreground" />
-                        ) : (
-                          <Film className="w-5 h-5 text-muted-foreground" />
-                        )}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground truncate text-sm">{media.title}</p>
-                      <Badge
-                        variant="outline"
-                        className={
-                          media.media_type === "movie"
-                            ? "text-blue-500 border-blue-500/30 text-xs"
-                            : media.media_type === "tv"
-                              ? "text-purple-500 border-purple-500/30 text-xs"
-                              : "text-red-500 border-red-500/30 text-xs"
-                        }
-                      >
-                        {media.media_type === "movie" ? "Film" : media.media_type === "tv" ? "Série" : "TV Live"}
-                      </Badge>
+          {detailedStats && (
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Film className="w-5 h-5 text-primary" />
+                  Repartition par type
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4">
+                  {detailedStats.viewsByType.map((item) => (
+                    <div key={item.type} className="text-center p-4 bg-muted/50 rounded-lg">
+                      {item.type === "Films" && <Film className="w-8 h-8 mx-auto mb-2 text-blue-500" />}
+                      {item.type === "Series" && <Tv className="w-8 h-8 mx-auto mb-2 text-purple-500" />}
+                      {item.type === "TV Live" && <Play className="w-8 h-8 mx-auto mb-2 text-red-500" />}
+                      {item.type === "Streaming" && <Play className="w-8 h-8 mx-auto mb-2 text-yellow-500" />}
+                      <p className="text-xl font-bold text-foreground">{item.count.toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground">{item.type}</p>
                     </div>
-                    <span className="text-primary font-bold text-sm">{media.views.toLocaleString()}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center text-muted-foreground py-4">Aucune donnee</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Download className="w-5 h-5 text-orange-500" />
-                Top Medias (Download)
-              </span>
-              <Badge variant="outline" className="text-orange-500">
-                {downloadTotal.toLocaleString()} clics
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
-              {topMediaDownload.length > 0 ? (
-                topMediaDownload.map((media, i) => (
-                  <div
-                    key={`dl-${media.media_type}-${media.tmdb_id || media.ww_id}-${i}`}
-                    className="flex items-center gap-3"
-                  >
-                    <span className="text-muted-foreground w-6 text-right font-medium">{i + 1}.</span>
-                    {media.poster ? (
-                      <img
-                        src={media.poster.startsWith("http") ? media.poster : `${TMDB_IMAGE_BASE}${media.poster}`}
-                        alt={media.title}
-                        className="w-10 h-14 object-cover rounded"
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  Vues par jour
+                </span>
+                <Badge variant="outline" className="text-primary">
+                  Total: {chartTotal.toLocaleString()} vues
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {viewsByDay.length > 0 ? (
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={viewsByDay} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis
+                        dataKey="formattedDate"
+                        stroke="#9ca3af"
+                        tick={{ fill: "#9ca3af", fontSize: 11 }}
+                        interval={viewsByDay.length > 14 ? Math.floor(viewsByDay.length / 10) : 0}
                       />
-                    ) : (
-                      <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
-                        {media.media_type === "digital" ? (
-                          <Download className="w-5 h-5 text-muted-foreground" />
-                        ) : (
-                          <Film className="w-5 h-5 text-muted-foreground" />
-                        )}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground truncate text-sm">{media.title}</p>
-                      <Badge
-                        variant="outline"
-                        className={
-                          media.media_type === "movie"
-                            ? "text-blue-500 border-blue-500/30 text-xs"
-                            : media.media_type === "tv"
-                              ? "text-purple-500 border-purple-500/30 text-xs"
-                              : media.media_type === "digital"
-                                ? "text-yellow-500 border-yellow-500/30 text-xs"
-                                : "text-gray-500 border-gray-500/30 text-xs"
-                        }
+                      <YAxis
+                        stroke="#9ca3af"
+                        tick={{ fill: "#9ca3af", fontSize: 12 }}
+                        allowDecimals={false}
+                        tickFormatter={(value) => value.toLocaleString()}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#1f2937",
+                          border: "1px solid #374151",
+                          borderRadius: "8px",
+                          color: "#fff",
+                        }}
+                        labelStyle={{ color: "#9ca3af" }}
+                        formatter={(value: number) => [`${value.toLocaleString()} vues`, "Vues"]}
+                      />
+                      <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} name="Vues" />
+                      <Bar dataKey="streamingCount" fill="#fde047" radius={[4, 4, 0, 0]} name="Streaming" />
+                      <Bar dataKey="downloadCount" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Downloads" />
+                      <Legend />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">Aucune donnee disponible</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Film className="w-5 h-5 text-primary" />
+                    Top Medias (Vues)
+                  </span>
+                  <Badge variant="outline" className="text-primary">
+                    {mediaTotal.toLocaleString()} vues
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                  {topMedia.length > 0 ? (
+                    topMedia.map((media, i) => (
+                      <div
+                        key={`${media.media_type}-${media.tmdb_id || media.ww_id}-${i}`}
+                        className="flex items-center gap-3"
                       >
-                        {media.media_type === "movie"
-                          ? "Film"
-                          : media.media_type === "tv"
-                            ? "Série"
-                            : media.media_type === "digital"
-                              ? "Digital"
-                              : media.media_type}
-                      </Badge>
-                    </div>
-                    <span className="text-orange-500 font-bold text-sm">{media.downloads.toLocaleString()}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center text-muted-foreground py-4">Aucune donnee</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Globe className="w-5 h-5 text-primary" />
-                Top Referents
-              </span>
-              <Badge variant="outline" className="text-primary">
-                {referrersTotal.toLocaleString()} vues
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-[600px] overflow-y-auto">
-              {topReferrers.length > 0 ? (
-                topReferrers.map((ref, i) => (
-                  <div key={ref.referrer} className="flex items-center gap-3">
-                    <span className="text-muted-foreground w-6 text-right font-medium">{i + 1}.</span>
-                    <Globe className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                    <p className="flex-1 truncate text-foreground text-sm" title={ref.referrer}>
-                      {ref.referrer}
-                    </p>
-                    <span className="text-primary font-bold text-sm">{ref.count.toLocaleString()}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center text-muted-foreground py-4">Aucune donnee</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Statistiques en temps réel / utilisateurs en ligne */}
-      {onlineStats && (
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Activity className="w-5 h-5 text-green-500 animate-pulse" />
-                Utilisateurs en ligne
-              </span>
-              <Badge variant="outline" className="text-green-500 border-green-500">
-                En temps réel
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-sm text-muted-foreground">5 dernières min</span>
-                </div>
-                <p className="text-3xl font-bold text-green-500">{onlineStats.usersOnline5min}</p>
-                <p className="text-xs text-muted-foreground mt-1">utilisateurs actifs</p>
-              </div>
-              <div className="text-center p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Clock className="w-4 h-4 text-yellow-500" />
-                  <span className="text-sm text-muted-foreground">15 dernières min</span>
-                </div>
-                <p className="text-3xl font-bold text-yellow-500">{onlineStats.usersOnline15min}</p>
-                <p className="text-xs text-muted-foreground mt-1">utilisateurs actifs</p>
-              </div>
-              <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <UserCheck className="w-4 h-4 text-blue-500" />
-                  <span className="text-sm text-muted-foreground">Dernière heure</span>
-                </div>
-                <p className="text-3xl font-bold text-blue-500">{onlineStats.usersOnline1hour}</p>
-                <p className="text-xs text-muted-foreground mt-1">visiteurs uniques</p>
-              </div>
-              <div className="text-center p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-purple-500" />
-                  <span className="text-sm text-muted-foreground">24 dernières heures</span>
-                </div>
-                <p className="text-3xl font-bold text-purple-500">{onlineStats.usersOnline24h}</p>
-                <p className="text-xs text-muted-foreground mt-1">visiteurs uniques</p>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              {/* Pages actives */}
-              <div className="bg-muted/30 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                  <Play className="w-4 h-4" />
-                  Pages les plus actives (15 min)
-                </h4>
-                <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                  {onlineStats.activePages.length > 0 ? (
-                    onlineStats.activePages.map((page, i) => (
-                      <div key={page.ww_id} className="flex items-center gap-3 p-2 bg-background/50 rounded-lg">
-                        <span className="text-muted-foreground w-5 text-right font-medium text-sm">{i + 1}.</span>
-                        {page.poster ? (
+                        <span className="text-muted-foreground w-6 text-right font-medium">{i + 1}.</span>
+                        {media.poster ? (
                           <img
-                            src={
-                              page.poster.startsWith("http")
-                                ? page.poster
-                                : `https://image.tmdb.org/t/p/w92${page.poster}`
-                            }
-                            alt={page.title}
-                            className="w-8 h-12 object-cover rounded"
+                            src={media.poster.startsWith("http") ? media.poster : `${TMDB_IMAGE_BASE}${media.poster}`}
+                            alt={media.title}
+                            className="w-10 h-14 object-cover rounded"
                           />
                         ) : (
-                          <div className="w-8 h-12 bg-muted rounded flex items-center justify-center">
-                            {page.media_type === "live" || page.ww_id?.includes("live") ? (
-                              <Tv className="w-4 h-4 text-muted-foreground" />
+                          <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
+                            {media.media_type === "live" ? (
+                              <Play className="w-5 h-5 text-muted-foreground" />
                             ) : (
-                              <Film className="w-4 h-4 text-muted-foreground" />
+                              <Film className="w-5 h-5 text-muted-foreground" />
                             )}
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground truncate text-sm">{page.title || page.ww_id}</p>
+                          <p className="font-medium text-foreground truncate text-sm">{media.title}</p>
                           <Badge
                             variant="outline"
-                            className={`text-xs ${
-                              page.media_type === "movie"
-                                ? "text-blue-400 border-blue-400/50"
-                                : page.media_type === "tv"
-                                  ? "text-purple-400 border-purple-400/50"
-                                  : "text-red-400 border-red-400/50"
-                            }`}
+                            className={
+                              media.media_type === "movie"
+                                ? "text-blue-500 border-blue-500/30 text-xs"
+                                : media.media_type === "tv"
+                                  ? "text-purple-500 border-purple-500/30 text-xs"
+                                  : "text-red-500 border-red-500/30 text-xs"
+                            }
                           >
-                            {page.media_type === "movie" ? "Film" : page.media_type === "tv" ? "Série" : "TV Live"}
+                            {media.media_type === "movie" ? "Film" : media.media_type === "tv" ? "Série" : "TV Live"}
                           </Badge>
                         </div>
-                        <Badge variant="secondary" className="text-primary font-bold">
-                          {page.count}
-                        </Badge>
+                        <span className="text-primary font-bold text-sm">{media.views.toLocaleString()}</span>
                       </div>
                     ))
                   ) : (
-                    <p className="text-muted-foreground text-sm">Aucune activité récente</p>
+                    <p className="text-center text-muted-foreground py-4">Aucune donnee</p>
                   )}
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              {/* Visiteurs récents */}
-              <div className="bg-muted/30 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Visiteurs récents
-                </h4>
-                <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                  {onlineStats.recentVisitors.length > 0 ? (
-                    onlineStats.recentVisitors.map((visitor, i) => (
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Download className="w-5 h-5 text-orange-500" />
+                    Top Medias (Download)
+                  </span>
+                  <Badge variant="outline" className="text-orange-500">
+                    {downloadTotal.toLocaleString()} clics
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                  {topMediaDownload.length > 0 ? (
+                    topMediaDownload.map((media, i) => (
                       <div
-                        key={`${visitor.ip_hash}-${i}`}
-                        className="flex items-center gap-3 p-2 bg-background/50 rounded-lg"
+                        key={`dl-${media.media_type}-${media.tmdb_id || media.ww_id}-${i}`}
+                        className="flex items-center gap-3"
                       >
-                        <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                        {visitor.poster ? (
+                        <span className="text-muted-foreground w-6 text-right font-medium">{i + 1}.</span>
+                        {media.poster ? (
                           <img
-                            src={
-                              visitor.poster.startsWith("http")
-                                ? visitor.poster
-                                : `https://image.tmdb.org/t/p/w92${visitor.poster}`
-                            }
-                            alt={visitor.title}
-                            className="w-8 h-12 object-cover rounded"
+                            src={media.poster.startsWith("http") ? media.poster : `${TMDB_IMAGE_BASE}${media.poster}`}
+                            alt={media.title}
+                            className="w-10 h-14 object-cover rounded"
                           />
                         ) : (
-                          <div className="w-8 h-12 bg-muted rounded flex items-center justify-center">
-                            {visitor.media_type === "live" || visitor.ww_id?.includes("live") ? (
-                              <Tv className="w-4 h-4 text-muted-foreground" />
+                          <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
+                            {media.media_type === "digital" ? (
+                              <Download className="w-5 h-5 text-muted-foreground" />
                             ) : (
-                              <Film className="w-4 h-4 text-muted-foreground" />
+                              <Film className="w-5 h-5 text-muted-foreground" />
                             )}
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground truncate text-sm">
-                            {visitor.title || visitor.ww_id}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-muted-foreground font-mono text-xs">{visitor.ip_hash}</span>
-                            <Badge
-                              variant="outline"
-                              className={`text-xs ${
-                                visitor.media_type === "movie"
-                                  ? "text-blue-400 border-blue-400/50"
-                                  : visitor.media_type === "tv"
-                                    ? "text-purple-400 border-purple-400/50"
-                                    : "text-red-400 border-red-400/50"
-                              }`}
-                            >
-                              {visitor.media_type === "movie"
-                                ? "Film"
-                                : visitor.media_type === "tv"
-                                  ? "Série"
-                                  : "TV Live"}
-                            </Badge>
-                          </div>
+                          <p className="font-medium text-foreground truncate text-sm">{media.title}</p>
+                          <Badge
+                            variant="outline"
+                            className={
+                              media.media_type === "movie"
+                                ? "text-blue-500 border-blue-500/30 text-xs"
+                                : media.media_type === "tv"
+                                  ? "text-purple-500 border-purple-500/30 text-xs"
+                                  : media.media_type === "digital"
+                                    ? "text-yellow-500 border-yellow-500/30 text-xs"
+                                    : "text-gray-500 border-gray-500/30 text-xs"
+                            }
+                          >
+                            {media.media_type === "movie"
+                              ? "Film"
+                              : media.media_type === "tv"
+                                ? "Série"
+                                : media.media_type === "digital"
+                                  ? "Digital"
+                                  : media.media_type}
+                          </Badge>
                         </div>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {new Date(visitor.viewed_at).toLocaleTimeString("fr-FR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                        <span className="text-orange-500 font-bold text-sm">{media.downloads.toLocaleString()}</span>
                       </div>
                     ))
                   ) : (
-                    <p className="text-muted-foreground text-sm">Aucun visiteur récent</p>
+                    <p className="text-center text-muted-foreground py-4">Aucune donnee</p>
                   )}
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-primary" />
+                    Top Referents
+                  </span>
+                  <Badge variant="outline" className="text-primary">
+                    {referrersTotal.toLocaleString()} vues
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                  {topReferrers.length > 0 ? (
+                    topReferrers.map((ref, i) => (
+                      <div key={ref.referrer} className="flex items-center gap-3">
+                        <span className="text-muted-foreground w-6 text-right font-medium">{i + 1}.</span>
+                        <Globe className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                        <p className="flex-1 truncate text-foreground text-sm" title={ref.referrer}>
+                          {ref.referrer}
+                        </p>
+                        <span className="text-primary font-bold text-sm">{ref.count.toLocaleString()}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-muted-foreground py-4">Aucune donnee</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Statistiques en temps réel / utilisateurs en ligne */}
+          {onlineStats && (
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-green-500 animate-pulse" />
+                    Utilisateurs en ligne
+                  </span>
+                  <Badge variant="outline" className="text-green-500 border-green-500">
+                    En temps réel
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <span className="text-sm text-muted-foreground">5 dernières min</span>
+                    </div>
+                    <p className="text-3xl font-bold text-green-500">{onlineStats.usersOnline5min}</p>
+                    <p className="text-xs text-muted-foreground mt-1">utilisateurs actifs</p>
+                  </div>
+                  <div className="text-center p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Clock className="w-4 h-4 text-yellow-500" />
+                      <span className="text-sm text-muted-foreground">15 dernières min</span>
+                    </div>
+                    <p className="text-3xl font-bold text-yellow-500">{onlineStats.usersOnline15min}</p>
+                    <p className="text-xs text-muted-foreground mt-1">utilisateurs actifs</p>
+                  </div>
+                  <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <UserCheck className="w-4 h-4 text-blue-500" />
+                      <span className="text-sm text-muted-foreground">Dernière heure</span>
+                    </div>
+                    <p className="text-3xl font-bold text-blue-500">{onlineStats.usersOnline1hour}</p>
+                    <p className="text-xs text-muted-foreground mt-1">visiteurs uniques</p>
+                  </div>
+                  <div className="text-center p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Calendar className="w-4 h-4 text-purple-500" />
+                      <span className="text-sm text-muted-foreground">24 dernières heures</span>
+                    </div>
+                    <p className="text-3xl font-bold text-purple-500">{onlineStats.usersOnline24h}</p>
+                    <p className="text-xs text-muted-foreground mt-1">visiteurs uniques</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Pages actives */}
+                  <div className="bg-muted/30 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                      <Play className="w-4 h-4" />
+                      Pages les plus actives (15 min)
+                    </h4>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {onlineStats.activePages.length > 0 ? (
+                        onlineStats.activePages.map((page, i) => (
+                          <div key={page.ww_id} className="flex items-center gap-3 p-2 bg-background/50 rounded-lg">
+                            <span className="text-muted-foreground w-5 text-right font-medium text-sm">{i + 1}.</span>
+                            {page.poster ? (
+                              <img
+                                src={
+                                  page.poster.startsWith("http")
+                                    ? page.poster
+                                    : `https://image.tmdb.org/t/p/w92${page.poster}`
+                                }
+                                alt={page.title}
+                                className="w-8 h-12 object-cover rounded"
+                              />
+                            ) : (
+                              <div className="w-8 h-12 bg-muted rounded flex items-center justify-center">
+                                {page.media_type === "live" || page.ww_id?.includes("live") ? (
+                                  <Tv className="w-4 h-4 text-muted-foreground" />
+                                ) : (
+                                  <Film className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-foreground truncate text-sm">{page.title || page.ww_id}</p>
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${
+                                  page.media_type === "movie"
+                                    ? "text-blue-400 border-blue-400/50"
+                                    : page.media_type === "tv"
+                                      ? "text-purple-400 border-purple-400/50"
+                                      : "text-red-400 border-red-400/50"
+                                }`}
+                              >
+                                {page.media_type === "movie" ? "Film" : page.media_type === "tv" ? "Série" : "TV Live"}
+                              </Badge>
+                            </div>
+                            <Badge variant="secondary" className="text-primary font-bold">
+                              {page.count}
+                            </Badge>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground text-sm">Aucune activité récente</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Visiteurs récents */}
+                  <div className="bg-muted/30 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Visiteurs récents
+                    </h4>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {onlineStats.recentVisitors.length > 0 ? (
+                        onlineStats.recentVisitors.map((visitor, i) => (
+                          <div
+                            key={`${visitor.ip_hash}-${i}`}
+                            className="flex items-center gap-3 p-2 bg-background/50 rounded-lg"
+                          >
+                            <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+                            {visitor.poster ? (
+                              <img
+                                src={
+                                  visitor.poster.startsWith("http")
+                                    ? visitor.poster
+                                    : `https://image.tmdb.org/t/p/w92${visitor.poster}`
+                                }
+                                alt={visitor.title}
+                                className="w-8 h-12 object-cover rounded"
+                              />
+                            ) : (
+                              <div className="w-8 h-12 bg-muted rounded flex items-center justify-center">
+                                {visitor.media_type === "live" || visitor.ww_id?.includes("live") ? (
+                                  <Tv className="w-4 h-4 text-muted-foreground" />
+                                ) : (
+                                  <Film className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-foreground truncate text-sm">
+                                {visitor.title || visitor.ww_id}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground font-mono text-xs">{visitor.ip_hash}</span>
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs ${
+                                    visitor.media_type === "movie"
+                                      ? "text-blue-400 border-blue-400/50"
+                                      : visitor.media_type === "tv"
+                                        ? "text-purple-400 border-purple-400/50"
+                                        : "text-red-400 border-red-400/50"
+                                  }`}
+                                >
+                                  {visitor.media_type === "movie"
+                                    ? "Film"
+                                    : visitor.media_type === "tv"
+                                      ? "Série"
+                                      : "TV Live"}
+                                </Badge>
+                              </div>
+                            </div>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              {new Date(visitor.viewed_at).toLocaleTimeString("fr-FR", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground text-sm">Aucun visiteur récent</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="external">
+          <ExternalLinksStats />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

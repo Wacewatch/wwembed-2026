@@ -7,7 +7,22 @@ export async function POST(request: Request) {
     const supabase = await createClient()
     const body = await request.json()
 
-    const { linkId, linkType, wwId, tmdbId, mediaType, seasonNumber, episodeNumber } = body
+    const {
+      linkId,
+      linkType,
+      wwId,
+      tmdbId,
+      mediaType,
+      seasonNumber,
+      episodeNumber,
+      isExternal,
+      provider,
+      hostName,
+      quality,
+      language,
+      fileSize,
+      externalLinkId,
+    } = body
 
     // Get IP and hash it for privacy
     const forwarded = request.headers.get("x-forwarded-for")
@@ -17,7 +32,7 @@ export async function POST(request: Request) {
     const userAgent = request.headers.get("user-agent") || null
     const referrer = request.headers.get("referer") || null
 
-    // Insert click record
+    // Insert click record with external link info
     await supabase.from("link_clicks").insert({
       link_id: linkId || null,
       link_type: linkType || "download",
@@ -29,6 +44,13 @@ export async function POST(request: Request) {
       ip_hash: ipHash,
       user_agent: userAgent,
       referrer: referrer,
+      is_external: isExternal || false,
+      provider: provider || null,
+      host_name: hostName || null,
+      quality: quality || null,
+      language: language || null,
+      file_size: fileSize || null,
+      external_link_id: externalLinkId || null,
     })
 
     return NextResponse.json({ success: true })
