@@ -1160,6 +1160,7 @@ export function DashboardContent({
                         ...streamingLinks.map((link) => ({ ...link, linkType: "streaming" as const })),
                         ...downloadLinks.map((link) => ({ ...link, linkType: "download" as const })),
                       ]
+                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                         .slice(0, 5)
                         .map((link, i) => {
                           const mediaInfo = getMediaInfo(link)
