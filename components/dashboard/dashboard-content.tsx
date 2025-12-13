@@ -1160,7 +1160,12 @@ export function DashboardContent({
                         ...streamingLinks.map((link) => ({ ...link, linkType: "streaming" as const })),
                         ...downloadLinks.map((link) => ({ ...link, linkType: "download" as const })),
                       ]
-                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                        .filter((link) => link.created_at) // Filter out links without created_at
+                        .sort((a, b) => {
+                          const dateA = new Date(a.created_at).getTime()
+                          const dateB = new Date(b.created_at).getTime()
+                          return dateB - dateA // Most recent first
+                        })
                         .slice(0, 5)
                         .map((link, i) => {
                           const mediaInfo = getMediaInfo(link)
@@ -1182,20 +1187,11 @@ export function DashboardContent({
                                   <p className="text-sm font-medium truncate max-w-[150px]">
                                     {mediaInfo.title} {episodeInfo}
                                   </p>
-                                  <div className="flex items-center gap-2">
-                                    <p className="text-xs text-muted-foreground">
-                                      {new Date(link.created_at).toLocaleDateString("fr-FR")}
-                                    </p>
-                                    <Badge
-                                      variant="outline"
-                                      className={`text-xs ${
-                                        link.linkType === "streaming"
-                                          ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
-                                          : "bg-teal-500/10 text-teal-400 border-teal-500/30"
-                                      }`}
-                                    >
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Badge variant="outline" className="text-xs">
                                       {link.linkType === "streaming" ? "Streaming" : "Téléchargement"}
                                     </Badge>
+                                    {episodeInfo && <span className="text-primary font-mono">{episodeInfo}</span>}
                                   </div>
                                 </div>
                               </div>

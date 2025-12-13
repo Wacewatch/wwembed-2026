@@ -58,37 +58,32 @@ export default async function DashboardPage() {
       fetchAllRows(supabase, "digital_download_links", user.id),
     ])
 
-  // Then count views based on the fetched links
-  const wwIds = [
-    ...(streamingLinks || []).map((l) => l.ww_id),
-    ...(downloadLinks || []).map((l) => l.ww_id),
-    ...(digitalContents || []).map((l) => l.ww_id),
-  ].filter(Boolean)
+  const streamingLinkIds = (streamingLinks || []).map((l) => l.id).filter(Boolean)
+  const downloadLinkIds = (downloadLinks || []).map((l) => l.id).filter(Boolean)
+  const digitalLinkIds = (digitalLinks || []).map((l) => l.id).filter(Boolean)
 
-  let viewCount = 0
-  const viewsPerLink: Record<string, number> = {}
+  const clicksPerLink: Record<string, number> = {}
 
-  if (wwIds.length > 0) {
-    const { count } = await supabase.from("embed_views").select("*", { count: "exact", head: true }).in("ww_id", wwIds)
-    viewCount = count || 0
-
-    const allViews: any[] = []
+  // Fetch clicks for streaming links
+  if (streamingLinkIds.length > 0) {
+    const allClicks: any[] = []
     const pageSize = 1000
     let page = 0
     let hasMore = true
 
     while (hasMore) {
-      const { data: viewsData } = await supabase
-        .from("embed_views")
-        .select("ww_id")
-        .in("ww_id", wwIds)
+      const { data: clicksData } = await supabase
+        .from("link_clicks")
+        .select("link_id")
+        .in("link_id", streamingLinkIds)
+        .eq("link_type", "streaming")
         .range(page * pageSize, (page + 1) * pageSize - 1)
 
-      if (!viewsData || viewsData.length === 0) {
+      if (!clicksData || clicksData.length === 0) {
         hasMore = false
       } else {
-        allViews.push(...viewsData)
-        if (viewsData.length < pageSize) {
+        allClicks.push(...clicksData)
+        if (clicksData.length < pageSize) {
           hasMore = false
         } else {
           page++
@@ -96,26 +91,112 @@ export default async function DashboardPage() {
       }
     }
 
-    allViews.forEach((view) => {
-      if (view.ww_id) {
-        viewsPerLink[view.ww_id] = (viewsPerLink[view.ww_id] || 0) + 1
+    allClicks.forEach((click) => {
+      if (click.link_id) {
+        clicksPerLink[click.link_id] = (clicksPerLink[click.link_id] || 0) + 1
       }
     })
   }
 
-  const streamingLinksWithViews = (streamingLinks || []).map((link) => ({
+  // Fetch clicks for download links
+  if (downloadLinkIds.length > 0) {
+    const allClicks: any[] = []
+    const pageSize = 1000
+    let page = 0
+    let hasMore = true
+
+    while (hasMore) {
+      const { data: clicksData } = await supabase
+        .from("link_clicks")
+        .select("link_id")
+        .in("link_id", downloadLinkIds)
+        .eq("link_type", "download")
+        .range(page * pageSize, (page + 1) * pageSize - 1)
+
+      if (!clicksData || clicksData.length === 0) {
+        hasMore = false
+      } else {
+        allClicks.push(...clicksData)
+        if (clicksData.length < pageSize) {
+          hasMore = false
+        } else {
+          page++
+        }
+      }
+    }
+
+    allClicks.forEach((click) => {
+      if (click.link_id) {
+        clicksPerLink[click.link_id] = (clicksPerLink[click.link_id] || 0) + 1
+      }
+    })
+  }
+
+  // Fetch clicks for digital links
+  if (digitalLinkIds.length > 0) {
+    const allClicks: any[] = []
+    const pageSize = 1000
+    let page = 0
+    let hasMore = true
+
+    while (hasMore) {
+      const { data: clicksData } = await supabase
+        .from("link_clicks")
+        .select("link_id")
+        .in("link_id", digitalLinkIds)
+        .range(page * pageSize, (page + 1) * pageSize - 1)
+
+      if (!clicksData || clicksData.length === 0) {
+        hasMore = false
+      } else {
+        allClicks.push(...clicksData)
+        if (clicksData.length < pageSize) {
+          hasMore = false
+        } else {
+          page++
+        }
+      }
+    }
+
+    allClicks.forEach((click) => {
+      if (click.link_id) {
+        clicksPerLink[click.link_id] = (clicksPerLink[click.link_id] || 0) + 1
+      }
+    })
+  }
+
+  // Count total views based on ww_id
+  const wwIds = [
+    ...(streamingLinks || []).map((l) => l.ww_id),
+    ...(downloadLinks || []).map((l) => l.ww_id),
+    ...(digitalContents || []).map((l) => l.ww_id),
+  ].filter(Boolean)
+
+  let viewCount = 0
+
+  if (wwIds.length > 0) {
+    const { count } = await supabase.from("embed_views").select("*", { count: "exact", head: true }).in("ww_id", wwIds)
+    viewCount = count || 0
+  }
+
+  const streamingLinksWithClicks = (streamingLinks || []).map((link) => ({
     ...link,
-    view_count: viewsPerLink[link.ww_id] || 0,
+    click_count: clicksPerLink[link.id] || 0,
   }))
 
-  const downloadLinksWithViews = (downloadLinks || []).map((link) => ({
+  const downloadLinksWithClicks = (downloadLinks || []).map((link) => ({
     ...link,
-    view_count: viewsPerLink[link.ww_id] || 0,
+    click_count: clicksPerLink[link.id] || 0,
   }))
 
-  const digitalContentsWithViews = (digitalContents || []).map((content) => ({
+  const digitalLinksWithClicks = (digitalLinks || []).map((link) => ({
+    ...link,
+    click_count: clicksPerLink[link.id] || 0,
+  }))
+
+  const digitalContentsWithLinks = (digitalContents || []).map((content) => ({
     ...content,
-    view_count: viewsPerLink[content.ww_id] || 0,
+    links: digitalLinksWithClicks.filter((link) => link.content_id === content.id),
   }))
 
   const totalStreaming = streamingLinks?.length || 0
@@ -153,12 +234,12 @@ export default async function DashboardPage() {
       <main className="container mx-auto px-4 py-8">
         <DashboardContent
           profile={profile}
-          streamingLinks={streamingLinksWithViews}
-          downloadLinks={downloadLinksWithViews}
+          streamingLinks={streamingLinksWithClicks}
+          downloadLinks={downloadLinksWithClicks}
           liveTvChannels={liveTvChannels || []}
           liveTvSources={liveTvSources || []}
-          initialDigitalContents={digitalContentsWithViews}
-          digitalLinks={digitalLinks || []}
+          initialDigitalContents={digitalContentsWithLinks}
+          digitalLinks={digitalLinksWithClicks}
           stats={{
             totalStreaming,
             totalDownload,
