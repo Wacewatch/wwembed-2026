@@ -74,9 +74,8 @@ export default async function DashboardPage() {
     while (hasMore) {
       const { data: clicksData } = await supabase
         .from("link_clicks")
-        .select("link_id")
-        .in("link_id", streamingLinkIds)
-        .eq("link_type", "streaming")
+        .select("link_id, streaming_link_id")
+        .or(`link_id.in.(${streamingLinkIds.join(",")}),streaming_link_id.in.(${streamingLinkIds.join(",")})`)
         .range(page * pageSize, (page + 1) * pageSize - 1)
 
       if (!clicksData || clicksData.length === 0) {
@@ -92,8 +91,9 @@ export default async function DashboardPage() {
     }
 
     allClicks.forEach((click) => {
-      if (click.link_id) {
-        clicksPerLink[click.link_id] = (clicksPerLink[click.link_id] || 0) + 1
+      const linkId = click.streaming_link_id || click.link_id
+      if (linkId) {
+        clicksPerLink[linkId] = (clicksPerLink[linkId] || 0) + 1
       }
     })
   }
@@ -108,9 +108,8 @@ export default async function DashboardPage() {
     while (hasMore) {
       const { data: clicksData } = await supabase
         .from("link_clicks")
-        .select("link_id")
-        .in("link_id", downloadLinkIds)
-        .eq("link_type", "download")
+        .select("link_id, download_link_id")
+        .or(`link_id.in.(${downloadLinkIds.join(",")}),download_link_id.in.(${downloadLinkIds.join(",")})`)
         .range(page * pageSize, (page + 1) * pageSize - 1)
 
       if (!clicksData || clicksData.length === 0) {
@@ -126,8 +125,9 @@ export default async function DashboardPage() {
     }
 
     allClicks.forEach((click) => {
-      if (click.link_id) {
-        clicksPerLink[click.link_id] = (clicksPerLink[click.link_id] || 0) + 1
+      const linkId = click.download_link_id || click.link_id
+      if (linkId) {
+        clicksPerLink[linkId] = (clicksPerLink[linkId] || 0) + 1
       }
     })
   }
@@ -142,8 +142,8 @@ export default async function DashboardPage() {
     while (hasMore) {
       const { data: clicksData } = await supabase
         .from("link_clicks")
-        .select("link_id")
-        .in("link_id", digitalLinkIds)
+        .select("link_id, digital_download_link_id")
+        .or(`link_id.in.(${digitalLinkIds.join(",")}),digital_download_link_id.in.(${digitalLinkIds.join(",")})`)
         .range(page * pageSize, (page + 1) * pageSize - 1)
 
       if (!clicksData || clicksData.length === 0) {
@@ -159,8 +159,9 @@ export default async function DashboardPage() {
     }
 
     allClicks.forEach((click) => {
-      if (click.link_id) {
-        clicksPerLink[click.link_id] = (clicksPerLink[click.link_id] || 0) + 1
+      const linkId = click.digital_download_link_id || click.link_id
+      if (linkId) {
+        clicksPerLink[linkId] = (clicksPerLink[linkId] || 0) + 1
       }
     })
   }

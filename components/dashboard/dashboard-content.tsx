@@ -1187,8 +1187,22 @@ export function DashboardContent({
                                   <p className="text-sm font-medium truncate max-w-[150px]">
                                     {mediaInfo.title} {episodeInfo}
                                   </p>
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <Badge variant="outline" className="text-xs">
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                    <span>
+                                      {new Date(link.created_at).toLocaleDateString("fr-FR", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                      })}
+                                    </span>
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-xs ${
+                                        link.linkType === "streaming"
+                                          ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                                          : "bg-teal-500/10 text-teal-400 border-teal-500/20"
+                                      }`}
+                                    >
                                       {link.linkType === "streaming" ? "Streaming" : "Téléchargement"}
                                     </Badge>
                                     {episodeInfo && <span className="text-primary font-mono">{episodeInfo}</span>}
