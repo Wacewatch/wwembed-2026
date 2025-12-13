@@ -37,8 +37,26 @@ export function ExternalLinksStats() {
     startDate.setDate(startDate.getDate() - Number.parseInt(period))
     const startDateStr = startDate.toISOString()
 
+    console.log("[v0] Loading external link stats from:", startDateStr)
+
     try {
-      // Fetch all external link clicks
+      const { data: allExternalClicks, error: allError } = await supabase
+        .from("link_clicks")
+        .select("*")
+        .eq("is_external", true)
+        .limit(10)
+
+      console.log("[v0] Total external clicks in database (any date):", allExternalClicks?.length || 0)
+      console.log("[v0] Sample external clicks:", allExternalClicks)
+
+      const { data: allClicks, error: allClicksError } = await supabase
+        .from("link_clicks")
+        .select("is_external, provider, host_name")
+        .limit(20)
+
+      console.log("[v0] All clicks sample (with is_external flag):", allClicks)
+
+      // Fetch external link clicks for the period
       const { data: clicks, error } = await supabase
         .from("link_clicks")
         .select("*")
@@ -46,13 +64,15 @@ export function ExternalLinksStats() {
         .gte("clicked_at", startDateStr)
         .order("clicked_at", { ascending: false })
 
+      console.log("[v0] External clicks for period:", { clicksCount: clicks?.length || 0, error })
+
       if (error) {
         console.error("Error fetching external clicks:", error)
         setLoading(false)
         return
       }
 
-      const allClicks = clicks || []
+      const externalClicks = clicks || []
 
       // Process clicks by provider
       const providerCount: Record<string, number> = {}
@@ -62,7 +82,7 @@ export function ExternalLinksStats() {
       const dayCount: Record<string, number> = {}
       const mediaCount: Record<string, { wwId: string; tmdbId: number; mediaType: string; clicks: number }> = {}
 
-      allClicks.forEach((click: any) => {
+      externalClicks.forEach((click: any) => {
         // Provider
         const provider = click.provider || "Inconnu"
         providerCount[provider] = (providerCount[provider] || 0) + 1
@@ -175,7 +195,7 @@ export function ExternalLinksStats() {
       )
 
       setStats({
-        totalClicks: allClicks.length,
+        totalClicks: externalClicks.length,
         clicksByProvider,
         clicksByHost,
         clicksByQuality,
