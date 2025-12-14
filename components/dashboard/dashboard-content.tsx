@@ -128,85 +128,6 @@ interface DashboardContentProps {
   }
 }
 
-// Client-side component for rendering activity lists that depend on dates
-const ClientActivityList = ({
-  streamingLinks,
-  downloadLinks,
-  getMediaInfo,
-  formatEpisodeInfo,
-}: {
-  streamingLinks: StreamingLinkWithViews[]
-  downloadLinks: DownloadLinkWithViews[]
-  getMediaInfo: (link: StreamingLink | DownloadLink) => MediaInfo
-  formatEpisodeInfo: (link: StreamingLink | DownloadLink) => string | null
-}) => {
-  // Combine and sort links by creation date
-  const combinedLinks = [
-    ...streamingLinks.map((link) => ({ ...link, linkType: "streaming" as const })),
-    ...downloadLinks.map((link) => ({ ...link, linkType: "download" as const })),
-  ]
-    .filter((link) => link.created_at) // Filter out links without created_at
-    .sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime()
-      const dateB = new Date(b.created_at).getTime()
-      return dateB - dateA // Most recent first
-    })
-    .slice(0, 5) // Take the latest 5
-
-  return (
-    <div className="space-y-3">
-      {combinedLinks.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">Aucune activite recente</p>
-      ) : (
-        combinedLinks.map((link) => {
-          const mediaInfo = getMediaInfo(link)
-          const episodeInfo = formatEpisodeInfo(link)
-          return (
-            <div
-              key={link.id}
-              className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0"
-            >
-              <div className="flex items-center gap-3">
-                {mediaInfo.poster && (
-                  <img
-                    src={mediaInfo.poster || "/placeholder.svg"}
-                    alt={mediaInfo.title}
-                    className="w-10 h-12 object-cover rounded"
-                  />
-                )}
-                <div>
-                  <p className="font-medium line-clamp-1">{mediaInfo.title}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>
-                      {new Date(link.created_at).toLocaleDateString("fr-FR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })}
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className={`text-xs ${
-                        link.linkType === "streaming"
-                          ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
-                          : "bg-teal-500/10 text-teal-400 border-teal-500/20"
-                      }`}
-                    >
-                      {link.linkType === "streaming" ? "Streaming" : "Téléchargement"}
-                    </Badge>
-                    {episodeInfo && <span className="text-primary font-mono">{episodeInfo}</span>}
-                  </div>
-                </div>
-              </div>
-              {getStatusBadge(link.status)}
-            </div>
-          )
-        })
-      )}
-    </div>
-  )
-}
-
 function getStatusBadge(status: string) {
   switch (status) {
     case "approved":
@@ -1234,16 +1155,62 @@ export function DashboardContent({
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ClientActivityList
-                      streamingLinks={streamingLinks}
-                      downloadLinks={downloadLinks}
-                      getMediaInfo={getMediaInfo}
-                      formatEpisodeInfo={formatEpisodeInfo}
-                    />
+                    <div className="space-y-3">
+                      {[
+                        ...streamingLinks.map((link) => ({ ...link, linkType: "streaming" as const })),
+                        ...downloadLinks.map((link) => ({ ...link, linkType: "download" as const })),
+                      ]
+                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                        .slice(0, 5)
+                        .map((link, i) => {
+                          const mediaInfo = getMediaInfo(link)
+                          const episodeInfo = formatEpisodeInfo(link)
+                          return (
+                            <div
+                              key={link.id}
+                              className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0"
+                            >
+                              <div className="flex items-center gap-3">
+                                {mediaInfo.poster && (
+                                  <img
+                                    src={mediaInfo.poster || "/placeholder.svg"}
+                                    alt={mediaInfo.title}
+                                    className="w-10 h-12 object-cover rounded"
+                                  />
+                                )}
+                                <div>
+                                  <p className="text-sm font-medium truncate max-w-[150px]">
+                                    {mediaInfo.title} {episodeInfo}
+                                  </p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-xs text-muted-foreground">
+                                      {new Date(link.created_at).toLocaleDateString("fr-FR")}
+                                    </p>
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-xs ${
+                                        link.linkType === "streaming"
+                                          ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
+                                          : "bg-teal-500/10 text-teal-400 border-teal-500/30"
+                                      }`}
+                                    >
+                                      {link.linkType === "streaming" ? "Streaming" : "Téléchargement"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              {getStatusBadge(link.status)}
+                            </div>
+                          )
+                        })}
+                      {streamingLinks.length === 0 && downloadLinks.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">Aucune activite recente</p>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
 
-                {/* Stats */}
+                {/* Quick Stats */}
                 <Card className="border-zinc-800 bg-zinc-900/50">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
