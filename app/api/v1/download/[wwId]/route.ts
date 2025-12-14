@@ -428,6 +428,8 @@ return true;
 _renderExtLinks(filtered);
 }
 
+function _formatSize(bytes){if(!bytes)return"N/A";var gb=bytes/(1024*1024*1024);if(gb>=1)return gb.toFixed(2)+" GB";var mb=bytes/(1024*1024);return mb.toFixed(0)+" MB";}
+
 function _renderExtLinks(links){
 var content=document.getElementById(_extIds.content);
 if(links.length===0){content.innerHTML='<div class="em">Aucun résultat</div>';return;}
@@ -439,31 +441,31 @@ html+='<span class="ext-quality">'+(l.quality||"N/A")+'</span>';
 html+='<div class="ext-info">'+(l.language||"N/A")+'</div>';
 if(l.host_name)html+='<div class="ext-host"><span>'+l.host_name+'</span></div>';
 if(l.size)html+='<div class="ext-stats"><div class="ext-stat"><span class="ext-stat-label">Taille</span><span class="ext-stat-value">'+_formatSize(l.size)+'</span></div></div>';
-// ** CHANGE ** Removed inline onclick, will bind event listeners after rendering
 html+='<button class="ext-btn">Voir le lien</button></div></div>';
 });
 content.innerHTML=html;
-// ** CHANGE ** Added event listener binding here
-content.querySelectorAll(".ext-card").forEach(function(card, idx){
-card.querySelector(".ext-btn").onclick = function() {
-_showExtDetails(idx); // Pass the index to the function
+content.querySelectorAll(".ext-card").forEach(function(card){
+card.querySelector(".ext-btn").onclick=function(e){
+e.stopPropagation();
+var idx=parseInt(card.getAttribute("data-idx"));
+_showExtDetails(_allExtLinks[idx]);
 };
 });
 }
 
-function _showExtDetails(idx){
-var link=_allExtLinks[idx];
-if(!link||!link.embed_id)return; // Use embed_id from digital content external links
+// ** START OF UPDATES **
+function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
-body.innerHTML='<div style="text-align:center;padding:30px"><div style="display:inline-block;width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:#667eea;border-radius:50%;animation:spin 1s linear infinite"></div></div>';
+
+body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg style="animation:spin 1s linear infinite;width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="margin-top:12px">Chargement du lien...</p></div>';
 details.classList.add("show");
 
-fetch("https://api.movix.site/api/darkiworld/embed/"+link.embed_id)
+fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
 .then(function(r){return r.json();})
 .then(function(data){
-if(!data||!data.embed_url||!data.embed_url.lien){
-body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Impossible de récupérer le lien</p></div>';
+if(!data||!data.success||!data.embed_url){
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
 return;
 }
 var embed=data.embed_url;
@@ -476,15 +478,19 @@ fetch("/api/link-click",{
   method:"POST",
   headers:{"Content-Type":"application/json"},
   body:JSON.stringify({
-    linkType:"external", // Changed from "download" to "external" for clarity
+    linkType:"external",
     wwId:_wwId,
+    tmdbId:_tmdbId,
+    mediaType:_mediaType,
+    seasonNumber:_seasonNum||null,
+    episodeNumber:_episodeNum||null,
     isExternal:true,
     provider:link.provider||null,
     hostName:link.host_name||null,
     quality:link.quality||null,
     language:link.language||null,
     fileSize:link.size||null,
-    externalLinkId:link.id||null // Assuming 'id' is the unique identifier for external links
+    externalLinkId:link.id||null
   })
 });
 
@@ -498,8 +504,7 @@ if(_h&&_u){
 body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
 });
 }
-
-function _formatSize(bytes){if(!bytes)return"N/A";var gb=bytes/(1024*1024*1024);if(gb>=1)return gb.toFixed(2)+" GB";return(bytes/(1024*1024)).toFixed(0)+" MB";}
+// ** END OF UPDATES **
 
 document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
 
@@ -524,7 +529,7 @@ _loadExternal();
   // ============================================
   const parsed = parseWWId(wwId)
 
-  if (!parsed || !parsed.mediaType || !parsed.tmdbId) {
+  if (!parsed) {
     return NextResponse.json({ error: "Invalid WW ID format" }, { status: 400 })
   }
 
@@ -994,27 +999,30 @@ if(l.size)html+='<div class="ext-stats"><div class="ext-stat"><span class="ext-s
 html+='<button class="ext-btn">Voir le lien</button></div></div>';
 });
 content.innerHTML=html;
-content.querySelectorAll(".ext-card").forEach(function(card, idx){
-card.querySelector(".ext-btn").onclick = function() {
-_showExtDetails(idx);
+content.querySelectorAll(".ext-card").forEach(function(card){
+card.querySelector(".ext-btn").onclick=function(e){
+e.stopPropagation();
+var idx=parseInt(card.getAttribute("data-idx"));
+_showExtDetails(_allExtLinks[idx]);
 };
 });
 }
 
 // ** START OF UPDATES **
-function _showExtDetails(idx){
-var link=_allExtLinks[idx];
-if(!link||!link.embed_id)return; // Use embed_id from digital content external links
+function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
-body.innerHTML='<div style="text-align:center;padding:30px"><div style="display:inline-block;width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:#667eea;border-radius:50%;animation:spin 1s linear infinite"></div></div>';
+
+// Show loading first
+body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg style="animation:spin 1s linear infinite;width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="margin-top:12px">Chargement du lien...</p></div>';
 details.classList.add("show");
 
-fetch("https://api.movix.site/api/darkiworld/embed/"+link.embed_id)
+// Decode the link via Movix API
+fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
 .then(function(r){return r.json();})
 .then(function(data){
-if(!data||!data.embed_url||!data.embed_url.lien){
-body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Impossible de récupérer le lien</p></div>';
+if(!data||!data.success||!data.embed_url){
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
 return;
 }
 var embed=data.embed_url;
@@ -1022,6 +1030,7 @@ var finalUrl=embed.lien||"#";
 
 details.classList.remove("show");
 
+// ** CHANGE ** Track external link click with full info
 fetch("/api/link-click",{
   method:"POST",
   headers:{"Content-Type":"application/json"},
