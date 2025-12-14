@@ -524,7 +524,7 @@ _loadExternal();
   // ============================================
   const parsed = parseWWId(wwId)
 
-  if (!parsed || !parsed.type || !parsed.id) {
+  if (!parsed || !parsed.mediaType || !parsed.tmdbId) {
     return NextResponse.json({ error: "Invalid WW ID format" }, { status: 400 })
   }
 
