@@ -228,6 +228,9 @@ Recherche de sources externes...
 </div>
 </div>
 
+<!-- Added linkDisplayArea for digital section -->
+<div class="link-display-area" id="linkDisplayArea"></div>
+
 <div class="ft">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
 
 <div class="mo" id="${ids.overlay}">
@@ -788,7 +791,7 @@ Recherche de sources externes...
 </div>
 </div>
 
-/* Added link display area for film/serie */
+<!-- Removed visible JS comment, using HTML comment instead -->
 <div class="link-display-area" id="linkDisplayArea"></div>
 
 <div class="ft">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
