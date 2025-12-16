@@ -96,6 +96,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       step2: generateRandomId("s2"),
       step3: generateRandomId("s3"),
       linksContainer: generateRandomId("lc"),
+      linkDisplay: generateRandomId("linkDisplay"),
+      linkUrl: generateRandomId("linkUrl"),
+      linkOpen: generateRandomId("linkOpen"),
+      linkCopy: generateRandomId("linkCopy"),
+      linkCopied: generateRandomId("linkCopied"),
     }
 
     const linksJson = JSON.stringify(downloadLinks || [])
@@ -182,10 +187,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .cf{margin-top:12px;font-size:11px;color:#9ca3af}
 .cf a{color:#667eea}
 .tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;font-weight:600}
-.link-display{background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.3);border-radius:12px;padding:16px;margin-top:16px;text-align:center}
-.link-display-title{font-size:14px;color:#14B8A6;margin-bottom:12px;font-weight:600}
-.link-display-url{background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;word-break:break-all;font-family:monospace;font-size:12px;color:#e5e7eb;margin-bottom:12px}
-.link-display-btn{display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#14B8A6,#0d9488);color:#0c1520;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px}
+/* CHANGE: Add CSS for link display zone */
+.link-display{display:none;margin-top:20px;padding:20px;background:linear-gradient(135deg,#0c1520,#162230);border:1px solid rgba(102,126,234,0.4);border-radius:16px}
+.link-display.show{display:block}
+.link-display-title{font-size:14px;color:#8ba3b5;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.link-display-title svg{width:18px;height:18px;color:#10b981}
+.link-display-url{background:rgba(30,58,79,0.5);padding:12px 16px;border-radius:10px;margin-bottom:16px;word-break:break-all}
+.link-display-url a{color:#14B8A6;font-size:13px;text-decoration:none}
+.link-display-url a:hover{text-decoration:underline}
+.link-display-actions{display:flex;gap:10px}
+.link-display-btn{flex:1;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}
+.link-display-btn svg{width:16px;height:16px}
+.link-display-btn.primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.link-display-btn.primary:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(102,126,234,0.4)}
+.link-display-btn.secondary{background:rgba(30,58,79,0.5);color:#8ba3b5;border:1px solid rgba(102,126,234,0.3)}
+.link-display-btn.secondary:hover{background:rgba(30,58,79,0.8);color:#fff}
+.link-copied{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:600;z-index:10000;opacity:0;transition:opacity 0.3s}
+.link-copied.show{opacity:1}
 </style>
 </head>
 <body>
@@ -228,7 +246,24 @@ Recherche de sources externes...
 </div>
 </div>
 
-<div id="linkDisplayArea" style="display:none"></div>
+<div class="link-display" id="${ids.linkDisplay}">
+<div class="link-display-title">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+Votre lien est prêt !
+</div>
+<div class="link-display-url"><a href="#" id="${ids.linkUrl}" target="_blank"></a></div>
+<div class="link-display-actions">
+<button class="link-display-btn primary" id="${ids.linkOpen}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+Ouvrir le lien
+</button>
+<button class="link-display-btn secondary" id="${ids.linkCopy}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+Copier le lien
+</button>
+</div>
+</div>
+<div class="link-copied" id="${ids.linkCopied}">Lien copié !</div>
 
 <div class="ft">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
 
@@ -330,9 +365,13 @@ _displayLink(decodeURIComponent(url));
 }
 
 function _displayLink(url){
-var area=document.getElementById("linkDisplayArea");
-area.style.display="block";
-area.innerHTML='<div class="link-display"><div class="link-display-title">Votre lien est prêt !</div><div class="link-display-url">'+url+'</div><a href="'+url+'" target="_blank" class="link-display-btn">Ouvrir le lien</a></div>';
+var area=document.getElementById(_ids.linkDisplay);
+var linkUrlElement = document.getElementById(_ids.linkUrl);
+var linkOpenButton = document.getElementById(_ids.linkOpen);
+linkUrlElement.href = url;
+linkUrlElement.textContent = url;
+linkOpenButton.href = url;
+area.classList.add("show");
 area.scrollIntoView({behavior:"smooth"});
 }
 
@@ -631,6 +670,11 @@ _loadExternal();
     step2: generateRandomId("s2"),
     step3: generateRandomId("s3"),
     linksContainer: generateRandomId("lc"),
+    linkDisplay: generateRandomId("linkDisplay"),
+    linkUrl: generateRandomId("linkUrl"),
+    linkOpen: generateRandomId("linkOpen"),
+    linkCopy: generateRandomId("linkCopy"),
+    linkCopied: generateRandomId("linkCopied"),
   }
 
   const linksJson = JSON.stringify(links || [])
@@ -737,6 +781,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .cf{margin-top:12px;font-size:11px;color:#9ca3af}
 .cf a{color:#667eea}
 .tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;font-weight:600}
+/* CHANGE: Add CSS for link display zone */
+.link-display{display:none;margin-top:20px;padding:20px;background:linear-gradient(135deg,#0c1520,#162230);border:1px solid rgba(102,126,234,0.4);border-radius:16px}
+.link-display.show{display:block}
+.link-display-title{font-size:14px;color:#8ba3b5;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.link-display-title svg{width:18px;height:18px;color:#10b981}
+.link-display-url{background:rgba(30,58,79,0.5);padding:12px 16px;border-radius:10px;margin-bottom:16px;word-break:break-all}
+.link-display-url a{color:#14B8A6;font-size:13px;text-decoration:none}
+.link-display-url a:hover{text-decoration:underline}
+.link-display-actions{display:flex;gap:10px}
+.link-display-btn{flex:1;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}
+.link-display-btn svg{width:16px;height:16px}
+.link-display-btn.primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.link-display-btn.primary:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(102,126,234,0.4)}
+.link-display-btn.secondary{background:rgba(30,58,79,0.5);color:#8ba3b5;border:1px solid rgba(102,126,234,0.3)}
+.link-display-btn.secondary:hover{background:rgba(30,58,79,0.8);color:#fff}
+.link-copied{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:600;z-index:10000;opacity:0;transition:opacity 0.3s}
+.link-copied.show{opacity:1}
 </style>
 </head>
 <body>
@@ -778,6 +839,25 @@ Recherche de sources externes...
 <div class="ext-details-body" id="${externalIds.detailsContent}"></div>
 </div>
 </div>
+
+<div class="link-display" id="${ids.linkDisplay}">
+<div class="link-display-title">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+Votre lien est prêt !
+</div>
+<div class="link-display-url"><a href="#" id="${ids.linkUrl}" target="_blank"></a></div>
+<div class="link-display-actions">
+<button class="link-display-btn primary" id="${ids.linkOpen}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+Ouvrir le lien
+</button>
+<button class="link-display-btn secondary" id="${ids.linkCopy}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+Copier le lien
+</button>
+</div>
+</div>
+<div class="link-copied" id="${ids.linkCopied}">Lien copié !</div>
 
 <div class="ft">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
 
@@ -1101,6 +1181,29 @@ body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Err
 });
 }
 // ** END OF UPDATES FOR FILM/SERIES CONTENT **
+
+// ** CHANGE ** Add event listeners for link display actions
+document.getElementById(_ids.linkOpen).onclick = function(e) {
+  e.preventDefault();
+  const url = document.getElementById(_ids.linkUrl).href;
+  if (url && url !== '#') {
+    fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
+    window.open(url, "_blank");
+  }
+};
+
+document.getElementById(_ids.linkCopy).onclick = function() {
+  const url = document.getElementById(_ids.linkUrl).href;
+  if (url && url !== '#') {
+    navigator.clipboard.writeText(url).then(() => {
+      const copiedMessage = document.getElementById(_ids.linkCopied);
+      copiedMessage.classList.add('show');
+      setTimeout(() => {
+        copiedMessage.classList.remove('show');
+      }, 2000);
+    });
+  }
+};
 
 document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
 
