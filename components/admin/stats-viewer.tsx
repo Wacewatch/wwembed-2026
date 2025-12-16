@@ -112,6 +112,8 @@ interface AggregatedStats {
   streamingClicks: number
   downloadClicks: number
   adClicks: number
+  uniqueVisitors: number
+  avgViewsPerDay: number
   chartData: {
     date: string
     fullDate: string
@@ -397,6 +399,19 @@ export function StatsViewer() {
         .select("*", { count: "exact", head: true })
         .gte("clicked_at", startDateStr)
 
+      // We fetch a limited sample and count unique IPs, then estimate
+      const { data: uniqueIpSample } = await supabase
+        .from("embed_views")
+        .select("ip_hash")
+        .gte("viewed_at", startDateStr)
+        .limit(10000)
+
+      const uniqueIps = new Set(uniqueIpSample?.map((v: any) => v.ip_hash).filter(Boolean))
+      const uniqueVisitors = uniqueIps.size
+
+      const periodDays = Number.parseInt(period)
+      const avgViewsPerDay = totalViews ? Math.round(totalViews / periodDays) : 0
+
       // Fetch top media for downloads
       const { data: topMediaDownloadData } = await supabase
         .from("link_clicks")
@@ -585,17 +600,18 @@ export function StatsViewer() {
         .sort((a, b) => b.value - a.count)
         .slice(0, 5)
 
-      // Removed detailedStats and replaced with a more focused aggregated stats object
       setStats({
         totalViews: totalViews || 0,
         totalClicks: totalClicks || 0,
         streamingClicks: streamingClicks || 0,
         downloadClicks: downloadClicks || 0,
         adClicks: adClicks || 0,
+        uniqueVisitors: uniqueVisitors,
+        avgViewsPerDay: avgViewsPerDay,
         chartData,
         mediaTypeData,
-        topMedia: [], // Skip top media calculation to keep it fast
-        referrerData: [], // Skip referrer calculation
+        topMedia: [],
+        referrerData: [],
       })
 
       setLoadingProgress("")
@@ -692,14 +708,12 @@ export function StatsViewer() {
                   </div>
                 </CardContent>
               </Card>
-              {/* Unique visitors and Avg views per day are no longer directly available in the updated stats */}
-              {/* Placeholder or removed if not available */}
               <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3">
                     <Users className="w-8 h-8 text-green-500" />
                     <div>
-                      <p className="text-2xl font-bold text-green-foreground">N/A</p>
+                      <p className="text-2xl font-bold text-green-500">{stats.uniqueVisitors.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">Visiteurs uniques</p>
                     </div>
                   </div>
@@ -710,7 +724,7 @@ export function StatsViewer() {
                   <div className="flex items-center gap-3">
                     <TrendingUp className="w-8 h-8 text-orange-500" />
                     <div>
-                      <p className="text-2xl font-bold text-foreground">N/A</p>
+                      <p className="text-2xl font-bold text-orange-500">{stats.avgViewsPerDay.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">Moy. vues/jour</p>
                     </div>
                   </div>
