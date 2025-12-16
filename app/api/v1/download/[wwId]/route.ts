@@ -14,13 +14,33 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     wwId.startsWith("ww-ebook-") ||
     wwId.startsWith("ww-music-") ||
     wwId.startsWith("ww-software-") ||
+    wwId.startsWith("ww-soft-") ||
     wwId.startsWith("ww-game-")
 
   // ============================================
   // DIGITAL CONTENT DOWNLOAD
   // ============================================
   if (isDigitalContent) {
-    const { data: digitalContent } = await supabase.from("digital_content").select("*").eq("ww_id", wwId).single()
+    let digitalContent = null
+    const { data: content1 } = await supabase.from("digital_content").select("*").eq("ww_id", wwId).single()
+
+    if (content1) {
+      digitalContent = content1
+    } else if (wwId.startsWith("ww-soft-")) {
+      // Try with ww-software- prefix instead
+      const alternateWwId = wwId.replace("ww-soft-", "ww-software-")
+      const { data: content2 } = await supabase.from("digital_content").select("*").eq("ww_id", alternateWwId).single()
+      if (content2) {
+        digitalContent = content2
+      }
+    } else if (wwId.startsWith("ww-software-")) {
+      // Try with ww-soft- prefix instead
+      const alternateWwId = wwId.replace("ww-software-", "ww-soft-")
+      const { data: content2 } = await supabase.from("digital_content").select("*").eq("ww_id", alternateWwId).single()
+      if (content2) {
+        digitalContent = content2
+      }
+    }
 
     if (!digitalContent) {
       return NextResponse.json({ error: "Digital content not found" }, { status: 404 })
@@ -99,12 +119,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .li-top{padding:16px;border-bottom:1px solid rgba(30,58,79,0.4)}
 .li-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .li-nm{font-weight:600;font-size:15px;color:#fff;flex:1}
-.li-up{font-size:12px;color:#6b7280;background:rgba(107,114,128,0.1);padding:4px 10px;border-radius:6px}
 .li-meta{display:flex;flex-wrap:wrap;gap:8px}
 .li-tag{padding:6px 10px;border-radius:6px;font-size:11px;font-weight:600}
 .li-bottom{padding:12px 16px;background:rgba(30,58,79,0.2)}
 .li-btn{padding:12px 20px;background:linear-gradient(135deg,#14B8A6,#0d9488);color:#0c1520;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;width:100%}
-.li-btn:hover{transform:translateY(-1px)}
 .em{color:#6b7280;padding:40px 20px;text-align:center;font-size:15px;background:rgba(22,34,48,0.5);border-radius:12px}
 .ft{text-align:center;color:#4b5563;font-size:12px;margin-top:20px}
 .ft a{color:#14B8A6}
@@ -122,8 +140,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ext-card-body{padding:16px}
 .ext-provider{font-size:11px;color:#667eea;font-weight:600;text-transform:uppercase;margin-bottom:8px}
 .ext-quality{display:inline-block;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;margin-bottom:10px}
-.ext-info{display:flex;align-items:center;gap:6px;font-size:12px;color:#94a3b8;margin-bottom:6px}
-.ext-host{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid rgba(30,58,79,0.4);margin-top:10px}
+.ext-info{font-size:12px;color:#94a3b8;margin-bottom:6px}
+.ext-host{padding:10px 0;border-top:1px solid rgba(30,58,79,0.4);margin-top:10px}
 .ext-host span{font-size:12px;color:#8ba3b5}
 .ext-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .ext-stat{text-align:center;padding:8px;background:rgba(30,58,79,0.3);border-radius:6px}
@@ -141,29 +159,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
 .mo.sh{display:flex}
 .mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
-.mc h2{color:#1a1a2e;margin-bottom:8px;font-size:clamp(16px,4vw,20px);font-weight:700}
-.mc-sub{color:#6b7280;font-size:clamp(11px,3vw,13px);margin-bottom:16px}
+.mc h2{color:#1a1a2e;margin-bottom:8px;font-size:20px;font-weight:700}
+.mc-sub{color:#6b7280;font-size:13px;margin-bottom:16px}
 .steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
 .step{width:10px;height:10px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
 .step.active{background:linear-gradient(135deg,#667eea,#764ba2);transform:scale(1.2)}
 .step.done{background:#10b981}
 .bx{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
 .bx svg{flex-shrink:0;width:18px;height:18px}
-.bx-content b{display:block;font-size:clamp(12px,3.5vw,14px);margin-bottom:2px}
-.bx-content span{font-size:clamp(10px,2.8vw,12px);opacity:0.8;display:block}
+.bx-content b{display:block;font-size:14px;margin-bottom:2px}
+.bx-content span{font-size:12px;opacity:0.8;display:block}
 .bw{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
 .bh{background:linear-gradient(135deg,#fce7f3,#fbcfe8);border:1px solid #ec4899;color:#9d174d}
 .bi{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #8b5cf6;color:#5b21b6}
 .bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
 .pb{height:5px;background:#e5e7eb;border-radius:3px;margin:12px 0;overflow:hidden}
 .pf{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2,#ec4899);transition:width 0.3s;border-radius:3px}
-.bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:clamp(12px,3.5vw,14px);font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
+.bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
 .bp{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
 .bn{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
 .hi{display:none}
-.cf{margin-top:12px;font-size:clamp(9px,2.5vw,11px);color:#9ca3af}
+.cf{margin-top:12px;font-size:11px;color:#9ca3af}
 .cf a{color:#667eea}
 .tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;font-weight:600}
+.link-display{background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.3);border-radius:12px;padding:16px;margin-top:16px;text-align:center}
+.link-display-title{font-size:14px;color:#14B8A6;margin-bottom:12px;font-weight:600}
+.link-display-url{background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;word-break:break-all;font-family:monospace;font-size:12px;color:#e5e7eb;margin-bottom:12px}
+.link-display-btn{display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#14B8A6,#0d9488);color:#0c1520;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px}
 </style>
 </head>
 <body>
@@ -206,6 +228,8 @@ Recherche de sources externes...
 </div>
 </div>
 
+<div id="linkDisplayArea" style="display:none"></div>
+
 <div class="ft">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
 
 <div class="mo" id="${ids.overlay}">
@@ -235,11 +259,11 @@ Recherche de sources externes...
 </div>
 <div class="bx bo hi" id="${ids.boxDone}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-<div class="bx-content"><b>Tout est prêt !</b><span>Cliquez pour télécharger</span></div>
+<div class="bx-content"><b>Tout est prêt !</b><span>Cliquez pour voir le lien</span></div>
 </div>
 <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
 <button class="bt bp" id="${ids.btnUnlock}">Continuer<span class="tag">PUB</span></button>
-<button class="bt bn hi" id="${ids.btnDownload}">Télécharger</button>
+<button class="bt bn hi" id="${ids.btnDownload}">Voir le lien</button>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
 </div>
@@ -298,11 +322,18 @@ if(!url||url==="undefined"){alert("Lien non disponible");return;}
 if(_h&&_u){_showAdModal(decodeURIComponent(url));}
 else{
 fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"digital",wwId:_wwId})});
-window.open(decodeURIComponent(url),"_blank");
+_displayLink(decodeURIComponent(url));
 }
 };
 })(bs[j]);
 }
+}
+
+function _displayLink(url){
+var area=document.getElementById("linkDisplayArea");
+area.style.display="block";
+area.innerHTML='<div class="link-display"><div class="link-display-title">Votre lien est prêt !</div><div class="link-display-url">'+url+'</div><a href="'+url+'" target="_blank" class="link-display-btn">Ouvrir le lien</a></div>';
+area.scrollIntoView({behavior:"smooth"});
 }
 
 function _showAdModal(downloadUrl){
@@ -361,7 +392,8 @@ dn.onclick=function(){
 o.classList.remove("sh");
 if(_p){
 fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"digital",wwId:_wwId})});
-window.open(_p,"_blank");_p=null;
+_displayLink(_p);
+_p=null;
 }
 };
 }
@@ -441,7 +473,7 @@ html+='<span class="ext-quality">'+(l.quality||"N/A")+'</span>';
 html+='<div class="ext-info">'+(l.language||"N/A")+'</div>';
 if(l.host_name)html+='<div class="ext-host"><span>'+l.host_name+'</span></div>';
 if(l.size)html+='<div class="ext-stats"><div class="ext-stat"><span class="ext-stat-label">Taille</span><span class="ext-stat-value">'+_formatSize(l.size)+'</span></div></div>';
-html+='<button class="ext-btn">Voir le lien</button></div></div>';
+html+='<button class="ext-btn">Télécharger</button></div></div>';
 });
 content.innerHTML=html;
 content.querySelectorAll(".ext-card").forEach(function(card){
@@ -453,7 +485,6 @@ _showExtDetails(_allExtLinks[idx]);
 });
 }
 
-// ** START OF UPDATES **
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
@@ -464,26 +495,36 @@ details.classList.add("show");
 fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
 .then(function(r){return r.json();})
 .then(function(data){
-if(!data||!data.success||!data.embed_url){
+if(!data||!data.success){
 body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
 return;
 }
-var embed=data.embed_url;
-var finalUrl=embed.lien||"#";
+
+var finalUrl = null;
+if(data.embed_url){
+  if(typeof data.embed_url === 'string') finalUrl = data.embed_url;
+  else if(data.embed_url.lien) finalUrl = data.embed_url.lien;
+  else if(data.embed_url.url) finalUrl = data.embed_url.url;
+  else if(data.embed_url.link) finalUrl = data.embed_url.link;
+}
+if(!finalUrl && data.url) finalUrl = data.url;
+if(!finalUrl && data.link) finalUrl = data.link;
+if(!finalUrl && data.lien) finalUrl = data.lien;
+if(!finalUrl && data.direct_link) finalUrl = data.direct_link;
+
+if(!finalUrl){
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
+return;
+}
 
 details.classList.remove("show");
 
-// ** CHANGE ** Track external link click with full info
 fetch("/api/link-click",{
   method:"POST",
   headers:{"Content-Type":"application/json"},
   body:JSON.stringify({
     linkType:"external",
     wwId:_wwId,
-    tmdbId:_tmdbId,
-    mediaType:_mediaType,
-    seasonNumber:_seasonNum||null,
-    episodeNumber:_episodeNum||null,
     isExternal:true,
     provider:link.provider||null,
     hostName:link.host_name||null,
@@ -497,14 +538,13 @@ fetch("/api/link-click",{
 if(_h&&_u){
   _showAdModal(finalUrl);
 }else{
-  window.open(finalUrl,"_blank");
+  _displayLink(finalUrl);
 }
 })
 .catch(function(err){
 body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
 });
 }
-// ** END OF UPDATES **
 
 document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
 
@@ -632,7 +672,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .li-tag.quality{background:linear-gradient(135deg,rgba(20,184,166,0.2),rgba(20,184,166,0.1));color:#14B8A6;border-color:rgba(20,184,166,0.3)}
 .li-bottom{padding:12px 16px;background:rgba(30,58,79,0.2)}
 .li-btn{padding:12px 20px;background:linear-gradient(135deg,#14B8A6,#0d9488);color:#0c1520;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;width:100%}
-.li-btn:hover{transform:translateY(-1px)}
 .em{color:#6b7280;padding:40px 20px;text-align:center;font-size:15px;background:rgba(22,34,48,0.5);border-radius:12px}
 .ft{text-align:center;color:#4b5563;font-size:12px;margin-top:20px}
 .ft a{color:#14B8A6}
@@ -769,11 +808,11 @@ Recherche de sources externes...
 </div>
 <div class="bx bo hi" id="${ids.boxDone}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-<div class="bx-content"><b>Tout est prêt !</b><span>Cliquez pour télécharger</span></div>
+<div class="bx-content"><b>Tout est prêt !</b><span>Cliquez pour voir le lien</span></div>
 </div>
 <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
 <button class="bt bp" id="${ids.btnUnlock}">Continuer<span class="tag">PUB</span></button>
-<button class="bt bn hi" id="${ids.btnDownload}">Télécharger</button>
+<button class="bt bn hi" id="${ids.btnDownload}">Voir le lien</button>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
 </div>
@@ -1008,7 +1047,7 @@ _showExtDetails(_allExtLinks[idx]);
 });
 }
 
-// ** START OF UPDATES **
+// ** START OF UPDATES FOR FILM/SERIES CONTENT **
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
@@ -1061,7 +1100,9 @@ if(_h&&_u){
 body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
 });
 }
-// ** END OF UPDATES **
+// ** END OF UPDATES FOR FILM/SERIES CONTENT **
+
+document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
 
 _renderLinks();
 _loadExternal();
