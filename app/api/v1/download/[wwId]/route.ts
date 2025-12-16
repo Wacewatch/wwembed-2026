@@ -295,7 +295,7 @@ btn.onclick=function(e){
 e.preventDefault();
 var url=btn.getAttribute("data-url");
 if(!url||url==="undefined"){alert("Lien non disponible");return;}
-if(_h&&_u){_sa(decodeURIComponent(url));}
+if(_h&&_u){_showAdModal(decodeURIComponent(url));}
 else{
 fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"digital",wwId:_wwId})});
 window.open(decodeURIComponent(url),"_blank");
@@ -305,7 +305,7 @@ window.open(decodeURIComponent(url),"_blank");
 }
 }
 
-function _sa(downloadUrl){
+function _showAdModal(downloadUrl){
 _p=downloadUrl;
 var o=document.getElementById(_ids.overlay);
 var bt=document.getElementById(_ids.boxTime);
@@ -448,56 +448,42 @@ content.querySelectorAll(".ext-card").forEach(function(card){
 card.querySelector(".ext-btn").onclick=function(e){
 e.stopPropagation();
 var idx=parseInt(card.getAttribute("data-idx"));
-_showExtDetails(idx);
+_showExtDetails(_allExtLinks[idx]);
 };
 });
 }
 
-function _showExtDetails(idx){
-var link=_allExtLinks[idx];
+// ** START OF UPDATES **
+function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
-details.classList.add("show");
-body.innerHTML='<div style="text-align:center;padding:30px"><div class="loader"></div><p style="margin-top:10px">Décodage du lien...</p></div>';
 
-fetch("https://api.movix.site/api/darkiworld/directlink",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({link:link.link})})
+body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg style="animation:spin 1s linear infinite;width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="margin-top:12px">Chargement du lien...</p></div>';
+details.classList.add("show");
+
+fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
 .then(function(r){return r.json();})
 .then(function(data){
-var finalUrl=null;
-if(data){
-  if(data.embed_url){
-    if(typeof data.embed_url==="string"){
-      finalUrl=data.embed_url;
-    }else if(data.embed_url.lien){
-      finalUrl=data.embed_url.lien;
-    }else if(data.embed_url.url){
-      finalUrl=data.embed_url.url;
-    }else if(data.embed_url.link){
-      finalUrl=data.embed_url.link;
-    }
-  }else if(data.url){
-    finalUrl=data.url;
-  }else if(data.link){
-    finalUrl=data.link;
-  }else if(data.lien){
-    finalUrl=data.lien;
-  }else if(data.direct_link){
-    finalUrl=data.direct_link;
-  }
+if(!data||!data.success||!data.embed_url){
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
+return;
 }
+var embed=data.embed_url;
+var finalUrl=embed.lien||"#";
 
-if(!finalUrl){
-  body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien non disponible</p><p style="font-size:12px;margin-top:8px;color:#888">Essayez une autre source</p></div>';
-  return;
-}
+details.classList.remove("show");
 
+// ** CHANGE ** Track external link click with full info
 fetch("/api/link-click",{
   method:"POST",
   headers:{"Content-Type":"application/json"},
   body:JSON.stringify({
-    linkType:"download",
+    linkType:"external",
     wwId:_wwId,
-    mediaType:"digital",
+    tmdbId:_tmdbId,
+    mediaType:_mediaType,
+    seasonNumber:_seasonNum||null,
+    episodeNumber:_episodeNum||null,
     isExternal:true,
     provider:link.provider||null,
     hostName:link.host_name||null,
@@ -509,16 +495,16 @@ fetch("/api/link-click",{
 });
 
 if(_h&&_u){
-  details.classList.remove("show");
-  _sa(finalUrl);
+  _showAdModal(finalUrl);
 }else{
-  body.innerHTML='<div style="text-align:center;padding:20px"><p style="color:#10b981;font-weight:600;margin-bottom:16px">Lien décodé avec succès!</p><div style="background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;margin-bottom:16px;word-break:break-all;font-size:12px;color:#94a3b8">'+finalUrl+'</div><a href="'+finalUrl+'" target="_blank" rel="noopener" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Ouvrir le lien</a></div>';
+  window.open(finalUrl,"_blank");
 }
 })
 .catch(function(err){
-body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p><p style="font-size:12px;margin-top:8px;color:#888">Le serveur externe ne répond pas</p></div>';
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
 });
 }
+// ** END OF UPDATES **
 
 document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
 
@@ -867,7 +853,66 @@ window.open(decodeURIComponent(url),"_blank");
 }
 }
 
-// _sa function is already defined in the digital content section and is used here as well.
+function _sa(url){
+_p=url;
+var o=document.getElementById(_ids.overlay);
+var bt=document.getElementById(_ids.boxTime);
+var bh=document.getElementById(_ids.boxHelp);
+var bk=document.getElementById(_ids.boxThanks);
+var bd=document.getElementById(_ids.boxDone);
+var pr=document.getElementById(_ids.progress);
+var tm=document.getElementById(_ids.timer);
+var bu=document.getElementById(_ids.btnUnlock);
+var dn=document.getElementById(_ids.btnDownload);
+var s1=document.getElementById(_ids.step1);
+var s2=document.getElementById(_ids.step2);
+var s3=document.getElementById(_ids.step3);
+if(bt)bt.classList.remove("hi");
+if(bh)bh.classList.remove("hi");
+if(bk)bk.classList.add("hi");
+if(bd)bd.classList.add("hi");
+if(pr)pr.style.width="0";
+if(tm)tm.textContent="3";
+if(bu)bu.classList.remove("hi");
+if(dn)dn.classList.add("hi");
+if(s1){s1.classList.add("active");s1.classList.remove("done");}
+if(s2){s2.classList.remove("active");s2.classList.remove("done");}
+if(s3){s3.classList.remove("active");s3.classList.remove("done");}
+o.classList.add("sh");
+
+bu.onclick=function(){
+fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
+window.open(_u,"_blank");
+bu.classList.add("hi");
+if(s1){s1.classList.remove("active");s1.classList.add("done");}
+if(s2)s2.classList.add("active");
+var s=3,pg=0;
+var iv=setInterval(function(){
+s--;pg+=33.33;
+if(tm)tm.textContent=s;
+if(pr)pr.style.width=pg+"%";
+if(s<=0){
+clearInterval(iv);
+if(s2){s2.classList.remove("active");s2.classList.add("done");}
+if(s3)s3.classList.add("active");
+if(bt)bt.classList.add("hi");
+if(bh)bh.classList.add("hi");
+if(bk)bk.classList.remove("hi");
+if(bd)bd.classList.remove("hi");
+if(pr)pr.style.width="100%";
+if(dn)dn.classList.remove("hi");
+}
+},1000);
+};
+
+dn.onclick=function(){
+o.classList.remove("sh");
+if(_p){
+fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
+window.open(_p,"_blank");_p=null;
+}
+};
+}
 
 function _loadExternal(){
 var loading=document.getElementById(_extIds.loading);
@@ -958,56 +1003,44 @@ content.querySelectorAll(".ext-card").forEach(function(card){
 card.querySelector(".ext-btn").onclick=function(e){
 e.stopPropagation();
 var idx=parseInt(card.getAttribute("data-idx"));
-_showExtDetails(idx);
+_showExtDetails(_allExtLinks[idx]);
 };
 });
 }
 
-function _showExtDetails(idx){
-var link=_allExtLinks[idx];
+// ** START OF UPDATES **
+function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
-details.classList.add("show");
-body.innerHTML='<div style="text-align:center;padding:30px"><div class="loader"></div><p style="margin-top:10px">Décodage du lien...</p></div>';
 
-fetch("https://api.movix.site/api/darkiworld/directlink",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({link:link.link})})
+// Show loading first
+body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg style="animation:spin 1s linear infinite;width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="margin-top:12px">Chargement du lien...</p></div>';
+details.classList.add("show");
+
+// Decode the link via Movix API
+fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
 .then(function(r){return r.json();})
 .then(function(data){
-var finalUrl=null;
-if(data){
-  if(data.embed_url){
-    if(typeof data.embed_url==="string"){
-      finalUrl=data.embed_url;
-    }else if(data.embed_url.lien){
-      finalUrl=data.embed_url.lien;
-    }else if(data.embed_url.url){
-      finalUrl=data.embed_url.url;
-    }else if(data.embed_url.link){
-      finalUrl=data.embed_url.link;
-    }
-  }else if(data.url){
-    finalUrl=data.url;
-  }else if(data.link){
-    finalUrl=data.link;
-  }else if(data.lien){
-    finalUrl=data.lien;
-  }else if(data.direct_link){
-    finalUrl=data.direct_link;
-  }
+if(!data||!data.success||!data.embed_url){
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
+return;
 }
+var embed=data.embed_url;
+var finalUrl=embed.lien||"#";
 
-if(!finalUrl){
-  body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien non disponible</p><p style="font-size:12px;margin-top:8px;color:#888">Essayez une autre source</p></div>';
-  return;
-}
+details.classList.remove("show");
 
+// ** CHANGE ** Track external link click with full info
 fetch("/api/link-click",{
   method:"POST",
   headers:{"Content-Type":"application/json"},
   body:JSON.stringify({
-    linkType:"download",
+    linkType:"external",
     wwId:_wwId,
-    mediaType:"digital", // This seems incorrect, should be _mediaType
+    tmdbId:_tmdbId,
+    mediaType:_mediaType,
+    seasonNumber:_seasonNum||null,
+    episodeNumber:_episodeNum||null,
     isExternal:true,
     provider:link.provider||null,
     hostName:link.host_name||null,
@@ -1019,18 +1052,16 @@ fetch("/api/link-click",{
 });
 
 if(_h&&_u){
-  details.classList.remove("show");
-  _sa(finalUrl); // Use _sa here as per updates
+  _sa(finalUrl);
 }else{
-  body.innerHTML='<div style="text-align:center;padding:20px"><p style="color:#10b981;font-weight:600;margin-bottom:16px">Lien décodé avec succès!</p><div style="background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;margin-bottom:16px;word-break:break-all;font-size:12px;color:#94a3b8">'+finalUrl+'</div><a href="'+finalUrl+'" target="_blank" rel="noopener" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Ouvrir le lien</a></div>';
+  window.open(finalUrl,"_blank");
 }
 })
 .catch(function(err){
-body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p><p style="font-size:12px;margin-top:8px;color:#888">Le serveur externe ne répond pas</p></div>';
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
 });
 }
-
-document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
+// ** END OF UPDATES **
 
 _renderLinks();
 _loadExternal();
