@@ -284,7 +284,7 @@ var _allExtLinks=[];
 
 function _renderLink(l){
 var url=l.source_url||"";
-var release=l.release_name||l.source_name||"Fichier téléchargeable";
+var release=l.source_name||l.release_name||"Fichier téléchargeable";
 
 var meta='<div class="li-meta">';
 if(l.quality)meta+='<span class="li-tag" style="background:#0d9488;color:#ffffff">'+l.quality+'</span>';
@@ -534,12 +534,12 @@ fetch("/api/link-click",{
     fileSize:link.size||null,
     externalLinkId:link.id||null
   })
-}).then(function(r){console.log("[v0] External tracking response:",r.status);return r.json();}).then(function(d){console.log("[v0] External tracking data:",d);}).catch(function(e){console.error("[v0] External tracking error:",e);});
+});
 
 if(_h&&_u){
-_showAdModal(finalUrl);
+  _showAdModal(finalUrl);
 }else{
-_displayLink(finalUrl);
+  _displayLink(finalUrl);
 }
 })
 .catch(function(err){
@@ -849,7 +849,6 @@ var _seasonNum=${seasonNumber !== undefined ? seasonNumber : "null"};
 var _episodeNum=${episodeNumber !== undefined ? episodeNumber : "null"};
 var _wwId="${wwId}";
 var _allExtLinks=[];
-var _isExternalLink=false; // Initialize flag
 
 function _renderLink(l){
 var url=l.source_url||"";
@@ -979,12 +978,9 @@ if(dn)dn.classList.remove("hi");
 dn.onclick=function(){
 o.classList.remove("sh");
 if(_p){
-if(!_isExternalLink){
-fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType,seasonNumber:_seasonNum||null,episodeNumber:_episodeNum||null})});
-}
+fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
 _displayLink(_p);
 _p=null;
-_isExternalLink=false; // Reset flag
 }
 };
 }
@@ -1124,11 +1120,9 @@ fetch("/api/link-click",{
     fileSize:link.size||null,
     externalLinkId:link.id||null
   })
-}).then(function(r){console.log("[v0] External tracking response:",r.status);return r.json();}).then(function(d){console.log("[v0] External tracking data:",d);}).catch(function(e){console.error("[v0] External tracking error:",e);});
+});
 
-// ** CHANGE ** Set flag before calling _sa to prevent duplicate tracking
 if(_h&&_u){
-  _isExternalLink=true;
   _sa(finalUrl);
 }else{
   _displayLink(finalUrl);

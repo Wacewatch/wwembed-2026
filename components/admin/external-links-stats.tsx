@@ -24,7 +24,6 @@ export function ExternalLinksStats() {
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState("7")
   const [stats, setStats] = useState<ExternalClickStats | null>(null)
-  const [debugInfo, setDebugInfo] = useState<string>("")
 
   useEffect(() => {
     loadStats()
@@ -32,69 +31,30 @@ export function ExternalLinksStats() {
 
   const loadStats = async () => {
     setLoading(true)
-    setDebugInfo("")
     const supabase = createClient()
 
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - Number.parseInt(period))
     const startDateStr = startDate.toISOString()
 
+    console.log("[v0] Loading external link stats from:", startDateStr)
+
     try {
-      const { data: allClicks, count: totalAllClicks } = await supabase
+      const { data: clicks, error } = await supabase
         .from("link_clicks")
-        .select("*", { count: "exact" })
+        .select("*")
+        .or("is_external.eq.true,link_type.eq.external")
         .gte("clicked_at", startDateStr)
-        .limit(10)
+        .order("clicked_at", { ascending: false })
+        .limit(5000) // Limit to avoid loading too much data
 
-      console.log("[v0] All link_clicks sample:", allClicks)
-      console.log("[v0] Total link_clicks count:", totalAllClicks)
-
-      const { data: externalByFlag, count: countByFlag } = await supabase
-        .from("link_clicks")
-        .select("*", { count: "exact" })
-        .eq("is_external", true)
-        .gte("clicked_at", startDateStr)
-        .limit(10)
-
-      console.log("[v0] External clicks (is_external=true):", countByFlag, externalByFlag)
-
-      const { data: externalByType, count: countByType } = await supabase
-        .from("link_clicks")
-        .select("*", { count: "exact" })
-        .eq("link_type", "external")
-        .gte("clicked_at", startDateStr)
-        .limit(10)
-
-      console.log("[v0] External clicks (link_type=external):", countByType, externalByType)
-
-      let externalClicks: any[] = []
-      let totalExternal = 0
-
-      if ((countByFlag || 0) > 0) {
-        const { data } = await supabase
-          .from("link_clicks")
-          .select("*")
-          .eq("is_external", true)
-          .gte("clicked_at", startDateStr)
-          .order("clicked_at", { ascending: false })
-          .limit(5000)
-        externalClicks = data || []
-        totalExternal = countByFlag || 0
-      } else if ((countByType || 0) > 0) {
-        const { data } = await supabase
-          .from("link_clicks")
-          .select("*")
-          .eq("link_type", "external")
-          .gte("clicked_at", startDateStr)
-          .order("clicked_at", { ascending: false })
-          .limit(5000)
-        externalClicks = data || []
-        totalExternal = countByType || 0
+      if (error) {
+        console.error("Error fetching external clicks:", error)
+        setLoading(false)
+        return
       }
 
-      setDebugInfo(
-        `Total clics: ${totalAllClicks || 0}, External (is_external): ${countByFlag || 0}, External (link_type): ${countByType || 0}`,
-      )
+      const externalClicks = clicks || []
 
       // Process clicks by provider
       const providerCount: Record<string, number> = {}
@@ -139,20 +99,7 @@ export function ExternalLinksStats() {
         }
       })
 
-      // Generate all dates in period for chart
-      const today = new Date()
-      const allDates: string[] = []
-      for (let i = Number.parseInt(period) - 1; i >= 0; i--) {
-        const d = new Date(today)
-        d.setDate(d.getDate() - i)
-        allDates.push(d.toISOString().split("T")[0])
-      }
-
-      const clicksByDay = allDates.map((date) => ({
-        date: new Date(date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
-        count: dayCount[date] || 0,
-      }))
-
+      // Convert to arrays and sort
       const clicksByProvider = Object.entries(providerCount)
         .map(([provider, count]) => ({ provider, count }))
         .sort((a, b) => b.count - a.count)
@@ -167,46 +114,71 @@ export function ExternalLinksStats() {
         .map(([quality, count]) => ({ quality, count }))
         .sort((a, b) => b.count - a.count)
 
-      const clicksByMediaType = Object.entries(mediaTypeCount).map(([type, count]) => ({
-        type: type === "movie" ? "Film" : type === "tv" ? "Série" : type === "digital" ? "Digital" : type,
-        count,
-      }))
+      const clicksByMediaType = Object.entries(mediaTypeCount)
+        .map(([type, count]) => ({ type, count }))
+        .sort((a, b) => b.count - a.count)
 
-      // Fetch titles for top media
-      const topMediaItems = Object.values(mediaCount)
+      // Fill in missing days
+      const clicksByDay: { date: string; count: number }[] = []
+      for (let i = Number.parseInt(period) - 1; i >= 0; i--) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        const dateStr = d.toISOString().split("T")[0]
+        clicksByDay.push({
+          date: dateStr,
+          count: dayCount[dateStr] || 0,
+        })
+      }
+
+      // Get top media with titles
+      const topMediaList = Object.values(mediaCount)
         .sort((a, b) => b.clicks - a.clicks)
         .slice(0, 10)
 
       const topMedia = await Promise.all(
-        topMediaItems.map(async (item) => {
-          let title = item.wwId
+        topMediaList.map(async (m) => {
+          let title = m.wwId
           let poster: string | undefined
 
-          if (item.tmdbId && item.mediaType) {
+          if (
+            m.wwId.startsWith("ww-ebook-") ||
+            m.wwId.startsWith("ww-music-") ||
+            m.wwId.startsWith("ww-software-") ||
+            m.wwId.startsWith("ww-soft-") ||
+            m.wwId.startsWith("ww-game-")
+          ) {
+            const { data: digital } = await supabase
+              .from("digital_content")
+              .select("title, cover_url")
+              .eq("ww_id", m.wwId)
+              .single()
+            title = digital?.title || m.wwId
+            poster = digital?.cover_url
+          } else if (m.tmdbId && (m.mediaType === "movie" || m.mediaType === "tv")) {
             try {
-              const res = await fetch(`/api/media/${item.mediaType}/${item.tmdbId}`)
+              const res = await fetch(`/api/tmdb/${m.mediaType}/${m.tmdbId}`)
               if (res.ok) {
                 const data = await res.json()
-                title = data.title || data.name || item.wwId
-                poster = data.poster_path ? `https://image.tmdb.org/t/p/w92${data.poster_path}` : undefined
+                title = data.title || data.name || m.wwId
+                poster = data.poster
               }
             } catch (e) {
-              // Ignore error
+              // Ignore
             }
           }
 
           return {
-            wwId: item.wwId,
+            wwId: m.wwId,
             title,
             poster,
-            mediaType: item.mediaType,
-            clicks: item.clicks,
+            mediaType: m.mediaType,
+            clicks: m.clicks,
           }
         }),
       )
 
       setStats({
-        totalClicks: totalExternal,
+        totalClicks: externalClicks.length,
         clicksByProvider,
         clicksByHost,
         clicksByQuality,
@@ -215,8 +187,7 @@ export function ExternalLinksStats() {
         topMedia,
       })
     } catch (error) {
-      console.error("[v0] Error loading external stats:", error)
-      setDebugInfo(`Erreur: ${error}`)
+      console.error("Error loading external link stats:", error)
     }
 
     setLoading(false)
@@ -225,26 +196,30 @@ export function ExternalLinksStats() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
 
+  if (!stats) {
+    return <div className="text-center py-12 text-muted-foreground">Aucune donnée disponible</div>
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Globe className="h-5 w-5 text-teal-500" />
             Statistiques Liens Externes
-          </h2>
+          </h3>
           <p className="text-sm text-muted-foreground">
             Clics sur les liens externes (Movix API) pour films, séries et digital
           </p>
-          {debugInfo && <p className="text-xs text-yellow-500 mt-1">{debugInfo}</p>}
         </div>
         <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[150px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -256,16 +231,16 @@ export function ExternalLinksStats() {
         </Select>
       </div>
 
-      {/* Total Clicks Card */}
-      <Card className="bg-gradient-to-br from-teal-500/10 to-teal-600/5 border-teal-500/20">
-        <CardContent className="p-6">
+      {/* Total Clicks */}
+      <Card className="bg-gradient-to-br from-teal-500/10 to-teal-500/5 border-teal-500/20">
+        <CardContent className="pt-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-teal-500/20">
-              <Download className="h-6 w-6 text-teal-400" />
+            <div className="p-3 rounded-full bg-teal-500/20">
+              <Download className="h-6 w-6 text-teal-500" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Clics Externes</p>
-              <p className="text-3xl font-bold text-teal-400">{stats?.totalClicks || 0}</p>
+              <p className="text-3xl font-bold text-teal-500">{stats.totalClicks.toLocaleString()}</p>
             </div>
           </div>
         </CardContent>
@@ -283,10 +258,17 @@ export function ExternalLinksStats() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={stats?.clicksByDay}>
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+              <BarChart data={stats.clicksByDay}>
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={(d) => new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
+                  tick={{ fontSize: 10 }}
+                />
                 <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(value: number) => [value, "Clics"]} />
+                <Tooltip
+                  labelFormatter={(d) => new Date(d).toLocaleDateString("fr-FR")}
+                  formatter={(value: number) => [value, "Clics"]}
+                />
                 <Bar dataKey="count" fill="#0d9488" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -305,7 +287,7 @@ export function ExternalLinksStats() {
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
-                  data={stats?.clicksByMediaType}
+                  data={stats.clicksByMediaType}
                   dataKey="count"
                   nameKey="type"
                   cx="50%"
@@ -313,7 +295,7 @@ export function ExternalLinksStats() {
                   outerRadius={70}
                   label={({ type, count }) => `${type}: ${count}`}
                 >
-                  {stats?.clicksByMediaType.map((_, index) => (
+                  {stats.clicksByMediaType.map((_, index) => (
                     <Cell key={index} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -336,7 +318,7 @@ export function ExternalLinksStats() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {stats?.clicksByProvider.map((item, idx) => (
+              {stats.clicksByProvider.map((item, idx) => (
                 <div key={item.provider} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground w-4">{idx + 1}</span>
@@ -345,7 +327,7 @@ export function ExternalLinksStats() {
                   <Badge variant="secondary">{item.count}</Badge>
                 </div>
               ))}
-              {stats?.clicksByProvider.length === 0 && (
+              {stats.clicksByProvider.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center">Aucune donnée</p>
               )}
             </div>
@@ -362,7 +344,7 @@ export function ExternalLinksStats() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {stats?.clicksByHost.map((item, idx) => (
+              {stats.clicksByHost.map((item, idx) => (
                 <div key={item.host} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground w-4">{idx + 1}</span>
@@ -371,7 +353,7 @@ export function ExternalLinksStats() {
                   <Badge variant="secondary">{item.count}</Badge>
                 </div>
               ))}
-              {stats?.clicksByHost.length === 0 && (
+              {stats.clicksByHost.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center">Aucune donnée</p>
               )}
             </div>
@@ -386,7 +368,7 @@ export function ExternalLinksStats() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {stats?.clicksByQuality.map((item) => (
+            {stats.clicksByQuality.map((item) => (
               <Badge key={item.quality} variant="outline" className="text-sm py-1 px-3">
                 {item.quality}: <span className="font-bold ml-1">{item.count}</span>
               </Badge>
@@ -405,7 +387,7 @@ export function ExternalLinksStats() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {stats?.topMedia.map((item, idx) => (
+            {stats.topMedia.map((item, idx) => (
               <div key={item.wwId} className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground w-4">{idx + 1}</span>
                 {item.poster ? (
@@ -432,7 +414,7 @@ export function ExternalLinksStats() {
                 <Badge className="bg-teal-500/20 text-teal-500">{item.clicks} clics</Badge>
               </div>
             ))}
-            {stats?.topMedia.length === 0 && <p className="text-sm text-muted-foreground text-center">Aucune donnée</p>}
+            {stats.topMedia.length === 0 && <p className="text-sm text-muted-foreground text-center">Aucune donnée</p>}
           </div>
         </CardContent>
       </Card>

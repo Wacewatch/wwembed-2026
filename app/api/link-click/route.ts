@@ -32,10 +32,8 @@ export async function POST(request: Request) {
     const userAgent = request.headers.get("user-agent") || null
     const referrer = request.headers.get("referer") || null
 
-    const isExternalLink = isExternal === true || linkType === "external"
-
     // Insert click record with external link info
-    const { error } = await supabase.from("link_clicks").insert({
+    await supabase.from("link_clicks").insert({
       link_id: linkId || null,
       link_type: linkType || "download",
       ww_id: wwId || null,
@@ -46,7 +44,7 @@ export async function POST(request: Request) {
       ip_hash: ipHash,
       user_agent: userAgent,
       referrer: referrer,
-      is_external: isExternalLink,
+      is_external: isExternal || false,
       provider: provider || null,
       host_name: hostName || null,
       quality: quality || null,
@@ -55,14 +53,9 @@ export async function POST(request: Request) {
       external_link_id: externalLinkId || null,
     })
 
-    if (error) {
-      console.error("[v0] Error inserting link click:", error)
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json({ success: true, isExternal: isExternalLink })
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Error tracking link click:", error)
+    console.error("Error tracking link click:", error)
     return NextResponse.json({ success: false }, { status: 500 })
   }
 }
