@@ -1,30 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { useState, useEffect, useCallback } from "react"
+import { createBrowserClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Eye,
-  MousePointer,
-  TrendingUp,
-  Users,
-  Film,
-  Tv,
-  Play,
-  Globe,
-  Calendar,
-  BarChart3,
-  Loader2,
-  Download,
-  Activity,
-  UserCheck,
-  Clock,
-} from "lucide-react"
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts"
-import { ExternalLinksStats } from "./external-links-stats"
+import { RefreshCw, TrendingUp, Users, Eye, MousePointer, Zap, Clock, Calendar, Monitor, Film, Tv } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { getPosterUrl } from "@/lib/tmdb"
+import { Loader2 } from "lucide-react" // Import Loader2
 
 interface ViewsByDay {
   date: string
@@ -66,28 +50,54 @@ interface DetailedStats {
   topCountries: { country: string; count: number }[]
   viewsByType: { type: string; count: number }[]
   recentActivity: { action: string; timestamp: string; details: string }[]
+  topContent: { title: string; views: number; poster?: string; media_type?: string; ww_id?: string }[]
+  topReferrers: { source: string; count: number }[]
+  streamingViews: number
 }
 
 interface OnlineStats {
-  usersOnline5min: number
-  usersOnline15min: number
-  usersOnline1hour: number
-  usersOnline24h: number
-  activePages: {
-    ww_id: string
-    count: number
-    title: string
-    poster: string | null
-    media_type?: string
-  }[]
+  users5min: number
+  users15min: number
+  users1hour: number
+  users24hours: number
+  activePages: { ww_id: string; count: number; title?: string; poster?: string; media_type?: string }[]
   recentVisitors: {
     ip_hash: string
-    viewed_at: string
     ww_id: string
-    media_type: string
-    title: string
-    poster: string | null
+    title?: string
+    poster?: string
+    media_type?: string
+    viewed_at: string
   }[]
+}
+
+async function getCountForPeriod(supabase: any, table: string, column: string, since: string): Promise<number> {
+  const { count, error } = await supabase.from(table).select("*", { count: "exact", head: true }).gte(column, since)
+
+  if (error) {
+    console.error(`[v0] Error counting ${table}:`, error)
+    return 0
+  }
+  return count || 0
+}
+
+async function getUniqueCountForPeriod(
+  supabase: any,
+  table: string,
+  column: string,
+  since: string,
+  uniqueColumn: string,
+): Promise<number> {
+  // For unique counts, we need to fetch data but only the unique column
+  const { data, error } = await supabase.from(table).select(uniqueColumn).gte(column, since).limit(50000)
+
+  if (error) {
+    console.error(`[v0] Error fetching unique ${table}:`, error)
+    return 0
+  }
+
+  const uniqueSet = new Set(data?.map((d: any) => d[uniqueColumn]).filter(Boolean))
+  return uniqueSet.size
 }
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w92"
@@ -98,101 +108,39 @@ export function StatsViewer() {
   const [topMedia, setTopMedia] = useState<TopMedia[]>([])
   const [topMediaDownload, setTopMediaDownload] = useState<TopMediaDownload[]>([])
   const [topReferrers, setTopReferrers] = useState<TopReferrer[]>([])
+  const [onlineStats, setOnlineStats] = useState<OnlineStats | null>(null)
   const [detailedStats, setDetailedStats] = useState<DetailedStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [detailedLoading, setDetailedLoading] = useState(false)
   const [loadingProgress, setLoadingProgress] = useState("")
-  const [onlineStats, setOnlineStats] = useState<OnlineStats | null>(null)
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
 
-  useEffect(() => {
-    loadStats()
-    loadOnlineStats()
-    const interval = setInterval(loadOnlineStats, 30000)
-    return () => clearInterval(interval)
-  }, [period])
+  const supabase = createBrowserClient()
 
-  const loadOnlineStats = async () => {
+  const loadOnlineStats = useCallback(async () => {
     try {
-      const supabase = createClient()
       const now = new Date()
       const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString()
       const fifteenMinAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString()
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
       const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
 
-      const fetchAllViews24h = async () => {
-        const { data, error } = await supabase
-          .from("embed_views")
-          .select("ip_hash, viewed_at, ww_id, media_type, tmdb_id")
-          .gte("viewed_at", twentyFourHoursAgo)
-          .order("viewed_at", { ascending: false })
-          .limit(3000)
+      const [count5min, count15min, count1hour, count24hours] = await Promise.all([
+        getCountForPeriod(supabase, "embed_views", "viewed_at", fiveMinAgo),
+        getCountForPeriod(supabase, "embed_views", "viewed_at", fifteenMinAgo),
+        getUniqueCountForPeriod(supabase, "embed_views", "viewed_at", oneHourAgo, "ip_hash"),
+        getUniqueCountForPeriod(supabase, "embed_views", "viewed_at", twentyFourHoursAgo, "ip_hash"),
+      ])
 
-        if (error) {
-          console.error("[v0] Error fetching views:", error)
-          return []
-        }
+      // Fetch active pages (last 15 min) with limited data
+      const { data: views15min } = await supabase
+        .from("embed_views")
+        .select("ww_id, tmdb_id, media_type")
+        .gte("viewed_at", fifteenMinAgo)
+        .limit(5000)
 
-        return data || []
-      }
-
-      const recentViews = await fetchAllViews24h()
-
-      console.log("[v0] Recent views count:", recentViews?.length)
-      console.log(
-        "[v0] Time ranges - 5min:",
-        fiveMinAgo,
-        "15min:",
-        fifteenMinAgo,
-        "1hour:",
-        oneHourAgo,
-        "24h:",
-        twentyFourHoursAgo,
-      )
-
-      const views5min = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(fiveMinAgo)) || []
-      const views15min = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(fifteenMinAgo)) || []
-      // Get views from last hour for recency
-      const views1hour = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(oneHourAgo)) || []
-
-      console.log(
-        "[v0] Views in 5min:",
-        views5min.length,
-        "Views in 15min:",
-        views15min.length,
-        "Views in 1 hour:",
-        views1hour.length,
-        "Views in 24 hours:",
-        recentViews?.length,
-      )
-
-      const uniqueIps5min =
-        new Set(views5min.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size || views5min.length // If no ip_hash, count views
-
-      const uniqueIps15min =
-        new Set(views15min.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size || views15min.length
-
-      const uniqueIps1hour =
-        new Set(views1hour.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size || views1hour.length
-
-      const uniqueIps24h =
-        new Set(recentViews?.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size ||
-        recentViews?.length ||
-        0
-
-      console.log(
-        "[v0] Unique IPs - 5min:",
-        uniqueIps5min,
-        "15min:",
-        uniqueIps15min,
-        "1hour:",
-        uniqueIps1hour,
-        "24h:",
-        uniqueIps24h,
-      )
-
-      // Get most active pages in last 15 min
       const pageCount: Record<string, { count: number; tmdb_id?: number; media_type?: string }> = {}
-      views15min.forEach((v: any) => {
+      views15min?.forEach((v: any) => {
         if (v.ww_id) {
           if (!pageCount[v.ww_id]) {
             pageCount[v.ww_id] = { count: 0, tmdb_id: v.tmdb_id, media_type: v.media_type }
@@ -208,237 +156,146 @@ export function StatsViewer() {
 
       const activePagesWithTitles = await Promise.all(
         activePages.map(async (page: any) => {
-          // Check if it's a live TV channel
-          if (page.ww_id?.startsWith("ww-live-")) {
-            const channelId = page.ww_id.replace("ww-live-", "")
-            const { data: channel } = await supabase
-              .from("live_tv_channels")
-              .select("channel_name, channel_logo")
-              .eq("id", channelId)
-              .single()
-            return {
-              ...page,
-              title: channel?.channel_name || page.ww_id,
-              poster: channel?.channel_logo || null,
-            }
-          }
+          let title = page.ww_id
+          let poster = undefined
 
-          // For movies/TV shows, fetch from TMDB
-          if (page.tmdb_id && page.media_type && (page.media_type === "movie" || page.media_type === "tv")) {
+          if (page.ww_id?.includes("live")) {
+            const { data: liveChannel } = await supabase
+              .from("live_channels")
+              .select("name, logo_url")
+              .eq("ww_id", page.ww_id)
+              .single()
+            if (liveChannel) {
+              title = liveChannel.name
+              poster = liveChannel.logo_url
+            }
+          } else if (page.tmdb_id && page.media_type) {
             try {
-              const res = await fetch(`/api/tmdb/${page.media_type}/${page.tmdb_id}`)
+              const endpoint =
+                page.media_type === "movie"
+                  ? `https://api.themoviedb.org/3/movie/${page.tmdb_id}?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || "demo"}&language=fr-FR`
+                  : `https://api.themoviedb.org/3/tv/${page.tmdb_id}?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || "demo"}&language=fr-FR`
+              const res = await fetch(endpoint)
               if (res.ok) {
                 const data = await res.json()
-                return {
-                  ...page,
-                  title: data.title || data.name || page.ww_id,
-                  poster: data.poster || null,
-                }
+                title = data.title || data.name || page.ww_id
+                poster = data.poster_path ? getPosterUrl(data.poster_path, "w92") : undefined
               }
-            } catch (e) {
-              // Ignore fetch errors
-            }
+            } catch {}
           }
 
-          return { ...page, title: page.ww_id, poster: null }
+          return { ...page, title, poster }
         }),
       )
 
-      // Get recent unique visitors
-      const seenKeys = new Set<string>()
-      const recentVisitorsRaw =
-        views1hour
-          ?.sort((a: any, b: any) => new Date(b.viewed_at).getTime() - new Date(a.viewed_at).getTime())
-          .filter((v: any) => {
-            // Use ww_id as unique key to show different pages visited
-            const uniqueKey = v.ww_id || `${v.viewed_at}`
-            if (seenKeys.has(uniqueKey)) return false
-            seenKeys.add(uniqueKey)
-            return true
-          })
-          .slice(0, 10) || []
+      // Fetch recent visitors (limited)
+      const { data: recentViews } = await supabase
+        .from("embed_views")
+        .select("ip_hash, ww_id, tmdb_id, media_type, viewed_at")
+        .order("viewed_at", { ascending: false })
+        .limit(20)
 
       const recentVisitors = await Promise.all(
-        recentVisitorsRaw.map(async (v: any) => {
-          let title = v.ww_id || "N/A"
-          let poster = null
+        (recentViews || []).slice(0, 10).map(async (v: any) => {
+          let title = v.ww_id
+          let poster = undefined
 
-          // Check if it's a live TV channel
-          if (v.ww_id?.startsWith("ww-live-")) {
-            const channelId = v.ww_id.replace("ww-live-", "")
-            const { data: channel } = await supabase
-              .from("live_tv_channels")
-              .select("channel_name, channel_logo")
-              .eq("id", channelId)
+          if (v.ww_id?.includes("live")) {
+            const { data: liveChannel } = await supabase
+              .from("live_channels")
+              .select("name, logo_url")
+              .eq("ww_id", v.ww_id)
               .single()
-            title = channel?.channel_name || v.ww_id
-            poster = channel?.channel_logo || null
-          } else if (v.tmdb_id && v.media_type && (v.media_type === "movie" || v.media_type === "tv")) {
+            if (liveChannel) {
+              title = liveChannel.name
+              poster = liveChannel.logo_url
+            }
+          } else if (v.tmdb_id && v.media_type) {
             try {
-              const res = await fetch(`/api/tmdb/${v.media_type}/${v.tmdb_id}`)
+              const endpoint =
+                v.media_type === "movie"
+                  ? `https://api.themoviedb.org/3/movie/${v.tmdb_id}?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || "demo"}&language=fr-FR`
+                  : `https://api.themoviedb.org/3/tv/${v.tmdb_id}?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || "demo"}&language=fr-FR`
+              const res = await fetch(endpoint)
               if (res.ok) {
                 const data = await res.json()
                 title = data.title || data.name || v.ww_id
-                poster = data.poster || null
+                poster = data.poster_path ? getPosterUrl(data.poster_path, "w92") : undefined
               }
-            } catch (e) {
-              // Ignore fetch errors
-            }
+            } catch {}
           }
 
           return {
-            ip_hash: v.ip_hash ? v.ip_hash.substring(0, 8) + "..." : "Anonyme",
-            viewed_at: v.viewed_at,
-            ww_id: v.ww_id || "N/A",
-            media_type: v.media_type || "N/A",
-            tmdb_id: v.tmdb_id,
+            ip_hash: v.ip_hash?.substring(0, 8) || "Anonyme",
+            ww_id: v.ww_id,
             title,
             poster,
+            media_type: v.media_type,
+            viewed_at: v.viewed_at,
           }
         }),
       )
 
       setOnlineStats({
-        usersOnline5min: uniqueIps5min,
-        usersOnline15min: uniqueIps15min,
-        usersOnline1hour: uniqueIps1hour,
-        usersOnline24h: uniqueIps24h,
+        users5min: count5min,
+        users15min: count15min,
+        users1hour: count1hour,
+        users24hours: count24hours,
         activePages: activePagesWithTitles,
         recentVisitors,
       })
+
+      setLastUpdate(new Date())
+      setLoading(false)
     } catch (error) {
       console.error("[v0] Error loading online stats:", error)
+      setLoading(false)
     }
-  }
+  }, [supabase])
 
-  const fetchAllRowsPaginated = async (
-    supabase: any,
-    table: string,
-    selectFields: string,
-    startDate: string,
-    dateField: string,
-  ) => {
-    let allData: any[] = []
-    let page = 0
-    const pageSize = 1000 // Supabase limite à 1000 par requête
-    let hasMore = true
-
-    while (hasMore) {
-      const from = page * pageSize
-      const to = from + pageSize - 1
-
-      setLoadingProgress(`Chargement des données... ${allData.length} lignes`)
-
-      const { data, error } = await supabase
-        .from(table)
-        .select(selectFields)
-        .gte(dateField, startDate)
-        .range(from, to)
-        .order(dateField, { ascending: false })
-
-      if (error) {
-        console.error("[v0] Error fetching data:", error)
-        hasMore = false
-      } else if (!data || data.length === 0) {
-        hasMore = false
-      } else {
-        allData = [...allData, ...data]
-        // Si on a reçu moins que pageSize, c'est qu'on a tout récupéré
-        if (data.length < pageSize) {
-          hasMore = false
-        }
-        page++
-      }
-    }
-
-    setLoadingProgress(`${allData.length} lignes chargées`)
-    return allData
-  }
-
-  const loadStats = async () => {
-    setLoading(true)
-    setLoadingProgress("")
-    const supabase = createClient()
-
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - Number.parseInt(period))
-    const startDateStr = startDate.toISOString()
-
+  const loadDetailedStats = useCallback(async () => {
+    setDetailedLoading(true)
     try {
-      // Fetch all embed_views with pagination
-      const allViews = await fetchAllRowsPaginated(
-        supabase,
-        "embed_views",
-        "id, viewed_at, media_type, tmdb_id, ww_id, referrer, ip_hash, embed_type",
-        startDateStr,
-        "viewed_at",
-      )
+      const now = new Date()
+      const periodDays = Number.parseInt(period)
+      const since = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000).toISOString()
 
-      // Fetch all link_clicks with pagination
-      const allLinkClicks = await fetchAllRowsPaginated(
-        supabase,
-        "link_clicks",
-        "clicked_at, tmdb_id, media_type, ww_id, link_type",
-        startDateStr,
-        "clicked_at",
-      )
+      const [totalViews, totalClicks, totalAdClicks, uniqueVisitors] = await Promise.all([
+        getCountForPeriod(supabase, "embed_views", "viewed_at", since),
+        getCountForPeriod(supabase, "link_clicks", "created_at", since),
+        getCountForPeriod(supabase, "ad_clicks", "clicked_at", since),
+        getUniqueCountForPeriod(supabase, "embed_views", "viewed_at", since, "ip_hash"),
+      ])
 
-      // Fetch all ad_clicks with pagination
-      const allAdClicks = await fetchAllRowsPaginated(supabase, "ad_clicks", "clicked_at", startDateStr, "clicked_at")
+      // Get views by type (limited sample for breakdown)
+      const { data: sampleViews } = await supabase
+        .from("embed_views")
+        .select("media_type, embed_type, ww_id")
+        .gte("viewed_at", since)
+        .limit(10000)
 
-      const viewsPerDay: Record<string, { total: number; streaming: number; download: number }> = {}
+      const movieViews = sampleViews?.filter((v: any) => v.media_type === "movie").length || 0
+      const tvViews = sampleViews?.filter((v: any) => v.media_type === "tv").length || 0
+      const liveViews =
+        sampleViews?.filter(
+          (v: any) =>
+            v.media_type === "live" ||
+            v.media_type === "live_tv" ||
+            v.embed_type === "live" ||
+            v.ww_id?.includes("live"),
+        ).length || 0
+      const streamingViews = sampleViews?.filter((v: any) => v.embed_type === "streaming").length || 0
 
-      // Generate all dates in the period
-      const today = new Date()
-      for (let i = Number.parseInt(period) - 1; i >= 0; i--) {
-        const d = new Date(today)
-        d.setDate(d.getDate() - i)
-        const dateKey = d.toISOString().split("T")[0]
-        viewsPerDay[dateKey] = { total: 0, streaming: 0, download: 0 }
-      }
+      // Scale up based on total views vs sample size
+      const sampleSize = sampleViews?.length || 1
+      const scale = totalViews / sampleSize
 
-      allViews.forEach((view: any) => {
-        const date = new Date(view.viewed_at).toISOString().split("T")[0]
-        if (viewsPerDay[date]) {
-          viewsPerDay[date].total++
-          // Count streaming views separately (embed_type === 'streaming' or media accessed via streaming)
-          if (view.embed_type === "streaming" || view.ww_id?.includes("streaming")) {
-            viewsPerDay[date].streaming++
-          }
-        }
-      })
-
-      allLinkClicks.forEach((click: any) => {
-        const date = new Date(click.clicked_at).toISOString().split("T")[0]
-        if (viewsPerDay[date]) {
-          viewsPerDay[date].download++
-        }
-      })
-
-      const viewsByDayData: ViewsByDay[] = Object.entries(viewsPerDay)
-        .map(([date, data]) => ({
-          date,
-          count: data.total,
-          streamingCount: data.streaming,
-          downloadCount: data.download,
-          formattedDate: new Date(date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
-        }))
-        .sort((a, b) => a.date.localeCompare(b.date))
-
-      setViewsByDay(viewsByDayData)
-
-      // Process top media
+      // Get top content
       const mediaCount: Record<string, { tmdb_id: number | null; media_type: string; views: number; ww_id?: string }> =
         {}
-      const refCount: Record<string, number> = {}
-      const uniqueIps = new Set<string>()
-
-      allViews.forEach((v) => {
+      sampleViews?.forEach((v: any) => {
         const isLive =
-          v.media_type === "live" ||
-          v.media_type === "live_tv" ||
-          v.embed_type === "live" ||
-          (v.ww_id && v.ww_id.toLowerCase().includes("live"))
+          v.media_type === "live" || v.media_type === "live_tv" || v.embed_type === "live" || v.ww_id?.includes("live")
         const mediaKey = isLive ? `live-${v.ww_id}` : `${v.media_type}-${v.tmdb_id}`
 
         if (!mediaCount[mediaKey]) {
@@ -450,147 +307,53 @@ export function StatsViewer() {
           }
         }
         mediaCount[mediaKey].views++
-
-        let ref = "Direct"
-        if (v.referrer) {
-          try {
-            const url = new URL(v.referrer)
-            ref = url.origin
-          } catch {
-            ref = v.referrer
-          }
-        }
-        refCount[ref] = (refCount[ref] || 0) + 1
-
-        if (v.ip_hash) {
-          uniqueIps.add(v.ip_hash)
-        }
       })
 
-      const topMediaList = Object.values(mediaCount)
+      const topMedia = Object.values(mediaCount)
         .sort((a, b) => b.views - a.views)
-        .slice(0, 50)
+        .slice(0, 10)
 
-      const topMediaWithDetails: TopMedia[] = await Promise.all(
-        topMediaList.map(async (m) => {
-          if (m.media_type === "live" && m.ww_id) {
-            const channelId = m.ww_id.replace(/^ww-live-/i, "")
-            const { data: channel } = await supabase
-              .from("live_tv_channels")
-              .select("channel_name, channel_logo")
-              .eq("id", channelId)
+      const topContent = await Promise.all(
+        topMedia.map(async (item) => {
+          let title = item.ww_id || "Unknown"
+          let poster = undefined
+
+          if (item.media_type === "live" && item.ww_id) {
+            const { data: liveChannel } = await supabase
+              .from("live_channels")
+              .select("name, logo_url")
+              .eq("ww_id", item.ww_id)
               .single()
-            return {
-              ...m,
-              title: channel?.channel_name || "Chaine TV",
-              poster: channel?.channel_logo || undefined,
+            if (liveChannel) {
+              title = liveChannel.name
+              poster = liveChannel.logo_url
             }
-          } else if (m.tmdb_id && m.media_type && m.media_type !== "live") {
+          } else if (item.tmdb_id) {
             try {
-              const res = await fetch(`/api/tmdb/${m.media_type}/${m.tmdb_id}`)
+              const endpoint =
+                item.media_type === "movie"
+                  ? `https://api.themoviedb.org/3/movie/${item.tmdb_id}?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || "demo"}&language=fr-FR`
+                  : `https://api.themoviedb.org/3/tv/${item.tmdb_id}?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || "demo"}&language=fr-FR`
+              const res = await fetch(endpoint)
               if (res.ok) {
                 const data = await res.json()
-                return {
-                  ...m,
-                  title: data.title || data.name || `#${m.tmdb_id}`,
-                  poster: data.poster || undefined,
-                }
+                title = data.title || data.name || title
+                poster = data.poster_path ? getPosterUrl(data.poster_path, "w92") : undefined
               }
-            } catch (e) {
-              // Ignore errors
-            }
+            } catch {}
           }
-          return { ...m, title: m.media_type === "live" ? "Chaine TV" : `#${m.tmdb_id}` }
+
+          return {
+            title,
+            views: Math.round(item.views * scale),
+            poster,
+            media_type: item.media_type,
+            ww_id: item.ww_id,
+          }
         }),
       )
 
-      setTopMedia(topMediaWithDetails)
-
-      // Process top media downloads
-      const downloadCount: Record<
-        string,
-        { tmdb_id: number | null; media_type: string; downloads: number; ww_id?: string }
-      > = {}
-      allLinkClicks.forEach((click) => {
-        const isDigital =
-          click.ww_id &&
-          (click.ww_id.startsWith("ww-ebook-") ||
-            click.ww_id.startsWith("ww-music-") ||
-            click.ww_id.startsWith("ww-software-") ||
-            click.ww_id.startsWith("ww-game-"))
-        const mediaKey = isDigital
-          ? `digital-${click.ww_id}`
-          : `${click.media_type || "unknown"}-${click.tmdb_id || click.ww_id}`
-
-        if (!downloadCount[mediaKey]) {
-          downloadCount[mediaKey] = {
-            tmdb_id: isDigital ? null : click.tmdb_id,
-            media_type: isDigital ? "digital" : click.media_type || "unknown",
-            downloads: 0,
-            ww_id: click.ww_id,
-          }
-        }
-        downloadCount[mediaKey].downloads++
-      })
-
-      const topDownloadList = Object.values(downloadCount)
-        .sort((a, b) => b.downloads - a.downloads)
-        .slice(0, 50)
-
-      const topDownloadWithDetails: TopMediaDownload[] = await Promise.all(
-        topDownloadList.map(async (m) => {
-          if (m.media_type === "digital" && m.ww_id) {
-            const { data: digital } = await supabase
-              .from("digital_content")
-              .select("title, cover_url")
-              .eq("ww_id", m.ww_id)
-              .single()
-            return {
-              ...m,
-              title: digital?.title || "Contenu Digital",
-              poster: digital?.cover_url || undefined,
-            }
-          } else if (m.tmdb_id && m.media_type) {
-            // Normalize media_type for TMDB API (should be "movie" or "tv")
-            const tmdbType = m.media_type === "movie" || m.media_type === "tv" ? m.media_type : null
-
-            if (tmdbType) {
-              try {
-                const res = await fetch(`/api/tmdb/${tmdbType}/${m.tmdb_id}`)
-                if (res.ok) {
-                  const data = await res.json()
-                  return {
-                    ...m,
-                    title: data.title || data.name || `#${m.tmdb_id}`,
-                    poster: data.poster || undefined,
-                  }
-                }
-              } catch (e) {
-                console.error("[v0] TMDB fetch error:", e)
-              }
-            }
-          }
-          return { ...m, title: m.media_type === "digital" ? "Contenu Digital" : `#${m.tmdb_id || m.ww_id}` }
-        }),
-      )
-
-      setTopMediaDownload(topDownloadWithDetails)
-
-      // Process top referrers
-      const topReferrersList = Object.entries(refCount)
-        .map(([referrer, count]) => ({ referrer, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 50)
-
-      setTopReferrers(topReferrersList)
-
-      // Calculate detailed stats
-      const totalViews = Object.values(viewsPerDay).reduce((sum, day) => sum + day.total, 0)
-      const totalStreamingViews = Object.values(viewsPerDay).reduce((sum, day) => sum + day.streaming, 0)
-      const totalClicks = allLinkClicks.length
-      const totalAdClicks = allAdClicks.length
-      const uniqueVisitors = uniqueIps.size
-      const avgViewsPerDay = period > 0 ? totalViews / Number.parseInt(period) : 0
+      const avgViewsPerDay = periodDays > 0 ? totalViews / periodDays : 0
 
       setDetailedStats({
         totalViews,
@@ -600,29 +363,57 @@ export function StatsViewer() {
         avgViewsPerDay,
         topCountries: [],
         viewsByType: [
-          { type: "Films", count: allViews.filter((v) => v.media_type === "movie").length },
-          { type: "Series", count: allViews.filter((v) => v.media_type === "tv").length },
-          {
-            type: "TV Live",
-            count: allViews.filter(
-              (v) => v.media_type === "live" || v.media_type === "live_tv" || v.embed_type === "live",
-            ).length,
-          },
-          { type: "Streaming", count: totalStreamingViews },
+          { type: "Films", count: Math.round(movieViews * scale) },
+          { type: "Series", count: Math.round(tvViews * scale) },
+          { type: "TV Live", count: Math.round(liveViews * scale) },
+          { type: "Streaming", count: Math.round(streamingViews * scale) },
         ],
-        recentActivity: allViews.slice(0, 5).map((v) => ({
-          action: "Vue",
-          timestamp: v.viewed_at,
-          details: `${v.media_type} #${v.tmdb_id || v.ww_id}`,
-        })),
+        recentActivity: [],
+        topContent,
+        topReferrers: [],
+        streamingViews: Math.round(streamingViews * scale),
       })
 
-      setLoading(false)
-      setLoadingProgress("")
+      setDetailedLoading(false)
     } catch (error) {
-      console.error("[v0] Error loading stats:", error)
-      setLoading(false)
-      setLoadingProgress("")
+      console.error("[v0] Error loading detailed stats:", error)
+      setDetailedLoading(false)
+    }
+  }, [supabase, period])
+
+  useEffect(() => {
+    loadOnlineStats()
+    const interval = setInterval(loadOnlineStats, 30000)
+    return () => clearInterval(interval)
+  }, [loadOnlineStats])
+
+  useEffect(() => {
+    loadDetailedStats()
+  }, [loadDetailedStats])
+
+  const getMediaTypeBadge = (mediaType?: string) => {
+    switch (mediaType) {
+      case "movie":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400">
+            <Film className="h-3 w-3" /> Film
+          </span>
+        )
+      case "tv":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/20 px-2 py-0.5 text-xs text-purple-400">
+            <Tv className="h-3 w-3" /> Série
+          </span>
+        )
+      case "live":
+      case "live_tv":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-xs text-red-400">
+            <Monitor className="h-3 w-3" /> TV Live
+          </span>
+        )
+      default:
+        return null
     }
   }
 
@@ -643,534 +434,301 @@ export function StatsViewer() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="general" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="general" className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Statistiques Générales
-          </TabsTrigger>
-          <TabsTrigger value="external" className="gap-2">
-            <Globe className="h-4 w-4" />
-            Liens Externes
-          </TabsTrigger>
-        </TabsList>
+      {/* Online Stats Section */}
+      <div>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-lg font-semibold">
+            <Zap className="h-5 w-5 text-yellow-500" />
+            Utilisateurs en ligne
+          </h3>
+          <Button variant="outline" size="sm" onClick={loadOnlineStats} disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            En temps réel
+          </Button>
+        </div>
 
-        <TabsContent value="general" className="space-y-6">
-          {/* Keep all existing content here - online stats, period selector, cards, charts, etc. */}
-          {/* ... existing code for general stats ... */}
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-              <BarChart3 className="w-6 h-6 text-primary" />
-              Statistiques Detaillees
-            </h2>
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card className="border-green-500/30 bg-green-500/10">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />5 dernières min
+              </div>
+              <div className="mt-2 text-3xl font-bold text-green-500">
+                {loading ? <Skeleton className="h-9 w-16" /> : onlineStats?.users5min?.toLocaleString() || 0}
+              </div>
+              <div className="text-xs text-muted-foreground">utilisateurs actifs</div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-yellow-500/30 bg-yellow-500/10">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                15 dernières min
+              </div>
+              <div className="mt-2 text-3xl font-bold text-yellow-500">
+                {loading ? <Skeleton className="h-9 w-16" /> : onlineStats?.users15min?.toLocaleString() || 0}
+              </div>
+              <div className="text-xs text-muted-foreground">utilisateurs actifs</div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-blue-500/30 bg-blue-500/10">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                Dernière heure
+              </div>
+              <div className="mt-2 text-3xl font-bold text-blue-500">
+                {loading ? <Skeleton className="h-9 w-16" /> : onlineStats?.users1hour?.toLocaleString() || 0}
+              </div>
+              <div className="text-xs text-muted-foreground">visiteurs uniques</div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-orange-500/30 bg-orange-500/10">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                24 dernières heures
+              </div>
+              <div className="mt-2 text-3xl font-bold text-orange-500">
+                {loading ? <Skeleton className="h-9 w-16" /> : onlineStats?.users24hours?.toLocaleString() || 0}
+              </div>
+              <div className="text-xs text-muted-foreground">visiteurs uniques</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <TrendingUp className="h-4 w-4" />
+                Pages les plus actives (15 min)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-2">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <div className="max-h-[300px] space-y-2 overflow-y-auto">
+                  {onlineStats?.activePages?.map((page, i) => (
+                    <div key={i} className="flex items-center gap-3 rounded-lg bg-muted/50 p-2">
+                      <span className="text-sm font-medium text-muted-foreground">{i + 1}.</span>
+                      {page.poster ? (
+                        <img src={page.poster || "/placeholder.svg"} alt="" className="h-10 w-8 rounded object-cover" />
+                      ) : (
+                        <div className="flex h-10 w-8 items-center justify-center rounded bg-muted">
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium">{page.title}</div>
+                        {getMediaTypeBadge(page.media_type)}
+                      </div>
+                      <span className="text-sm font-bold text-primary">{page.count}</span>
+                    </div>
+                  ))}
+                  {(!onlineStats?.activePages || onlineStats.activePages.length === 0) && (
+                    <div className="py-4 text-center text-sm text-muted-foreground">Aucune activité récente</div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Users className="h-4 w-4" />
+                Visiteurs récents
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-2">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <div className="max-h-[300px] space-y-2 overflow-y-auto">
+                  {onlineStats?.recentVisitors?.map((visitor, i) => (
+                    <div key={i} className="flex items-center gap-3 rounded-lg bg-muted/50 p-2">
+                      <span className="h-2 w-2 rounded-full bg-green-500" />
+                      {visitor.poster ? (
+                        <img
+                          src={visitor.poster || "/placeholder.svg"}
+                          alt=""
+                          className="h-10 w-8 rounded object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-8 items-center justify-center rounded bg-muted">
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium">{visitor.title}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">{visitor.ip_hash}</span>
+                          {getMediaTypeBadge(visitor.media_type)}
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(visitor.viewed_at).toLocaleTimeString("fr-FR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  ))}
+                  {(!onlineStats?.recentVisitors || onlineStats.recentVisitors.length === 0) && (
+                    <div className="py-4 text-center text-sm text-muted-foreground">Aucun visiteur récent</div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Detailed Stats Section */}
+      <div>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-lg font-semibold">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Statistiques détaillées
+          </h3>
+          <div className="flex items-center gap-2">
             <Select value={period} onValueChange={setPeriod}>
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="1">Dernières 24h</SelectItem>
                 <SelectItem value="7">7 derniers jours</SelectItem>
-                <SelectItem value="14">14 derniers jours</SelectItem>
                 <SelectItem value="30">30 derniers jours</SelectItem>
                 <SelectItem value="90">90 derniers jours</SelectItem>
               </SelectContent>
             </Select>
+            <Button variant="outline" size="sm" onClick={loadDetailedStats} disabled={detailedLoading}>
+              <RefreshCw className={`h-4 w-4 ${detailedLoading ? "animate-spin" : ""}`} />
+            </Button>
           </div>
+        </div>
 
-          {detailedStats && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <Eye className="w-8 h-8 text-primary" />
-                    <div>
-                      <p className="text-2xl font-bold text-primary">{detailedStats.totalViews.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">Vues totales</p>
-                    </div>
+        {detailedLoading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+            <p className="mt-2 text-sm text-muted-foreground">Chargement des statistiques...</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-4 md:grid-cols-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Eye className="h-4 w-4" />
+                    Total Vues
+                  </div>
+                  <div className="mt-2 text-2xl font-bold">{detailedStats?.totalViews?.toLocaleString() || 0}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MousePointer className="h-4 w-4" />
+                    Total Clics
+                  </div>
+                  <div className="mt-2 text-2xl font-bold">{detailedStats?.totalClicks?.toLocaleString() || 0}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    Visiteurs Uniques
+                  </div>
+                  <div className="mt-2 text-2xl font-bold">{detailedStats?.uniqueVisitors?.toLocaleString() || 0}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <TrendingUp className="h-4 w-4" />
+                    Clics Pubs
+                  </div>
+                  <div className="mt-2 text-2xl font-bold">{detailedStats?.totalAdClicks?.toLocaleString() || 0}</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Vues par type</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {detailedStats?.viewsByType?.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between">
+                        <span className="text-sm">{item.type}</span>
+                        <span className="font-medium">{item.count.toLocaleString()}</span>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <MousePointer className="w-8 h-8 text-blue-500" />
-                    <div>
-                      <p className="text-2xl font-bold text-blue-500">{detailedStats.totalClicks.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">Clics liens</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <MousePointer className="w-8 h-8 text-purple-500" />
-                    <div>
-                      <p className="text-2xl font-bold text-purple-500">
-                        {detailedStats.totalAdClicks.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Clics pubs</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <Users className="w-8 h-8 text-green-500" />
-                    <div>
-                      <p className="text-2xl font-bold text-green-foreground">
-                        {detailedStats.uniqueVisitors.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Visiteurs uniques</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <TrendingUp className="w-8 h-8 text-orange-500" />
-                    <div>
-                      <p className="text-2xl font-bold text-foreground">
-                        {Math.round(detailedStats.avgViewsPerDay).toLocaleString()}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Moy. vues/jour</p>
-                    </div>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Top Contenus</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="max-h-[200px] space-y-2 overflow-y-auto">
+                    {detailedStats?.topContent?.slice(0, 5).map((item, i) => (
+                      <div key={i} className="flex items-center gap-3 rounded-lg bg-muted/50 p-2">
+                        <span className="text-sm font-medium text-muted-foreground">{i + 1}.</span>
+                        {item.poster ? (
+                          <img
+                            src={item.poster || "/placeholder.svg"}
+                            alt=""
+                            className="h-10 w-8 rounded object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-10 w-8 items-center justify-center rounded bg-muted">
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium">{item.title}</div>
+                          {getMediaTypeBadge(item.media_type)}
+                        </div>
+                        <span className="text-sm font-bold text-primary">{item.views.toLocaleString()}</span>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
             </div>
-          )}
+          </>
+        )}
+      </div>
 
-          {detailedStats && (
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Film className="w-5 h-5 text-primary" />
-                  Repartition par type
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4">
-                  {detailedStats.viewsByType.map((item) => (
-                    <div key={item.type} className="text-center p-4 bg-muted/50 rounded-lg">
-                      {item.type === "Films" && <Film className="w-8 h-8 mx-auto mb-2 text-blue-500" />}
-                      {item.type === "Series" && <Tv className="w-8 h-8 mx-auto mb-2 text-purple-500" />}
-                      {item.type === "TV Live" && <Play className="w-8 h-8 mx-auto mb-2 text-red-500" />}
-                      {item.type === "Streaming" && <Play className="w-8 h-8 mx-auto mb-2 text-yellow-500" />}
-                      <p className="text-xl font-bold text-foreground">{item.count.toLocaleString()}</p>
-                      <p className="text-sm text-muted-foreground">{item.type}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  Vues par jour
-                </span>
-                <Badge variant="outline" className="text-primary">
-                  Total: {chartTotal.toLocaleString()} vues
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {viewsByDay.length > 0 ? (
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={viewsByDay} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis
-                        dataKey="formattedDate"
-                        stroke="#9ca3af"
-                        tick={{ fill: "#9ca3af", fontSize: 11 }}
-                        interval={viewsByDay.length > 14 ? Math.floor(viewsByDay.length / 10) : 0}
-                      />
-                      <YAxis
-                        stroke="#9ca3af"
-                        tick={{ fill: "#9ca3af", fontSize: 12 }}
-                        allowDecimals={false}
-                        tickFormatter={(value) => value.toLocaleString()}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#1f2937",
-                          border: "1px solid #374151",
-                          borderRadius: "8px",
-                          color: "#fff",
-                        }}
-                        labelStyle={{ color: "#9ca3af" }}
-                        formatter={(value: number) => [`${value.toLocaleString()} vues`, "Vues"]}
-                      />
-                      <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} name="Vues" />
-                      <Bar dataKey="streamingCount" fill="#fde047" radius={[4, 4, 0, 0]} name="Streaming" />
-                      <Bar dataKey="downloadCount" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Downloads" />
-                      <Legend />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <p className="text-center text-muted-foreground py-8">Aucune donnee disponible</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Film className="w-5 h-5 text-primary" />
-                    Top Medias (Vues)
-                  </span>
-                  <Badge variant="outline" className="text-primary">
-                    {mediaTotal.toLocaleString()} vues
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                  {topMedia.length > 0 ? (
-                    topMedia.map((media, i) => (
-                      <div
-                        key={`${media.media_type}-${media.tmdb_id || media.ww_id}-${i}`}
-                        className="flex items-center gap-3"
-                      >
-                        <span className="text-muted-foreground w-6 text-right font-medium">{i + 1}.</span>
-                        {media.poster ? (
-                          <img
-                            src={media.poster.startsWith("http") ? media.poster : `${TMDB_IMAGE_BASE}${media.poster}`}
-                            alt={media.title}
-                            className="w-10 h-14 object-cover rounded"
-                          />
-                        ) : (
-                          <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
-                            {media.media_type === "live" ? (
-                              <Play className="w-5 h-5 text-muted-foreground" />
-                            ) : (
-                              <Film className="w-5 h-5 text-muted-foreground" />
-                            )}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground truncate text-sm">{media.title}</p>
-                          <Badge
-                            variant="outline"
-                            className={
-                              media.media_type === "movie"
-                                ? "text-blue-500 border-blue-500/30 text-xs"
-                                : media.media_type === "tv"
-                                  ? "text-purple-500 border-purple-500/30 text-xs"
-                                  : "text-red-500 border-red-500/30 text-xs"
-                            }
-                          >
-                            {media.media_type === "movie" ? "Film" : media.media_type === "tv" ? "Série" : "TV Live"}
-                          </Badge>
-                        </div>
-                        <span className="text-primary font-bold text-sm">{media.views.toLocaleString()}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-muted-foreground py-4">Aucune donnee</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Download className="w-5 h-5 text-orange-500" />
-                    Top Medias (Download)
-                  </span>
-                  <Badge variant="outline" className="text-orange-500">
-                    {downloadTotal.toLocaleString()} clics
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                  {topMediaDownload.length > 0 ? (
-                    topMediaDownload.map((media, i) => (
-                      <div
-                        key={`dl-${media.media_type}-${media.tmdb_id || media.ww_id}-${i}`}
-                        className="flex items-center gap-3"
-                      >
-                        <span className="text-muted-foreground w-6 text-right font-medium">{i + 1}.</span>
-                        {media.poster ? (
-                          <img
-                            src={media.poster.startsWith("http") ? media.poster : `${TMDB_IMAGE_BASE}${media.poster}`}
-                            alt={media.title}
-                            className="w-10 h-14 object-cover rounded"
-                          />
-                        ) : (
-                          <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
-                            {media.media_type === "digital" ? (
-                              <Download className="w-5 h-5 text-muted-foreground" />
-                            ) : (
-                              <Film className="w-5 h-5 text-muted-foreground" />
-                            )}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground truncate text-sm">{media.title}</p>
-                          <Badge
-                            variant="outline"
-                            className={
-                              media.media_type === "movie"
-                                ? "text-blue-500 border-blue-500/30 text-xs"
-                                : media.media_type === "tv"
-                                  ? "text-purple-500 border-purple-500/30 text-xs"
-                                  : media.media_type === "digital"
-                                    ? "text-yellow-500 border-yellow-500/30 text-xs"
-                                    : "text-gray-500 border-gray-500/30 text-xs"
-                            }
-                          >
-                            {media.media_type === "movie"
-                              ? "Film"
-                              : media.media_type === "tv"
-                                ? "Série"
-                                : media.media_type === "digital"
-                                  ? "Digital"
-                                  : media.media_type}
-                          </Badge>
-                        </div>
-                        <span className="text-orange-500 font-bold text-sm">{media.downloads.toLocaleString()}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-muted-foreground py-4">Aucune donnee</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-primary" />
-                    Top Referents
-                  </span>
-                  <Badge variant="outline" className="text-primary">
-                    {referrersTotal.toLocaleString()} vues
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                  {topReferrers.length > 0 ? (
-                    topReferrers.map((ref, i) => (
-                      <div key={ref.referrer} className="flex items-center gap-3">
-                        <span className="text-muted-foreground w-6 text-right font-medium">{i + 1}.</span>
-                        <Globe className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                        <p className="flex-1 truncate text-foreground text-sm" title={ref.referrer}>
-                          {ref.referrer}
-                        </p>
-                        <span className="text-primary font-bold text-sm">{ref.count.toLocaleString()}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-muted-foreground py-4">Aucune donnee</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Statistiques en temps réel / utilisateurs en ligne */}
-          {onlineStats && (
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-green-500 animate-pulse" />
-                    Utilisateurs en ligne
-                  </span>
-                  <Badge variant="outline" className="text-green-500 border-green-500">
-                    En temps réel
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                      <span className="text-sm text-muted-foreground">5 dernières min</span>
-                    </div>
-                    <p className="text-3xl font-bold text-green-500">{onlineStats.usersOnline5min}</p>
-                    <p className="text-xs text-muted-foreground mt-1">utilisateurs actifs</p>
-                  </div>
-                  <div className="text-center p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Clock className="w-4 h-4 text-yellow-500" />
-                      <span className="text-sm text-muted-foreground">15 dernières min</span>
-                    </div>
-                    <p className="text-3xl font-bold text-yellow-500">{onlineStats.usersOnline15min}</p>
-                    <p className="text-xs text-muted-foreground mt-1">utilisateurs actifs</p>
-                  </div>
-                  <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <UserCheck className="w-4 h-4 text-blue-500" />
-                      <span className="text-sm text-muted-foreground">Dernière heure</span>
-                    </div>
-                    <p className="text-3xl font-bold text-blue-500">{onlineStats.usersOnline1hour}</p>
-                    <p className="text-xs text-muted-foreground mt-1">visiteurs uniques</p>
-                  </div>
-                  <div className="text-center p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Calendar className="w-4 h-4 text-purple-500" />
-                      <span className="text-sm text-muted-foreground">24 dernières heures</span>
-                    </div>
-                    <p className="text-3xl font-bold text-purple-500">{onlineStats.usersOnline24h}</p>
-                    <p className="text-xs text-muted-foreground mt-1">visiteurs uniques</p>
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Pages actives */}
-                  <div className="bg-muted/30 rounded-lg p-4">
-                    <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                      <Play className="w-4 h-4" />
-                      Pages les plus actives (15 min)
-                    </h4>
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                      {onlineStats.activePages.length > 0 ? (
-                        onlineStats.activePages.map((page, i) => (
-                          <div key={page.ww_id} className="flex items-center gap-3 p-2 bg-background/50 rounded-lg">
-                            <span className="text-muted-foreground w-5 text-right font-medium text-sm">{i + 1}.</span>
-                            {page.poster ? (
-                              <img
-                                src={
-                                  page.poster.startsWith("http")
-                                    ? page.poster
-                                    : `https://image.tmdb.org/t/p/w92${page.poster}`
-                                }
-                                alt={page.title}
-                                className="w-8 h-12 object-cover rounded"
-                              />
-                            ) : (
-                              <div className="w-8 h-12 bg-muted rounded flex items-center justify-center">
-                                {page.media_type === "live" || page.ww_id?.includes("live") ? (
-                                  <Tv className="w-4 h-4 text-muted-foreground" />
-                                ) : (
-                                  <Film className="w-4 h-4 text-muted-foreground" />
-                                )}
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground truncate text-sm">{page.title || page.ww_id}</p>
-                              <Badge
-                                variant="outline"
-                                className={`text-xs ${
-                                  page.media_type === "movie"
-                                    ? "text-blue-400 border-blue-400/50"
-                                    : page.media_type === "tv"
-                                      ? "text-purple-400 border-purple-400/50"
-                                      : "text-red-400 border-red-400/50"
-                                }`}
-                              >
-                                {page.media_type === "movie" ? "Film" : page.media_type === "tv" ? "Série" : "TV Live"}
-                              </Badge>
-                            </div>
-                            <Badge variant="secondary" className="text-primary font-bold">
-                              {page.count}
-                            </Badge>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-muted-foreground text-sm">Aucune activité récente</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Visiteurs récents */}
-                  <div className="bg-muted/30 rounded-lg p-4">
-                    <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      Visiteurs récents
-                    </h4>
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                      {onlineStats.recentVisitors.length > 0 ? (
-                        onlineStats.recentVisitors.map((visitor, i) => (
-                          <div
-                            key={`${visitor.ip_hash}-${i}`}
-                            className="flex items-center gap-3 p-2 bg-background/50 rounded-lg"
-                          >
-                            <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                            {visitor.poster ? (
-                              <img
-                                src={
-                                  visitor.poster.startsWith("http")
-                                    ? visitor.poster
-                                    : `https://image.tmdb.org/t/p/w92${visitor.poster}`
-                                }
-                                alt={visitor.title}
-                                className="w-8 h-12 object-cover rounded"
-                              />
-                            ) : (
-                              <div className="w-8 h-12 bg-muted rounded flex items-center justify-center">
-                                {visitor.media_type === "live" || visitor.ww_id?.includes("live") ? (
-                                  <Tv className="w-4 h-4 text-muted-foreground" />
-                                ) : (
-                                  <Film className="w-4 h-4 text-muted-foreground" />
-                                )}
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground truncate text-sm">
-                                {visitor.title || visitor.ww_id}
-                              </p>
-                              <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground font-mono text-xs">{visitor.ip_hash}</span>
-                                <Badge
-                                  variant="outline"
-                                  className={`text-xs ${
-                                    visitor.media_type === "movie"
-                                      ? "text-blue-400 border-blue-400/50"
-                                      : visitor.media_type === "tv"
-                                        ? "text-purple-400 border-purple-400/50"
-                                        : "text-red-400 border-red-400/50"
-                                  }`}
-                                >
-                                  {visitor.media_type === "movie"
-                                    ? "Film"
-                                    : visitor.media_type === "tv"
-                                      ? "Série"
-                                      : "TV Live"}
-                                </Badge>
-                              </div>
-                            </div>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              {new Date(visitor.viewed_at).toLocaleTimeString("fr-FR", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-muted-foreground text-sm">Aucun visiteur récent</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="external">
-          <ExternalLinksStats />
-        </TabsContent>
-      </Tabs>
+      {lastUpdate && (
+        <div className="text-right text-xs text-muted-foreground">
+          Dernière mise à jour:{" "}
+          {lastUpdate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+        </div>
+      )}
     </div>
   )
 }
