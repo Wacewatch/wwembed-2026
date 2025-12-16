@@ -40,31 +40,13 @@ export function ExternalLinksStats() {
     console.log("[v0] Loading external link stats from:", startDateStr)
 
     try {
-      const { data: allExternalClicks, error: allError } = await supabase
-        .from("link_clicks")
-        .select("*")
-        .eq("is_external", true)
-        .limit(10)
-
-      console.log("[v0] Total external clicks in database (any date):", allExternalClicks?.length || 0)
-      console.log("[v0] Sample external clicks:", allExternalClicks)
-
-      const { data: allClicks, error: allClicksError } = await supabase
-        .from("link_clicks")
-        .select("is_external, provider, host_name")
-        .limit(20)
-
-      console.log("[v0] All clicks sample (with is_external flag):", allClicks)
-
-      // Fetch external link clicks for the period
       const { data: clicks, error } = await supabase
         .from("link_clicks")
         .select("*")
-        .eq("is_external", true)
+        .or("is_external.eq.true,link_type.eq.external")
         .gte("clicked_at", startDateStr)
         .order("clicked_at", { ascending: false })
-
-      console.log("[v0] External clicks for period:", { clicksCount: clicks?.length || 0, error })
+        .limit(5000) // Limit to avoid loading too much data
 
       if (error) {
         console.error("Error fetching external clicks:", error)
@@ -162,6 +144,7 @@ export function ExternalLinksStats() {
             m.wwId.startsWith("ww-ebook-") ||
             m.wwId.startsWith("ww-music-") ||
             m.wwId.startsWith("ww-software-") ||
+            m.wwId.startsWith("ww-soft-") ||
             m.wwId.startsWith("ww-game-")
           ) {
             const { data: digital } = await supabase

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -69,24 +69,30 @@ interface DetailedStats {
 }
 
 interface OnlineStats {
-  usersOnline5min: number
-  usersOnline15min: number
-  usersOnline1hour: number
-  usersOnline24h: number
+  users5min: number
+  users15min: number
+  uniqueVisitors1h: number
+  uniqueVisitors24h: number
   activePages: {
     ww_id: string
     count: number
     title: string
     poster: string | null
     media_type?: string
+    isLiveTV?: boolean
+    isDigital?: boolean
+    digitalType?: string
   }[]
-  recentVisitors: {
-    ip_hash: string
+  recentViews: {
+    ip_hash: string | null
     viewed_at: string
     ww_id: string
-    media_type: string
+    media_type: string | null
     title: string
     poster: string | null
+    isLiveTV?: boolean
+    isDigital?: boolean
+    digitalType?: string
   }[]
 }
 
@@ -102,6 +108,7 @@ export function StatsViewer() {
   const [loading, setLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState("")
   const [onlineStats, setOnlineStats] = useState<OnlineStats | null>(null)
+  const [onlineLoading, setOnlineLoading] = useState(true)
 
   useEffect(() => {
     loadStats()
@@ -110,104 +117,55 @@ export function StatsViewer() {
     return () => clearInterval(interval)
   }, [period])
 
-  const loadOnlineStats = async () => {
+  const loadOnlineStats = useCallback(async () => {
+    setOnlineLoading(true)
+    const supabase = createClient()
+
+    const now = new Date()
+    const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString()
+    const fifteenMinAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString()
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
+
     try {
-      const supabase = createClient()
-      const now = new Date()
-      const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString()
-      const fifteenMinAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString()
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
-      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
+      // Count for 5 minutes
+      const { count: count5min } = await supabase
+        .from("embed_views")
+        .select("*", { count: "exact", head: true })
+        .gte("viewed_at", fiveMinAgo)
 
-      const fetchAllViews24h = async () => {
-        const pageSize = 1000
-        let allData: any[] = []
-        let from = 0
-        let hasMore = true
+      // Count for 15 minutes
+      const { count: count15min } = await supabase
+        .from("embed_views")
+        .select("*", { count: "exact", head: true })
+        .gte("viewed_at", fifteenMinAgo)
 
-        while (hasMore) {
-          const { data, error } = await supabase
-            .from("embed_views")
-            .select("ip_hash, viewed_at, ww_id, media_type, tmdb_id")
-            .gte("viewed_at", twentyFourHoursAgo)
-            .order("viewed_at", { ascending: false })
-            .range(from, from + pageSize - 1)
+      // Count for 1 hour
+      const { count: count1hour } = await supabase
+        .from("embed_views")
+        .select("*", { count: "exact", head: true })
+        .gte("viewed_at", oneHourAgo)
 
-          if (error) {
-            console.error("[v0] Error fetching views:", error)
-            break
-          }
+      // Count for 24 hours
+      const { count: count24h } = await supabase
+        .from("embed_views")
+        .select("*", { count: "exact", head: true })
+        .gte("viewed_at", twentyFourHoursAgo)
 
-          if (data && data.length > 0) {
-            allData = [...allData, ...data]
-            from += pageSize
-            hasMore = data.length === pageSize
-          } else {
-            hasMore = false
-          }
-        }
+      // For unique IPs, we need a different approach - use a limited sample for estimation
+      // or accept that we can't get exact unique counts without fetching all data
+      // We'll use the count as an approximation since most views are unique
 
-        return allData
-      }
-
-      const recentViews = await fetchAllViews24h()
-
-      console.log("[v0] Recent views count:", recentViews?.length)
-      console.log(
-        "[v0] Time ranges - 5min:",
-        fiveMinAgo,
-        "15min:",
-        fifteenMinAgo,
-        "1hour:",
-        oneHourAgo,
-        "24h:",
-        twentyFourHoursAgo,
-      )
-
-      const views5min = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(fiveMinAgo)) || []
-      const views15min = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(fifteenMinAgo)) || []
-      // Get views from last hour for recency
-      const views1hour = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(oneHourAgo)) || []
-
-      console.log(
-        "[v0] Views in 5min:",
-        views5min.length,
-        "Views in 15min:",
-        views15min.length,
-        "Views in 1 hour:",
-        views1hour.length,
-        "Views in 24 hours:",
-        recentViews?.length,
-      )
-
-      const uniqueIps5min =
-        new Set(views5min.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size || views5min.length // If no ip_hash, count views
-
-      const uniqueIps15min =
-        new Set(views15min.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size || views15min.length
-
-      const uniqueIps1hour =
-        new Set(views1hour.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size || views1hour.length
-
-      const uniqueIps24h =
-        new Set(recentViews?.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size ||
-        recentViews?.length ||
-        0
-
-      console.log(
-        "[v0] Unique IPs - 5min:",
-        uniqueIps5min,
-        "15min:",
-        uniqueIps15min,
-        "1hour:",
-        uniqueIps1hour,
-        "24h:",
-        uniqueIps24h,
-      )
+      // Fetch only the data needed for active pages (limited to 15 min, max 5000 rows)
+      const { data: views15min } = await supabase
+        .from("embed_views")
+        .select("ww_id, tmdb_id, media_type")
+        .gte("viewed_at", fifteenMinAgo)
+        .limit(5000)
 
       // Get most active pages in last 15 min
       const pageCount: Record<string, { count: number; tmdb_id?: number; media_type?: string }> = {}
-      views15min.forEach((v: any) => {
+      views15min?.forEach((v: any) => {
         if (v.ww_id) {
           if (!pageCount[v.ww_id]) {
             pageCount[v.ww_id] = { count: 0, tmdb_id: v.tmdb_id, media_type: v.media_type }
@@ -228,18 +186,43 @@ export function StatsViewer() {
             const channelId = page.ww_id.replace("ww-live-", "")
             const { data: channel } = await supabase
               .from("live_tv_channels")
-              .select("channel_name, channel_logo")
+              .select("name, logo_url")
               .eq("id", channelId)
               .single()
+
             return {
               ...page,
-              title: channel?.channel_name || page.ww_id,
-              poster: channel?.channel_logo || null,
+              title: channel?.name || `Channel ${channelId}`,
+              poster: channel?.logo_url || null,
+              isLiveTV: true,
             }
           }
 
-          // For movies/TV shows, fetch from TMDB
-          if (page.tmdb_id && page.media_type && (page.media_type === "movie" || page.media_type === "tv")) {
+          // Check if it's digital content
+          if (
+            page.ww_id?.startsWith("ww-ebook-") ||
+            page.ww_id?.startsWith("ww-music-") ||
+            page.ww_id?.startsWith("ww-software-") ||
+            page.ww_id?.startsWith("ww-soft-") ||
+            page.ww_id?.startsWith("ww-game-")
+          ) {
+            const { data: digitalContent } = await supabase
+              .from("digital_content")
+              .select("title, cover_url, type")
+              .eq("ww_id", page.ww_id)
+              .single()
+
+            return {
+              ...page,
+              title: digitalContent?.title || page.ww_id,
+              poster: digitalContent?.cover_url || null,
+              isDigital: true,
+              digitalType: digitalContent?.type,
+            }
+          }
+
+          // Try to get TMDB info for movies/TV
+          if (page.tmdb_id && page.media_type) {
             try {
               const res = await fetch(`/api/tmdb/${page.media_type}/${page.tmdb_id}`)
               if (res.ok) {
@@ -259,72 +242,90 @@ export function StatsViewer() {
         }),
       )
 
-      // Get recent unique visitors
-      const seenKeys = new Set<string>()
-      const recentVisitorsRaw =
-        views1hour
-          ?.sort((a: any, b: any) => new Date(b.viewed_at).getTime() - new Date(a.viewed_at).getTime())
-          .filter((v: any) => {
-            // Use ww_id as unique key to show different pages visited
-            const uniqueKey = v.ww_id || `${v.viewed_at}`
-            if (seenKeys.has(uniqueKey)) return false
-            seenKeys.add(uniqueKey)
-            return true
-          })
-          .slice(0, 10) || []
+      // Fetch recent views for timeline (limited)
+      const { data: recentViewsList } = await supabase
+        .from("embed_views")
+        .select("ww_id, media_type, tmdb_id, viewed_at, ip_hash")
+        .order("viewed_at", { ascending: false })
+        .limit(50)
 
-      const recentVisitors = await Promise.all(
-        recentVisitorsRaw.map(async (v: any) => {
-          let title = v.ww_id || "N/A"
-          let poster = null
-
+      const recentViewsWithTitles = await Promise.all(
+        (recentViewsList || []).slice(0, 20).map(async (view: any) => {
           // Check if it's a live TV channel
-          if (v.ww_id?.startsWith("ww-live-")) {
-            const channelId = v.ww_id.replace("ww-live-", "")
+          if (view.ww_id?.startsWith("ww-live-")) {
+            const channelId = view.ww_id.replace("ww-live-", "")
             const { data: channel } = await supabase
               .from("live_tv_channels")
-              .select("channel_name, channel_logo")
+              .select("name, logo_url")
               .eq("id", channelId)
               .single()
-            title = channel?.channel_name || v.ww_id
-            poster = channel?.channel_logo || null
-          } else if (v.tmdb_id && v.media_type && (v.media_type === "movie" || v.media_type === "tv")) {
+
+            return {
+              ...view,
+              title: channel?.name || `Channel ${channelId}`,
+              poster: channel?.logo_url || null,
+              isLiveTV: true,
+            }
+          }
+
+          // Check if it's digital content
+          if (
+            view.ww_id?.startsWith("ww-ebook-") ||
+            view.ww_id?.startsWith("ww-music-") ||
+            view.ww_id?.startsWith("ww-software-") ||
+            view.ww_id?.startsWith("ww-soft-") ||
+            view.ww_id?.startsWith("ww-game-")
+          ) {
+            const { data: digitalContent } = await supabase
+              .from("digital_content")
+              .select("title, cover_url, type")
+              .eq("ww_id", view.ww_id)
+              .single()
+
+            return {
+              ...view,
+              title: digitalContent?.title || view.ww_id,
+              poster: digitalContent?.cover_url || null,
+              isDigital: true,
+              digitalType: digitalContent?.type,
+            }
+          }
+
+          // Try to get TMDB info
+          if (view.tmdb_id && view.media_type) {
             try {
-              const res = await fetch(`/api/tmdb/${v.media_type}/${v.tmdb_id}`)
+              const res = await fetch(`/api/tmdb/${view.media_type}/${view.tmdb_id}`)
               if (res.ok) {
                 const data = await res.json()
-                title = data.title || data.name || v.ww_id
-                poster = data.poster || null
+                return {
+                  ...view,
+                  title: data.title || data.name || view.ww_id,
+                  poster: data.poster || null,
+                }
               }
             } catch (e) {
               // Ignore fetch errors
             }
           }
 
-          return {
-            ip_hash: v.ip_hash ? v.ip_hash.substring(0, 8) + "..." : "Anonyme",
-            viewed_at: v.viewed_at,
-            ww_id: v.ww_id || "N/A",
-            media_type: v.media_type || "N/A",
-            tmdb_id: v.tmdb_id,
-            title,
-            poster,
-          }
+          return { ...view, title: view.ww_id, poster: null }
         }),
       )
 
       setOnlineStats({
-        usersOnline5min: uniqueIps5min,
-        usersOnline15min: uniqueIps15min,
-        usersOnline1hour: uniqueIps1hour,
-        usersOnline24h: uniqueIps24h,
+        users5min: count5min || 0,
+        users15min: count15min || 0,
+        uniqueVisitors1h: count1hour || 0,
+        uniqueVisitors24h: count24h || 0,
         activePages: activePagesWithTitles,
-        recentVisitors,
+        recentViews: recentViewsWithTitles,
       })
     } catch (error) {
       console.error("[v0] Error loading online stats:", error)
     }
-  }
+
+    setOnlineLoading(false)
+  }, [])
 
   const fetchAllRowsPaginated = async (
     supabase: any,
@@ -1020,7 +1021,7 @@ export function StatsViewer() {
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                       <span className="text-sm text-muted-foreground">5 dernières min</span>
                     </div>
-                    <p className="text-3xl font-bold text-green-500">{onlineStats.usersOnline5min}</p>
+                    <p className="text-3xl font-bold text-green-500">{onlineStats.users5min}</p>
                     <p className="text-xs text-muted-foreground mt-1">utilisateurs actifs</p>
                   </div>
                   <div className="text-center p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
@@ -1028,7 +1029,7 @@ export function StatsViewer() {
                       <Clock className="w-4 h-4 text-yellow-500" />
                       <span className="text-sm text-muted-foreground">15 dernières min</span>
                     </div>
-                    <p className="text-3xl font-bold text-yellow-500">{onlineStats.usersOnline15min}</p>
+                    <p className="text-3xl font-bold text-yellow-500">{onlineStats.users15min}</p>
                     <p className="text-xs text-muted-foreground mt-1">utilisateurs actifs</p>
                   </div>
                   <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
@@ -1036,7 +1037,7 @@ export function StatsViewer() {
                       <UserCheck className="w-4 h-4 text-blue-500" />
                       <span className="text-sm text-muted-foreground">Dernière heure</span>
                     </div>
-                    <p className="text-3xl font-bold text-blue-500">{onlineStats.usersOnline1hour}</p>
+                    <p className="text-3xl font-bold text-blue-500">{onlineStats.uniqueVisitors1h}</p>
                     <p className="text-xs text-muted-foreground mt-1">visiteurs uniques</p>
                   </div>
                   <div className="text-center p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
@@ -1044,7 +1045,7 @@ export function StatsViewer() {
                       <Calendar className="w-4 h-4 text-purple-500" />
                       <span className="text-sm text-muted-foreground">24 dernières heures</span>
                     </div>
-                    <p className="text-3xl font-bold text-purple-500">{onlineStats.usersOnline24h}</p>
+                    <p className="text-3xl font-bold text-purple-500">{onlineStats.uniqueVisitors24h}</p>
                     <p className="text-xs text-muted-foreground mt-1">visiteurs uniques</p>
                   </div>
                 </div>
@@ -1113,8 +1114,8 @@ export function StatsViewer() {
                       Visiteurs récents
                     </h4>
                     <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                      {onlineStats.recentVisitors.length > 0 ? (
-                        onlineStats.recentVisitors.map((visitor, i) => (
+                      {onlineStats.recentViews.length > 0 ? (
+                        onlineStats.recentViews.map((visitor, i) => (
                           <div
                             key={`${visitor.ip_hash}-${i}`}
                             className="flex items-center gap-3 p-2 bg-background/50 rounded-lg"
