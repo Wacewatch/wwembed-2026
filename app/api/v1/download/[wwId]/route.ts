@@ -228,8 +228,6 @@ Recherche de sources externes...
 </div>
 </div>
 
-<div id="linkDisplayArea" style="display:none"></div>
-
 <div class="ft">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
 
 <div class="mo" id="${ids.overlay}">
@@ -710,6 +708,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ext-unlock-btn{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:14px 28px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-top:16px}
 .ext-link-result{margin-top:12px;padding:12px;background:rgba(30,58,79,0.3);border-radius:6px}
 .ext-link-result a{color:#14B8A6;font-size:12px}
+/* Added link display styles for film/serie */
+.link-display-area{display:none;margin:20px 0;padding:20px;background:linear-gradient(135deg,rgba(16,185,129,0.1),rgba(20,184,166,0.1));border:2px solid #10b981;border-radius:12px}
+.link-display-title{font-size:16px;font-weight:700;color:#10b981;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.link-display-url{background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;font-family:monospace;font-size:12px;color:#5eead4;word-break:break-all;margin-bottom:16px;border:1px solid rgba(94,234,212,0.3)}
+.link-display-btns{display:flex;gap:10px;flex-wrap:wrap}
+.link-display-btn{flex:1;min-width:140px;padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;text-align:center;text-decoration:none;transition:all 0.2s}
+.link-display-btn.primary{background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none}
+.link-display-btn.primary:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(16,185,129,0.4)}
+.link-display-btn.secondary{background:transparent;color:#5eead4;border:2px solid #5eead4}
+.link-display-btn.secondary:hover{background:rgba(94,234,212,0.1)}
+.copy-success{color:#10b981;font-size:12px;margin-top:8px;display:none}
 /* Added modal styles for internal links pub system */
 .mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
 .mo.sh{display:flex}
@@ -778,6 +787,9 @@ Recherche de sources externes...
 <div class="ext-details-body" id="${externalIds.detailsContent}"></div>
 </div>
 </div>
+
+/* Added link display area for film/serie */
+<div class="link-display-area" id="linkDisplayArea"></div>
 
 <div class="ft">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
 
@@ -892,6 +904,22 @@ window.open(decodeURIComponent(url),"_blank");
 }
 }
 
+function _displayLink(url){
+var area=document.getElementById("linkDisplayArea");
+area.style.display="block";
+area.innerHTML='<div class="link-display-title"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Votre lien est prêt !</div><div class="link-display-url" id="linkUrlText">'+url+'</div><div class="link-display-btns"><a href="'+url+'" target="_blank" class="link-display-btn primary">Ouvrir le lien</a><button class="link-display-btn secondary" onclick="_copyLink()">Copier le lien</button></div><div class="copy-success" id="copySuccess">Lien copié !</div>';
+area.scrollIntoView({behavior:"smooth"});
+}
+
+function _copyLink(){
+var urlText=document.getElementById("linkUrlText").textContent;
+navigator.clipboard.writeText(urlText).then(function(){
+var msg=document.getElementById("copySuccess");
+msg.style.display="block";
+setTimeout(function(){msg.style.display="none";},2000);
+});
+}
+
 function _sa(url){
 _p=url;
 var o=document.getElementById(_ids.overlay);
@@ -948,7 +976,8 @@ dn.onclick=function(){
 o.classList.remove("sh");
 if(_p){
 fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
-window.open(_p,"_blank");_p=null;
+_displayLink(_p);
+_p=null;
 }
 };
 }
@@ -1093,7 +1122,7 @@ fetch("/api/link-click",{
 if(_h&&_u){
   _sa(finalUrl);
 }else{
-  window.open(finalUrl,"_blank");
+  _displayLink(finalUrl);
 }
 })
 .catch(function(err){
