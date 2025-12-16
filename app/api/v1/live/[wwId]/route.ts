@@ -178,29 +178,6 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .cf a{color:#ef4444;text-decoration:none}
 .tg{background:#f97316;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px;font-weight:600}
 </style>
-
-<!-- Histats.com START -->
-<script type="text/javascript">
-  var _Hasync = _Hasync || [];
-  _Hasync.push(['Histats.start', '1,4996171,4,0,0,0,00010000']);
-  _Hasync.push(['Histats.fasi', '1']);
-  _Hasync.push(['Histats.track_hits', '']);
-
-  (function() {
-    var hs = document.createElement('script');
-    hs.type = 'text/javascript';
-    hs.async = true;
-    hs.src = '//s10.histats.com/js15_as.js';
-    (document.head || document.body).appendChild(hs);
-  })();
-</script>
-<noscript>
-  <a href="/" target="_blank">
-    <img src="//sstatic1.histats.com/0.gif?4996171&101" alt="histats" />
-  </a>
-</noscript>
-<!-- Histats.com END -->
-
 </head>
 <body>
 <div class="mo" id="adOverlay">

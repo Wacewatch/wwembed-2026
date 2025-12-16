@@ -120,34 +120,19 @@ export function StatsViewer() {
       const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
 
       const fetchAllViews24h = async () => {
-        const pageSize = 1000
-        let allData: any[] = []
-        let from = 0
-        let hasMore = true
+        const { data, error } = await supabase
+          .from("embed_views")
+          .select("ip_hash, viewed_at, ww_id, media_type, tmdb_id")
+          .gte("viewed_at", twentyFourHoursAgo)
+          .order("viewed_at", { ascending: false })
+          .limit(3000)
 
-        while (hasMore) {
-          const { data, error } = await supabase
-            .from("embed_views")
-            .select("ip_hash, viewed_at, ww_id, media_type, tmdb_id")
-            .gte("viewed_at", twentyFourHoursAgo)
-            .order("viewed_at", { ascending: false })
-            .range(from, from + pageSize - 1)
-
-          if (error) {
-            console.error("[v0] Error fetching views:", error)
-            break
-          }
-
-          if (data && data.length > 0) {
-            allData = [...allData, ...data]
-            from += pageSize
-            hasMore = data.length === pageSize
-          } else {
-            hasMore = false
-          }
+        if (error) {
+          console.error("[v0] Error fetching views:", error)
+          return []
         }
 
-        return allData
+        return data || []
       }
 
       const recentViews = await fetchAllViews24h()

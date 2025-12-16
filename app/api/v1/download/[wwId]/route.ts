@@ -448,24 +448,24 @@ content.querySelectorAll(".ext-card").forEach(function(card){
 card.querySelector(".ext-btn").onclick=function(e){
 e.stopPropagation();
 var idx=parseInt(card.getAttribute("data-idx"));
-_showExtDetails(_allExtLinks[idx]);
+_showExtDetails(idx);
 };
 });
 }
 
 // ** START OF UPDATES **
-function _showExtDetails(link){
+function _showExtDetails(idx){
+var link=_allExtLinks[idx];
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
-
-body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg style="animation:spin 1s linear infinite;width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="margin-top:12px">Chargement du lien...</p></div>';
 details.classList.add("show");
+body.innerHTML='<div style="text-align:center;padding:30px"><div class="loader"></div><p style="margin-top:10px">Chargement...</p></div>';
 
-fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
+fetch("https://api.movix.site/api/darkiworld/directlink",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({link:link.link})})
 .then(function(r){return r.json();})
 .then(function(data){
-if(!data||!data.success||!data.embed_url){
-body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
+if(!data||!data.embed_url){
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur</p></div>';
 return;
 }
 var embed=data.embed_url;
@@ -473,17 +473,13 @@ var finalUrl=embed.lien||"#";
 
 details.classList.remove("show");
 
-// ** CHANGE ** Track external link click with full info
 fetch("/api/link-click",{
   method:"POST",
   headers:{"Content-Type":"application/json"},
   body:JSON.stringify({
-    linkType:"external",
+    linkType:"download",
     wwId:_wwId,
-    tmdbId:_tmdbId,
-    mediaType:_mediaType,
-    seasonNumber:_seasonNum||null,
-    episodeNumber:_episodeNum||null,
+    mediaType:"digital",
     isExternal:true,
     provider:link.provider||null,
     hostName:link.host_name||null,
@@ -1003,26 +999,24 @@ content.querySelectorAll(".ext-card").forEach(function(card){
 card.querySelector(".ext-btn").onclick=function(e){
 e.stopPropagation();
 var idx=parseInt(card.getAttribute("data-idx"));
-_showExtDetails(_allExtLinks[idx]);
+_showExtDetails(idx);
 };
 });
 }
 
 // ** START OF UPDATES **
-function _showExtDetails(link){
+function _showExtDetails(idx){
+var link=_allExtLinks[idx];
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
-
-// Show loading first
-body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg style="animation:spin 1s linear infinite;width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="margin-top:12px">Chargement du lien...</p></div>';
 details.classList.add("show");
+body.innerHTML='<div style="text-align:center;padding:30px"><div class="loader"></div><p style="margin-top:10px">Chargement...</p></div>';
 
-// Decode the link via Movix API
-fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
+fetch("https://api.movix.site/api/darkiworld/directlink",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({link:link.link})})
 .then(function(r){return r.json();})
 .then(function(data){
-if(!data||!data.success||!data.embed_url){
-body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
+if(!data||!data.embed_url){
+body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur</p></div>';
 return;
 }
 var embed=data.embed_url;
@@ -1030,17 +1024,13 @@ var finalUrl=embed.lien||"#";
 
 details.classList.remove("show");
 
-// ** CHANGE ** Track external link click with full info
 fetch("/api/link-click",{
   method:"POST",
   headers:{"Content-Type":"application/json"},
   body:JSON.stringify({
-    linkType:"external",
+    linkType:"download",
     wwId:_wwId,
-    tmdbId:_tmdbId,
-    mediaType:_mediaType,
-    seasonNumber:_seasonNum||null,
-    episodeNumber:_episodeNum||null,
+    mediaType:"digital",
     isExternal:true,
     provider:link.provider||null,
     hostName:link.host_name||null,
@@ -1052,7 +1042,7 @@ fetch("/api/link-click",{
 });
 
 if(_h&&_u){
-  _sa(finalUrl);
+  _showAdModal(finalUrl);
 }else{
   window.open(finalUrl,"_blank");
 }
