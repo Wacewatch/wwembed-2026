@@ -208,7 +208,6 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 </noscript>
 <!-- Histats.com END -->
 
-
 </head>
 <body>
 <div class="mo" id="adOverlay">
