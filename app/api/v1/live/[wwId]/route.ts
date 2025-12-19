@@ -234,7 +234,8 @@ textarea:focus{outline:none;border-color:#e63946;box-shadow:0 0 0 3px rgba(230,5
 .logo{font-size:18px;}
 .channel-name{font-size:14px;}
 .dropdown-btn{padding:8px 14px;font-size:13px;}
-.dropdown-menu{min-width:260px;right:0;left:0;max-height:60vh;}
+.dropdown{width:100%;}
+.dropdown-menu{min-width:unset;width:100%;right:0;left:0;max-height:60vh;}
 .source-item{padding:10px 12px;}
 .source-name{font-size:13px;}
 .help-hint{top:130px;font-size:12px;right:12px;max-width:220px;}
