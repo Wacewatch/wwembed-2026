@@ -218,7 +218,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <div class="steps"><div class="step active" id="step1"></div><div class="step" id="step2"></div><div class="step" id="step3"></div></div>
 <div class="bx bw"><div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div></div>
 <div class="bx bh" id="boxHelp"><div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div></div>
-<div class="bx bi" id="boxTime"><div><b>Temps restant: <span id="timer">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div></div>
+<div class="bx bi" id="boxTime"><div><b>Temps restant</b><span>Cliquez et fermez la fenêtre</span></div></div>
 <div class="bx bo hi" id="boxThanks"><div><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div></div>
 <div class="bx bo hi" id="boxDone"><div><b>Tout est prêt !</b><span>Cliquez pour lancer le lecteur</span></div></div>
 <div class="pb"><div class="pf" id="progress"></div></div>
@@ -392,11 +392,11 @@ var tmEl=$("timer"),prEl=$("progress");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
 if(s2){s2.classList.remove("active");s2.classList.add("done");}
 if(s3)s3.classList.add("active");
-if(boxHelp)boxHelp.classList.remove("hi");
-if(boxTime)boxTime.classList.remove("hi");
-if(boxThanks)boxThanks.classList.add("hi");
-if(boxDone)boxDone.classList.add("hi");
-if(btnUnlock)btnUnlock.classList.remove("hi");
+if(boxHelp)boxHelp.classList.add("hi");
+if(boxTime)boxTime.classList.add("hi");
+if(boxThanks)boxThanks.classList.remove("hi");
+if(boxDone)boxDone.classList.remove("hi");
+if(btnUnlock)btnUnlock.classList.add("hi");
 if(btnNext)btnNext.classList.add("hi");
 if(btnPlay)btnPlay.classList.add("hi");
 if(prEl)prEl.style.width="100%";
