@@ -2,10 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { parseWWId, getMovieDetails, getTVDetails, getEpisodeDetails } from "@/lib/tmdb"
 
-export async function GET(request: NextRequest, props: { params: Promise<{ wwId: string }> }) {
+export async function GET(request: NextRequest, props: { params: { wwId: string } }) {
   try {
-    const params = await props.params
-    const { wwId } = params
+    const { wwId } = props.params
     if (!wwId) return NextResponse.json({ error: "Missing WW ID" }, { status: 400 })
 
     const parsed = parseWWId(wwId)
@@ -169,13 +168,12 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .step.active{background:linear-gradient(135deg,#667eea,#764ba2);transform:scale(1.2)}
 .step.done{background:#10b981}
 .bx{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
+.bx svg{width:24px;height:24px;flex-shrink:0}
+.bx-content{flex:1}
 .bx b{display:block;font-size:13px;margin-bottom:2px}
 .bx span{font-size:11px;opacity:0.8;display:block}
 .bw{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
 .bh{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #8b5cf6;color:#5b21b6}
-.bi{background:linear-gradient(135deg,#fef3c7,#fed7aa);border:1px solid #f97316;color:#9a3412}
-.bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
-.bv{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
 .pg{background:#e5e7eb;border-radius:3px;margin:14px 0;overflow:hidden;height:5px}
 .bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
 .bp{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
@@ -217,14 +215,14 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <div class="ad-counter" id="adCounter">Pub 1/1</div>
 <div class="steps"><div class="step active" id="step1"></div><div class="step" id="step2"></div><div class="step" id="step3"></div></div>
 <div class="bx bw">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-  <div class="bx-content"><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+<div class="bx-content"><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
 </div>
-<div class="bx bv" id="boxSupport">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-  <div class="bx-content"><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
+<div class="bx bh" id="boxSupport">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+<div class="bx-content"><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
 </div>
-<button class="bt bp" id="btnContinue">Continuer<span class="tag">PUB</span></button>
+<button class="bt bp" id="btnContinue">Continuer<span class="tg">PUB</span></button>
 <button class="bt bn hi" id="btnPlay">Lancer le lecteur</button>
 <div class="pg"></div>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
@@ -266,7 +264,6 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <div style="font-size:48px;margin-bottom:12px">✓</div>
 <p style="font-weight:600;margin-bottom:4px">Merci pour votre signalement !</p>
 <p style="color:#94a3b8;font-size:13px">Nous allons examiner ce problème.</p>
-</div>
 </div>
 </div>
 </div>
