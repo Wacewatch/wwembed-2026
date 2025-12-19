@@ -130,9 +130,13 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .dropdown-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(230,57,70,0.3);border-color:rgba(230,57,70,0.4);}
 .dropdown-btn.active{background:linear-gradient(135deg,#e63946,#d62828);border-color:#e63946;box-shadow:0 8px 24px rgba(230,57,70,0.4);}
 
-.dropdown-menu{position:absolute;top:calc(100% + 12px);right:0;background:linear-gradient(135deg,rgba(18,18,28,0.98),rgba(25,25,40,0.98));backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:8px;min-width:280px;display:none;box-shadow:0 12px 48px rgba(0,0,0,0.6);z-index:300;animation:slideDown 0.3s cubic-bezier(0.4,0,0.2,1);}
+.dropdown-menu{position:absolute;top:calc(100% + 12px);right:0;background:linear-gradient(135deg,rgba(18,18,28,0.98),rgba(25,25,40,0.98));backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:8px;min-width:280px;display:none;box-shadow:0 12px 48px rgba(0,0,0,0.6);z-index:300;animation:slideDown 0.3s cubic-bezier(0.4,0,0.2,1);max-height:70vh;overflow-y:auto;}
 .dropdown-menu::before{content:'';position:absolute;top:-6px;right:20px;width:12px;height:12px;background:linear-gradient(135deg,rgba(18,18,28,0.98),rgba(25,25,40,0.98));border-left:1px solid rgba(255,255,255,0.12);border-top:1px solid rgba(255,255,255,0.12);transform:rotate(45deg);}
 .dropdown-menu.show{display:block;}
+.dropdown-menu::-webkit-scrollbar{width:6px;}
+.dropdown-menu::-webkit-scrollbar-track{background:rgba(255,255,255,0.05);border-radius:10px;}
+.dropdown-menu::-webkit-scrollbar-thumb{background:linear-gradient(135deg,#e63946,#d62828);border-radius:10px;}
+.dropdown-menu::-webkit-scrollbar-thumb:hover{background:linear-gradient(135deg,#ff4d5a,#e63946);}
 
 @keyframes slideDown{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
 
@@ -230,7 +234,9 @@ textarea:focus{outline:none;border-color:#e63946;box-shadow:0 0 0 3px rgba(230,5
 .logo{font-size:18px;}
 .channel-name{font-size:14px;}
 .dropdown-btn{padding:8px 14px;font-size:13px;}
-.dropdown-menu{min-width:260px;right:-10px;}
+.dropdown-menu{min-width:260px;right:0;left:0;max-height:60vh;}
+.source-item{padding:10px 12px;}
+.source-name{font-size:13px;}
 .help-hint{top:130px;font-size:12px;right:12px;max-width:220px;}
 }
 </style>
