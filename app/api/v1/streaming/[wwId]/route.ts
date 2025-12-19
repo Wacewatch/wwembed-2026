@@ -430,6 +430,7 @@ if(rptSubmit)rptSubmit.onclick=function(){
   }).catch(function(){alert("Erreur lors de l'envoi");rptSubmit.disabled=false;rptSubmit.textContent="Envoyer le signalement";});
 };
 
+buildGrid();
 if(_hasAds&&_ads.length>0){
 var ov=$("adOverlay");
 if(ov)ov.classList.add("sh");
@@ -437,12 +438,12 @@ updateAdCounter();
 var btnUnlock=$("btnUnlock");
 var btnNext=$("btnNext");
 var btnPlay=$("btnPlay");
-if(btnUnlock)btnUnlock.onclick=processAd;
+if(btnUnlock)btnUnlock.onclick=function(){processAd();};
 if(btnNext)btnNext.onclick=function(){
 _adIndex++;
-resetAdUI();
+if(_adIndex<_ads.length){resetAdUI();updateAdCounter();}
 };
-if(btnPlay)btnPlay.onclick=startPlayer;
+if(btnPlay)btnPlay.onclick=function(){startPlayer();};
 }else{
 startPlayer();
 }

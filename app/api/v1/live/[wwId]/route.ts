@@ -292,6 +292,7 @@ textarea:focus{outline:none;border-color:#e63946;}
 
 <script>
 var _src=${sourcesJson};
+var _ads=${JSON.stringify(activeAds)};
 var _u="${adUrl}";
 var _i="${adId}";
 var _h=${hasAds};
@@ -483,35 +484,49 @@ loadPlayer();
 }
 }
 
-if(_h&&_u){
+function processAd(){
+fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_ads[_adIndex].id})});
+window.open(_ads[_adIndex].ad_url,"_blank");
+$("btnUnlock").classList.add("hi");
+if($("step1"))$("step1").classList.remove("active");$("step1").classList.add("done");
+if($("step2"))$("step2").classList.add("active");
+if($("boxHelp"))$("boxHelp").classList.add("hi");
+if($("boxDone"))$("boxDone").classList.remove("hi");
+if($("progress"))$("progress").style.width="100%";
+if($("btnStart"))$("btnStart").classList.remove("hi");
+}
+
+function resetAdUI(){
+$("btnUnlock").classList.remove("hi");
+if($("step2"))$("step2").classList.remove("active");
+if($("boxHelp"))$("boxHelp").classList.remove("hi");
+if($("boxDone"))$("boxDone").classList.add("hi");
+if($("progress"))$("progress").style.width="0%";
+}
+
+function updateAdCounter(){
 var ov=$("adOverlay");
-var bh=$("boxHelp");
-var bd=$("boxDone");
 var pr=$("progress");
-var bu=$("btnUnlock");
-var bs=$("btnStart");
-var s1=$("step1");
-var s2=$("step2");
+if(ov&&pr){
+var width=(_adIndex+1)/_ads.length*100+"%";
+pr.style.width=width;
+}
+}
 
-bu.onclick=function(){
-fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
-window.open(_u,"_blank");
-bu.classList.add("hi");
-if(s1){s1.classList.remove("active");s1.classList.add("done");}
-if(s2)s2.classList.add("active");
-if(bh)bh.classList.add("hi");
-if(bd)bd.classList.remove("hi");
-if(pr)pr.style.width="100%";
-if(bs)bs.classList.remove("hi");
-};
-
-bs.onclick=function(){
-if(ov)ov.classList.remove("sh");
-startPlayer();
-};
-}else{
+if(_h&&_ads.length>0){
 var ov=$("adOverlay");
-if(ov)ov.remove();
+if(ov)ov.classList.add("sh");
+updateAdCounter();
+var btnUnlock=$("btnUnlock");
+var btnNext=$("btnNext");
+var btnPlay=$("btnPlay");
+if(btnUnlock)btnUnlock.onclick=function(){processAd();};
+if(btnNext)btnNext.onclick=function(){
+_adIndex++;
+if(_adIndex<_ads.length){resetAdUI();updateAdCounter();}
+};
+if(btnPlay)btnPlay.onclick=function(){startPlayer();};
+}else{
 startPlayer();
 }
 
