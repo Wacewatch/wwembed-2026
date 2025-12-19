@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
   try {
-    const { wwId } = await params
+    const { wwId } = params
     const match = wwId.match(/^ww-live-(.+)$/i)
     if (!match) return new NextResponse("Invalid WW ID format", { status: 400 })
 
@@ -78,7 +78,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const tickerBgColor = siteSettings?.live_tv_ticker_bg_color ?? "#ef4444"
     const tickerTextColor = siteSettings?.live_tv_ticker_text_color ?? "#ffffff"
 
-    // Insert view - tmdb_id is null for live TV, use ww_id for identification
     const referer = request.headers.get("referer") || request.headers.get("referrer") || null
     await supabase.from("embed_views").insert({
       ww_id: wwId,
@@ -100,7 +99,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${channelName} - WWEmbed Live</title>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff}
@@ -117,6 +116,10 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .player{flex:1;background:#000;position:relative}
 .player iframe,.player video{width:100%;height:100%;position:absolute;inset:0;border:none}
 .no-src{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#555;gap:8px}
+.error-box{background:rgba(239,68,68,0.1);border:1px solid #ef4444;border-radius:8px;padding:16px;max-width:400px;text-align:center}
+.error-box h3{color:#ef4444;margin-bottom:8px}
+.error-box p{color:#999;font-size:13px;margin-bottom:12px}
+.retry-btn{background:#ef4444;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600}
 .ticker{position:absolute;bottom:0;left:0;right:0;z-index:50;display:flex;align-items:center}
 .ticker-wrap{flex:1;overflow:hidden;white-space:nowrap}
 .ticker-content{display:inline-block;padding:10px 20px;animation:ticker-scroll ${animationDuration}s linear infinite;font-size:13px;font-weight:600}
@@ -137,6 +140,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .card{background:#1e1e2c;border:1px solid #333;border-radius:10px;padding:14px;cursor:pointer;position:relative}
 .card:hover{border-color:#ef4444}
 .card.act{border-color:#ef4444;background:#2a1a1a}
+.card.err{opacity:0.5;cursor:not-allowed}
 .card-badge{position:absolute;top:10px;right:10px;padding:3px 7px;background:#22c55e;border-radius:5px;font-size:9px;font-weight:700}
 .card-icon{width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg,#ef4444,#f97316);display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#fff;font-size:20px}
 .card-name{font-size:13px;font-weight:600;margin-bottom:6px}
@@ -247,6 +251,10 @@ var _idx=0;
 var _started=false;
 var _wwId="${wwId}";
 var _channelName="${channelName.replace(/"/g, '\\"')}";
+var _currentHls=null;
+var _failedSources=[];
+var _retryAttempts=0;
+var _maxRetries=3;
 
 function $(id){return document.getElementById(id);}
 
@@ -266,9 +274,12 @@ for(var i=0;i<_src.length;i++){
 (function(index){
 var s=_src[index];
 var d=document.createElement("div");
-d.className="card"+(index===_idx?" act":"");
-d.innerHTML="<div class='card-badge'>"+(s.quality||"HD")+"</div><div class='card-icon'>▶</div><div class='card-name'>"+s.name+"</div><div class='card-tags'><span class='tag "+tagClass(s.language)+"'>"+(s.language||"VO").toUpperCase()+"</span></div>";
-d.onclick=function(){_idx=index;var cards=document.querySelectorAll(".card");for(var j=0;j<cards.length;j++){cards[j].classList.toggle("act",j===index);}$("srcLabel").textContent=s.name;toggleModal("srcModal");loadPlayer();};
+var isFailed=_failedSources.indexOf(index)>=0;
+d.className="card"+(index===_idx?" act":"")+(isFailed?" err":"");
+d.innerHTML="<div class='card-badge'>"+(s.quality||"HD")+"</div><div class='card-icon'>▶</div><div class='card-name'>"+s.name+(isFailed?" ✕":"")+"</div><div class='card-tags'><span class='tag "+tagClass(s.language)+"'>"+(s.language||"VO").toUpperCase()+"</span></div>";
+if(!isFailed){
+d.onclick=function(){_idx=index;_retryAttempts=0;var cards=document.querySelectorAll(".card");for(var j=0;j<cards.length;j++){cards[j].classList.toggle("act",j===index);}$("srcLabel").textContent=s.name;toggleModal("srcModal");loadPlayer();};
+}
 g.appendChild(d);
 })(i);
 }
@@ -276,16 +287,109 @@ g.appendChild(d);
 
 function toggleModal(id){var m=$(id);if(m)m.classList.toggle("sh");}
 
+function cleanupPlayer(){
+if(_currentHls){try{_currentHls.destroy();}catch(e){}
+_currentHls=null;}
+}
+
+function showError(msg){
+var p=$("player");if(!p)return;
+p.innerHTML='<div class="no-src"><div class="error-box"><h3>Erreur de lecture</h3><p>'+msg+'</p><button class="retry-btn" onclick="window.retryLoad()">Réessayer</button></div></div>';
+}
+
+function tryNextSource(){
+if(_failedSources.indexOf(_idx)<0){_failedSources.push(_idx);}
+var nextIdx=-1;
+for(var i=0;i<_src.length;i++){
+if(_failedSources.indexOf(i)<0){nextIdx=i;break;}
+}
+if(nextIdx>=0){_idx=nextIdx;$("srcLabel").textContent=_src[nextIdx].name;_retryAttempts=0;loadPlayer();}
+else{showError("Toutes les sources ont échoué");}
+}
+
+window.retryLoad=function(){
+if(_retryAttempts<_maxRetries){_retryAttempts++;loadPlayer();}
+else{tryNextSource();}
+};
+
 function loadPlayer(){
+cleanupPlayer();
 var p=$("player");if(!p||!_src||!_src.length)return;
 var s=_src[_idx];if(!s||!s.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";return;}
 var url=s.url;
+
 if(url.indexOf(".m3u8")>=0||url.indexOf("m3u8")>=0){
-p.innerHTML='<video id="vid" controls autoplay></video>';
+p.innerHTML='<video id="vid" controls autoplay playsinline crossorigin="anonymous"></video>';
 var vid=document.getElementById("vid");
-if(vid&&typeof Hls!=="undefined"&&Hls.isSupported()){var hls=new Hls();hls.loadSource(url);hls.attachMedia(vid);}
-else if(vid){vid.src=url;}
-}else{p.innerHTML='<iframe src="'+url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>';}
+if(!vid)return;
+
+if(typeof Hls!=="undefined"&&Hls.isSupported()){
+_currentHls=new Hls({
+enableWorker:true,
+lowLatencyMode:false,
+maxBufferLength:30,
+maxMaxBufferLength:60,
+manifestLoadingTimeOut:10000,
+manifestLoadingMaxRetry:4,
+levelLoadingTimeOut:10000,
+levelLoadingMaxRetry:4,
+fragLoadingTimeOut:20000,
+fragLoadingMaxRetry:6,
+xhrSetup:function(xhr,url){
+xhr.withCredentials=false;
+}
+});
+
+_currentHls.on(Hls.Events.ERROR,function(event,data){
+if(data.fatal){
+switch(data.type){
+case Hls.ErrorTypes.NETWORK_ERROR:
+console.error("Network error:",data);
+if(_retryAttempts<_maxRetries){_retryAttempts++;setTimeout(function(){_currentHls.startLoad();},1000);}
+else{showError("Erreur réseau - La source est inaccessible");setTimeout(tryNextSource,2000);}
+break;
+case Hls.ErrorTypes.MEDIA_ERROR:
+console.error("Media error:",data);
+_currentHls.recoverMediaError();
+break;
+default:
+console.error("Fatal error:",data);
+showError("Erreur de lecture");
+setTimeout(tryNextSource,2000);
+break;
+}
+}
+});
+
+_currentHls.on(Hls.Events.MANIFEST_PARSED,function(){
+vid.play().catch(function(e){console.log("Autoplay prevented:",e);});
+});
+
+_currentHls.loadSource(url);
+_currentHls.attachMedia(vid);
+}else if(vid.canPlayType('application/vnd.apple.mpegurl')){
+vid.src=url;
+vid.addEventListener('loadedmetadata',function(){vid.play().catch(function(e){console.log("Autoplay prevented:",e);});});
+vid.addEventListener('error',function(e){
+console.error("Video error:",e);
+showError("Erreur de lecture de la vidéo");
+setTimeout(tryNextSource,2000);
+});
+}else{
+showError("Format HLS non supporté sur ce navigateur");
+}
+}else{
+cleanupPlayer();
+p.innerHTML='<iframe id="ifrm" src="'+url+'" allowfullscreen allow="autoplay;fullscreen;encrypted-media" referrerpolicy="no-referrer"></iframe>';
+var ifrm=document.getElementById("ifrm");
+if(ifrm){
+ifrm.onerror=function(){
+console.error("Iframe load error");
+showError("La source ne peut pas être chargée");
+setTimeout(tryNextSource,2000);
+};
+}
+}
 }
 
 function startPlayer(){
@@ -349,33 +453,37 @@ $("srcModal")&&($("srcModal").onclick=function(e){if(e.target===$("srcModal"))to
 $("rptBtn")&&($("rptBtn").onclick=function(){toggleModal("rptModal")});
 $("rptClose")&&($("rptClose").onclick=function(){toggleModal("rptModal")});
 $("rptModal")&&($("rptModal").onclick=function(e){if(e.target===$("rptModal"))toggleModal("rptModal");});
+
 $("rptSubmit")&&($("rptSubmit").onclick=function(){
-var msg=$("rptMsg").value.trim();if(!msg){alert("Décrivez le problème");return}
-$("rptSubmit").disabled=true;$("rptSubmit").textContent="Envoi...";
-var currentSource=_src[_idx]||{};
-fetch("/api/bug-reports",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({wwId:_wwId,title:_channelName,sourceName:currentSource.name||"",sourceUrl:currentSource.url||"",message:msg,embedType:"live"})})
-.then(function(r){return r.json()}).then(function(){
-$("rptForm").classList.add("hi");$("rptSuccess").classList.remove("hi");
-setTimeout(function(){toggleModal("rptModal");$("rptForm").classList.remove("hi");$("rptSuccess").classList.add("hi");$("rptMsg").value="";$("rptSubmit").disabled=false;$("rptSubmit").textContent="Envoyer"},2000);
-}).catch(function(){alert("Erreur");$("rptSubmit").disabled=false;$("rptSubmit").textContent="Envoyer";});
+var msg=$("rptMsg")&&$("rptMsg").value;
+if(!msg||msg.trim()==="")return;
+fetch("/api/reports",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({wwId:_wwId,channelName:_channelName,message:msg,type:"live"})}).then(function(){
+$("rptForm")&&$("rptForm").classList.add("hi");
+$("rptSuccess")&&$("rptSuccess").classList.remove("hi");
+setTimeout(function(){toggleModal("rptModal");$("rptForm")&&$("rptForm").classList.remove("hi");$("rptSuccess")&&$("rptSuccess").classList.add("hi");$("rptMsg")&&($("rptMsg").value="");},2000);
+}).catch(function(){});
 });
 
-$("tickerClose")&&($("tickerClose").onclick=function(){$("tickerBar")&&($("tickerBar").style.display="none");});
+$("tickerClose")&&($("tickerClose").onclick=function(){var t=$("tickerBar");if(t)t.style.display="none";});
 
-if(_hasAds&&_ads.length>0){
-$("adOverlay")&&$("adOverlay").classList.add("sh");
-updateAdCounter();
-$("btnUnlock")&&($("btnUnlock").onclick=processAd);
-$("btnNext")&&($("btnNext").onclick=function(){_adIndex++;resetAdUI();});
-$("btnPlay")&&($("btnPlay").onclick=startPlayer);
-}else{startPlayer();}
+$("btnUnlock")&&($("btnUnlock").onclick=function(){if(_ads&&_ads.length>0)processAd();else startPlayer();});
+$("btnNext")&&($("btnNext").onclick=function(){_adIndex++;if(_adIndex<_ads.length){resetAdUI();processAd();}else{startPlayer();}});
+$("btnPlay")&&($("btnPlay").onclick=function(){startPlayer();});
+
+if(_hasAds&&_ads&&_ads.length>0){var ov=$("adOverlay");if(ov)ov.classList.add("sh");resetAdUI();}else{startPlayer();}
 })();
 </script>
 </body>
 </html>`
 
-    return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } })
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return new NextResponse(html, {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      },
+    })
+  } catch (error) {
+    console.error("Live route error:", error)
+    return new NextResponse("Internal Server Error", { status: 500 })
   }
 }
