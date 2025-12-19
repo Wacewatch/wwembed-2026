@@ -475,7 +475,11 @@ s.loadMedia(request);
 function startPlayer(){
 if(_started)return;
 _started=true;
-var ov=$("adOverlay");if(ov)ov.style.display="none";
+var ov=$("adOverlay");
+if(ov){
+ov.style.display="none";
+ov.classList.add("hi");
+}
 buildGrid();
 if(_src&&_src.length){
 $("srcLabel").textContent=_src[0].name;
@@ -525,9 +529,15 @@ _adIndex++;
 if(_adIndex<_ads.length){resetAdUI();updateAdCounter();}
 };
 if(btnPlay)btnPlay.onclick=function(){
+console.log("[v0] Play button clicked");
 var ov=$("adOverlay");
-if(ov)ov.style.display="none";
+if(ov){
+ov.style.display="none";
+ov.classList.add("hi");
+}
+if(!_started){
 startPlayer();
+}
 };
 }else{
 startPlayer();

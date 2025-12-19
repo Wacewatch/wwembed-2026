@@ -336,8 +336,12 @@ p.innerHTML='<iframe src="'+s.url+'" allowfullscreen allow="autoplay;fullscreen"
 function startPlayer(){
 if(_started)return;
 _started=true;
+console.log("[v0] Starting player");
 var ov=$("adOverlay");
-if(ov)ov.style.display="none";
+if(ov){
+ov.style.display="none";
+ov.classList.add("hi");
+}
 buildGrid();
 if(_src&&_src.length){
 $("srcLabel").textContent=_src[0].name;
@@ -451,9 +455,15 @@ _adIndex++;
 if(_adIndex<_ads.length){resetAdUI();updateAdCounter();}
 };
 if(btnPlay)btnPlay.onclick=function(){
+console.log("[v0] Play button clicked in streaming");
 var ov=$("adOverlay");
-if(ov)ov.style.display="none";
+if(ov){
+ov.style.display="none";
+ov.classList.add("hi");
+}
+if(!_started){
 startPlayer();
+}
 };
 }else{
 startPlayer();
