@@ -2,9 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { parseWWId, getMovieDetails, getTVDetails, getEpisodeDetails } from "@/lib/tmdb"
 
-export async function GET(request: NextRequest, props: { params: { wwId: string } }) {
+export async function GET(request: NextRequest, props: { params: Promise<{ wwId: string }> }) {
   try {
-    const { wwId } = props.params
+    const params = await props.params
+    const { wwId } = params
     if (!wwId) return NextResponse.json({ error: "Missing WW ID" }, { status: 400 })
 
     const parsed = parseWWId(wwId)
@@ -383,6 +384,8 @@ if(boxSupport)boxSupport.style.opacity = "0.5";
 if(btnContinue)btnContinue.classList.add("hi");
 if(btnPlay)btnPlay.classList.remove("hi");
 if(_adIndex<_ads.length-1){
+_adIndex++;
+resetAdUI();
 }else{
 }
 }
