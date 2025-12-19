@@ -341,7 +341,9 @@ overlay.classList.add("hi");
 }
 if (_src.length > 0 && !_started) {
 _started = true;
-loadSource(0);
+_idx = 0;
+$("srcLabel").textContent = _src[0].name;
+loadPlayer();
 }
 }
 
@@ -444,7 +446,12 @@ if (_hasAds) {
 var overlay = document.getElementById("adOverlay");
 if (overlay) overlay.style.display = "flex";
 } else {
-if (_src.length > 0) loadSource(0);
+if (_src.length > 0) {
+_started = true;
+_idx = 0;
+$("srcLabel").textContent = _src[0].name;
+loadPlayer();
+}
 }
 });
 })();
