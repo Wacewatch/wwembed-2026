@@ -521,23 +521,16 @@ var ov=$("adOverlay");
 if(ov)ov.style.display="flex";
 updateAdCounter();
 var btnUnlock=$("btnUnlock");
-var btnNext=$("btnNext");
-var btnPlay=$("btnPlay");
+var btnStart=$("btnStart");
 if(btnUnlock)btnUnlock.onclick=function(){processAd();};
-if(btnNext)btnNext.onclick=function(){
-_adIndex++;
-if(_adIndex<_ads.length){resetAdUI();updateAdCounter();}
-};
-if(btnPlay)btnPlay.onclick=function(){
-console.log("[v0] Play button clicked");
+if(btnStart)btnStart.onclick=function(){
+console.log("[v0] Start button clicked, starting player");
 var ov=$("adOverlay");
 if(ov){
 ov.style.display="none";
 ov.classList.add("hi");
 }
-if(!_started){
 startPlayer();
-}
 };
 }else{
 startPlayer();
