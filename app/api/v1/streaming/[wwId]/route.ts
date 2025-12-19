@@ -175,8 +175,8 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .bh{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #8b5cf6;color:#5b21b6}
 .bi{background:linear-gradient(135deg,#fef3c7,#fed7aa);border:1px solid #f97316;color:#9a3412}
 .bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
-.pb{height:5px;background:#e5e7eb;border-radius:3px;margin:14px 0;overflow:hidden}
-.pf{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2);transition:width 0.3s;border-radius:3px}
+.bv{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
+.pg{background:#e5e7eb;border-radius:3px;margin:14px 0;overflow:hidden;height:5px}
 .bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
 .bp{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
 .bn{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
@@ -218,13 +218,8 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <div class="steps"><div class="step active" id="step1"></div><div class="step" id="step2"></div><div class="step" id="step3"></div></div>
 <div class="bx bw"><div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div></div>
 <div class="bx bh" id="boxHelp"><div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div></div>
-<div class="bx bi" id="boxTime"><div><b>Temps restant</b><span>Cliquez et fermez la fenêtre</span></div></div>
-<div class="bx bo hi" id="boxThanks"><div><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div></div>
-<div class="bx bo hi" id="boxDone"><div><b>Tout est prêt !</b><span>Cliquez pour lancer le lecteur</span></div></div>
-<div class="pb"><div class="pf" id="progress"></div></div>
-<button class="bt bp" id="btnUnlock">Continuer<span class="tg">PUB</span></button>
-<button class="bt bn hi" id="btnPlay">Lancer le lecteur</button>
-<button class="bt bp hi" id="btnNext">Pub suivante<span class="tg">PUB</span></button>
+<div class="bx bv" id="boxSupport"><div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div></div>
+<div class="pg"></div>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
 </div>
@@ -363,21 +358,17 @@ if(el)el.textContent="Pub "+(_adIndex+1)+"/"+_ads.length;
 
 function resetAdUI(){
 var s1=$("step1"),s2=$("step2"),s3=$("step3");
-var boxHelp=$("boxHelp"),boxTime=$("boxTime"),boxThanks=$("boxThanks"),boxDone=$("boxDone");
+var boxHelp=$("boxHelp"),boxSupport=$("boxSupport");
 var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
 var tmEl=$("timer"),prEl=$("progress");
 if(s1){s1.classList.add("active");s1.classList.remove("done");}
 if(s2){s2.classList.remove("active");s2.classList.remove("done");}
 if(s3){s3.classList.remove("active");s3.classList.remove("done");}
 if(boxHelp)boxHelp.classList.remove("hi");
-if(boxTime)boxTime.classList.remove("hi");
-if(boxThanks)boxThanks.classList.add("hi");
-if(boxDone)boxDone.classList.add("hi");
+if(boxSupport)boxSupport.classList.remove("hi");
 if(btnUnlock)btnUnlock.classList.remove("hi");
 if(btnNext)btnNext.classList.add("hi");
 if(btnPlay)btnPlay.classList.add("hi");
-if(tmEl)tmEl.textContent="3";
-if(prEl)prEl.style.width="0%";
 updateAdCounter();
 }
 
@@ -386,16 +377,14 @@ var ad=_ads[_adIndex];
 if(!ad)return startPlayer();
 window.open(ad.url,"_blank");
 var s1=$("step1"),s2=$("step2"),s3=$("step3");
-var boxHelp=$("boxHelp"),boxTime=$("boxTime"),boxThanks=$("boxThanks"),boxDone=$("boxDone");
+var boxHelp=$("boxHelp"),boxSupport=$("boxSupport");
 var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
 var tmEl=$("timer"),prEl=$("progress");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
 if(s2){s2.classList.remove("active");s2.classList.add("done");}
 if(s3)s3.classList.add("active");
 if(boxHelp)boxHelp.classList.add("hi");
-if(boxTime)boxTime.classList.add("hi");
-if(boxThanks)boxThanks.classList.remove("hi");
-if(boxDone)boxDone.classList.remove("hi");
+if(boxSupport)boxSupport.classList.add("hi");
 if(btnUnlock)btnUnlock.classList.add("hi");
 if(btnNext)btnNext.classList.add("hi");
 if(btnPlay)btnPlay.classList.add("hi");
