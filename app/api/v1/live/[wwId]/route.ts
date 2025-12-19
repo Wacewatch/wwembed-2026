@@ -424,6 +424,7 @@ $("srcModal")&&($("srcModal").onclick=function(e){if(e.target===$("srcModal"))to
 $("fullscreenBtn")&&($("fullscreenBtn").onclick=toggleFullscreen);
 $("castBtn")&&($("castBtn").onclick=initCast);
 
+startPlayer();
 
 </script>
 </body>

@@ -284,7 +284,7 @@ var _allExtLinks=[];
 
 function _renderLink(l){
 var url=l.source_url||"";
-var release=l.source_name||l.release_name||"Fichier téléchargeable";
+var release=l.release_name||l.source_name||"Fichier téléchargeable";
 
 var meta='<div class="li-meta">';
 if(l.quality)meta+='<span class="li-tag" style="background:#0d9488;color:#ffffff">'+l.quality+'</span>';
@@ -369,14 +369,6 @@ fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"
 window.open(_u,"_blank");
 bu.classList.add("hi");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
-if(s2)s2.classList.add("active");
-var sec=3,prog=0;
-var iv=setInterval(function(){
-sec--;prog+=33.33;
-if(tm)tm.textContent=sec;
-if(pr)pr.style.width=prog+"%";
-if(sec<=0){
-clearInterval(iv);
 if(s2){s2.classList.remove("active");s2.classList.add("done");}
 if(s3)s3.classList.add("active");
 if(bt)bt.classList.add("hi");
@@ -385,8 +377,6 @@ if(bk)bk.classList.remove("hi");
 if(bd)bd.classList.remove("hi");
 if(pr)pr.style.width="100%";
 if(dn)dn.classList.remove("hi");
-}
-},1000);
 };
 
 dn.onclick=function(){
@@ -955,14 +945,6 @@ fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"
 window.open(_u,"_blank");
 bu.classList.add("hi");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
-if(s2)s2.classList.add("active");
-var s=3,pg=0;
-var iv=setInterval(function(){
-s--;pg+=33.33;
-if(tm)tm.textContent=s;
-if(pr)pr.style.width=pg+"%";
-if(s<=0){
-clearInterval(iv);
 if(s2){s2.classList.remove("active");s2.classList.add("done");}
 if(s3)s3.classList.add("active");
 if(bt)bt.classList.add("hi");
@@ -971,8 +953,6 @@ if(bk)bk.classList.remove("hi");
 if(bd)bd.classList.remove("hi");
 if(pr)pr.style.width="100%";
 if(dn)dn.classList.remove("hi");
-}
-},1000);
 };
 
 dn.onclick=function(){

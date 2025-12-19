@@ -2,9 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { parseWWId, getMovieDetails, getTVDetails, getEpisodeDetails } from "@/lib/tmdb"
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
   try {
-    const { wwId } = await params
+    const { wwId } = params
     if (!wwId) return NextResponse.json({ error: "Missing WW ID" }, { status: 400 })
 
     const parsed = parseWWId(wwId)
@@ -379,28 +379,21 @@ var boxHelp=$("boxHelp"),boxTime=$("boxTime"),boxThanks=$("boxThanks"),boxDone=$
 var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
 var tmEl=$("timer"),prEl=$("progress");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
-if(s2)s2.classList.add("active");
-if(boxHelp)boxHelp.classList.add("hi");
-if(boxThanks)boxThanks.classList.remove("hi");
-if(btnUnlock)btnUnlock.classList.add("hi");
-var tm=3;
-var iv=setInterval(function(){
-tm--;
-if(tmEl)tmEl.textContent=tm;
-if(prEl)prEl.style.width=((3-tm)/3*100)+"%";
-if(tm<=0){
-clearInterval(iv);
 if(s2){s2.classList.remove("active");s2.classList.add("done");}
 if(s3)s3.classList.add("active");
-if(boxTime)boxTime.classList.add("hi");
-if(boxDone)boxDone.classList.remove("hi");
+if(boxHelp)boxHelp.classList.remove("hi");
+if(boxTime)boxTime.classList.remove("hi");
+if(boxThanks)boxThanks.classList.add("hi");
+if(boxDone)boxDone.classList.add("hi");
+if(btnUnlock)btnUnlock.classList.remove("hi");
+if(btnNext)btnNext.classList.add("hi");
+if(btnPlay)btnPlay.classList.add("hi");
+if(prEl)prEl.style.width="100%";
 if(_adIndex<_ads.length-1){
 if(btnNext)btnNext.classList.remove("hi");
 }else{
 if(btnPlay)btnPlay.classList.remove("hi");
 }
-}
-},1000);
 }
 
 var srcBtn=$("srcBtn");
