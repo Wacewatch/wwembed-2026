@@ -81,7 +81,6 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
     const tickerBgColor = siteSettings?.live_tv_ticker_bg_color ?? "#ef4444"
     const tickerTextColor = siteSettings?.live_tv_ticker_text_color ?? "#ffffff"
 
-    // Insert view - tmdb_id is null for live TV, use ww_id for identification
     const referer = request.headers.get("referer") || request.headers.get("referrer") || null
     await supabase.from("embed_views").insert({
       ww_id: wwId,
@@ -118,25 +117,32 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#000;color:#fff;o
 .channel-icon{width:32px;height:32px;border-radius:6px;object-fit:cover;background:#333;}
 .channel-name{font-size:16px;font-weight:600;}
 .live-badge{background:#e63946;color:#fff;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.5px;}
-.top-right{display:flex;align-items:center;gap:8px;}
+.top-right{display:flex;align-items:center;gap:8px;position:relative;}
 .btn{background:rgba(255,255,255,0.1);border:none;color:#fff;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:500;transition:all 0.2s;display:flex;align-items:center;gap:6px;}
 .btn:hover{background:rgba(255,255,255,0.2);transform:translateY(-1px);}
 .btn.primary{background:#e63946;}
 .btn.primary:hover{background:#d62936;}
 .icon-btn{background:rgba(255,255,255,0.1);border:none;color:#fff;width:36px;height:36px;border-radius:6px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
 .icon-btn:hover{background:rgba(255,255,255,0.2);transform:translateY(-1px);}
+
+.settings-dropdown{position:relative;}
+.settings-menu{position:absolute;top:calc(100% + 8px);right:0;background:rgba(20,20,20,0.98);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;min-width:220px;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.5);z-index:200;}
+.settings-menu.show{display:block;}
+.menu-item{padding:10px 12px;border-radius:6px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;font-size:14px;color:#fff;border:none;background:none;width:100%;text-align:left;}
+.menu-item:hover{background:rgba(255,255,255,0.1);}
+.menu-item .icon{font-size:18px;width:20px;text-align:center;}
+.menu-divider{height:1px;background:rgba(255,255,255,0.1);margin:6px 0;}
+.player-select{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;width:100%;margin-top:4px;}
+.player-select:hover{background:rgba(255,255,255,0.1);}
+.player-select option{background:#1a1a1a;color:#fff;}
+.menu-label{font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.5px;padding:8px 12px 4px;font-weight:600;}
+
 .container{height:calc(100vh - 65px);position:relative;background:#000;}
 .player{width:100%;height:100%;position:relative;background:#000;}
 .player video,.player iframe{width:100%;height:100%;display:block;background:#000;}
 .player iframe{border:none;}
 .no-src{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#666;font-size:16px;}
 
-.player-controls{display:flex;align-items:center;gap:8px;}
-.player-select{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;}
-.player-select:hover{background:rgba(255,255,255,0.2);}
-.player-select option{background:#1a1a1a;color:#fff;}
-.reload-btn{background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
-.reload-btn:hover{background:rgba(255,255,255,0.2);transform:rotate(90deg);}
 .help-hint{position:absolute;top:80px;right:16px;background:rgba(230,57,70,0.95);color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:6px;animation:fadeIn 0.3s;z-index:50;max-width:250px;}
 .help-hint.hidden{display:none;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
@@ -201,7 +207,7 @@ textarea:focus{outline:none;border-color:#e63946;}
 .grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
 .modal-content{max-height:90vh;}
 .help-hint{top:120px;font-size:11px;right:8px;max-width:200px;}
-.player-select{font-size:12px;padding:5px 10px;}
+.settings-menu{min-width:200px;}
 }
 </style>
 </head>
@@ -216,19 +222,37 @@ textarea:focus{outline:none;border-color:#e63946;}
 </div>
 </div>
 <div class="top-right">
-<div class="player-controls">
+<button class="btn primary" id="srcBtn" onclick="toggleModal('srcModal')">≡ <span id="srcLabel">Source #1</span></button>
+<div class="settings-dropdown">
+<button class="icon-btn" id="settingsBtn" title="Paramètres">⚙</button>
+<div class="settings-menu" id="settingsMenu">
+<div class="menu-label">Lecteur Vidéo</div>
 <select class="player-select" id="playerSelector">
 <option value="native">HTML5 Native</option>
 <option value="hlsjs">HLS.js</option>
 <option value="videojs">Video.js</option>
 <option value="plyr">Plyr</option>
 </select>
-<button class="reload-btn" id="reloadBtn" title="Recharger le lecteur">🔄</button>
+<div class="menu-divider"></div>
+<button class="menu-item" id="reloadBtn" title="Recharger le lecteur">
+<span class="icon">🔄</span>
+<span>Recharger</span>
+</button>
+<button class="menu-item" id="fullscreenBtn" title="Plein écran">
+<span class="icon">⛶</span>
+<span>Plein écran</span>
+</button>
+<button class="menu-item" id="castBtn" title="Cast">
+<span class="icon">📱</span>
+<span>Diffuser</span>
+</button>
+<div class="menu-divider"></div>
+<button class="menu-item" onclick="toggleModal('bugModal');toggleSettings();">
+<span class="icon">⚠</span>
+<span>Signaler</span>
+</button>
 </div>
-<button class="btn primary" id="srcBtn" onclick="toggleModal('srcModal')">≡ <span id="srcLabel">Source #1</span></button>
-<button class="icon-btn" id="fullscreenBtn" title="Plein écran">⛶</button>
-<button class="icon-btn" id="castBtn" title="Cast">📱</button>
-<button class="icon-btn" onclick="toggleModal('bugModal')">⚠</button>
+</div>
 </div>
 </div>
 <div class="container">
@@ -304,6 +328,21 @@ var _currentPlayer=null;
 var _currentPlayerType="native";
 
 function $(id){return document.getElementById(id);}
+
+function toggleSettings(){
+var menu=$("settingsMenu");
+if(menu){
+menu.classList.toggle("show");
+}
+}
+
+document.addEventListener("click",function(e){
+var settingsBtn=$("settingsBtn");
+var settingsMenu=$("settingsMenu");
+if(settingsMenu&&!settingsMenu.contains(e.target)&&e.target!==settingsBtn){
+settingsMenu.classList.remove("show");
+}
+});
 
 function tagClass(l){
 l=(l||"").toUpperCase();
@@ -440,8 +479,9 @@ $("bugDesc").value="";
 }).catch(function(){alert("Erreur");$("bugDesc").disabled=false;});
 }
 
-$("playerSelector")&&($("playerSelector").onchange=loadPlayer);
-$("reloadBtn")&&($("reloadBtn").onclick=loadPlayer);
+$("settingsBtn")&&($("settingsBtn").onclick=toggleSettings);
+$("playerSelector")&&($("playerSelector").onchange=function(){loadPlayer();toggleSettings();});
+$("reloadBtn")&&($("reloadBtn").onclick=function(){loadPlayer();toggleSettings();});
 
 function toggleFullscreen(){
 var p=$("player");
@@ -452,6 +492,7 @@ else if(p.webkitRequestFullscreen){p.webkitRequestFullscreen();}
 if(document.exitFullscreen){document.exitFullscreen();}
 else if(document.webkitExitFullscreen){document.webkitExitFullscreen();}
 }
+toggleSettings();
 }
 
 function initCast(){
@@ -470,6 +511,7 @@ var request=new chrome.cast.media.LoadRequest(mediaInfo);
 s.loadMedia(request);
 },function(){});
 }
+toggleSettings();
 }
 
 function startPlayer(){
