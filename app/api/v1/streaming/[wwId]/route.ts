@@ -313,7 +313,7 @@ var cards=document.querySelectorAll(".card");
 for(var j=0;j<cards.length;j++){cards[j].classList.toggle("act",j===index);}
 $("srcLabel").textContent=s.name;
 toggleModal("srcModal");
-loadPlayer();
+if(_started){loadPlayer();}
 };
 g.appendChild(d);
 })(i);

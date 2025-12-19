@@ -70,10 +70,9 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
     const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
     const activeAds = ads || []
     const hasAds = activeAds.length > 0
-    const adsJson = JSON.stringify(activeAds.map((a) => ({ id: a.id, url: a.ad_url, name: a.name }))).replace(
-      /</g,
-      "\\u003c",
-    )
+    const randomAd = hasAds ? activeAds[Math.floor(Math.random() * activeAds.length)] : null
+    const adUrl = randomAd?.ad_url || ""
+    const adId = randomAd?.id || ""
 
     const { data: siteSettings } = await supabase.from("site_settings").select("*").single()
     const tickerEnabled = siteSettings?.live_tv_ticker_enabled ?? false
@@ -167,6 +166,33 @@ textarea{width:100%;min-height:120px;background:rgba(255,255,255,0.05);border:1p
 textarea:focus{outline:none;border-color:#e63946;}
 .bug-info{background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.3);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:#ddd;}
 
+.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
+.mo.sh{display:flex}
+.mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center}
+.mc h2{color:#1a1a2e;margin-bottom:8px;font-size:20px;font-weight:700}
+.mc-sub{color:#6b7280;font-size:13px;margin-bottom:16px}
+.steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
+.step{width:10px;height:10px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
+.step.active{background:linear-gradient(135deg,#667eea,#764ba2);transform:scale(1.2)}
+.step.done{background:#10b981}
+.bx{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
+.bx svg{flex-shrink:0;width:18px;height:18px}
+.bx-content b{display:block;font-size:14px;margin-bottom:2px}
+.bx-content span{font-size:12px;opacity:0.8}
+.bw{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
+.bh{background:linear-gradient(135deg,#fce7f3,#fbcfe8);border:1px solid #ec4899;color:#9d174d}
+.bi{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #8b5cf6;color:#5b21b6}
+.bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
+.pb{height:5px;background:#e5e7eb;border-radius:3px;margin:12px 0;overflow:hidden}
+.pf{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2,#ec4899);transition:width 0.3s}
+.bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
+.bp{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.bn{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+.hi{display:none}
+.cf{margin-top:12px;font-size:11px;color:#9ca3af}
+.cf a{color:#667eea}
+.adtag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;font-weight:600}
+
 @media(max-width:768px){
 .top{flex-direction:column;gap:12px;padding:12px;}
 .top-left,.top-right{width:100%;justify-content:space-between;}
@@ -236,8 +262,39 @@ textarea:focus{outline:none;border-color:#e63946;}
 </div>
 </div>
 </div>
+
+<div class="mo" id="adOverlay">
+<div class="mc">
+<h2>Accédez au flux en direct</h2>
+<div class="mc-sub">Une dernière étape avant de regarder</div>
+<div class="steps">
+<div class="step active" id="step1"></div>
+<div class="step" id="step2"></div>
+</div>
+<div class="bx bw">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+<div class="bx-content"><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
+</div>
+<div class="bx bh" id="boxHelp">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+<div class="bx-content"><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
+</div>
+<div class="bx bo hi" id="boxDone">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+<div class="bx-content"><b>Tout est prêt !</b><span>Le flux va démarrer</span></div>
+</div>
+<div class="pb"><div class="pf" id="progress"></div></div>
+<button class="bt bp" id="btnUnlock">Continuer<span class="adtag">PUB</span></button>
+<button class="bt bn hi" id="btnStart">Démarrer la lecture</button>
+<div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
+</div>
+</div>
+
 <script>
 var _src=${sourcesJson};
+var _u="${adUrl}";
+var _i="${adId}";
+var _h=${hasAds};
 var _adIndex=0;
 var _idx=0;
 var _started=false;
@@ -274,8 +331,10 @@ cards[j].classList.toggle("act",j===index);
 }
 $("srcLabel").textContent=s.name;
 toggleModal("srcModal");
+if(_started){
 cleanupPlayer();
 loadPlayer();
+}
 };
 g.appendChild(d);
 })(i);
@@ -370,13 +429,15 @@ _currentPlayer=new Plyr(vid,{autoplay:true});
 
 function sendBug(){
 var desc=$("bugDesc").value.trim();if(!desc){alert("Décrivez le problème");return;}
-$("bugDesc").disabled=true;$("bugDesc").textContent="Envoi...";
+$("bugDesc").disabled=true;
 var currentSource=_src[_idx]||{};
 fetch("/api/bug-reports",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({wwId:_wwId,title:_channelName,sourceName:currentSource.name||"",sourceUrl:currentSource.url||"",message:desc,embedType:"live"})})
 .then(function(r){return r.json()}).then(function(){
 $("bugModal").classList.remove("sh");
 alert("Rapport envoyé avec succès !");
-}).catch(function(){alert("Erreur");$("bugDesc").disabled=false;$("bugDesc").textContent="Envoyer le rapport";});
+$("bugDesc").disabled=false;
+$("bugDesc").value="";
+}).catch(function(){alert("Erreur");$("bugDesc").disabled=false;});
 }
 
 $("playerSelector")&&($("playerSelector").onchange=loadPlayer);
@@ -412,20 +473,52 @@ s.loadMedia(request);
 }
 
 function startPlayer(){
-if(_started)return;_started=true;
+if(_started)return;
+_started=true;
 var ov=$("adOverlay");if(ov)ov.classList.remove("sh");
 buildGrid();
-if(_src&&_src.length){$("srcLabel").textContent=_src[0].name;loadPlayer();}
+if(_src&&_src.length){
+$("srcLabel").textContent=_src[0].name;
+loadPlayer();
+}
+}
+
+if(_h&&_u){
+var ov=$("adOverlay");
+var bh=$("boxHelp");
+var bd=$("boxDone");
+var pr=$("progress");
+var bu=$("btnUnlock");
+var bs=$("btnStart");
+var s1=$("step1");
+var s2=$("step2");
+
+bu.onclick=function(){
+fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
+window.open(_u,"_blank");
+bu.classList.add("hi");
+if(s1){s1.classList.remove("active");s1.classList.add("done");}
+if(s2)s2.classList.add("active");
+if(bh)bh.classList.add("hi");
+if(bd)bd.classList.remove("hi");
+if(pr)pr.style.width="100%";
+if(bs)bs.classList.remove("hi");
+};
+
+bs.onclick=function(){
+if(ov)ov.classList.remove("sh");
+startPlayer();
+};
+}else{
+var ov=$("adOverlay");
+if(ov)ov.remove();
+startPlayer();
 }
 
 $("srcBtn")&&($("srcBtn").onclick=function(){toggleModal("srcModal")});
-$("closeModal")&&($("closeModal").onclick=function(){toggleModal("srcModal")});
 $("srcModal")&&($("srcModal").onclick=function(e){if(e.target===$("srcModal"))toggleModal("srcModal");});
-
 $("fullscreenBtn")&&($("fullscreenBtn").onclick=toggleFullscreen);
 $("castBtn")&&($("castBtn").onclick=initCast);
-
-startPlayer();
 
 </script>
 </body>
