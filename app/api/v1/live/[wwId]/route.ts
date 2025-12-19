@@ -167,7 +167,6 @@ textarea:focus{outline:none;border-color:#e63946;}
 .bug-info{background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.3);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:#ddd;}
 
 .mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
-.mo.sh{display:flex}
 .mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center}
 .mc h2{color:#1a1a2e;margin-bottom:8px;font-size:20px;font-weight:700}
 .mc-sub{color:#6b7280;font-size:13px;margin-bottom:16px}
@@ -476,7 +475,7 @@ s.loadMedia(request);
 function startPlayer(){
 if(_started)return;
 _started=true;
-var ov=$("adOverlay");if(ov)ov.classList.remove("sh");
+var ov=$("adOverlay");if(ov)ov.style.display="none";
 buildGrid();
 if(_src&&_src.length){
 $("srcLabel").textContent=_src[0].name;
@@ -515,7 +514,7 @@ pr.style.width=width;
 
 if(_h&&_ads.length>0){
 var ov=$("adOverlay");
-if(ov)ov.classList.add("sh");
+if(ov)ov.style.display="flex";
 updateAdCounter();
 var btnUnlock=$("btnUnlock");
 var btnNext=$("btnNext");
@@ -525,7 +524,11 @@ if(btnNext)btnNext.onclick=function(){
 _adIndex++;
 if(_adIndex<_ads.length){resetAdUI();updateAdCounter();}
 };
-if(btnPlay)btnPlay.onclick=function(){startPlayer();};
+if(btnPlay)btnPlay.onclick=function(){
+var ov=$("adOverlay");
+if(ov)ov.style.display="none";
+startPlayer();
+};
 }else{
 startPlayer();
 }

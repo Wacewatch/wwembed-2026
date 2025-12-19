@@ -337,12 +337,19 @@ function startPlayer(){
 if(_started)return;
 _started=true;
 var ov=$("adOverlay");
-if(ov)ov.classList.remove("sh");
+if(ov)ov.style.display="none";
 buildGrid();
 if(_src&&_src.length){
 $("srcLabel").textContent=_src[0].name;
-loadPlayer();
+loadSource(_src[0]);
 }
+}
+
+function loadSource(source){
+var p=$("player");
+if(!p)return;
+if(!source||!source.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";return;}
+p.innerHTML='<iframe src="'+source.url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>';
 }
 
 function updateAdCounter(){
@@ -433,7 +440,7 @@ if(rptSubmit)rptSubmit.onclick=function(){
 buildGrid();
 if(_hasAds&&_ads.length>0){
 var ov=$("adOverlay");
-if(ov)ov.classList.add("sh");
+if(ov)ov.style.display="flex";
 updateAdCounter();
 var btnUnlock=$("btnUnlock");
 var btnNext=$("btnNext");
@@ -443,7 +450,11 @@ if(btnNext)btnNext.onclick=function(){
 _adIndex++;
 if(_adIndex<_ads.length){resetAdUI();updateAdCounter();}
 };
-if(btnPlay)btnPlay.onclick=function(){startPlayer();};
+if(btnPlay)btnPlay.onclick=function(){
+var ov=$("adOverlay");
+if(ov)ov.style.display="none";
+startPlayer();
+};
 }else{
 startPlayer();
 }
