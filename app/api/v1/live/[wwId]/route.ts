@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
+export async function GET(request: NextRequest, props: { params: Promise<{ wwId: string }> }) {
   try {
+    const params = await props.params
     const { wwId } = params
     const match = wwId.match(/^ww-live-(.+)$/i)
     if (!match) return new NextResponse("Invalid WW ID format", { status: 400 })
@@ -431,7 +432,8 @@ startPlayer();
 </html>`
 
     return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } })
-  } catch {
+  } catch (error) {
+    console.error("[v0] Live route error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

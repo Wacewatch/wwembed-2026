@@ -2,8 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { parseWWId, getMovieDetails, getTVDetails, getEpisodeDetails } from "@/lib/tmdb"
 
-export async function GET(request: NextRequest, { params }: { params: { wwId: string } }) {
+export async function GET(request: NextRequest, props: { params: Promise<{ wwId: string }> }) {
   try {
+    const params = await props.params
     const { wwId } = params
     if (!wwId) return NextResponse.json({ error: "Missing WW ID" }, { status: 400 })
 
@@ -159,7 +160,6 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .rpt-form button:disabled{opacity:0.5;cursor:not-allowed}
 .rpt-success{color:#10b981;text-align:center;padding:20px}
 .mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px;backdrop-filter:blur(8px)}
-.mo.sh{display:flex}
 .mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
 .mc h2{color:#1a1a2e;margin-bottom:8px;font-size:18px;font-weight:700}
 .mc-sub{color:#6b7280;font-size:13px;margin-bottom:16px}
