@@ -337,6 +337,40 @@ area.innerHTML='<div class="link-display"><div class="link-display-title">Votre 
 area.scrollIntoView({behavior:"smooth"});
 }
 
+function openAdPopup() {
+  var methods = [
+    function() { return window.open(_u, '_blank', 'noopener,noreferrer'); },
+    function() {
+      var a = document.createElement('a');
+      a.href = _u;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return true;
+    },
+    function() {
+      var form = document.createElement('form');
+      form.method = 'GET';
+      form.action = _u;
+      form.target = '_blank';
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+      return true;
+    }
+  ];
+  
+  for (var i = 0; i < methods.length; i++) {
+    try {
+      var result = methods[i]();
+      if (result) return result;
+    } catch(e) {}
+  }
+  return null;
+}
+
 function _showAdModal(downloadUrl){
 _p=downloadUrl;
 var o=document.getElementById(_ids.overlay);
@@ -366,7 +400,7 @@ if(o)o.classList.add("sh");
 
 bu.onclick=function(){
 fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
-window.open(_u,"_blank");
+openAdPopup();
 bu.classList.add("hi");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
 if(s2){s2.classList.remove("active");s2.classList.add("done");}

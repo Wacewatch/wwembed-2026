@@ -216,9 +216,16 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <div class="mc-sub">Une dernière étape pour regarder</div>
 <div class="ad-counter" id="adCounter">Pub 1/1</div>
 <div class="steps"><div class="step active" id="step1"></div><div class="step" id="step2"></div><div class="step" id="step3"></div></div>
-<div class="bx bw"><div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div></div>
-<div class="bx bh" id="boxHelp"><div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div></div>
-<div class="bx bv" id="boxSupport"><div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div></div>
+<div class="bx bw">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  <div class="bx-content"><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
+</div>
+<div class="bx bv" id="boxSupport">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+  <div class="bx-content"><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
+</div>
+<button class="bt bp" id="btnContinue">Continuer<span class="tag">PUB</span></button>
+<button class="bt bn hi" id="btnPlay">Lancer le lecteur</button>
 <div class="pg"></div>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
@@ -328,19 +335,15 @@ if(!s||!s.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";retur
 p.innerHTML='<iframe src="'+s.url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>';
 }
 
-function startPlayer(){
-if(_started)return;
-_started=true;
-console.log("[v0] Starting player");
-var ov=$("adOverlay");
-if(ov){
-ov.style.display="none";
-ov.classList.add("hi");
+function startPlayer() {
+var overlay = document.getElementById("adOverlay");
+if (overlay) {
+overlay.style.display = "none";
+overlay.classList.add("hi");
 }
-buildGrid();
-if(_src&&_src.length){
-$("srcLabel").textContent=_src[0].name;
-loadSource(_src[0]);
+if (_src.length > 0 && !_started) {
+_started = true;
+loadSource(0);
 }
 }
 
@@ -358,16 +361,13 @@ if(el)el.textContent="Pub "+(_adIndex+1)+"/"+_ads.length;
 
 function resetAdUI(){
 var s1=$("step1"),s2=$("step2"),s3=$("step3");
-var boxHelp=$("boxHelp"),boxSupport=$("boxSupport");
-var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
-var tmEl=$("timer"),prEl=$("progress");
+var boxSupport=$("boxSupport");
+var btnContinue=$("btnContinue"),btnPlay=$("btnPlay");
 if(s1){s1.classList.add("active");s1.classList.remove("done");}
 if(s2){s2.classList.remove("active");s2.classList.remove("done");}
 if(s3){s3.classList.remove("active");s3.classList.remove("done");}
-if(boxHelp)boxHelp.classList.remove("hi");
-if(boxSupport)boxSupport.classList.remove("hi");
-if(btnUnlock)btnUnlock.classList.remove("hi");
-if(btnNext)btnNext.classList.add("hi");
+if(boxSupport)boxSupport.style.opacity = "1";
+if(btnContinue)btnContinue.classList.remove("hi");
 if(btnPlay)btnPlay.classList.add("hi");
 updateAdCounter();
 }
@@ -377,22 +377,16 @@ var ad=_ads[_adIndex];
 if(!ad)return startPlayer();
 window.open(ad.url,"_blank");
 var s1=$("step1"),s2=$("step2"),s3=$("step3");
-var boxHelp=$("boxHelp"),boxSupport=$("boxSupport");
-var btnUnlock=$("btnUnlock"),btnNext=$("btnNext"),btnPlay=$("btnPlay");
-var tmEl=$("timer"),prEl=$("progress");
+var boxSupport=$("boxSupport");
+var btnContinue=$("btnContinue"),btnPlay=$("btnPlay");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
 if(s2){s2.classList.remove("active");s2.classList.add("done");}
-if(s3)s3.classList.add("active");
-if(boxHelp)boxHelp.classList.add("hi");
-if(boxSupport)boxSupport.classList.add("hi");
-if(btnUnlock)btnUnlock.classList.add("hi");
-if(btnNext)btnNext.classList.add("hi");
-if(btnPlay)btnPlay.classList.add("hi");
-if(prEl)prEl.style.width="100%";
-if(_adIndex<_ads.length-1){
-if(btnNext)btnNext.classList.remove("hi");
-}else{
+if(s3){s3.classList.add("active");s3.classList.add("done");}
+if(boxSupport)boxSupport.style.opacity = "0.5";
+if(btnContinue)btnContinue.classList.add("hi");
 if(btnPlay)btnPlay.classList.remove("hi");
+if(_adIndex<_ads.length-1){
+}else{
 }
 }
 
@@ -430,33 +424,29 @@ if(rptSubmit)rptSubmit.onclick=function(){
   }).catch(function(){alert("Erreur lors de l'envoi");rptSubmit.disabled=false;rptSubmit.textContent="Envoyer le signalement";});
 };
 
+document.addEventListener("DOMContentLoaded", function() {
 buildGrid();
-if(_hasAds&&_ads.length>0){
-var ov=$("adOverlay");
-if(ov)ov.style.display="flex";
-updateAdCounter();
-var btnUnlock=$("btnUnlock");
-var btnNext=$("btnNext");
-var btnPlay=$("btnPlay");
-if(btnUnlock)btnUnlock.onclick=function(){processAd();};
-if(btnNext)btnNext.onclick=function(){
-_adIndex++;
-if(_adIndex<_ads.length){resetAdUI();updateAdCounter();}
-};
-if(btnPlay)btnPlay.onclick=function(){
-console.log("[v0] Play button clicked in streaming");
-var ov=$("adOverlay");
-if(ov){
-ov.style.display="none";
-ov.classList.add("hi");
+var btnContinue = document.getElementById("btnContinue");
+var btnPlay = document.getElementById("btnPlay");
+if (btnContinue) {
+btnContinue.addEventListener("click", function(e) {
+e.preventDefault();
+processAd();
+});
 }
-if(!_started){
+if (btnPlay) {
+btnPlay.addEventListener("click", function(e) {
+e.preventDefault();
 startPlayer();
+});
 }
-};
-}else{
-startPlayer();
+if (_hasAds) {
+var overlay = document.getElementById("adOverlay");
+if (overlay) overlay.style.display = "flex";
+} else {
+if (_src.length > 0) loadSource(0);
 }
+});
 })();
 </script>
 </body>
