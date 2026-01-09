@@ -429,7 +429,7 @@ var content=document.getElementById(_extIds.content);
 var filters=document.getElementById(_extIds.filters);
 var countBadge=document.getElementById(_extIds.count);
 
-fetch("https://api.movix.site/api/search?title="+encodeURIComponent(_title))
+fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/search?title="+encodeURIComponent(_title))
 .then(function(r){return r.json();})
 .then(function(data){
 var results=data;
@@ -1005,7 +1005,7 @@ var content=document.getElementById(_extIds.content);
 var filters=document.getElementById(_extIds.filters);
 var countBadge=document.getElementById(_extIds.count);
 
-fetch("https://api.movix.site/api/search?title="+encodeURIComponent(_title))
+fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/search?title="+encodeURIComponent(_title))
 .then(function(r){return r.json();})
 .then(function(data){
 var results=data;
