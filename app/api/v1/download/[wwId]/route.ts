@@ -445,7 +445,7 @@ return;
 }
 var first=results[0];
 var movieId=first.id||first.movie_id||first.tmdb_id;
-fetch("https://api.movix.site/api/darkiworld/download/movie/"+movieId)
+fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/darkiworld/download/movie/"+movieId)
 .then(function(r){return r.json();})
 .then(function(dlData){
 loading.style.display="none";
@@ -517,7 +517,7 @@ var body=document.getElementById(_extIds.detailsContent);
 body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg style="animation:spin 1s linear infinite;width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="margin-top:12px">Chargement du lien...</p></div>';
 details.classList.add("show");
 
-fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
+fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/darkiworld/decode/"+link.id)
 .then(function(r){return r.json();})
 .then(function(data){
 if(!data||!data.success){
@@ -1026,9 +1026,9 @@ var dlUrl;
 if(isSeries){
 var s=_seasonNum||1;
 var e=_episodeNum||1;
-dlUrl="https://api.movix.site/api/darkiworld/download/tv/"+movieId+"?season="+s+"&episode="+e;
+dlUrl="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/darkiworld/download/tv/"+movieId+"?season="+s+"&episode="+e;
 }else{
-dlUrl="https://api.movix.site/api/darkiworld/download/movie/"+movieId;
+dlUrl="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/darkiworld/download/movie/"+movieId;
 }
 fetch(dlUrl).then(function(r){return r.json();}).then(function(dlData){
 loading.style.display="none";
@@ -1103,7 +1103,7 @@ body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg s
 details.classList.add("show");
 
 // Decode the link via Movix API
-fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
+fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/darkiworld/decode/"+link.id)
 .then(function(r){return r.json();})
 .then(function(data){
 if(!data||!data.success||!data.embed_url){
