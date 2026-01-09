@@ -2,107 +2,118 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { parseWWId, getMovieDetails, getTVDetails, getPosterUrl } from "@/lib/tmdb"
 
+const WORKER_PROXY = "https://still-wood-a206.wavewatchcontact.workers.dev/"
+
 function generateRandomId(prefix = "x"): string {
   return prefix + Math.random().toString(36).substring(2, 10)
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
-  const { wwId } = await params
-  const supabase = createAdminClient()
+  try {
+    const { wwId } = await params
+    const supabase = createAdminClient()
 
-  const isDigitalContent =
-    wwId.startsWith("ww-ebook-") ||
-    wwId.startsWith("ww-music-") ||
-    wwId.startsWith("ww-software-") ||
-    wwId.startsWith("ww-soft-") ||
-    wwId.startsWith("ww-game-")
+    const isDigitalContent =
+      wwId.startsWith("ww-ebook-") ||
+      wwId.startsWith("ww-music-") ||
+      wwId.startsWith("ww-software-") ||
+      wwId.startsWith("ww-soft-") ||
+      wwId.startsWith("ww-game-")
 
-  // ============================================
-  // DIGITAL CONTENT DOWNLOAD
-  // ============================================
-  if (isDigitalContent) {
-    let digitalContent = null
-    const { data: content1 } = await supabase.from("digital_content").select("*").eq("ww_id", wwId).single()
+    // ============================================
+    // DIGITAL CONTENT DOWNLOAD
+    // ============================================
+    if (isDigitalContent) {
+      let digitalContent = null
+      const { data: content1 } = await supabase.from("digital_content").select("*").eq("ww_id", wwId).single()
 
-    if (content1) {
-      digitalContent = content1
-    } else if (wwId.startsWith("ww-soft-")) {
-      // Try with ww-software- prefix instead
-      const alternateWwId = wwId.replace("ww-soft-", "ww-software-")
-      const { data: content2 } = await supabase.from("digital_content").select("*").eq("ww_id", alternateWwId).single()
-      if (content2) {
-        digitalContent = content2
+      if (content1) {
+        digitalContent = content1
+      } else if (wwId.startsWith("ww-soft-")) {
+        // Try with ww-software- prefix instead
+        const alternateWwId = wwId.replace("ww-soft-", "ww-software-")
+        const { data: content2 } = await supabase
+          .from("digital_content")
+          .select("*")
+          .eq("ww_id", alternateWwId)
+          .single()
+        if (content2) {
+          digitalContent = content2
+        }
+      } else if (wwId.startsWith("ww-software-")) {
+        // Try with ww-soft- prefix instead
+        const alternateWwId = wwId.replace("ww-software-", "ww-soft-")
+        const { data: content2 } = await supabase
+          .from("digital_content")
+          .select("*")
+          .eq("ww_id", alternateWwId)
+          .single()
+        if (content2) {
+          digitalContent = content2
+        }
       }
-    } else if (wwId.startsWith("ww-software-")) {
-      // Try with ww-soft- prefix instead
-      const alternateWwId = wwId.replace("ww-software-", "ww-soft-")
-      const { data: content2 } = await supabase.from("digital_content").select("*").eq("ww_id", alternateWwId).single()
-      if (content2) {
-        digitalContent = content2
+
+      if (!digitalContent) {
+        return NextResponse.json({ error: "Digital content not found" }, { status: 404 })
       }
-    }
 
-    if (!digitalContent) {
-      return NextResponse.json({ error: "Digital content not found" }, { status: 404 })
-    }
+      const { data: digitalLinks } = await supabase
+        .from("digital_download_links")
+        .select("*")
+        .eq("content_id", digitalContent.id)
+        .eq("is_active", true)
+        .eq("status", "approved")
+        .order("quality", { ascending: false })
 
-    const { data: digitalLinks } = await supabase
-      .from("digital_download_links")
-      .select("*")
-      .eq("content_id", digitalContent.id)
-      .eq("is_active", true)
-      .eq("status", "approved")
-      .order("quality", { ascending: false })
+      const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
+      const hasAds = ads && ads.length > 0
+      const adUrl = hasAds ? ads[0].ad_url : ""
+      const adId = hasAds ? ads[0].id : ""
 
-    const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
-    const hasAds = ads && ads.length > 0
-    const adUrl = hasAds ? ads[0].ad_url : ""
-    const adId = hasAds ? ads[0].id : ""
+      const title = digitalContent.title
+      const cover = digitalContent.cover_url || ""
+      const contentType = digitalContent.content_type
+      const downloadLinks = digitalLinks?.filter((l) => l.source_url) || []
 
-    const title = digitalContent.title
-    const cover = digitalContent.cover_url || ""
-    const contentType = digitalContent.content_type
-    const downloadLinks = digitalLinks?.filter((l) => l.source_url) || []
+      await supabase.from("embed_views").insert({
+        ww_id: wwId,
+        embed_type: "download",
+        referrer: request.headers.get("referer"),
+        user_agent: request.headers.get("user-agent"),
+      })
 
-    await supabase.from("embed_views").insert({
-      ww_id: wwId,
-      embed_type: "download",
-      referrer: request.headers.get("referer"),
-      user_agent: request.headers.get("user-agent"),
-    })
+      const externalIds = {
+        container: generateRandomId("ext"),
+        loading: generateRandomId("extl"),
+        content: generateRandomId("extc"),
+        filters: generateRandomId("extf"),
+        count: generateRandomId("extn"),
+        details: generateRandomId("extd"),
+        detailsContent: generateRandomId("extdc"),
+      }
 
-    const externalIds = {
-      container: generateRandomId("ext"),
-      loading: generateRandomId("extl"),
-      content: generateRandomId("extc"),
-      filters: generateRandomId("extf"),
-      count: generateRandomId("extn"),
-      details: generateRandomId("extd"),
-      detailsContent: generateRandomId("extdc"),
-    }
+      const ids = {
+        overlay: generateRandomId("m"),
+        container: generateRandomId("c"),
+        timer: generateRandomId("t"),
+        progress: generateRandomId("g"),
+        btnUnlock: generateRandomId("u"),
+        btnDownload: generateRandomId("d"),
+        boxTime: generateRandomId("bt"),
+        boxHelp: generateRandomId("bh"),
+        boxThanks: generateRandomId("bk"),
+        boxDone: generateRandomId("bd"),
+        step1: generateRandomId("s1"),
+        step2: generateRandomId("s2"),
+        step3: generateRandomId("s3"),
+        linksContainer: generateRandomId("lc"),
+      }
 
-    const ids = {
-      overlay: generateRandomId("m"),
-      container: generateRandomId("c"),
-      timer: generateRandomId("t"),
-      progress: generateRandomId("g"),
-      btnUnlock: generateRandomId("u"),
-      btnDownload: generateRandomId("d"),
-      boxTime: generateRandomId("bt"),
-      boxHelp: generateRandomId("bh"),
-      boxThanks: generateRandomId("bk"),
-      boxDone: generateRandomId("bd"),
-      step1: generateRandomId("s1"),
-      step2: generateRandomId("s2"),
-      step3: generateRandomId("s3"),
-      linksContainer: generateRandomId("lc"),
-    }
+      const linksJson = JSON.stringify(downloadLinks || [])
+        .replace(/'/g, "\\'")
+        .replace(/</g, "\\u003c")
 
-    const linksJson = JSON.stringify(downloadLinks || [])
-      .replace(/'/g, "\\'")
-      .replace(/</g, "\\u003c")
-
-    const digitalHtml = `<!DOCTYPE html>
+      const digitalHtml = `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -255,7 +266,7 @@ Recherche de sources externes...
 <div class="bx-content"><b>Temps restant: <span id="${ids.timer}">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div>
 </div>
 <div class="bx bo hi" id="${ids.boxThanks}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
 <div class="bx-content"><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div>
 </div>
 <div class="bx bo hi" id="${ids.boxDone}">
@@ -281,6 +292,7 @@ var _extIds=${JSON.stringify(externalIds)};
 var _title="${title.replace(/"/g, '\\"')}";
 var _wwId="${digitalContent.ww_id}";
 var _allExtLinks=[];
+var _workerProxy="${WORKER_PROXY}";
 
 function _renderLink(l){
 var url=l.source_url||"";
@@ -395,7 +407,7 @@ if(bu)bu.classList.remove("hi");
 if(dn)dn.classList.add("hi");
 if(s1){s1.classList.add("active");s1.classList.remove("done");}
 if(s2){s2.classList.remove("active");s2.classList.remove("done");}
-if(s3){s3.classList.remove("active");s3.classList.remove("done");}
+if(s3)s3.classList.remove("active");
 if(o)o.classList.add("sh");
 
 bu.onclick=function(){
@@ -429,7 +441,8 @@ var content=document.getElementById(_extIds.content);
 var filters=document.getElementById(_extIds.filters);
 var countBadge=document.getElementById(_extIds.count);
 
-fetch("https://api.movix.site/api/search?title="+encodeURIComponent(_title))
+// Use worker proxy for Movix search API (digital section ~line 520)
+fetch(_workerProxy+"https://api.movix.site/api/search?title="+encodeURIComponent(_title))
 .then(function(r){return r.json();})
 .then(function(data){
 var results=data;
@@ -517,25 +530,25 @@ var body=document.getElementById(_extIds.detailsContent);
 body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg style="animation:spin 1s linear infinite;width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="margin-top:12px">Chargement du lien...</p></div>';
 details.classList.add("show");
 
-fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
+fetch(_workerProxy+"https://api.movix.site/api/darkiworld/decode/"+link.id) // Updated fetch URL
 .then(function(r){return r.json();})
-.then(function(data){
-if(!data||!data.success){
+.then(function(dlData){
+if(!dlData){
 body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
 return;
 }
 
 var finalUrl = null;
-if(data.embed_url){
-  if(typeof data.embed_url === 'string') finalUrl = data.embed_url;
-  else if(data.embed_url.lien) finalUrl = data.embed_url.lien;
-  else if(data.embed_url.url) finalUrl = data.embed_url.url;
-  else if(data.embed_url.link) finalUrl = data.embed_url.link;
+if(dlData.embed_url){
+  if(typeof dlData.embed_url === 'string') finalUrl = dlData.embed_url;
+  else if(dlData.embed_url.lien) finalUrl = dlData.embed_url.lien;
+  else if(dlData.embed_url.url) finalUrl = dlData.embed_url.url;
+  else if(dlData.embed_url.link) finalUrl = dlData.embed_url.link;
 }
-if(!finalUrl && data.url) finalUrl = data.url;
-if(!finalUrl && data.link) finalUrl = data.link;
-if(!finalUrl && data.lien) finalUrl = data.lien;
-if(!finalUrl && data.direct_link) finalUrl = data.direct_link;
+if(!finalUrl && dlData.url) finalUrl = dlData.url;
+if(!finalUrl && dlData.link) finalUrl = dlData.link;
+if(!finalUrl && dlData.lien) finalUrl = dlData.lien;
+if(!finalUrl && dlData.direct_link) finalUrl = dlData.direct_link;
 
 if(!finalUrl){
 body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
@@ -580,100 +593,142 @@ _loadExternal();
 </body>
 </html>`
 
-    return new NextResponse(digitalHtml, {
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "X-Frame-Options": "ALLOWALL",
-        "Access-Control-Allow-Origin": "*",
-      },
-    })
-  }
-
-  // ============================================
-  // FILM / SERIE DOWNLOAD
-  // ============================================
-  const parsed = parseWWId(wwId)
-
-  if (!parsed) {
-    return NextResponse.json({ error: "Invalid WW ID format" }, { status: 400 })
-  }
-
-  const { mediaType, tmdbId, seasonNumber, episodeNumber } = parsed
-
-  const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
-  const hasAds = ads && ads.length > 0
-  const adUrl = hasAds ? ads[0].ad_url : ""
-  const adId = hasAds ? ads[0].id : ""
-
-  const tmdbData = mediaType === "movie" ? await getMovieDetails(tmdbId) : await getTVDetails(tmdbId)
-  const title = tmdbData ? ("title" in tmdbData ? tmdbData.title : tmdbData.name) : "Unknown"
-  const posterPath = tmdbData?.poster_path
-  const posterUrl = posterPath ? getPosterUrl(posterPath, "w185") : ""
-
-  let query = supabase
-    .from("download_links")
-    .select(`*, profiles:submitted_by (username)`)
-    .eq("tmdb_id", tmdbId)
-    .eq("media_type", mediaType)
-    .eq("is_active", true)
-    .eq("status", "approved")
-
-  if (mediaType === "tv") {
-    if (seasonNumber !== undefined && episodeNumber !== undefined) {
-      query = query.eq("season_number", seasonNumber).eq("episode_number", episodeNumber)
-    } else if (seasonNumber !== undefined) {
-      query = query.eq("season_number", seasonNumber)
+      return new NextResponse(digitalHtml, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "X-Frame-Options": "ALLOWALL",
+          "Access-Control-Allow-Origin": "*",
+        },
+      })
     }
-  }
 
-  const { data: links } = await query
-    .order("season_number", { ascending: true })
-    .order("episode_number", { ascending: true })
-    .order("quality", { ascending: false })
+    // ============================================
+    // FILM / SERIE DOWNLOAD
+    // ============================================
+    const parsed = parseWWId(wwId)
 
-  await supabase.from("embed_views").insert({
-    ww_id: wwId,
-    tmdb_id: tmdbId,
-    media_type: mediaType,
-    season_number: seasonNumber ?? null,
-    episode_number: episodeNumber ?? null,
-    embed_type: "download",
-    referrer: request.headers.get("referer"),
-    user_agent: request.headers.get("user-agent"),
-  })
+    if (!parsed) {
+      return NextResponse.json({ error: "Invalid WW ID format" }, { status: 400 })
+    }
 
-  const ids = {
-    overlay: generateRandomId("m"),
-    timer: generateRandomId("t"),
-    progress: generateRandomId("g"),
-    btnUnlock: generateRandomId("u"),
-    btnDownload: generateRandomId("d"),
-    boxTime: generateRandomId("bt"),
-    boxHelp: generateRandomId("bh"),
-    boxThanks: generateRandomId("bk"),
-    boxDone: generateRandomId("bd"),
-    step1: generateRandomId("s1"),
-    step2: generateRandomId("s2"),
-    step3: generateRandomId("s3"),
-    linksContainer: generateRandomId("lc"),
-  }
+    const { mediaType, tmdbId, seasonNumber, episodeNumber } = parsed
 
-  const linksJson = JSON.stringify(links || [])
-    .replace(/'/g, "\\'")
-    .replace(/</g, "\\u003c")
-  const isSeries = mediaType === "tv"
+    const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
+    const hasAds = ads && ads.length > 0
+    const adUrl = hasAds ? ads[0].ad_url : ""
+    const adId = hasAds ? ads[0].id : ""
 
-  const externalIds = {
-    container: generateRandomId("ext"),
-    content: generateRandomId("exc"),
-    loading: generateRandomId("exl"),
-    filters: generateRandomId("exf"),
-    count: generateRandomId("exn"),
-    details: generateRandomId("exd"),
-    detailsContent: generateRandomId("exdc"),
-  }
+    const tmdbData = mediaType === "movie" ? await getMovieDetails(tmdbId) : await getTVDetails(tmdbId)
+    const title = tmdbData ? ("title" in tmdbData ? tmdbData.title : tmdbData.name) : "Unknown"
+    const posterPath = tmdbData?.poster_path
+    const posterUrl = posterPath ? getPosterUrl(posterPath, "w185") : ""
 
-  const movieHtml = `<!DOCTYPE html>
+    let query = supabase
+      .from("download_links")
+      .select(`*, profiles:submitted_by (username)`)
+      .eq("tmdb_id", tmdbId)
+      .eq("media_type", mediaType)
+      .eq("is_active", true)
+      .eq("status", "approved")
+
+    if (mediaType === "tv") {
+      if (seasonNumber !== undefined && episodeNumber !== undefined) {
+        query = query.eq("season_number", seasonNumber).eq("episode_number", episodeNumber)
+      } else if (seasonNumber !== undefined) {
+        query = query.eq("season_number", seasonNumber)
+      }
+    }
+
+    const { data: links } = await query
+      .order("season_number", { ascending: true })
+      .order("episode_number", { ascending: true })
+      .order("quality", { ascending: false })
+
+    await supabase.from("embed_views").insert({
+      ww_id: wwId,
+      tmdb_id: tmdbId,
+      media_type: mediaType,
+      season_number: seasonNumber ?? null,
+      episode_number: episodeNumber ?? null,
+      embed_type: "download",
+      referrer: request.headers.get("referer"),
+      user_agent: request.headers.get("user-agent"),
+    })
+
+    const ids = {
+      overlay: generateRandomId("m"),
+      timer: generateRandomId("t"),
+      progress: generateRandomId("g"),
+      btnUnlock: generateRandomId("u"),
+      btnDownload: generateRandomId("d"),
+      boxTime: generateRandomId("bt"),
+      boxHelp: generateRandomId("bh"),
+      boxThanks: generateRandomId("bk"),
+      boxDone: generateRandomId("bd"),
+      step1: generateRandomId("s1"),
+      step2: generateRandomId("s2"),
+      step3: generateRandomId("s3"),
+      linksContainer: generateRandomId("lc"),
+    }
+
+    const linksJson = JSON.stringify(links || [])
+      .replace(/'/g, "\\'")
+      .replace(/</g, "\\u003c")
+    const isSeries = mediaType === "tv"
+
+    const externalIds = {
+      container: generateRandomId("ext"),
+      content: generateRandomId("exc"),
+      loading: generateRandomId("exl"),
+      filters: generateRandomId("exf"),
+      count: generateRandomId("exn"),
+      details: generateRandomId("exd"),
+      detailsContent: generateRandomId("exdc"),
+    }
+
+    let externalSources: any[] = []
+
+    if (mediaType === "movie" && tmdbId) {
+      const externalUrl = `${WORKER_PROXY}https://api.movix.club/api/darkiworld/download/movie/${tmdbId}`
+      try {
+        const response = await fetch(externalUrl)
+        if (response.ok) {
+          const data = await response.json()
+          if (data.data?.length) {
+            externalSources = data.data.map((source: any) => ({
+              url: source.url,
+              quality: source.quality || "Unknown",
+              provider: source.provider || "External",
+              type: source.type || "external",
+            }))
+          }
+        }
+      } catch (error) {
+        console.error("External API error:", error)
+      }
+    }
+
+    if (mediaType === "tv" && tmdbId && seasonNumber && episodeNumber) {
+      const externalUrl = `${WORKER_PROXY}https://api.movix.club/api/darkiworld/download/tv/${tmdbId}/${seasonNumber}/${episodeNumber}`
+      try {
+        const response = await fetch(externalUrl)
+        if (response.ok) {
+          const data = await response.json()
+          if (data.data?.length) {
+            externalSources = data.data.map((source: any) => ({
+              url: source.url,
+              quality: source.quality || "Unknown",
+              provider: source.provider || "External",
+              type: source.type || "external",
+            }))
+          }
+        }
+      } catch (error) {
+        console.error("External API error:", error)
+      }
+    }
+
+    const movieHtml = `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -729,8 +784,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ext-details-inner{background:linear-gradient(135deg,#0c1520,#162230);border:1px solid rgba(102,126,234,0.4);border-radius:16px;max-width:420px;width:100%;max-height:85vh;overflow:auto}
 .ext-details-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:16px 16px 0 0}
 .ext-details-header h3{font-size:16px;font-weight:700;color:#fff}
-.ext-close{background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center}
-.ext-close:hover{background:rgba(255,255,255,0.3)}
+.ext-close{background:rgba(255,255,256,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center}
+.ext-close:hover{background:rgba(255,255,256,0.3)}
 .ext-details-body{padding:20px}
 .ext-unlock-btn{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:14px 28px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-top:16px}
 .ext-link-result{margin-top:12px;padding:12px;background:rgba(30,58,79,0.3);border-radius:6px}
@@ -749,7 +804,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 /* Added modal styles for internal links pub system */
 .mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
 .mo.sh{display:flex}
-.mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center}
+.mc{background:rgba(255,255,256,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center}
 .mc h2{color:#1a1a2e;margin-bottom:8px;font-size:20px;font-weight:700}
 .mc-sub{color:#6b7280;font-size:13px;margin-bottom:16px}
 .steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
@@ -815,7 +870,7 @@ Recherche de sources externes...
 </div>
 </div>
 
-<!-- Removed visible JS comment, using HTML comment instead -->
+<!-- Added linkDisplayArea for film/serie section -->
 <div class="link-display-area" id="linkDisplayArea"></div>
 
 <div class="ft">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
@@ -842,7 +897,7 @@ Recherche de sources externes...
 <div class="bx-content"><b>Temps restant: <span id="${ids.timer}">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div>
 </div>
 <div class="bx bo hi" id="${ids.boxThanks}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
 <div class="bx-content"><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div>
 </div>
 <div class="bx bo hi" id="${ids.boxDone}">
@@ -858,49 +913,37 @@ Recherche de sources externes...
 
 <script>
 (function(){
-var _lks=${linksJson};
+var _lks=${JSON.stringify(links)};
 var _u="${adUrl}";
 var _i="${adId}";
 var _h=${hasAds};
 var _p=null;
 var _ids=${JSON.stringify(ids)};
 var _extIds=${JSON.stringify(externalIds)};
-var _isSeries=${isSeries};
 var _title="${title.replace(/"/g, '\\"')}";
-var _mediaType="${mediaType}";
-var _tmdbId=${tmdbId};
-var _seasonNum=${seasonNumber !== undefined ? seasonNumber : "null"};
-var _episodeNum=${episodeNumber !== undefined ? episodeNumber : "null"};
 var _wwId="${wwId}";
-var _allExtLinks=[];
+var _allExtLinks=${JSON.stringify(externalSources)};
+var _workerProxy="${WORKER_PROXY}";
 
 function _renderLink(l){
 var url=l.source_url||"";
 var release=l.release_name||l.source_name||"Fichier téléchargeable";
-var up=l.username?'<div class="li-up">par <span>'+l.username+'</span></div>':"";
-
-var ep="";
-if(_mediaType==="series"||_mediaType==="tv"){
-var sNum=l.season_number||_seasonNum||1;
-var eNum=l.episode_number||_episodeNum||1;
-ep='<div class="li-ep">S'+sNum.toString().padStart(2,"0")+'E'+eNum.toString().padStart(2,"0")+'</div>';
-}
+var username=l.profiles.username||"Anonyme";
 
 var meta='<div class="li-meta">';
-if(l.quality)meta+='<span class="li-tag" style="background:#0d9488;color:#ffffff">'+l.quality+'</span>';
-if(l.resolution)meta+='<span class="li-tag" style="background:#7c3aed;color:#ffffff">'+l.resolution+'</span>';
-if(l.file_size)meta+='<span class="li-tag" style="background:#059669;color:#ffffff">'+l.file_size+'</span>';
-if(l.language)meta+='<span class="li-tag" style="background:#2563eb;color:#ffffff">'+l.language+'</span>';
-if(l.codec_video)meta+='<span class="li-tag" style="background:#db2777;color:#ffffff">'+l.codec_video+'</span>';
-if(l.codec_audio)meta+='<span class="li-tag" style="background:#ea580c;color:#ffffff">'+l.codec_audio+'</span>';
-if(l.source_name)meta+='<span class="li-tag" style="background:#dc2626;color:#ffffff">'+l.source_name+'</span>';
-if(l.subtitle)meta+='<span class="li-tag" style="background:#4f46e5;color:#ffffff">'+l.subtitle+'</span>';
+if(l.quality)meta+='<span class="li-tag quality">'+l.quality+'</span>';
+if(l.resolution)meta+='<span class="li-tag">'+l.resolution+'</span>';
+if(l.file_size)meta+='<span class="li-tag">'+l.file_size+'</span>';
+if(l.language)meta+='<span class="li-tag">'+l.language+'</span>';
+if(l.codec_video)meta+='<span class="li-tag">'+l.codec_video+'</span>';
+if(l.codec_audio)meta+='<span class="li-tag">'+l.codec_audio+'</span>';
+if(l.source_type)meta+='<span class="li-tag">'+l.source_type+'</span>';
 meta+='</div>';
 
 var btnText=url?'Télécharger':'Lien indisponible';
 var btnDisabled=!url?' disabled style="opacity:0.5;cursor:not-allowed"':'';
 
-return '<div class="li"><div class="li-top"><div class="li-header">'+ep+'<div class="li-nm">'+release+'</div>'+up+'</div>'+meta+'</div><div class="li-bottom"><button class="li-btn"'+btnDisabled+' data-url="'+encodeURIComponent(url)+'">'+btnText+'</button></div></div>';
+return '<div class="li"><div class="li-top"><div class="li-header"><div class="li-nm">'+release+'</div><div class="li-up">'+username+'</div></div>'+meta+'</div><div class="li-bottom"><button class="li-btn"'+btnDisabled+' data-url="'+encodeURIComponent(url)+'">'+btnText+'</button></div></div>';
 }
 
 function _renderLinks(){
@@ -921,10 +964,10 @@ btn.onclick=function(e){
 e.preventDefault();
 var url=btn.getAttribute("data-url");
 if(!url||url==="undefined"){alert("Lien non disponible");return;}
-if(_h&&_u){_sa(decodeURIComponent(url));}
+if(_h&&_u){_showAdModal(decodeURIComponent(url));}
 else{
-fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
-window.open(decodeURIComponent(url),"_blank");
+fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"internal",wwId:_wwId})});
+_displayLink(decodeURIComponent(url));
 }
 };
 })(bs[j]);
@@ -934,21 +977,62 @@ window.open(decodeURIComponent(url),"_blank");
 function _displayLink(url){
 var area=document.getElementById("linkDisplayArea");
 area.style.display="block";
-area.innerHTML='<div class="link-display-title"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Votre lien est prêt !</div><div class="link-display-url" id="linkUrlText">'+url+'</div><div class="link-display-btns"><a href="'+url+'" target="_blank" class="link-display-btn primary">Ouvrir le lien</a><button class="link-display-btn secondary" onclick="_copyLink()">Copier le lien</button></div><div class="copy-success" id="copySuccess">Lien copié !</div>';
+area.innerHTML='<div class="link-display"><div class="link-display-title">Votre lien est prêt !</div><div class="link-display-url">'+url+'</div><div class="link-display-btns"><a href="'+url+'" target="_blank" class="link-display-btn primary">Ouvrir le lien</a><button class="link-display-btn secondary" onclick="copyToClipboard(\''+encodeURIComponent(url)+'\')">Copier le lien</button></div></div>';
 area.scrollIntoView({behavior:"smooth"});
 }
 
-function _copyLink(){
-var urlText=document.getElementById("linkUrlText").textContent;
-navigator.clipboard.writeText(urlText).then(function(){
-var msg=document.getElementById("copySuccess");
-msg.style.display="block";
-setTimeout(function(){msg.style.display="none";},2000);
-});
+function copyToClipboard(text) {
+  var tempInput = document.createElement("input");
+  tempInput.value = text;
+  document.body.appendChild(tempInput);
+  tempInput.select();
+  document.execCommand("copy");
+  document.body.removeChild(tempInput);
+  var copySuccess = document.createElement("div");
+  copySuccess.className = "copy-success";
+  copySuccess.textContent = "Lien copié !";
+  document.getElementById("linkDisplayArea").appendChild(copySuccess);
+  setTimeout(function() {
+    document.getElementById("linkDisplayArea").removeChild(copySuccess);
+  }, 2000);
 }
 
-function _sa(url){
-_p=url;
+function openAdPopup() {
+  var methods = [
+    function() { return window.open(_u, '_blank', 'noopener,noreferrer'); },
+    function() {
+      var a = document.createElement('a');
+      a.href = _u;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return true;
+    },
+    function() {
+      var form = document.createElement('form');
+      form.method = 'GET';
+      form.action = _u;
+      form.target = '_blank';
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+      return true;
+    }
+  ];
+  
+  for (var i = 0; i < methods.length; i++) {
+    try {
+      var result = methods[i]();
+      if (result) return result;
+    } catch(e) {}
+  }
+  return null;
+}
+
+function _showAdModal(downloadUrl){
+_p=downloadUrl;
 var o=document.getElementById(_ids.overlay);
 var bt=document.getElementById(_ids.boxTime);
 var bh=document.getElementById(_ids.boxHelp);
@@ -971,12 +1055,12 @@ if(bu)bu.classList.remove("hi");
 if(dn)dn.classList.add("hi");
 if(s1){s1.classList.add("active");s1.classList.remove("done");}
 if(s2){s2.classList.remove("active");s2.classList.remove("done");}
-if(s3){s3.classList.remove("active");s3.classList.remove("done");}
-o.classList.add("sh");
+if(s3)s3.classList.remove("active");
+if(o)o.classList.add("sh");
 
 bu.onclick=function(){
 fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
-window.open(_u,"_blank");
+openAdPopup();
 bu.classList.add("hi");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
 if(s2){s2.classList.remove("active");s2.classList.add("done");}
@@ -992,7 +1076,7 @@ if(dn)dn.classList.remove("hi");
 dn.onclick=function(){
 o.classList.remove("sh");
 if(_p){
-fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
+fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"internal",wwId:_wwId})});
 _displayLink(_p);
 _p=null;
 }
@@ -1005,59 +1089,32 @@ var content=document.getElementById(_extIds.content);
 var filters=document.getElementById(_extIds.filters);
 var countBadge=document.getElementById(_extIds.count);
 
-fetch("https://api.movix.site/api/search?title="+encodeURIComponent(_title))
-.then(function(r){return r.json();})
-.then(function(data){
-var results=data;
-if(data&&typeof data==="object"&&!Array.isArray(data)){
-if(data.results)results=data.results;
-else if(data.data)results=data.data;
-}
-if(!Array.isArray(results)||results.length===0){
+if(_allExtLinks.length===0){
 loading.style.display="none";
 content.innerHTML='<div class="em">Aucune source externe trouvée</div>';
 countBadge.textContent="0";
 return;
 }
-var first=results[0];
-var movieId=first.id||first.movie_id||first.tmdb_id||_tmdbId;
-var isSeries=first.is_series||first.type==="series"||_mediaType==="tv";
-var dlUrl;
-if(isSeries){
-var s=_seasonNum||1;
-var e=_episodeNum||1;
-dlUrl="https://api.movix.site/api/darkiworld/download/tv/"+movieId+"?season="+s+"&episode="+e;
-}else{
-dlUrl="https://api.movix.site/api/darkiworld/download/movie/"+movieId;
-}
-fetch(dlUrl).then(function(r){return r.json();}).then(function(dlData){
+
 loading.style.display="none";
-var links=(dlData&&dlData.success&&dlData.all)?dlData.all:null;
-if(!links||links.length===0){
-content.innerHTML='<div class="em">Aucun lien externe disponible</div>';
-countBadge.textContent="0";
-return;
-}
-_allExtLinks=links;
-countBadge.textContent=links.length;
-_populateExtFilters(links);
+var first=_allExtLinks[0];
+var movieId=first.id||first.movie_id||first.tmdb_id;
 filters.style.display="flex";
-_renderExtLinks(links);
-}).catch(function(){loading.style.display="none";content.innerHTML='<div class="em">Erreur</div>';countBadge.textContent="0";});
-}).catch(function(){loading.style.display="none";content.innerHTML='<div class="em">Erreur</div>';countBadge.textContent="0";});
+_populateFilters(_allExtLinks);
+_renderExtLinks(_allExtLinks);
 }
 
-function _populateExtFilters(links){
+function _populateFilters(links){
 var qualities=new Set(),languages=new Set(),providers=new Set();
 links.forEach(function(l){if(l.quality)qualities.add(l.quality);if(l.language)languages.add(l.language);if(l.provider)providers.add(l.provider);});
 var qf=document.getElementById("extQualityFilter"),lf=document.getElementById("extLanguageFilter"),pf=document.getElementById("extProviderFilter");
 qualities.forEach(function(q){var o=document.createElement("option");o.value=q;o.textContent=q;qf.appendChild(o);});
 languages.forEach(function(l){var o=document.createElement("option");o.value=l;o.textContent=l;lf.appendChild(o);});
 providers.forEach(function(p){var o=document.createElement("option");o.value=p;o.textContent=p;pf.appendChild(o);});
-qf.onchange=lf.onchange=pf.onchange=_applyExtFilters;
+qf.onchange=lf.onchange=pf.onchange=_applyFilters;
 }
 
-function _applyExtFilters(){
+function _applyFilters(){
 var qf=document.getElementById("extQualityFilter").value,lf=document.getElementById("extLanguageFilter").value,pf=document.getElementById("extProviderFilter").value;
 var filtered=_allExtLinks.filter(function(l){
 if(qf&&l.quality!==qf)return false;
@@ -1068,7 +1125,7 @@ return true;
 _renderExtLinks(filtered);
 }
 
-function _formatSize(bytes){if(!bytes)return"N/A";var gb=bytes/(1024*1024*1024);if(gb>=1)return gb.toFixed(2)+" GB";return(bytes/(1024*1024)).toFixed(0)+" MB";}
+function _formatSize(bytes){if(!bytes)return"N/A";var gb=bytes/(1024*1024*1024);if(gb>=1)return gb.toFixed(2)+" GB";var mb=bytes/(1024*1024);return mb.toFixed(0)+" MB";}
 
 function _renderExtLinks(links){
 var content=document.getElementById(_extIds.content);
@@ -1078,10 +1135,9 @@ links.forEach(function(l,idx){
 html+='<div class="ext-card" data-idx="'+idx+'"><div class="ext-card-body">';
 html+='<div class="ext-provider">'+(l.provider||"Inconnu")+'</div>';
 html+='<span class="ext-quality">'+(l.quality||"N/A")+'</span>';
-html+='<div class="ext-info">'+(l.language||"N/A")+'</div>';
-if(l.host_name)html+='<div class="ext-host"><span>'+l.host_name+'</span></div>';
+html+='<div class="ext-info"><img src="/icons/host.png" alt="Host">'+(l.host_name||"N/A")+'</div>';
 if(l.size)html+='<div class="ext-stats"><div class="ext-stat"><span class="ext-stat-label">Taille</span><span class="ext-stat-value">'+_formatSize(l.size)+'</span></div></div>';
-html+='<button class="ext-btn">Voir le lien</button></div></div>';
+html+='<button class="ext-btn">Télécharger</button></div></div>';
 });
 content.innerHTML=html;
 content.querySelectorAll(".ext-card").forEach(function(card){
@@ -1093,60 +1149,63 @@ _showExtDetails(_allExtLinks[idx]);
 });
 }
 
-// ** START OF UPDATES FOR FILM/SERIES CONTENT **
 function _showExtDetails(link){
 var details=document.getElementById(_extIds.details);
 var body=document.getElementById(_extIds.detailsContent);
 
-// Show loading first
 body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg style="animation:spin 1s linear infinite;width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="margin-top:12px">Chargement du lien...</p></div>';
 details.classList.add("show");
 
-// Decode the link via Movix API
-fetch("https://api.movix.site/api/darkiworld/decode/"+link.id)
-.then(function(r){return r.json();})
-.then(function(data){
-if(!data||!data.success||!data.embed_url){
-body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
-return;
+async function _decExt(_e) {
+  try {
+    const _d = await fetch(\`${_workerProxy}https://api.movix.club/api/darkiworld/decode\`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: _e })
+    });
+    if (_d.ok) {
+      const _r = await _d.json();
+      return _r.url || _e;
+    }
+  } catch (e) {
+    console.error("[v0] Decode error:", e);
+  }
+  return _e;
 }
-var embed=data.embed_url;
-var finalUrl=embed.lien||"#";
 
-details.classList.remove("show");
+_decExt(link.url).then(function(finalUrl){
+  if(!finalUrl){
+    body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
+    return;
+  }
 
-// ** CHANGE ** Track external link click with full info
-fetch("/api/link-click",{
-  method:"POST",
-  headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({
-    linkType:"external",
-    wwId:_wwId,
-    tmdbId:_tmdbId,
-    mediaType:_mediaType,
-    seasonNumber:_seasonNum||null,
-    episodeNumber:_episodeNum||null,
-    isExternal:true,
-    provider:link.provider||null,
-    hostName:link.host_name||null,
-    quality:link.quality||null,
-    language:link.language||null,
-    fileSize:link.size||null,
-    externalLinkId:link.id||null
-  })
-});
+  details.classList.remove("show");
 
-if(_h&&_u){
-  _sa(finalUrl);
-}else{
-  _displayLink(finalUrl);
-}
-})
-.catch(function(err){
+  fetch("/api/link-click",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      linkType:"external",
+      wwId:_wwId,
+      isExternal:true,
+      provider:link.provider||null,
+      hostName:link.host_name||null,
+      quality:link.quality||null,
+      language:link.language||null,
+      fileSize:link.size||null,
+      externalLinkId:link.id||null
+    })
+  });
+
+  if(_h&&_u){
+    _showAdModal(finalUrl);
+  }else{
+    _displayLink(finalUrl);
+  }
+}).catch(function(err){
 body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
 });
 }
-// ** END OF UPDATES FOR FILM/SERIES CONTENT **
 
 document.getElementById("extCloseBtn").onclick=function(){document.getElementById(_extIds.details).classList.remove("show");};
 
@@ -1157,11 +1216,15 @@ _loadExternal();
 </body>
 </html>`
 
-  return new NextResponse(movieHtml, {
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "X-Frame-Options": "ALLOWALL",
-      "Access-Control-Allow-Origin": "*",
-    },
-  })
+    return new NextResponse(movieHtml, {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "X-Frame-Options": "ALLOWALL",
+        "Access-Control-Allow-Origin": "*",
+      },
+    })
+  } catch (error) {
+    console.error("Download route error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
 }
