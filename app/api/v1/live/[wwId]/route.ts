@@ -575,7 +575,22 @@ loadPlayer();
 
 function processAd(){
 fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_ads[_adIndex].id})});
-window.open(_ads[_adIndex].ad_url,"_blank");
+var opened = false;
+try {
+  var w = window.open(_ads[_adIndex].ad_url,"_blank","noopener,noreferrer");
+  if(w) opened = true;
+} catch(e) {}
+if(!opened) {
+  try {
+    var a = document.createElement('a');
+    a.href = _ads[_adIndex].ad_url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch(e) {}
+}
 $("btnUnlock").classList.add("hi");
 if($("step1")){$("step1").classList.remove("active");$("step1").classList.add("done");}
 if($("step2"))$("step2").classList.add("active");

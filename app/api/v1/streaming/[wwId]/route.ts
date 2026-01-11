@@ -375,7 +375,22 @@ updateAdCounter();
 function processAd(){
 var ad=_ads[_adIndex];
 if(!ad)return startPlayer();
-window.open(ad.url,"_blank");
+var opened = false;
+try {
+  var w = window.open(ad.url,"_blank","noopener,noreferrer");
+  if(w) opened = true;
+} catch(e) {}
+if(!opened) {
+  try {
+    var a = document.createElement('a');
+    a.href = ad.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch(e) {}
+}
 var s1=$("step1"),s2=$("step2"),s3=$("step3");
 var boxSupport=$("boxSupport");
 var btnContinue=$("btnContinue"),btnPlay=$("btnPlay");

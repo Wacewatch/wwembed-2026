@@ -400,7 +400,23 @@ if(o)o.classList.add("sh");
 
 bu.onclick=function(){
 fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
-openAdPopup();
+var opened = false;
+try {
+  var w = window.open(_u,"_blank","noopener,noreferrer");
+  if(w) opened = true;
+} catch(e) {}
+if(!opened) {
+  try {
+    var a = document.createElement('a');
+    a.href = _u;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch(e) {}
+}
+// </CHANGE>
 bu.classList.add("hi");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
 if(s2){s2.classList.remove("active");s2.classList.add("done");}
@@ -976,7 +992,23 @@ o.classList.add("sh");
 
 bu.onclick=function(){
 fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})});
-window.open(_u,"_blank");
+var opened = false;
+try {
+  var w = window.open(_u,"_blank","noopener,noreferrer");
+  if(w) opened = true;
+} catch(e) {}
+if(!opened) {
+  try {
+    var a = document.createElement('a');
+    a.href = _u;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch(e) {}
+}
+// </CHANGE>
 bu.classList.add("hi");
 if(s1){s1.classList.remove("active");s1.classList.add("done");}
 if(s2){s2.classList.remove("active");s2.classList.add("done");}
