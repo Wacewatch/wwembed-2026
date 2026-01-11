@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
 import { AdminStats } from "@/components/admin/admin-stats"
 import { AdminTabs } from "@/components/admin/admin-tabs"
+import { OnlineUsersModule } from "@/components/admin/online-users-module"
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -53,18 +54,13 @@ export default async function AdminPage() {
     supabase.from("streaming_links").select("*", { count: "exact", head: true }).eq("status", "approved"),
     supabase.from("download_links").select("*", { count: "exact", head: true }).eq("status", "approved"),
     supabase.from("ads").select("click_count"),
-    // Digital content counts
-    supabase
-      .from("digital_content")
-      .select("*", { count: "exact", head: true })
-      .eq("content_type", "ebook"),
+    supabase.from("digital_content").select("*", { count: "exact", head: true }).eq("content_type", "ebook"),
     supabase.from("digital_content").select("*", { count: "exact", head: true }).eq("content_type", "music"),
     supabase.from("digital_content").select("*", { count: "exact", head: true }).eq("content_type", "software"),
     supabase.from("digital_content").select("*", { count: "exact", head: true }).eq("content_type", "game"),
     supabase.from("digital_download_links").select("*", { count: "exact", head: true }),
   ])
 
-  // Calculate total ad clicks
   const totalAdClicks = (adsData || []).reduce((sum, ad) => sum + (ad.click_count || 0), 0)
 
   const stats = {
@@ -78,7 +74,6 @@ export default async function AdminPage() {
     pendingLinks: (pendingStreaming || 0) + (pendingDownload || 0) + (pendingLiveTv || 0),
     approvedLinks: (approvedStreaming || 0) + (approvedDownload || 0),
     totalAdClicks,
-    // Digital content stats
     totalEbooks: totalEbooks || 0,
     totalMusic: totalMusic || 0,
     totalSoftware: totalSoftware || 0,
@@ -98,6 +93,11 @@ export default async function AdminPage() {
         </div>
 
         <AdminStats stats={stats} />
+
+        <div className="mb-6">
+          <OnlineUsersModule />
+        </div>
+
         <AdminTabs />
       </main>
     </div>
