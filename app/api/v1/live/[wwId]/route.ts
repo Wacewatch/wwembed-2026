@@ -298,8 +298,8 @@ textarea:focus{outline:none;border-color:#e63946;box-shadow:0 0 0 3px rgba(230,5
 <button class="menu-item" onclick="toggleModal('bugModal');toggleDropdown('settingsMenu');">
 <span class="icon">⚠</span>
 <span>Signaler un problème</span>
+</span>
 </button>
-</div>
 </div>
 </div>
 </div>
@@ -575,10 +575,10 @@ loadPlayer();
 function processAd(){
 if(_adIndex>=_ads.length)return startPlayer();
 var ad=_ads[_adIndex];
+if(!ad)return startPlayer();
 
 window.open(ad.url, '_blank');
 
-// Track ad click
 fetch("/api/ads/click",{
   method:"POST",
   headers:{"Content-Type":"application/json"},

@@ -338,37 +338,7 @@ area.scrollIntoView({behavior:"smooth"});
 }
 
 function openAdPopup() {
-  var methods = [
-    function() { return window.open(_u, '_blank', 'noopener,noreferrer'); },
-    function() {
-      var a = document.createElement('a');
-      a.href = _u;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      return true;
-    },
-    function() {
-      var form = document.createElement('form');
-      form.method = 'GET';
-      form.action = _u;
-      form.target = '_blank';
-      document.body.appendChild(form);
-      form.submit();
-      document.body.removeChild(form);
-      return true;
-    }
-  ];
-  
-  for (var i = 0; i < methods.length; i++) {
-    try {
-      var result = methods[i]();
-      if (result) return result;
-    } catch(e) {}
-  }
-  return null;
+  return window.open(_u, '_blank');
 }
 
 function _showAdModal(downloadUrl){
@@ -399,7 +369,7 @@ if(s3){s3.classList.remove("active");s3.classList.remove("done");}
 if(o)o.classList.add("sh");
 
 bu.onclick=function(){
-window.open(_u, '_blank');
+openAdPopup();
 
 // Track ad click
 fetch("/api/ads/click",{
