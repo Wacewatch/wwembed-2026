@@ -967,7 +967,14 @@ if(s3){s3.classList.remove("active");s3.classList.remove("done");}
 o.classList.add("sh");
 
 bu.onclick=function(){
-window.open(_u, '_blank');
+// </CHANGE> Open ad in new tab with simple link technique
+var link = document.createElement('a');
+link.href = _u;
+link.target = '_blank';
+link.rel = 'noopener noreferrer';
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
 
 // Track ad click
 fetch("/api/ads/click",{
