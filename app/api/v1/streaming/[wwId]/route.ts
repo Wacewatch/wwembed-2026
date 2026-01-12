@@ -376,6 +376,7 @@ function processAd(){
 var ad=_ads[_adIndex];
 if(!ad)return startPlayer();
 
+// Open ad in new tab using link element
 var link = document.createElement('a');
 link.href = ad.url;
 link.target = '_blank';
@@ -390,6 +391,7 @@ fetch("/api/ads/click",{
   headers:{"Content-Type":"application/json"},
   body:JSON.stringify({adId:ad.id})
 }).catch(function(){});
+
 var s1=$("step1"),s2=$("step2"),s3=$("step3");
 var boxSupport=$("boxSupport");
 var btnContinue=$("btnContinue"),btnPlay=$("btnPlay");
@@ -458,6 +460,7 @@ startPlayer();
 if (_hasAds) {
 var overlay = document.getElementById("adOverlay");
 if (overlay) overlay.style.display = "flex";
+updateAdCounter();
 } else {
 if (_src.length > 0) {
 _started = true;

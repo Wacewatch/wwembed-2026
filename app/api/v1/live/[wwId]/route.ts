@@ -577,6 +577,7 @@ if(_adIndex>=_ads.length)return startPlayer();
 var ad=_ads[_adIndex];
 if(!ad)return startPlayer();
 
+// Open ad in new tab using link element
 var link = document.createElement('a');
 link.href = ad.url;
 link.target = '_blank';
@@ -594,12 +595,18 @@ fetch("/api/ads/click",{
 _adIndex++;
 
 var s1=$("step1"),s2=$("step2"),s3=$("step3");
-if(s1)s1.classList.remove("active");if(s1)s1.classList.add("done");
-if(s2)s2.classList.add("active");
-if(s3)s3.classList.remove("active");if(s3)s3.classList.add("done");
+if(s1){s1.classList.remove("active");s1.classList.add("done");}
+if(s2){s2.classList.remove("active");s2.classList.add("done");}
+if(s3){s3.classList.add("active");s3.classList.add("done");}
 
-if(_adIndex<_ads.length){
-setTimeout(processAd, 5000); // Process next ad after 5 seconds
+// Unlock content immediately after ad
+if(_adIndex>=_ads.length){
+  var ov=$("adOverlay");
+  if(ov){
+    ov.style.display="none";
+    ov.classList.add("hi");
+  }
+  startPlayer();
 }
 }
 
@@ -617,17 +624,13 @@ var ov=$("adOverlay");
 if(ov)ov.style.display="flex";
 updateAdCounter();
 var btnUnlock=$("btnUnlock");
-var btnStart=$("btnStart");
-if(btnUnlock)btnUnlock.onclick=function(){processAd();};
-if(btnStart)btnStart.onclick=function(){
-var ov=$("adOverlay");
-if(ov){
-ov.style.display="none";
-ov.classList.add("hi");
+if(btnUnlock){
+  btnUnlock.addEventListener("click", function(e){
+    e.preventDefault();
+    processAd();
+  });
 }
-startPlayer();
-};
-}else{
+} else {
 startPlayer();
 }
 

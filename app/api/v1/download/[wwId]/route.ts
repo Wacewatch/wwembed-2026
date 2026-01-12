@@ -282,6 +282,18 @@ var _title="${title.replace(/"/g, '\\"')}";
 var _wwId="${digitalContent.ww_id}";
 var _allExtLinks=[];
 
+function openAdPopup() {
+  if(!_u)return;
+  var link = document.createElement('a');
+  link.href = _u;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+// </CHANGE>
+
 function _renderLink(l){
 var url=l.source_url||"";
 var release=l.release_name||l.source_name||"Fichier téléchargeable";
@@ -320,7 +332,7 @@ btn.onclick=function(e){
 e.preventDefault();
 var url=btn.getAttribute("data-url");
 if(!url||url==="undefined"){alert("Lien non disponible");return;}
-if(_h&&_u){_showAdModal(decodeURIComponent(url));}
+if(_h&&_u){openAdPopup();_showAdModal(decodeURIComponent(url));}
 else{
 fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"digital",wwId:_wwId})});
 _displayLink(decodeURIComponent(url));
@@ -335,17 +347,6 @@ var area=document.getElementById("linkDisplayArea");
 area.style.display="block";
 area.innerHTML='<div class="link-display"><div class="link-display-title">Votre lien est prêt !</div><div class="link-display-url">'+url+'</div><a href="'+url+'" target="_blank" class="link-display-btn">Ouvrir le lien</a></div>';
 area.scrollIntoView({behavior:"smooth"});
-}
-
-function openAdPopup() {
-  var link = document.createElement('a');
-  link.href = _u;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  // </CHANGE>
 }
 
 function _showAdModal(downloadUrl){
@@ -1087,16 +1088,12 @@ _showExtDetails(_allExtLinks[idx]);
 }
 
 // ** START OF UPDATES FOR FILM/SERIES CONTENT **
-function _showExtDetails(link){
-var details=document.getElementById(_extIds.details);
-var body=document.getElementById(_extIds.detailsContent);
-
-// Show loading first
-body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg style="animation:spin 1s linear infinite;width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="margin-top:12px">Chargement du lien...</p></div>';
-details.classList.add("show");
+function _showExtDetails(extLink){
+if(!extLink||!extLink.id)return; // Check for extLink.id as url might be empty initially
+var finalUrl=null;
 
 // Decode the link via Movix API
-fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/darkiworld/decode/"+link.id)
+fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/darkiworld/decode/"+extLink.id)
 .then(function(r){return r.json();})
 .then(function(data){
 if(!data||!data.success||!data.embed_url){
@@ -1104,7 +1101,7 @@ body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lie
 return;
 }
 var embed=data.embed_url;
-var finalUrl=embed.lien||"#";
+finalUrl=embed.lien||"#";
 
 details.classList.remove("show");
 
@@ -1120,19 +1117,37 @@ fetch("/api/link-click",{
     seasonNumber:_seasonNum||null,
     episodeNumber:_episodeNum||null,
     isExternal:true,
-    provider:link.provider||null,
-    hostName:link.host_name||null,
-    quality:link.quality||null,
-    language:link.language||null,
-    fileSize:link.size||null,
-    externalLinkId:link.id||null
+    provider:extLink.provider||null,
+    hostName:extLink.host_name||null,
+    quality:extLink.quality||null,
+    language:extLink.language||null,
+    fileSize:extLink.size||null,
+    externalLinkId:extLink.id||null
   })
 });
 
 if(_h&&_u){
-  _sa(finalUrl);
-}else{
+  // Open ad in new tab
+  var link = document.createElement('a');
+  link.href = _u;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // Track ad click
+  fetch("/api/ads/click",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({adId:_i})
+  }).catch(function(){});
+  
+  // Display link immediately
   _displayLink(finalUrl);
+} else {
+  // No ads, open directly
+  window.open(finalUrl,"_blank");
 }
 })
 .catch(function(err){
