@@ -577,7 +577,13 @@ if(_adIndex>=_ads.length)return startPlayer();
 var ad=_ads[_adIndex];
 if(!ad)return startPlayer();
 
-window.open(ad.url, '_blank');
+var link = document.createElement('a');
+link.href = ad.url;
+link.target = '_blank';
+link.rel = 'noopener noreferrer';
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
 
 fetch("/api/ads/click",{
   method:"POST",

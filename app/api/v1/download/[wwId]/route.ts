@@ -338,7 +338,14 @@ area.scrollIntoView({behavior:"smooth"});
 }
 
 function openAdPopup() {
-  return window.open(_u, '_blank');
+  var link = document.createElement('a');
+  link.href = _u;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  // </CHANGE>
 }
 
 function _showAdModal(downloadUrl){
