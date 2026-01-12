@@ -375,63 +375,15 @@ updateAdCounter();
 function processAd(){
 var ad=_ads[_adIndex];
 if(!ad)return startPlayer();
-var opened = false;
 
-// Method 1: Standard window.open
-try {
-  var w = window.open(ad.url,"_blank","noopener,noreferrer");
-  if(w) {
-    opened = true;
-    // Track ad click
-    fetch("/api/ads/click",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({adId:ad.id})
-    }).catch(function(){});
-  }
-} catch(e) {}
+window.open(ad.url, '_blank');
 
-// Method 2: Create and click dynamic link
-if(!opened) {
-  try {
-    var a = document.createElement('a');
-    a.href = ad.url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    opened = true;
-    // Track ad click
-    fetch("/api/ads/click",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({adId:ad.id})
-    }).catch(function(){});
-  } catch(e) {}
-}
-
-// Method 3: Form submission fallback
-if(!opened) {
-  try {
-    var form = document.createElement('form');
-    form.method = 'GET';
-    form.action = ad.url;
-    form.target = '_blank';
-    form.style.display = 'none';
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
-    // Track ad click
-    fetch("/api/ads/click",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({adId:ad.id})
-    }).catch(function(){});
-  } catch(e) {}
-}
-
+// Track ad click
+fetch("/api/ads/click",{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({adId:ad.id})
+}).catch(function(){});
 var s1=$("step1"),s2=$("step2"),s3=$("step3");
 var boxSupport=$("boxSupport");
 var btnContinue=$("btnContinue"),btnPlay=$("btnPlay");

@@ -1,10 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-export async function GET(request: NextRequest, props: { params: Promise<{ wwId: string }> }) {
+export async function GET(request: NextRequest, props: { params: { wwId: string } }) {
   try {
-    const params = await props.params
-    const { wwId } = params
+    const { wwId } = props.params
     const match = wwId.match(/^ww-live-(.+)$/i)
     if (!match) return new NextResponse("Invalid WW ID format", { status: 400 })
 
@@ -70,9 +69,8 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
     const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
     const activeAds = ads || []
     const hasAds = activeAds.length > 0
-    const randomAd = hasAds ? activeAds[Math.floor(Math.random() * activeAds.length)] : null
-    const adUrl = randomAd?.ad_url || ""
-    const adId = randomAd?.id || ""
+    const adUrl = hasAds ? activeAds[0].ad_url : ""
+    const adId = hasAds ? activeAds[0].id : ""
 
     const { data: siteSettings } = await supabase.from("site_settings").select("*").single()
     const tickerEnabled = siteSettings?.live_tv_ticker_enabled ?? false
@@ -334,6 +332,7 @@ textarea:focus{outline:none;border-color:#e63946;box-shadow:0 0 0 3px rgba(230,5
 <div class="steps">
 <div class="step active" id="step1"></div>
 <div class="step" id="step2"></div>
+<div class="step" id="step3"></div>
 </div>
 <div class="bx bw">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -574,30 +573,28 @@ loadPlayer();
 }
 
 function processAd(){
-fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_ads[_adIndex].id})});
-var opened = false;
-try {
-  var w = window.open(_ads[_adIndex].ad_url,"_blank","noopener,noreferrer");
-  if(w) opened = true;
-} catch(e) {}
-if(!opened) {
-  try {
-    var a = document.createElement('a');
-    a.href = _ads[_adIndex].ad_url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  } catch(e) {}
+if(_adIndex>=_ads.length)return startPlayer();
+var ad=_ads[_adIndex];
+
+window.open(ad.url, '_blank');
+
+// Track ad click
+fetch("/api/ads/click",{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({adId:ad.id})
+}).catch(function(){});
+
+_adIndex++;
+
+var s1=$("step1"),s2=$("step2"),s3=$("step3");
+if(s1)s1.classList.remove("active");if(s1)s1.classList.add("done");
+if(s2)s2.classList.add("active");
+if(s3)s3.classList.remove("active");if(s3)s3.classList.add("done");
+
+if(_adIndex<_ads.length){
+setTimeout(processAd, 5000); // Process next ad after 5 seconds
 }
-$("btnUnlock").classList.add("hi");
-if($("step1")){$("step1").classList.remove("active");$("step1").classList.add("done");}
-if($("step2"))$("step2").classList.add("active");
-if($("boxHelp"))$("boxHelp").classList.add("hi");
-if($("boxDone"))$("boxDone").classList.remove("hi");
-if($("progress"))$("progress").style.width="100%";
-if($("btnStart"))$("btnStart").classList.remove("hi");
 }
 
 function updateAdCounter(){
@@ -643,40 +640,6 @@ $("castBtn")&&($("castBtn").onclick=initCast);
   var _hls = null;
   var _popupWin = null;
 
-  function openAdPopup() {
-    var methods = [
-      function() { return window.open(_adUrl, '_blank', 'noopener,noreferrer'); },
-      function() {
-        var a = document.createElement('a');
-        a.href = _adUrl;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        return true;
-      },
-      function() {
-        var form = document.createElement('form');
-        form.method = 'GET';
-        form.action = _adUrl;
-        form.target = '_blank';
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
-        return true;
-      }
-    ];
-    
-    for (var i = 0; i < methods.length; i++) {
-      try {
-        var result = methods[i]();
-        if (result) return result;
-      } catch(e) {}
-    }
-    return null;
-  }
-
   document.addEventListener("DOMContentLoaded", function() {
     var btnStart = document.getElementById("btnStart");
     
@@ -691,7 +654,7 @@ $("castBtn")&&($("castBtn").onclick=initCast);
             body: JSON.stringify({ adId: _adId })
           });
           
-          _popupWin = openAdPopup();
+          _popupWin = window.open(_adUrl, '_blank');
         }
         
         var overlay = document.getElementById("adOverlay");
