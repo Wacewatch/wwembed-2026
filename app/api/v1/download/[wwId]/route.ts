@@ -502,39 +502,22 @@ _showExtDetails(_allExtLinks[idx]);
 });
 }
 
-function _showExtDetails(link){
-var details=document.getElementById(_extIds.details);
-var body=document.getElementById(_extIds.detailsContent);
+function _showExtDetails(extLink){
+if(!extLink||!extLink.id)return;
+var finalUrl=null;
+var details=document.getElementById("extDetails");
 
-body.innerHTML='<div style="text-align:center;padding:30px;color:#8ba3b5"><svg style="animation:spin 1s linear infinite;width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="margin-top:12px">Chargement du lien...</p></div>';
-details.classList.add("show");
-
-fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/darkiworld/decode/"+link.id)
+fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/darkiworld/decode/"+extLink.id)
 .then(function(r){return r.json();})
 .then(function(data){
-if(!data||!data.success){
-body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
+if(!data||!data.success||!data.embed_url){
+if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
 return;
 }
+var embed=data.embed_url;
+finalUrl=embed.lien||"#";
 
-var finalUrl = null;
-if(data.embed_url){
-  if(typeof data.embed_url === 'string') finalUrl = data.embed_url;
-  else if(data.embed_url.lien) finalUrl = data.embed_url.lien;
-  else if(data.embed_url.url) finalUrl = data.embed_url.url;
-  else if(data.embed_url.link) finalUrl = data.embed_url.link;
-}
-if(!finalUrl && data.url) finalUrl = data.url;
-if(!finalUrl && data.link) finalUrl = data.link;
-if(!finalUrl && data.lien) finalUrl = data.lien;
-if(!finalUrl && data.direct_link) finalUrl = data.direct_link;
-
-if(!finalUrl){
-body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
-return;
-}
-
-details.classList.remove("show");
+if(details)details.classList.remove("show");
 
 fetch("/api/link-click",{
   method:"POST",
@@ -543,12 +526,12 @@ fetch("/api/link-click",{
     linkType:"external",
     wwId:_wwId,
     isExternal:true,
-    provider:link.provider||null,
-    hostName:link.host_name||null,
-    quality:link.quality||null,
-    language:link.language||null,
-    fileSize:link.size||null,
-    externalLinkId:link.id||null
+    provider:extLink.provider||null,
+    hostName:extLink.host_name||null,
+    quality:extLink.quality||null,
+    language:extLink.language||null,
+    fileSize:extLink.size||null,
+    externalLinkId:extLink.id||null
   })
 });
 
@@ -559,7 +542,7 @@ if(_h&&_u){
 }
 })
 .catch(function(err){
-body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
+if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
 });
 }
 
@@ -1104,19 +1087,19 @@ _showExtDetails(_allExtLinks[idx]);
 function _showExtDetails(extLink){
 if(!extLink||!extLink.id)return; // Check for extLink.id as url might be empty initially
 var finalUrl=null;
+var details=document.getElementById("extDetails"); // ** CHANGE ** Define missing 'details' variable
 
-// Decode the link via Movix API
 fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/darkiworld/decode/"+extLink.id)
 .then(function(r){return r.json();})
 .then(function(data){
 if(!data||!data.success||!data.embed_url){
-body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
+if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>'; // ** CHANGE ** Check if details is defined before accessing innerHTML
 return;
 }
 var embed=data.embed_url;
 finalUrl=embed.lien||"#";
 
-details.classList.remove("show");
+if(details)details.classList.remove("show"); // ** CHANGE ** Check if details is defined before accessing classList
 
 // ** CHANGE ** Track external link click with full info
 fetch("/api/link-click",{
@@ -1164,7 +1147,7 @@ if(_h&&_u){
 }
 })
 .catch(function(err){
-body.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
+if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>'; // ** CHANGE ** Check if details is defined before accessing innerHTML
 });
 }
 // ** END OF UPDATES FOR FILM/SERIES CONTENT **
