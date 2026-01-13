@@ -14,7 +14,6 @@ import { Progress } from "@/components/ui/progress"
 import {
   ChevronLeft,
   ChevronRight,
-  Download,
   Pencil,
   User,
   RefreshCw,
@@ -26,6 +25,7 @@ import {
   ImageIcon,
   ChevronDown,
   ChevronUp,
+  SkipForward,
 } from "lucide-react"
 import type { DownloadLink } from "@/lib/types"
 
@@ -63,14 +63,22 @@ export function DownloadLinksManager() {
   const [isCheckingAll, setIsCheckingAll] = useState(false)
   const [checkProgress, setCheckProgress] = useState(0)
   const [checkTotal, setCheckTotal] = useState(0)
+  const [checkBatchStart, setCheckBatchStart] = useState(0)
+  const [totalLinksToCheck, setTotalLinksToCheck] = useState(0)
+  const BATCH_SIZE = 1000
+
   const [invalidLinks, setInvalidLinks] = useState<InvalidLinkWithMedia[]>([])
   const [loadingInvalid, setLoadingInvalid] = useState(false)
   const [showInvalidSection, setShowInvalidSection] = useState(true)
+
+  const [isCheckingInvalid, setIsCheckingInvalid] = useState(false)
+  const [invalidCheckProgress, setInvalidCheckProgress] = useState(0)
 
   useEffect(() => {
     loadLinks()
     loadUsers()
     loadInvalidLinks()
+    countTotalLinks()
   }, [page, userFilter, statusFilter])
 
   const loadUsers = async () => {
@@ -102,26 +110,58 @@ export function DownloadLinksManager() {
     setLoading(false)
   }
 
-  const fetchAllLinks = async (table: string) => {
+  const countTotalLinks = async () => {
+    const supabase = createClient()
+    const { count: downloadCount } = await supabase
+      .from("download_links")
+      .select("*", { count: "exact", head: true })
+      .not("source_url", "is", null)
+    const { count: digitalCount } = await supabase
+      .from("digital_download_links")
+      .select("*", { count: "exact", head: true })
+      .not("source_url", "is", null)
+    setTotalLinksToCheck((downloadCount || 0) + (digitalCount || 0))
+  }
+
+  const fetchLinksBatch = async (start: number, limit: number) => {
     const supabase = createClient()
     const allLinks: any[] = []
-    let page = 0
-    const pageSize = 1000
-    let hasMore = true
 
-    while (hasMore) {
-      const { data } = await supabase
-        .from(table)
+    // Fetch download links
+    const { data: downloadData } = await supabase
+      .from("download_links")
+      .select("id, source_url")
+      .not("source_url", "is", null)
+      .order("created_at", { ascending: true })
+      .range(start, start + limit - 1)
+
+    if (downloadData) {
+      allLinks.push(...downloadData.map((l) => ({ ...l, type: "download" })))
+    }
+
+    // If we need more links, fetch from digital
+    if (allLinks.length < limit) {
+      const digitalStart = Math.max(
+        0,
+        start -
+          (
+            await supabase
+              .from("download_links")
+              .select("*", { count: "exact", head: true })
+              .not("source_url", "is", null)
+          ).count!,
+      )
+      const digitalLimit = limit - allLinks.length
+
+      const { data: digitalData } = await supabase
+        .from("digital_download_links")
         .select("id, source_url")
         .not("source_url", "is", null)
-        .range(page * pageSize, (page + 1) * pageSize - 1)
+        .order("created_at", { ascending: true })
+        .range(digitalStart, digitalStart + digitalLimit - 1)
 
-      if (data && data.length > 0) {
-        allLinks.push(...data)
-        hasMore = data.length === pageSize
-        page++
-      } else {
-        hasMore = false
+      if (digitalData) {
+        allLinks.push(...digitalData.map((l) => ({ ...l, type: "digital" })))
       }
     }
 
@@ -287,23 +327,48 @@ export function DownloadLinksManager() {
     }
   }
 
-  const checkAllLinksInDatabase = async () => {
+  const checkLinksBatch = async () => {
     setIsCheckingAll(true)
     setCheckProgress(0)
 
-    const downloadLinks = await fetchAllLinks("download_links")
+    const supabase = createClient()
 
-    const digitalLinks = await fetchAllLinks("digital_download_links")
+    // Fetch batch of download links
+    const { data: downloadLinks } = await supabase
+      .from("download_links")
+      .select("id, source_url")
+      .not("source_url", "is", null)
+      .order("created_at", { ascending: true })
+      .range(checkBatchStart, checkBatchStart + BATCH_SIZE - 1)
 
-    const allLinks = [
-      ...downloadLinks.map((l) => ({ ...l, type: "download" })),
-      ...digitalLinks.map((l) => ({ ...l, type: "digital" })),
-    ]
+    const linksToCheck = (downloadLinks || []).map((l) => ({ ...l, type: "download" }))
 
-    setCheckTotal(allLinks.length)
+    // If we have less than BATCH_SIZE, also get digital links
+    if (linksToCheck.length < BATCH_SIZE) {
+      const { count: downloadCount } = await supabase
+        .from("download_links")
+        .select("*", { count: "exact", head: true })
+        .not("source_url", "is", null)
 
-    for (let i = 0; i < allLinks.length; i++) {
-      const link = allLinks[i]
+      const digitalStart = Math.max(0, checkBatchStart - (downloadCount || 0))
+      const digitalLimit = BATCH_SIZE - linksToCheck.length
+
+      const { data: digitalLinks } = await supabase
+        .from("digital_download_links")
+        .select("id, source_url")
+        .not("source_url", "is", null)
+        .order("created_at", { ascending: true })
+        .range(digitalStart, digitalStart + digitalLimit - 1)
+
+      if (digitalLinks) {
+        linksToCheck.push(...digitalLinks.map((l) => ({ ...l, type: "digital" })))
+      }
+    }
+
+    setCheckTotal(linksToCheck.length)
+
+    for (let i = 0; i < linksToCheck.length; i++) {
+      const link = linksToCheck[i]
       try {
         await fetch("/api/check-link", {
           method: "POST",
@@ -321,6 +386,34 @@ export function DownloadLinksManager() {
     }
 
     setIsCheckingAll(false)
+    setCheckBatchStart(checkBatchStart + BATCH_SIZE)
+    loadInvalidLinks()
+    loadLinks()
+  }
+
+  const checkAllInvalidLinks = async () => {
+    setIsCheckingInvalid(true)
+    setInvalidCheckProgress(0)
+
+    for (let i = 0; i < invalidLinks.length; i++) {
+      const link = invalidLinks[i]
+      try {
+        await fetch("/api/check-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            linkId: link.id,
+            linkType: link.isDigital ? "digital" : "download",
+            url: link.source_url,
+          }),
+        })
+      } catch (e) {
+        console.error("Error checking link:", e)
+      }
+      setInvalidCheckProgress(i + 1)
+    }
+
+    setIsCheckingInvalid(false)
     loadInvalidLinks()
     loadLinks()
   }
@@ -370,19 +463,6 @@ export function DownloadLinksManager() {
               Liens Invalides ({invalidLinks.length})
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  checkAllLinksInDatabase()
-                }}
-                disabled={isCheckingAll}
-                className="text-amber-400 border-amber-400/30"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isCheckingAll ? "animate-spin" : ""}`} />
-                Vérifier TOUS les liens
-              </Button>
               {showInvalidSection ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
             </div>
           </CardTitle>
@@ -390,15 +470,83 @@ export function DownloadLinksManager() {
 
         {showInvalidSection && (
           <CardContent>
+            <div className="mb-4 p-4 bg-background/50 rounded-lg border border-border">
+              <div className="flex flex-wrap items-center gap-4 mb-3">
+                <div className="text-sm text-muted-foreground">
+                  Total liens: <span className="font-bold text-foreground">{totalLinksToCheck}</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Position: <span className="font-bold text-foreground">{checkBatchStart}</span> / {totalLinksToCheck}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={checkLinksBatch}
+                  disabled={isCheckingAll || isCheckingInvalid}
+                  className="text-amber-400 border-amber-400/30 bg-transparent"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isCheckingAll ? "animate-spin" : ""}`} />
+                  Vérifier 1000 liens
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCheckBatchStart(checkBatchStart + BATCH_SIZE)}
+                  disabled={isCheckingAll || checkBatchStart >= totalLinksToCheck}
+                  className="text-blue-400 border-blue-400/30"
+                >
+                  <SkipForward className="h-4 w-4 mr-2" />
+                  1000 suivants
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCheckBatchStart(0)}
+                  disabled={isCheckingAll}
+                  className="text-gray-400 border-gray-400/30"
+                >
+                  Recommencer
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={checkAllInvalidLinks}
+                  disabled={isCheckingAll || isCheckingInvalid || invalidLinks.length === 0}
+                  className="text-red-400 border-red-400/30 bg-transparent"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isCheckingInvalid ? "animate-spin" : ""}`} />
+                  Re-vérifier invalides ({invalidLinks.length})
+                </Button>
+              </div>
+            </div>
+
             {isCheckingAll && (
               <div className="mb-4 space-y-2">
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Vérification en cours...</span>
+                  <span>Vérification batch en cours...</span>
                   <span>
                     {checkProgress} / {checkTotal}
                   </span>
                 </div>
                 <Progress value={(checkProgress / checkTotal) * 100} className="h-2" />
+              </div>
+            )}
+
+            {isCheckingInvalid && (
+              <div className="mb-4 space-y-2">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Re-vérification des liens invalides...</span>
+                  <span>
+                    {invalidCheckProgress} / {invalidLinks.length}
+                  </span>
+                </div>
+                <Progress value={(invalidCheckProgress / invalidLinks.length) * 100} className="h-2 bg-red-500/20" />
               </div>
             )}
 
@@ -574,31 +722,46 @@ export function DownloadLinksManager() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-wrap justify-end">
+
+              <div className="flex items-center gap-2">
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => checkLinkValidity(link.id, link.source_url, "download")}
                   disabled={checkingLinkId === link.id}
+                  title="Vérifier le lien"
                 >
                   <RefreshCw className={`h-4 w-4 ${checkingLinkId === link.id ? "animate-spin" : ""}`} />
                 </Button>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs">Actif</Label>
-                  <Switch checked={link.is_active} onCheckedChange={() => toggleActive(link.id, link.is_active)} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs">Vérifié</Label>
+
+                <div className="flex items-center gap-1">
                   <Switch
+                    id={`active-${link.id}`}
+                    checked={link.is_active}
+                    onCheckedChange={() => toggleActive(link.id, link.is_active)}
+                  />
+                  <Label htmlFor={`active-${link.id}`} className="text-xs">
+                    Actif
+                  </Label>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <Switch
+                    id={`verified-${link.id}`}
                     checked={link.is_verified}
                     onCheckedChange={() => toggleVerified(link.id, link.is_verified)}
                   />
+                  <Label htmlFor={`verified-${link.id}`} className="text-xs">
+                    Vérifié
+                  </Label>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => openEdit(link)}>
+
+                <Button size="sm" variant="ghost" onClick={() => openEdit(link)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => deleteLink(link.id)}>
-                  <Download className="h-4 w-4" />
+
+                <Button size="sm" variant="ghost" className="text-red-400" onClick={() => deleteLink(link.id)}>
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -608,20 +771,24 @@ export function DownloadLinksManager() {
 
       {/* Pagination */}
       <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
+        <Button variant="outline" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          Précédent
+        </Button>
+        <span className="text-sm text-muted-foreground">
           Page {page + 1} sur {totalPages || 1}
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        </span>
+        <Button
+          variant="outline"
+          onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+          disabled={page >= totalPages - 1}
+        >
+          Suivant
+          <ChevronRight className="h-4 w-4 ml-2" />
+        </Button>
       </div>
 
-      {/* Modal d'édition */}
+      {/* Edit Dialog */}
       <Dialog open={!!editingLink} onOpenChange={() => setEditingLink(null)}>
         <DialogContent>
           <DialogHeader>
@@ -629,23 +796,23 @@ export function DownloadLinksManager() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Source</Label>
+              <Label>Nom de la source</Label>
               <Input
                 value={editData.source_name}
-                onChange={(e) => setEditData({ ...editData, source_name: e.target.value })}
+                onChange={(e) => setEditData((d) => ({ ...d, source_name: e.target.value }))}
               />
             </div>
             <div>
               <Label>URL</Label>
               <Input
                 value={editData.source_url}
-                onChange={(e) => setEditData({ ...editData, source_url: e.target.value })}
+                onChange={(e) => setEditData((d) => ({ ...d, source_url: e.target.value }))}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Qualité</Label>
-                <Select value={editData.quality} onValueChange={(v) => setEditData({ ...editData, quality: v })}>
+                <Select value={editData.quality} onValueChange={(v) => setEditData((d) => ({ ...d, quality: v }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -663,7 +830,7 @@ export function DownloadLinksManager() {
                 <Label>Type</Label>
                 <Select
                   value={editData.link_type}
-                  onValueChange={(v) => setEditData({ ...editData, link_type: v as "direct" | "torrent" | "magnet" })}
+                  onValueChange={(v) => setEditData((d) => ({ ...d, link_type: v as any }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -678,8 +845,16 @@ export function DownloadLinksManager() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <Label>Taille</Label>
+                <Input
+                  value={editData.file_size}
+                  onChange={(e) => setEditData((d) => ({ ...d, file_size: e.target.value }))}
+                  placeholder="Ex: 2.5 GB"
+                />
+              </div>
+              <div>
                 <Label>Langue</Label>
-                <Select value={editData.language} onValueChange={(v) => setEditData({ ...editData, language: v })}>
+                <Select value={editData.language} onValueChange={(v) => setEditData((d) => ({ ...d, language: v }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -690,14 +865,6 @@ export function DownloadLinksManager() {
                     <SelectItem value="multi">Multi</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
-                <Label>Taille</Label>
-                <Input
-                  value={editData.file_size}
-                  onChange={(e) => setEditData({ ...editData, file_size: e.target.value })}
-                  placeholder="ex: 1.5 Go"
-                />
               </div>
             </div>
             <Button onClick={saveEdit} className="w-full">

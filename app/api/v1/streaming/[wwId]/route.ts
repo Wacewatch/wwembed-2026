@@ -173,8 +173,8 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
 <div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
 </div>
-<a href="${AD_URL}" target="_blank" rel="noopener" class="bt-link bp" id="btnAd" onclick="unlockContent()">CONTINUER<span class="adtag">PUB</span></a>
-<button class="bt-link bn hi" id="btnStart" onclick="startPlayer()">LANCER LE LECTEUR</button>
+<a href="${AD_URL}" target="_blank" rel="noopener" class="bt-link bp" id="btnAd">CONTINUER<span class="adtag">PUB</span></a>
+<button class="bt-link bn hi" id="btnStart">LANCER LE LECTEUR</button>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
 </div>
@@ -242,6 +242,8 @@ p.innerHTML='<iframe src="'+s.url+'" allowfullscreen allow="autoplay;fullscreen"
 $("srcBtn").onclick=function(){$("srcModal").classList.add("sh");buildGrid();};
 $("closeModal").onclick=function(){$("srcModal").classList.remove("sh");};
 $("srcModal").onclick=function(e){if(e.target===$("srcModal"))$("srcModal").classList.remove("sh");};
+$("btnAd").addEventListener("click",function(){setTimeout(function(){$("step1").classList.remove("active");$("step1").classList.add("done");$("step2").classList.add("active");$("step2").classList.add("done");$("btnAd").classList.add("hi");$("btnStart").classList.remove("hi");},150);});
+$("btnStart").onclick=startPlayer;
 <\/script>
 </body>
 </html>`

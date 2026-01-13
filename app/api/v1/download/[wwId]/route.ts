@@ -263,7 +263,7 @@ Recherche de sources externes...
 <div class="bx-content"><b>Tout est prêt !</b><span>Cliquez pour voir le lien</span></div>
 </div>
 <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
-<button class="bt bp" id="${ids.btnUnlock}">Continuer<span class="tag">PUB</span></button>
+<a href="${adUrl}" target="_blank" rel="noopener" class="bt bp" id="${ids.btnUnlock}">CONTINUER<span class="tag">PUB</span></a>
 <button class="bt bn hi" id="${ids.btnDownload}">Voir le lien</button>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
@@ -375,35 +375,25 @@ if(s2){s2.classList.remove("active");s2.classList.remove("done");}
 if(s3){s3.classList.remove("active");s3.classList.remove("done");}
 if(o)o.classList.add("sh");
 
-bu.onclick=function(){
-// </CHANGE> Open ad in new tab with simple link technique
-var link = document.createElement('a');
-link.href = _u;
-link.target = '_blank';
-link.rel = 'noopener noreferrer';
-document.body.appendChild(link);
-link.click();
-document.body.removeChild(link);
-
-// Track ad click
-fetch("/api/ads/click",{
-  method:"POST",
-  headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({adId:_i})
-}).catch(function(){});
-// </CHANGE>
-
-bu.classList.add("hi");
-if(s1){s1.classList.remove("active");s1.classList.add("done");}
-if(s2){s2.classList.remove("active");s2.classList.add("done");}
-if(s3)s3.classList.add("active");
-if(bt)bt.classList.add("hi");
-if(bh)bh.classList.add("hi");
-if(bk)bk.classList.remove("hi");
-if(bd)bd.classList.remove("hi");
-if(pr)pr.style.width="100%";
-if(dn)dn.classList.remove("hi");
-};
+bu.addEventListener("click", function(){
+  setTimeout(function(){
+    if(s1)s1.classList.remove("active");s1.classList.add("done");
+    if(s2)s2.classList.add("active");s2.classList.add("done");
+    if(s3)s3.classList.remove("active");
+    if(bt)bt.classList.add("hi");
+    if(bh)bh.classList.add("hi");
+    if(bk)bk.classList.add("hi");
+    if(bd)bd.classList.remove("hi");
+    if(pr)pr.style.width="100%";
+    if(bu)bu.classList.add("hi");
+    if(dn)dn.classList.remove("hi");
+    fetch("/api/ads/click",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({adId:_i})
+    }).catch(function(){});
+  },150);
+});
 
 dn.onclick=function(){
 o.classList.remove("sh");
@@ -503,18 +493,21 @@ _showExtDetails(_allExtLinks[idx]);
 }
 
 function _showExtDetails(extLink){
-if(!extLink||!extLink.id)return;
+if(!extLink||!extLink.id)return; // Check for extLink.id as url might be empty initially
 var AD_URL="https://otieu.com/4/9248013";
+var details=document.getElementById("extDetails");
 
 fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/darkiworld/decode/"+extLink.id)
 .then(function(r){return r.json();})
 .then(function(data){
 if(!data||!data.success||!data.embed_url){
-alert("Lien indisponible");
+if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
 return;
 }
 var embed=data.embed_url;
 var finalUrl=embed.lien||"#";
+
+if(details)details.classList.remove("show");
 
 fetch("/api/link-click",{
   method:"POST",
@@ -531,31 +524,78 @@ fetch("/api/link-click",{
   })
 });
 
+// Store final URL globally
+window._extFinalUrl=finalUrl;
+
 var existingModal=document.getElementById("extAdModal");
 if(existingModal)existingModal.remove();
 
-var m=document.createElement("div");
-m.id="extAdModal";
-m.style.cssText="position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px";
-m.innerHTML='<div style="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center"><h2 style="color:#1a1a2e;margin-bottom:6px;font-size:18px">Votre lien est prêt</h2><p style="color:#666;font-size:12px;margin-bottom:14px">Cliquez pour accéder au téléchargement</p><div style="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e"><div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div></div><div style="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6"><div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide à rester en ligne</span></div></div><a id="extAdBtn" href="'+AD_URL+'" target="_blank" rel="noopener" style="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff">CONTINUER <span style="background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span></a><button id="extAdBtnStart" style="display:none;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-align:center;margin-top:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff">VOIR LE LIEN</button><p style="margin-top:10px;font-size:10px;color:#999">Propulsé par WaveWatch</p></div>';
+var modal=document.createElement("div");
+modal.id="extAdModal";
+modal.style.cssText="position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px";
 
-document.body.appendChild(m);
+var box=document.createElement("div");
+box.style.cssText="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center";
 
-document.getElementById("extAdBtn").onclick=function(){
+var title=document.createElement("h2");
+title.style.cssText="color:#1a1a2e;margin-bottom:6px;font-size:18px";
+title.textContent="Votre lien est prêt";
+
+var subtitle=document.createElement("p");
+subtitle.style.cssText="color:#666;font-size:12px;margin-bottom:14px";
+subtitle.textContent="Cliquez pour accéder au téléchargement";
+
+var warning=document.createElement("div");
+warning.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e";
+warning.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div>';
+
+var support=document.createElement("div");
+support.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6";
+support.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide à rester en ligne</span></div>';
+
+var adBtn=document.createElement("a");
+adBtn.href=AD_URL;
+adBtn.target="_blank";
+adBtn.rel="noopener";
+adBtn.style.cssText="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;cursor:pointer";
+adBtn.innerHTML='CONTINUER <span style="background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span>';
+
+var startBtn=document.createElement("button");
+startBtn.id="extAdBtnStart";
+startBtn.style.cssText="display:none;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-align:center;margin-top:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff";
+startBtn.textContent="VOIR LE LIEN";
+
+adBtn.onclick=function(){
   this.style.display="none";
-  document.getElementById("extAdBtnStart").style.display="block";
+  startBtn.style.display="block";
 };
 
-document.getElementById("extAdBtnStart").onclick=function(){
-  m.remove();
-  var area=document.getElementById("linkDisplayArea");
-  area.style.display="block";
-  area.innerHTML='<div class="link-display"><div class="link-display-title">Votre lien est prêt !</div><div class="link-display-url">'+finalUrl+'</div><a href="'+finalUrl+'" target="_blank" class="link-display-btn">Ouvrir le lien</a></div>';
-  area.scrollIntoView({behavior:"smooth"});
+startBtn.onclick=function(){
+  modal.remove();
+  var linkArea=document.getElementById("linkDisplayArea");
+  if(linkArea){
+    linkArea.style.display="block";
+    linkArea.innerHTML='<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:12px;padding:20px;text-align:center;border:1px solid rgba(102,126,234,0.3)"><div style="color:#fff;font-weight:600;margin-bottom:10px">Votre lien est prêt !</div><div style="background:#0d1117;padding:10px;border-radius:8px;margin-bottom:15px;word-break:break-all;color:#58a6ff;font-size:12px">'+window._extFinalUrl+'</div><a href="'+window._extFinalUrl+'" target="_blank" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Ouvrir le lien</a></div>';
+    linkArea.scrollIntoView({behavior:"smooth"});
+  }
 };
+
+var footer=document.createElement("p");
+footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
+footer.innerHTML='Propulsé par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a>';
+
+box.appendChild(title);
+box.appendChild(subtitle);
+box.appendChild(warning);
+box.appendChild(support);
+box.appendChild(adBtn);
+box.appendChild(startBtn);
+box.appendChild(footer);
+modal.appendChild(box);
+document.body.appendChild(modal);
 })
 .catch(function(err){
-alert("Erreur de décodage");
+if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage du lien</p></div>';
 });
 }
 
@@ -962,35 +1002,25 @@ if(s2){s2.classList.remove("active");s2.classList.remove("done");}
 if(s3){s3.classList.remove("active");s3.classList.remove("done");}
 o.classList.add("sh");
 
-bu.onclick=function(){
-// </CHANGE> Open ad in new tab with simple link technique
-var link = document.createElement('a');
-link.href = _u;
-link.target = '_blank';
-link.rel = 'noopener noreferrer';
-document.body.appendChild(link);
-link.click();
-document.body.removeChild(link);
-
-// Track ad click
-fetch("/api/ads/click",{
-  method:"POST",
-  headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({adId:_i})
-}).catch(function(){});
-// </CHANGE>
-
-bu.classList.add("hi");
-if(s1){s1.classList.remove("active");s1.classList.add("done");}
-if(s2){s2.classList.remove("active");s2.classList.add("done");}
-if(s3)s3.classList.add("active");
-if(bt)bt.classList.add("hi");
-if(bh)bh.classList.add("hi");
-if(bk)bk.classList.remove("hi");
-if(bd)bd.classList.remove("hi");
-if(pr)pr.style.width="100%";
-if(dn)dn.classList.remove("hi");
-};
+bu.addEventListener("click", function(){
+  setTimeout(function(){
+    if(s1)s1.classList.remove("active");s1.classList.add("done");
+    if(s2)s2.classList.add("active");s2.classList.add("done");
+    if(s3)s3.classList.remove("active");
+    if(bt)bt.classList.add("hi");
+    if(bh)bh.classList.add("hi");
+    if(bk)bk.classList.add("hi");
+    if(bd)bd.classList.remove("hi");
+    if(pr)pr.style.width="100%";
+    if(bu)bu.classList.add("hi");
+    if(dn)dn.classList.remove("hi");
+    fetch("/api/ads/click",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({adId:_i})
+    }).catch(function(){});
+  },150);
+});
 
 dn.onclick=function(){
 o.classList.remove("sh");
@@ -1098,7 +1128,7 @@ _showExtDetails(_allExtLinks[idx]);
 
 // ** START OF UPDATES FOR FILM/SERIES CONTENT **
 function _showExtDetails(extLink){
-if(!extLink||!extLink.id)return; // Check for extLink.id as url might be empty initially
+if(!extLink||!extLink.id)return;
 var AD_URL="https://otieu.com/4/9248013";
 var details=document.getElementById("extDetails");
 
@@ -1109,10 +1139,7 @@ if(!data||!data.success||!data.embed_url){
 if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
 return;
 }
-var embed=data.embed_url;
-var finalUrl=embed.lien||"#";
-
-if(details)details.classList.remove("show");
+var finalUrl=data.embed_url.lien||"#";
 
 fetch("/api/link-click",{
   method:"POST",
@@ -1134,29 +1161,78 @@ fetch("/api/link-click",{
   })
 });
 
-var modalHtml='<div id="extAdModal" style="position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px">';
-modalHtml+='<div style="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center">';
-modalHtml+='<h2 style="color:#1a1a2e;margin-bottom:6px;font-size:18px">Votre lien est prêt</h2>';
-modalHtml+='<p style="color:#666;font-size:12px;margin-bottom:14px">Cliquez pour accéder au téléchargement</p>';
-modalHtml+='<div style="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e">';
-modalHtml+='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
-modalHtml+='<div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div>';
-modalHtml+='</div>';
-modalHtml+='<div style="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6">';
-modalHtml+='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
-modalHtml+='<div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide à rester en ligne</span></div>';
-modalHtml+='</div>';
-modalHtml+='<a href="'+AD_URL+'" target="_blank" rel="noopener" onclick="document.getElementById(\\'extAdModal\\').setAttribute(\\'data-clicked\\',\\'1\\');document.getElementById(\\'extAdBtnStart\\').style.display=\\'block\\';this.style.display=\\'none\\';" style="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff">CONTINUER <span style="background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span></a>';
-modalHtml+='<button id="extAdBtnStart" onclick="document.getElementById(\\'extAdModal\\').remove();var a=document.getElementById(\\'linkDisplayArea\\');a.style.display=\\'block\\';a.innerHTML=\\'<div class=link-display><div class=link-display-title>Votre lien est prêt !</div><div class=link-display-url>'+finalUrl.replace(/'/g,"\\'")+'\\'</div><a href='+finalUrl+' target=_blank class=link-display-btn>Ouvrir le lien</a></div>\\';a.scrollIntoView({behavior:\\'smooth\\'});" style="display:none;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-align:center;margin-top:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff">VOIR LE LIEN</button>';
-modalHtml+='<p style="margin-top:10px;font-size:10px;color:#999">Propulsé par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a></p>';
-modalHtml+='</div></div>';
+// Store final URL globally
+window._extFinalUrl=finalUrl;
 
 var existingModal=document.getElementById("extAdModal");
 if(existingModal)existingModal.remove();
-document.body.insertAdjacentHTML("beforeend",modalHtml);
+
+var modal=document.createElement("div");
+modal.id="extAdModal";
+modal.style.cssText="position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px";
+
+var box=document.createElement("div");
+box.style.cssText="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center";
+
+var title=document.createElement("h2");
+title.style.cssText="color:#1a1a2e;margin-bottom:6px;font-size:18px";
+title.textContent="Votre lien est prêt";
+
+var subtitle=document.createElement("p");
+subtitle.style.cssText="color:#666;font-size:12px;margin-bottom:14px";
+subtitle.textContent="Cliquez pour accéder au téléchargement";
+
+var warning=document.createElement("div");
+warning.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e";
+warning.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div>';
+
+var support=document.createElement("div");
+support.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6";
+support.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide à rester en ligne</span></div>';
+
+var adBtn=document.createElement("a");
+adBtn.href=AD_URL;
+adBtn.target="_blank";
+adBtn.rel="noopener";
+adBtn.style.cssText="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;cursor:pointer";
+adBtn.innerHTML='CONTINUER <span style="background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span>';
+
+var startBtn=document.createElement("button");
+startBtn.id="extAdBtnStart";
+startBtn.style.cssText="display:none;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-align:center;margin-top:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff";
+startBtn.textContent="VOIR LE LIEN";
+
+adBtn.onclick=function(){
+  this.style.display="none";
+  startBtn.style.display="block";
+};
+
+startBtn.onclick=function(){
+  modal.remove();
+  var linkArea=document.getElementById("linkDisplayArea");
+  if(linkArea){
+    linkArea.style.display="block";
+    linkArea.innerHTML='<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:12px;padding:20px;text-align:center;border:1px solid rgba(102,126,234,0.3)"><div style="color:#fff;font-weight:600;margin-bottom:10px">Votre lien est prêt !</div><div style="background:#0d1117;padding:10px;border-radius:8px;margin-bottom:15px;word-break:break-all;color:#58a6ff;font-size:12px">'+window._extFinalUrl+'</div><a href="'+window._extFinalUrl+'" target="_blank" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Ouvrir le lien</a></div>';
+    linkArea.scrollIntoView({behavior:"smooth"});
+  }
+};
+
+var footer=document.createElement("p");
+footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
+footer.innerHTML='Propulsé par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a>';
+
+box.appendChild(title);
+box.appendChild(subtitle);
+box.appendChild(warning);
+box.appendChild(support);
+box.appendChild(adBtn);
+box.appendChild(startBtn);
+box.appendChild(footer);
+modal.appendChild(box);
+document.body.appendChild(modal);
 })
 .catch(function(err){
-if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
+if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage du lien</p></div>';
 });
 }
 // ** END OF UPDATES FOR FILM/SERIES CONTENT **

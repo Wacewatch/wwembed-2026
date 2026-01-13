@@ -4,6 +4,7 @@ import { Header } from "@/components/header"
 import { AdminStats } from "@/components/admin/admin-stats"
 import { AdminTabs } from "@/components/admin/admin-tabs"
 import { OnlineUsersModule } from "@/components/admin/online-users-module"
+import { ServerStatsModule } from "@/components/admin/server-stats-module"
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -93,6 +94,10 @@ export default async function AdminPage() {
         </div>
 
         <AdminStats stats={stats} />
+
+        <div className="mb-6">
+          <ServerStatsModule />
+        </div>
 
         <div className="mb-6">
           <OnlineUsersModule />
