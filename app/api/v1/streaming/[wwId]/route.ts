@@ -2,9 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { parseWWId, getMovieDetails, getTVDetails, getEpisodeDetails } from "@/lib/tmdb"
 
-export async function GET(request: NextRequest, props: { params: { wwId: string } }) {
+export async function GET(request: NextRequest, props: { params: Promise<{ wwId: string }> }) {
   try {
-    const { wwId } = props.params
+    const params = await props.params
+    const { wwId } = params
     if (!wwId) return NextResponse.json({ error: "Missing WW ID" }, { status: 400 })
 
     const parsed = parseWWId(wwId)
@@ -13,11 +14,8 @@ export async function GET(request: NextRequest, props: { params: { wwId: string 
     const { mediaType, tmdbId, seasonNumber, episodeNumber } = parsed
     const supabase = createAdminClient()
 
-    const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
-    const activeAds = ads || []
-    const hasAds = activeAds.length > 0
-    const adUrl = hasAds ? activeAds[0].ad_url : ""
-    const adId = hasAds ? activeAds[0].id : ""
+    const AD_URL = "https://otieu.com/4/9248013"
+    const hasAds = true
 
     const tmdbData = mediaType === "movie" ? await getMovieDetails(tmdbId) : await getTVDetails(tmdbId)
     let episodeData = null
@@ -138,7 +136,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .tag{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600}
 .tag-q{background:#7c3aed;color:#fff}
 .tag-l{background:#0891b2;color:#fff}
-.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:none;align-items:center;justify-content:center;z-index:9999;padding:16px}
+.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
 .mc{background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center}
 .mc h2{color:#1a1a2e;margin-bottom:6px;font-size:18px}
 .mc-sub{color:#666;font-size:12px;margin-bottom:14px}
@@ -175,8 +173,8 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
 <div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
 </div>
-<a href="${adUrl}" target="_blank" class="bt-link bp${!hasAds ? " hi" : ""}" id="btnAd" onclick="unlockContent()">CONTINUER<span class="adtag">PUB</span></a>
-<button class="bt-link bn${hasAds ? " hi" : ""}" id="btnStart" onclick="startPlayer()">LANCER LE LECTEUR</button>
+<a href="${AD_URL}" target="_blank" rel="noopener" class="bt-link bp" id="btnAd" onclick="unlockContent()">CONTINUER<span class="adtag">PUB</span></a>
+<button class="bt-link bn hi" id="btnStart" onclick="startPlayer()">LANCER LE LECTEUR</button>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
 </div>
@@ -199,15 +197,12 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 </div>
 <script>
 var _src=${sourcesJson};
-var _adId="${adId}";
-var _h=${hasAds};
 var _idx=0;
 var _started=false;
 
 function $(id){return document.getElementById(id);}
 
 function unlockContent(){
-fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_adId})}).catch(function(){});
 $("step1").classList.remove("active");$("step1").classList.add("done");
 $("step2").classList.add("active");$("step2").classList.add("done");
 $("btnAd").classList.add("hi");
@@ -247,8 +242,6 @@ p.innerHTML='<iframe src="'+s.url+'" allowfullscreen allow="autoplay;fullscreen"
 $("srcBtn").onclick=function(){$("srcModal").classList.add("sh");buildGrid();};
 $("closeModal").onclick=function(){$("srcModal").classList.remove("sh");};
 $("srcModal").onclick=function(e){if(e.target===$("srcModal"))$("srcModal").classList.remove("sh");};
-
-if(_h){$("adOverlay").style.display="flex";}else{startPlayer();}
 <\/script>
 </body>
 </html>`

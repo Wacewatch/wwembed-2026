@@ -67,11 +67,8 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
 
     if (allSources.length === 0) return new NextResponse("No sources available", { status: 404 })
 
-    const { data: ads } = await supabase.from("ads").select("id, name, ad_url, ad_type").eq("is_active", true)
-    const activeAds = ads || []
-    const hasAds = activeAds.length > 0
-    const adUrl = hasAds ? activeAds[0].ad_url : ""
-    const adId = hasAds ? activeAds[0].id : ""
+    const AD_URL = "https://otieu.com/4/9248013"
+    const hasAds = true
 
     const referer = request.headers.get("referer") || null
     await supabase.from("embed_views").insert({
@@ -123,7 +120,7 @@ body{font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;overflow:hid
 .tag{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600}
 .tag-q{background:#7c3aed;color:#fff}
 .tag-l{background:#0891b2;color:#fff}
-.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(251,146,60,0.95),rgba(234,88,12,0.95));display:none;align-items:center;justify-content:center;z-index:9999;padding:16px}
+.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(251,146,60,0.95),rgba(234,88,12,0.95));display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
 .mc{background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center}
 .mc h2{color:#1a1a2e;margin-bottom:6px;font-size:18px}
 .mc-sub{color:#666;font-size:12px;margin-bottom:14px}
@@ -137,7 +134,6 @@ body{font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;overflow:hid
 .bx span{font-size:10px;opacity:0.8}
 .bw{background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
 .bh{background:#fce7f3;border:1px solid #ec4899;color:#9d174d}
-.bo{background:#d1fae5;border:1px solid #10b981;color:#065f46}
 .bt-link{display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;margin-top:8px}
 .bp{background:linear-gradient(135deg,#e63946,#dc2626);color:#fff}
 .bn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff}
@@ -181,16 +177,14 @@ body{font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;overflow:hid
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
 <div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
 </div>
-<a href="${adUrl}" target="_blank" class="bt-link bp${!hasAds ? " hi" : ""}" id="btnAd" onclick="unlockContent()">CONTINUER<span class="adtag">PUB</span></a>
-<button class="bt-link bn${hasAds ? " hi" : ""}" id="btnStart" onclick="startPlayer()">DÉMARRER LA LECTURE</button>
+<a href="${AD_URL}" target="_blank" rel="noopener" class="bt-link bp" id="btnAd" onclick="unlockContent()">CONTINUER<span class="adtag">PUB</span></a>
+<button class="bt-link bn hi" id="btnStart" onclick="startPlayer()">DÉMARRER LA LECTURE</button>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
 </div>
 
 <script>
 var _src=${sourcesJson};
-var _adId="${adId}";
-var _h=${hasAds};
 var _idx=0;
 var _started=false;
 var _hls=null;
@@ -198,10 +192,8 @@ var _hls=null;
 function $(id){return document.getElementById(id);}
 
 function unlockContent(){
-fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_adId})}).catch(function(){});
-var s1=$("step1"),s2=$("step2");
-if(s1){s1.classList.remove("active");s1.classList.add("done");}
-if(s2){s2.classList.add("active");s2.classList.add("done");}
+$("step1").classList.remove("active");$("step1").classList.add("done");
+$("step2").classList.add("active");$("step2").classList.add("done");
 $("btnAd").classList.add("hi");
 $("btnStart").classList.remove("hi");
 }
@@ -209,8 +201,7 @@ $("btnStart").classList.remove("hi");
 function startPlayer(){
 if(_started)return;
 _started=true;
-var ov=$("adOverlay");
-if(ov)ov.style.display="none";
+$("adOverlay").style.display="none";
 buildSrcList();
 if(_src.length){$("srcLabel").textContent=_src[0].name;loadPlayer();}
 }
@@ -251,8 +242,6 @@ p.innerHTML='<iframe src="'+url+'" allowfullscreen allow="autoplay;fullscreen"><
 
 $("srcBtn").onclick=function(){$("srcMenu").classList.toggle("show");};
 document.addEventListener("click",function(e){if(!e.target.closest(".dropdown"))$("srcMenu").classList.remove("show");});
-
-if(_h){$("adOverlay").style.display="flex";}else{startPlayer();}
 <\/script>
 </body>
 </html>`

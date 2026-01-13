@@ -504,20 +504,17 @@ _showExtDetails(_allExtLinks[idx]);
 
 function _showExtDetails(extLink){
 if(!extLink||!extLink.id)return;
-var finalUrl=null;
-var details=document.getElementById("extDetails");
+var AD_URL="https://otieu.com/4/9248013";
 
 fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/darkiworld/decode/"+extLink.id)
 .then(function(r){return r.json();})
 .then(function(data){
 if(!data||!data.success||!data.embed_url){
-if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
+alert("Lien indisponible");
 return;
 }
 var embed=data.embed_url;
-finalUrl=embed.lien||"#";
-
-if(details)details.classList.remove("show");
+var finalUrl=embed.lien||"#";
 
 fetch("/api/link-click",{
   method:"POST",
@@ -525,7 +522,6 @@ fetch("/api/link-click",{
   body:JSON.stringify({
     linkType:"external",
     wwId:_wwId,
-    isExternal:true,
     provider:extLink.provider||null,
     hostName:extLink.host_name||null,
     quality:extLink.quality||null,
@@ -535,14 +531,31 @@ fetch("/api/link-click",{
   })
 });
 
-if(_h&&_u){
-  _showAdModal(finalUrl);
-}else{
-  _displayLink(finalUrl);
-}
+var existingModal=document.getElementById("extAdModal");
+if(existingModal)existingModal.remove();
+
+var m=document.createElement("div");
+m.id="extAdModal";
+m.style.cssText="position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px";
+m.innerHTML='<div style="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center"><h2 style="color:#1a1a2e;margin-bottom:6px;font-size:18px">Votre lien est prêt</h2><p style="color:#666;font-size:12px;margin-bottom:14px">Cliquez pour accéder au téléchargement</p><div style="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e"><div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div></div><div style="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6"><div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide à rester en ligne</span></div></div><a id="extAdBtn" href="'+AD_URL+'" target="_blank" rel="noopener" style="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff">CONTINUER <span style="background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span></a><button id="extAdBtnStart" style="display:none;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-align:center;margin-top:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff">VOIR LE LIEN</button><p style="margin-top:10px;font-size:10px;color:#999">Propulsé par WaveWatch</p></div>';
+
+document.body.appendChild(m);
+
+document.getElementById("extAdBtn").onclick=function(){
+  this.style.display="none";
+  document.getElementById("extAdBtnStart").style.display="block";
+};
+
+document.getElementById("extAdBtnStart").onclick=function(){
+  m.remove();
+  var area=document.getElementById("linkDisplayArea");
+  area.style.display="block";
+  area.innerHTML='<div class="link-display"><div class="link-display-title">Votre lien est prêt !</div><div class="link-display-url">'+finalUrl+'</div><a href="'+finalUrl+'" target="_blank" class="link-display-btn">Ouvrir le lien</a></div>';
+  area.scrollIntoView({behavior:"smooth"});
+};
 })
 .catch(function(err){
-if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
+alert("Erreur de décodage");
 });
 }
 
@@ -1086,22 +1099,21 @@ _showExtDetails(_allExtLinks[idx]);
 // ** START OF UPDATES FOR FILM/SERIES CONTENT **
 function _showExtDetails(extLink){
 if(!extLink||!extLink.id)return; // Check for extLink.id as url might be empty initially
-var finalUrl=null;
-var details=document.getElementById("extDetails"); // ** CHANGE ** Define missing 'details' variable
+var AD_URL="https://otieu.com/4/9248013";
+var details=document.getElementById("extDetails");
 
 fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.site/api/darkiworld/decode/"+extLink.id)
 .then(function(r){return r.json();})
 .then(function(data){
 if(!data||!data.success||!data.embed_url){
-if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>'; // ** CHANGE ** Check if details is defined before accessing innerHTML
+if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
 return;
 }
 var embed=data.embed_url;
-finalUrl=embed.lien||"#";
+var finalUrl=embed.lien||"#";
 
-if(details)details.classList.remove("show"); // ** CHANGE ** Check if details is defined before accessing classList
+if(details)details.classList.remove("show");
 
-// ** CHANGE ** Track external link click with full info
 fetch("/api/link-click",{
   method:"POST",
   headers:{"Content-Type":"application/json"},
@@ -1122,32 +1134,29 @@ fetch("/api/link-click",{
   })
 });
 
-if(_h&&_u){
-  // Open ad in new tab
-  var link = document.createElement('a');
-  link.href = _u;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  
-  // Track ad click
-  fetch("/api/ads/click",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({adId:_i})
-  }).catch(function(){});
-  
-  // Display link immediately
-  _displayLink(finalUrl);
-} else {
-  // No ads, open directly
-  window.open(finalUrl,"_blank");
-}
+var modalHtml='<div id="extAdModal" style="position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px">';
+modalHtml+='<div style="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center">';
+modalHtml+='<h2 style="color:#1a1a2e;margin-bottom:6px;font-size:18px">Votre lien est prêt</h2>';
+modalHtml+='<p style="color:#666;font-size:12px;margin-bottom:14px">Cliquez pour accéder au téléchargement</p>';
+modalHtml+='<div style="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e">';
+modalHtml+='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+modalHtml+='<div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div>';
+modalHtml+='</div>';
+modalHtml+='<div style="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6">';
+modalHtml+='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+modalHtml+='<div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide à rester en ligne</span></div>';
+modalHtml+='</div>';
+modalHtml+='<a href="'+AD_URL+'" target="_blank" rel="noopener" onclick="document.getElementById(\\'extAdModal\\').setAttribute(\\'data-clicked\\',\\'1\\');document.getElementById(\\'extAdBtnStart\\').style.display=\\'block\\';this.style.display=\\'none\\';" style="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff">CONTINUER <span style="background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span></a>';
+modalHtml+='<button id="extAdBtnStart" onclick="document.getElementById(\\'extAdModal\\').remove();var a=document.getElementById(\\'linkDisplayArea\\');a.style.display=\\'block\\';a.innerHTML=\\'<div class=link-display><div class=link-display-title>Votre lien est prêt !</div><div class=link-display-url>'+finalUrl.replace(/'/g,"\\'")+'\\'</div><a href='+finalUrl+' target=_blank class=link-display-btn>Ouvrir le lien</a></div>\\';a.scrollIntoView({behavior:\\'smooth\\'});" style="display:none;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-align:center;margin-top:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff">VOIR LE LIEN</button>';
+modalHtml+='<p style="margin-top:10px;font-size:10px;color:#999">Propulsé par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a></p>';
+modalHtml+='</div></div>';
+
+var existingModal=document.getElementById("extAdModal");
+if(existingModal)existingModal.remove();
+document.body.insertAdjacentHTML("beforeend",modalHtml);
 })
 .catch(function(err){
-if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>'; // ** CHANGE ** Check if details is defined before accessing innerHTML
+if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Erreur de décodage</p></div>';
 });
 }
 // ** END OF UPDATES FOR FILM/SERIES CONTENT **
