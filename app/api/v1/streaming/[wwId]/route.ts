@@ -118,7 +118,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .ttl{flex:1;font-size:13px;font-weight:600;color:#ccc;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .top-right{display:flex;gap:8px}
 .src-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#00d4aa;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
-.bug-btn{display:flex;align-items:center;justify-center;width:36px;height:36px;background:#ef4444;border:none;border-radius:8px;color:#fff;cursor:pointer}
+.bug-btn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:#ef4444;border:none;border-radius:8px;color:#fff;font-size:16px;cursor:pointer}
 .player{flex:1;background:#000;position:relative}
 .player iframe{width:100%;height:100%;border:none;position:absolute;inset:0}
 .no-src{display:flex;align-items:center;justify-content:center;height:100%;color:#555}
@@ -159,6 +159,18 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .cf{margin-top:10px;font-size:10px;color:#999}
 .cf a{color:#667eea}
 .adtag{background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px}
+.bug-modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;z-index:200;padding:16px}
+.bug-modal.sh{display:flex}
+.bug-form{background:#1a1a28;border-radius:14px;padding:24px;max-width:500px;width:100%;border:1px solid #333}
+.bug-form h3{color:#00d4aa;margin-bottom:16px;font-size:18px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;margin-bottom:6px;font-size:12px;color:#ccc}
+.form-group select,.form-group textarea{width:100%;background:#0f0f1a;border:1px solid #333;color:#fff;padding:10px;border-radius:8px;font-size:13px}
+.form-group textarea{min-height:80px;resize:vertical}
+.bug-actions{display:flex;gap:10px;margin-top:16px}
+.bug-actions button{flex:1;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.bug-submit{background:#00d4aa;color:#fff}
+.bug-cancel{background:#333;color:#fff}
 </style>
 </head>
 <body>
@@ -198,6 +210,29 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <button class="modal-close" id="closeModal">×</button>
 </div>
 <div class="modal-body"><div class="grid" id="srcGrid"></div></div>
+</div>
+</div>
+<div class="bug-modal" id="bugModal">
+<div class="bug-form">
+<h3>🐛 Signaler un problème</h3>
+<div class="form-group">
+<label>Type de problème</label>
+<select id="bugType">
+<option value="ne_charge_pas">Ne charge pas</option>
+<option value="qualite_mauvaise">Qualité mauvaise</option>
+<option value="audio_desync">Audio désynchronisé</option>
+<option value="sous_titres">Problème sous-titres</option>
+<option value="autre">Autre</option>
+</select>
+</div>
+<div class="form-group">
+<label>Description (optionnel)</label>
+<textarea id="bugDesc" placeholder="Décrivez le problème..."></textarea>
+</div>
+<div class="bug-actions">
+<button class="bug-cancel" id="bugCancel">Annuler</button>
+<button class="bug-submit" id="bugSubmit">Envoyer</button>
+</div>
 </div>
 </div>
 <script>
@@ -242,8 +277,34 @@ $("closeModal").onclick=function(){$("srcModal").classList.remove("sh");};
 $("srcModal").onclick=function(e){if(e.target===$("srcModal"))$("srcModal").classList.remove("sh");};
 $("btnAd").addEventListener("click",function(){setTimeout(function(){$("step1").classList.remove("active");$("step1").classList.add("done");$("step2").classList.add("active");$("step2").classList.add("done");$("btnAd").classList.add("hi");$("btnStart").classList.remove("hi");},150);});
 $("btnStart").onclick=startPlayer;
-$("bugBtn").onclick=function(){window.open("/bug-report?ww_id=${wwId}&type=streaming","_blank","width=600,height=700");};
-<\/script>
+$("bugBtn").onclick=function(){$("bugModal").classList.add("sh");};
+$("bugCancel").onclick=function(){$("bugModal").classList.remove("sh");};
+$("bugSubmit").onclick=async function(){
+var type=$("bugType").value;
+var desc=$("bugDesc").value;
+try{
+await fetch("/api/bug-report",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+ww_id:"${wwId}",
+tmdb_id:${tmdbId},
+media_type:"${mediaType}",
+season_number:${seasonNumber ?? null},
+episode_number:${episodeNumber ?? null},
+title:"${title.replace(/"/g, '\\"')}",
+source_name:_src[_idx]?.name||"Source #1",
+source_url:_src[_idx]?.url||"",
+message:type+(desc?" - "+desc:""),
+embed_type:"streaming"
+})
+});
+$("bugModal").classList.remove("sh");
+alert("Merci pour votre signalement!");
+$("bugDesc").value="";
+}catch(e){alert("Erreur lors de l'envoi");}
+};
+</script>
 </body>
 </html>`
 

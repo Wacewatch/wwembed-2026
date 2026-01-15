@@ -1,8 +1,11 @@
+"use client"
+
 import { createAdminClient } from "@/lib/supabase/admin"
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { ProfileLinkButton } from "@/components/profile-link-button"
+import { ProfileEpisodesModal } from "@/components/profile-episodes-modal"
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>
@@ -708,8 +711,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             {/* Téléchargements */}
             {links.downloads.length > 0 && (
               <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-2xl ${color.badge} flex items-center justify-center`}>
+                {/* Section Title with Sorting */}
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className={`text-2xl font-bold ${color.primary} flex items-center gap-3`}>
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path
                         strokeLinecap="round"
@@ -718,15 +722,27 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                       />
                     </svg>
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">Téléchargements</h2>
-                    <p className="text-slate-400">
-                      {groupedDownloads.grouped.length + groupedDownloads.standalone.length} médias (
-                      {links.downloads.length} fichiers)
-                    </p>
-                  </div>
+                    Téléchargements
+                    <span className="text-sm font-normal text-slate-400">
+                      {uniqueMediaCount} médias ({stats.downloads} fichiers)
+                    </span>
+                  </h2>
+
+                  <select
+                    className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm text-white cursor-pointer"
+                    defaultValue="recent"
+                    onChange={(e) => {
+                      // Client-side sorting will be handled by a client component wrapper
+                      console.log("Sort by:", e.target.value)
+                    }}
+                  >
+                    <option value="recent">Plus récent</option>
+                    <option value="oldest">Plus ancien</option>
+                    <option value="title">Titre A-Z</option>
+                    <option value="type">Type</option>
+                  </select>
                 </div>
+
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {groupedDownloads.grouped.map((group) => {
                     const tmdbKey = `tv-${group.tmdb_id}`
@@ -803,11 +819,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                             </div>
                           </div>
                           <div className="mt-4">
-                            <ProfileLinkButton
-                              url={`/download/ww-${group.tmdb_id}-tv`}
+                            {/* Modal trigger for episodes */}
+                            <ProfileEpisodesModal
                               label={`Voir ${group.episodes.length} épisodes`}
-                              variant="download"
-                              accentColor={`bg-gradient-to-r ${color.button}`}
+                              episodes={sortedEpisodes}
+                              mediaInfo={info}
+                              colorScheme={color}
                             />
                           </div>
                         </div>
@@ -1002,11 +1019,17 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                             </div>
                           </div>
                           <div className="mt-4">
-                            <ProfileLinkButton
-                              url={`/streaming/ww-${group.tmdb_id}-tv`}
+                            {/* Modal trigger for episodes */}
+                            <ProfileEpisodesModal
                               label={`Voir ${group.episodes.length} épisodes`}
-                              variant="watch"
-                              accentColor={`bg-gradient-to-r ${color.button}`}
+                              episodes={group.episodes.sort((a, b) => {
+                                if (a.season_number !== b.season_number) {
+                                  return (a.season_number || 0) - (b.season_number || 0)
+                                }
+                                return (a.episode_number || 0) - (b.episode_number || 0)
+                              })}
+                              mediaInfo={info}
+                              colorScheme={color}
                             />
                           </div>
                         </div>
