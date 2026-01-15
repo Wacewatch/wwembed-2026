@@ -116,6 +116,8 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .hdr{display:flex;align-items:center;padding:10px 14px;background:#151520;border-bottom:1px solid #222;gap:12px}
 .logo{font-weight:700;font-size:13px;color:#00d4aa}
 .ttl{flex:1;font-size:13px;font-weight:600;color:#ccc;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bug-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:#333;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:16px}
+.bug-btn:hover{background:#444}
 .src-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#00d4aa;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
 .player{flex:1;background:#000;position:relative}
 .player iframe{width:100%;height:100%;border:none;position:absolute;inset:0}
@@ -182,6 +184,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <div class="hdr">
 <div class="logo">▶ WWEMBED</div>
 <div class="ttl">${title}</div>
+<button class="bug-btn" id="bugBtn" title="Signaler un problème">🐛</button>
 <button class="src-btn" id="srcBtn">☰ <span id="srcLabel">Source #1</span></button>
 </div>
 <div class="player" id="player"><div class="no-src">Chargement...</div></div>
@@ -242,6 +245,7 @@ p.innerHTML='<iframe src="'+s.url+'" allowfullscreen allow="autoplay;fullscreen"
 $("srcBtn").onclick=function(){$("srcModal").classList.add("sh");buildGrid();};
 $("closeModal").onclick=function(){$("srcModal").classList.remove("sh");};
 $("srcModal").onclick=function(e){if(e.target===$("srcModal"))$("srcModal").classList.remove("sh");};
+$("bugBtn").onclick=function(){alert("Fonctionnalité de rapport de bug à venir");};
 $("btnAd").addEventListener("click",function(){setTimeout(function(){$("step1").classList.remove("active");$("step1").classList.add("done");$("step2").classList.add("active");$("step2").classList.add("done");$("btnAd").classList.add("hi");$("btnStart").classList.remove("hi");},150);});
 $("btnStart").onclick=startPlayer;
 <\/script>
