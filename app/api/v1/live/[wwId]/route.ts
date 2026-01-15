@@ -102,21 +102,27 @@ body{font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;overflow:hid
 .ch-name{font-size:14px;font-weight:600}
 .live-badge{background:#e63946;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700}
 .top-right{display:flex;gap:8px}
-.btn{background:#222;border:1px solid #333;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
+.btn{background:#222;border:1px solid #333;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px}
 .btn:hover{background:#333}
+.bug-btn{width:36px;height:36px;background:#ef4444;display:flex;align-items:center;justify-center}
 .container{height:calc(100vh - 60px);position:relative}
 .player{width:100%;height:100%}
 .player video,.player iframe{width:100%;height:100%;display:block;background:#000}
 .player iframe{border:none}
 .no-src{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#555}
-.dropdown{position:relative}
-.dropdown-menu{position:absolute;top:calc(100% + 8px);right:0;background:#1a1a28;border:1px solid #333;border-radius:10px;padding:8px;min-width:200px;display:none;z-index:200;max-height:60vh;overflow-y:auto}
-.dropdown-menu.show{display:block}
-.src-item{padding:10px 12px;border-radius:6px;cursor:pointer;margin-bottom:4px;border:1px solid transparent}
-.src-item:hover{background:#222}
-.src-item.active{background:#1a3a2a;border-color:#22c55e}
-.src-name{font-size:13px;font-weight:600}
-.src-tags{display:flex;gap:4px;margin-top:4px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal.sh{display:flex}
+.modal-box{background:#1a1a28;border-radius:14px;width:100%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;border:1px solid #333}
+.modal-hdr{padding:14px 18px;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center}
+.modal-ttl{font-size:16px;font-weight:700;color:#e63946}
+.modal-close{width:28px;height:28px;border-radius:50%;background:#333;border:none;color:#fff;cursor:pointer;font-size:16px}
+.modal-body{padding:14px 18px;overflow-y:auto}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.card{background:#1e1e2c;border:1px solid #333;border-radius:10px;padding:12px;cursor:pointer}
+.card:hover{border-color:#e63946}
+.card.act{border-color:#e63946;background:#3a1a1a}
+.card-name{font-size:12px;font-weight:600;margin-bottom:6px}
+.card-tags{display:flex;gap:4px}
 .tag{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600}
 .tag-q{background:#7c3aed;color:#fff}
 .tag-l{background:#0891b2;color:#fff}
@@ -154,10 +160,8 @@ body{font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;overflow:hid
 </div>
 </div>
 <div class="top-right">
-<div class="dropdown">
-<button class="btn" id="srcBtn">📡 <span id="srcLabel">Source #1</span></button>
-<div class="dropdown-menu" id="srcMenu"></div>
-</div>
+<button class="btn" onclick="document.getElementById('srcModal').classList.add('sh')">≡ Source #1</button>
+<button class="btn bug-btn" onclick="alert('Pour signaler un problème, contactez le support')">🐛</button>
 </div>
 </div>
 <div class="container">
@@ -177,9 +181,19 @@ body{font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;overflow:hid
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
 <div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
 </div>
-<a href="${AD_URL}" target="_blank" rel="noopener" class="bt-link bp" id="btnAd" onclick="unlockContent()">CONTINUER<span class="adtag">PUB</span></a>
-<button class="bt-link bn hi" id="btnStart" onclick="startPlayer()">DÉMARRER LA LECTURE</button>
+<a href="${AD_URL}" target="_blank" rel="noopener" class="bt-link bp" id="btnAd">CONTINUER<span class="adtag">PUB</span></a>
+<button class="bt-link bn hi" id="btnStart">DÉMARRER LA LECTURE</button>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
+</div>
+</div>
+
+<div class="modal" id="srcModal">
+<div class="modal-box">
+<div class="modal-hdr">
+<div class="modal-ttl">Choisir une source</div>
+<button class="modal-close" id="closeModal">×</button>
+</div>
+<div class="modal-body"><div class="grid" id="srcGrid"></div></div>
 </div>
 </div>
 
@@ -191,13 +205,6 @@ var _hls=null;
 
 function $(id){return document.getElementById(id);}
 
-function unlockContent(){
-$("step1").classList.remove("active");$("step1").classList.add("done");
-$("step2").classList.add("active");$("step2").classList.add("done");
-$("btnAd").classList.add("hi");
-$("btnStart").classList.remove("hi");
-}
-
 function startPlayer(){
 if(_started)return;
 _started=true;
@@ -207,17 +214,17 @@ if(_src.length){$("srcLabel").textContent=_src[0].name;loadPlayer();}
 }
 
 function buildSrcList(){
-var m=$("srcMenu");
-if(!m||!_src.length)return;
-m.innerHTML="";
+var g=$("srcGrid");
+if(!g||!_src.length){g.innerHTML="<div style='text-align:center;padding:20px;color:#555'>Aucune source</div>";return;}
+g.innerHTML="";
 for(var i=0;i<_src.length;i++){
 (function(idx){
 var s=_src[idx];
 var d=document.createElement("div");
-d.className="src-item"+(idx===_idx?" active":"");
-d.innerHTML='<div class="src-name">'+s.name+'</div><div class="src-tags"><span class="tag tag-q">'+(s.quality||"HD")+'</span><span class="tag tag-l">'+(s.language||"VO")+'</span></div>';
-d.onclick=function(){_idx=idx;buildSrcList();$("srcLabel").textContent=s.name;$("srcMenu").classList.remove("show");if(_started)loadPlayer();};
-m.appendChild(d);
+d.className="card"+(idx===_idx?" act":"");
+d.innerHTML='<div class="card-name">'+s.name+'</div><div class="card-tags"><span class="tag tag-q">'+(s.quality||"HD")+'</span><span class="tag tag-l">'+(s.language||"VO")+'</span></div>';
+d.onclick=function(){_idx=idx;buildSrcList();$("srcLabel").textContent=s.name;$("srcModal").classList.remove("sh");if(_started)loadPlayer();};
+g.appendChild(d);
 })(i);
 }
 }
@@ -240,8 +247,10 @@ p.innerHTML='<iframe src="'+url+'" allowfullscreen allow="autoplay;fullscreen"><
 }
 }
 
-$("srcBtn").onclick=function(){$("srcMenu").classList.toggle("show");};
-document.addEventListener("click",function(e){if(!e.target.closest(".dropdown"))$("srcMenu").classList.remove("show");});
+document.getElementById("closeModal").onclick=function(){$("srcModal").classList.remove("sh");};
+document.getElementById("srcModal").onclick=function(e){if(e.target===document.getElementById("srcModal"))document.getElementById("srcModal").classList.remove("sh");};
+document.getElementById("btnAd").addEventListener("click",function(){setTimeout(function(){document.getElementById("step1").classList.remove("active");document.getElementById("step1").classList.add("done");document.getElementById("step2").classList.add("active");document.getElementById("step2").classList.add("done");document.getElementById("btnAd").classList.add("hi");document.getElementById("btnStart").classList.remove("hi");},150);});
+document.getElementById("btnStart").onclick=startPlayer;
 <\/script>
 </body>
 </html>`
