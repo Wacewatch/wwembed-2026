@@ -1129,7 +1129,7 @@ _showExtDetails(_allExtLinks[idx]);
 // ** START OF UPDATES FOR FILM/SERIES CONTENT **
 function _showExtDetails(extLink){
 if(!extLink||!extLink.id)return;
-var AD_URL="https://otieu.com/4/9248013";
+var AD_URL="https://foreignabnormality.com/q7jywq0h?key=6eb56670c09233e007f1bfb9cf0e1b55";
 var details=document.getElementById("extDetails");
 
 fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.blog/api/darkiworld/decode/"+extLink.id)
