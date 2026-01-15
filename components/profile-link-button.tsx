@@ -44,7 +44,6 @@ function AdModal({
     return () => setMounted(false)
   }, [])
 
-  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setCountdown(3)
@@ -53,7 +52,6 @@ function AdModal({
     }
   }, [isOpen])
 
-  // Countdown timer
   useEffect(() => {
     if (!isOpen || !adClicked || countdown <= 0) return
 
@@ -78,6 +76,86 @@ function AdModal({
   if (!isOpen || !mounted) return null
 
   if (showContent) {
+    if (variant === "download") {
+      const finalUrl = targetUrl.startsWith("http") ? targetUrl : `https://${targetUrl}`
+      const linkContent = (
+        <div
+          className="fixed inset-0 z-[99999] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6"
+          style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, width: "100vw", height: "100vh" }}
+        >
+          <button
+            onClick={onClose}
+            className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-8 max-w-2xl w-full border border-white/10 shadow-2xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <svg className="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Lien déverrouillé</h2>
+                <p className="text-slate-400 text-sm">Copiez le lien ci-dessous</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/50 rounded-xl p-4 mb-4 border border-slate-700">
+              <p className="text-sm text-slate-400 mb-2 font-medium">URL de téléchargement:</p>
+              <p className="text-emerald-400 break-all font-mono text-sm">{finalUrl}</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(finalUrl)
+                  alert("Lien copié dans le presse-papier!")
+                }}
+                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+                Copier le lien
+              </button>
+              <a
+                href={finalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition-colors flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
+                Ouvrir
+              </a>
+            </div>
+          </div>
+        </div>
+      )
+      return createPortal(linkContent, document.body)
+    }
+
     const finalUrl = targetUrl.startsWith("http") ? targetUrl : `https://${targetUrl}`
 
     const iframeContent = (
@@ -85,7 +163,6 @@ function AdModal({
         className="fixed inset-0 z-[99999] bg-black flex flex-col"
         style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, width: "100vw", height: "100vh" }}
       >
-        {/* Header bar */}
         <div className="h-12 bg-slate-900 flex items-center justify-between px-4 shrink-0">
           <div className="flex items-center gap-3">
             <div
@@ -122,7 +199,6 @@ function AdModal({
           </div>
         </div>
 
-        {/* Iframe */}
         <div className="flex-1 relative">
           <iframe
             src={finalUrl}
@@ -143,7 +219,6 @@ function AdModal({
       className="fixed inset-0 z-[99999] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
       style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, width: "100vw", height: "100vh" }}
     >
-      {/* Close button */}
       <button
         onClick={onClose}
         className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all z-10"
@@ -153,9 +228,7 @@ function AdModal({
         </svg>
       </button>
 
-      {/* Content container */}
       <div className="h-full w-full flex flex-col items-center justify-center px-6">
-        {/* Icon */}
         <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-6 shadow-2xl shadow-violet-500/30">
           {variant === "download" ? (
             <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,13 +266,11 @@ function AdModal({
           )}
         </div>
 
-        {/* Title */}
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 text-center">
           {variant === "download" ? "Téléchargement prêt" : variant === "watch" ? "Vidéo prête" : "Lecture prête"}
         </h1>
         <p className="text-white/50 text-base mb-8 text-center">Une dernière étape pour accéder à votre contenu</p>
 
-        {/* Steps */}
         <div className="flex items-center gap-2 mb-8">
           <div
             className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${adClicked ? "bg-emerald-500 text-white" : "bg-violet-500 text-white ring-2 ring-violet-500/30"}`}
@@ -231,7 +302,6 @@ function AdModal({
           <span className={`text-xs ${canProceed ? "text-emerald-400" : "text-white/40"}`}>Accéder</span>
         </div>
 
-        {/* Timer */}
         {adClicked && countdown > 0 && (
           <div className="mb-8 text-center">
             <div className="text-6xl font-bold text-white mb-1">{countdown}</div>
@@ -247,7 +317,6 @@ function AdModal({
           </div>
         )}
 
-        {/* Buttons */}
         <div className="w-full max-w-xs">
           {!adClicked ? (
             <button
@@ -272,7 +341,7 @@ function AdModal({
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
-              {variant === "download" ? "Télécharger" : variant === "watch" ? "Regarder" : "Lire"}
+              {variant === "download" ? "Voir le lien" : variant === "watch" ? "Regarder" : "Lire"}
             </button>
           ) : (
             <button
@@ -311,7 +380,6 @@ export function ProfileLinkButton({
   const [currentAd, setCurrentAd] = useState<Ad | null>(null)
   const [loadingAd, setLoadingAd] = useState(false)
 
-  // Fetch ad when modal opens
   useEffect(() => {
     if (showModal && !currentAd && !loadingAd) {
       setLoadingAd(true)
@@ -342,7 +410,7 @@ export function ProfileLinkButton({
       } catch {}
       window.open(currentAd.ad_url, "_blank")
     } else {
-      window.open("https://www.google.com", "_blank")
+      window.open("https://otieu.com/4/9248013", "_blank")
     }
   }
 
