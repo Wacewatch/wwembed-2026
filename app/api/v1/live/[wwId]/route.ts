@@ -147,13 +147,6 @@ body{font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;overflow:hid
 .cf{margin-top:10px;font-size:10px;color:#999}
 .cf a{color:#e63946}
 .adtag{background:#fff;color:#e63946;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px}
-.bug-modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px}
-.bug-modal.sh{display:flex}
-.bug-modal-box{background:#1a1a28;border-radius:14px;width:100%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;border:1px solid #333}
-.bug-modal-hdr{padding:14px 18px;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center}
-.bug-modal-ttl{font-size:16px;font-weight:700;color:#e63946}
-.bug-modal-close{width:28px;height:28px;border-radius:50%;background:#333;border:none;color:#fff;cursor:pointer;font-size:16px}
-.bug-modal-body{padding:14px 18px}
 </style>
 </head>
 <body>
@@ -168,7 +161,7 @@ body{font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;overflow:hid
 </div>
 <div class="top-right">
 <button class="btn" onclick="document.getElementById('srcModal').classList.add('sh')">≡ Source #1</button>
-<button class="btn bug-btn" onclick="document.getElementById('bugModal').classList.add('sh')">🐛</button>
+<button class="btn bug-btn" onclick="alert('Pour signaler un problème, contactez le support')">🐛</button>
 </div>
 </div>
 <div class="container">
@@ -201,19 +194,6 @@ body{font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;overflow:hid
 <button class="modal-close" id="closeModal">×</button>
 </div>
 <div class="modal-body"><div class="grid" id="srcGrid"></div></div>
-</div>
-</div>
-
-<div class="bug-modal" id="bugModal">
-<div class="bug-modal-box">
-<div class="bug-modal-hdr">
-<div class="bug-modal-ttl">Signaler un problème</div>
-<button class="bug-modal-close" id="closeBugModal">×</button>
-</div>
-<div class="bug-modal-body">
-<p>Vous avez rencontré un problème avec ce flux. Veuillez contacter le support pour résoudre ce problème.</p>
-<a href="mailto:support@wavewatch.xyz" class="bt-link bp">CONTACTER LE SUPPORT</a>
-</div>
 </div>
 </div>
 
@@ -271,8 +251,6 @@ document.getElementById("closeModal").onclick=function(){$("srcModal").classList
 document.getElementById("srcModal").onclick=function(e){if(e.target===document.getElementById("srcModal"))document.getElementById("srcModal").classList.remove("sh");};
 document.getElementById("btnAd").addEventListener("click",function(){setTimeout(function(){document.getElementById("step1").classList.remove("active");document.getElementById("step1").classList.add("done");document.getElementById("step2").classList.add("active");document.getElementById("step2").classList.add("done");document.getElementById("btnAd").classList.add("hi");document.getElementById("btnStart").classList.remove("hi");},150);});
 document.getElementById("btnStart").onclick=startPlayer;
-document.getElementById("closeBugModal").onclick=function(){$("bugModal").classList.remove("sh");};
-document.getElementById("bugModal").onclick=function(e){if(e.target===document.getElementById("bugModal"))document.getElementById("bugModal").classList.remove("sh");};
 <\/script>
 </body>
 </html>`
