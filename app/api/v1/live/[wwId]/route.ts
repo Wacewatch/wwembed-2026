@@ -262,6 +262,29 @@ textarea:focus{outline:none;border-color:#e63946;box-shadow:0 0 0 4px rgba(230,5
 .container{height:calc(100vh - 160px);}
 }
 </style>
+
+<!-- Histats.com START -->
+<script type="text/javascript">
+  var _Hasync = _Hasync || [];
+  _Hasync.push(['Histats.start', '1,4996171,4,0,0,0,00010000']);
+  _Hasync.push(['Histats.fasi', '1']);
+  _Hasync.push(['Histats.track_hits', '']);
+
+  (function() {
+    var hs = document.createElement('script');
+    hs.type = 'text/javascript';
+    hs.async = true;
+    hs.src = '//s10.histats.com/js15_as.js';
+    (document.head || document.body).appendChild(hs);
+  })();
+</script>
+<noscript>
+  <a href="/" target="_blank">
+    <img src="//sstatic1.histats.com/0.gif?4996171&101" alt="histats" />
+  </a>
+</noscript>
+<!-- Histats.com END -->
+
 </head>
 <body>
 <div class="top">
