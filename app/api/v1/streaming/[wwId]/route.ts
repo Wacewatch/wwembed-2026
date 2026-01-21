@@ -217,7 +217,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 <div class="bx-content"><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
 </div>
 <a href="${AD_URL}" target="_blank" rel="noopener" class="bt bp" id="btnAd">Continuer<span class="tg">PUB</span></a>
-<button class="bt bn hi" id="btnStart">Lancer le lecteur</button>
+<button class="bt bn hi" id="btnStart">Lancer la lecture</button>
 <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
 </div>
