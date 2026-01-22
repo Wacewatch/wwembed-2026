@@ -94,16 +94,15 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;overflow:hidden;height:100vh}
-.top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#151520;border-bottom:1px solid #222}
-.top-left{display:flex;align-items:center;gap:12px}
-.logo{color:#e63946;font-weight:700;font-size:14px}
-.ch-info{display:flex;align-items:center;gap:8px}
+.top{display:flex;align-items:center;padding:10px 14px;background:#151520;border-bottom:1px solid #222;gap:12px}
+.logo{font-weight:700;font-size:13px;color:#00d4aa}
+.ch-info{flex:1;display:flex;align-items:center;justify-content:center;gap:8px}
 .ch-icon{width:32px;height:32px;border-radius:6px;object-fit:cover;background:#222}
-.ch-name{font-size:14px;font-weight:600}
+.ch-name{font-size:13px;font-weight:600;color:#ccc}
 .live-badge{background:#e63946;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700}
 .top-right{display:flex;gap:8px}
-.btn{background:#222;border:1px solid #333;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
-.btn:hover{background:#333}
+.src-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#00d4aa;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+.bug-btn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:#ef4444;border:none;border-radius:8px;color:#fff;font-size:16px;cursor:pointer}
 .container{height:calc(100vh - 60px);position:relative}
 .player{width:100%;height:100%}
 .player video,.player iframe{width:100%;height:100%;display:block;background:#000}
@@ -145,19 +144,18 @@ body{font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;overflow:hid
 </head>
 <body>
 <div class="top">
-<div class="top-left">
 <div class="logo">▶ WWEMBED</div>
 <div class="ch-info">
 <img class="ch-icon" src="${channelLogo}" alt="">
 <span class="ch-name">${channelName}</span>
 <span class="live-badge">● LIVE</span>
 </div>
-</div>
 <div class="top-right">
 <div class="dropdown">
-<button class="btn" id="srcBtn">📡 <span id="srcLabel">Source #1</span></button>
+<button class="src-btn" id="srcBtn">☰ <span id="srcLabel">Source #1</span></button>
 <div class="dropdown-menu" id="srcMenu"></div>
 </div>
+<button class="bug-btn" id="bugBtn" title="Signaler un problème">🐛</button>
 </div>
 </div>
 <div class="container">
@@ -241,6 +239,7 @@ p.innerHTML='<iframe src="'+url+'" allowfullscreen allow="autoplay;fullscreen"><
 }
 
 $("srcBtn").onclick=function(){$("srcMenu").classList.toggle("show");};
+$("bugBtn").onclick=function(){alert("Fonction de signalement à implémenter");};
 document.addEventListener("click",function(e){if(!e.target.closest(".dropdown"))$("srcMenu").classList.remove("show");});
 <\/script>
 </body>
