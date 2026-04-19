@@ -276,9 +276,9 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
     </div>
     <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
     <!-- Pub 1 -->
-    <a href="${AD_URL_1}" target="_blank" rel="noopener" class="bt bp" id="${ids.btnUnlock1}">ÉTAPE 1 / 2<span class="adtag">PUB</span></a>
+    <button class="bt bp" id="${ids.btnUnlock1}">ÉTAPE 1 / 2<span class="adtag">PUB</span></button>
     <!-- Pub 2 (hidden until step 1 done) -->
-    <a href="${AD_URL_2}" target="_blank" rel="noopener" class="bt bp2 hi" id="${ids.btnUnlock2}">ÉTAPE 2 / 2<span class="adtag2">PUB</span></a>
+    <button class="bt bp2 hi" id="${ids.btnUnlock2}">ÉTAPE 2 / 2<span class="adtag2">PUB</span></button>
     <!-- Start player (hidden until both steps done) -->
     <button class="bt bn hi" id="${ids.btnStart}">▶ LANCER LE LECTEUR</button>
     <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
@@ -325,6 +325,7 @@ function showAdModal(){
 // Step 1: first pub clicked
 $(_ids.btnUnlock1).addEventListener("click", function(){
   if(_adStep>=1) return;
+  window.open("${AD_URL_1}", "_blank");
   setTimeout(function(){
     _adStep=1;
     var s1=$(_ids.step1);
@@ -347,6 +348,7 @@ $(_ids.btnUnlock1).addEventListener("click", function(){
 // Step 2: second pub clicked
 $(_ids.btnUnlock2).addEventListener("click", function(){
   if(_adStep>=2) return;
+  window.open("${AD_URL_2}", "_blank");
   setTimeout(function(){
     _adStep=2;
     var s2=$(_ids.step2);
