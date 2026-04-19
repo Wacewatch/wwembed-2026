@@ -170,34 +170,34 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .bug-cancel{background:#333;color:#fff}
 
 /* ===== AD MODAL (same as download) ===== */
-.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
+.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(15,23,42,0.96) 0%,rgba(20,30,55,0.96) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(10px)}
 .mo.sh{display:flex}
-.mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
-.mc h2{color:#1a1a2e;margin-bottom:8px;font-size:20px;font-weight:700}
-.mc-sub{color:#6b7280;font-size:13px;margin-bottom:16px}
+.mc{background:#1a2035;border:1px solid #2a3550;border-radius:16px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)}
+.mc h2{color:#e2e8f0;margin-bottom:8px;font-size:20px;font-weight:700}
+.mc-sub{color:#7a8aaa;font-size:13px;margin-bottom:16px}
 .steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
-.step{width:10px;height:10px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
-.step.active{background:linear-gradient(135deg,#667eea,#764ba2);transform:scale(1.2)}
+.step{width:10px;height:10px;border-radius:50%;background:#2a3550;transition:all 0.3s}
+.step.active{background:#667eea;transform:scale(1.2)}
 .step.done{background:#10b981}
 .bx{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
 .bx svg{flex-shrink:0;width:18px;height:18px}
-.bx-content b{display:block;font-size:14px;margin-bottom:2px}
-.bx-content span{font-size:12px;opacity:0.8;display:block}
-.bw{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
-.bh{background:linear-gradient(135deg,#fce7f3,#fbcfe8);border:1px solid #ec4899;color:#9d174d}
-.bi{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #8b5cf6;color:#5b21b6}
-.bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
-.pb{height:5px;background:#e5e7eb;border-radius:3px;margin:12px 0;overflow:hidden}
+.bx-content b{display:block;font-size:14px;margin-bottom:2px;color:#e2e8f0}
+.bx-content span{font-size:12px;opacity:0.6;display:block}
+.bw{background:#2a2010;border:1px solid #4a3a18;color:#d4a843}
+.bh{background:#2a1520;border:1px solid #4a2535;color:#c084a0}
+.bi{background:#1e1830;border:1px solid #352d55;color:#9b8cc4}
+.bo{background:#122515;border:1px solid #1e4025;color:#4ade80}
+.pb{height:4px;background:#2a3550;border-radius:3px;margin:12px 0;overflow:hidden}
 .pf{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2,#ec4899);transition:width 0.3s;border-radius:3px}
 .bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s;text-decoration:none;display:block;text-align:center}
 .bp{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
 .bp2{background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff}
 .bn{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
 .hi{display:none}
-.cf{margin-top:12px;font-size:11px;color:#9ca3af}
+.cf{margin-top:12px;font-size:11px;color:#4a5570}
 .cf a{color:#667eea}
-.adtag{background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px;font-weight:600}
-.adtag2{background:#fff;color:#ef4444;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px;font-weight:600}
+.adtag{background:#2a3550;color:#8ba3d4;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px;font-weight:600}
+.adtag2{background:#2a3550;color:#f87171;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px;font-weight:600}
 </style>
 </head>
 <body>
