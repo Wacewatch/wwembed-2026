@@ -411,7 +411,7 @@ var content=document.getElementById(_extIds.content);
 var filters=document.getElementById(_extIds.filters);
 var countBadge=document.getElementById(_extIds.count);
 
-fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.llc/api/search?title="+encodeURIComponent(_title))
+fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api/search?title="+encodeURIComponent(_title))
 .then(function(r){return r.json();})
 .then(function(data){
 var results=data;
@@ -427,7 +427,7 @@ return;
 }
 var first=results[0];
 var movieId=first.id||first.movie_id||first.tmdb_id;
-fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.llc/api/darkiworld/download/movie/"+movieId)
+fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api/darkiworld/download/movie/"+movieId)
 .then(function(r){return r.json();})
 .then(function(dlData){
 loading.style.display="none";
@@ -497,7 +497,7 @@ if(!extLink||!extLink.id)return; // Check for extLink.id as url might be empty i
 var AD_URL="https://foreignabnormality.com/q7jywq0h?key=6eb56670c09233e007f1bfb9cf0e1b55";
 var details=document.getElementById("extDetails");
 
-fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.llc/api/darkiworld/decode/"+extLink.id)
+fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api/darkiworld/decode/"+extLink.id)
 .then(function(r){return r.json();})
 .then(function(data){
 if(!data||!data.success||!data.embed_url){
@@ -1038,7 +1038,7 @@ var content=document.getElementById(_extIds.content);
 var filters=document.getElementById(_extIds.filters);
 var countBadge=document.getElementById(_extIds.count);
 
-fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.llc/api/search?title="+encodeURIComponent(_title))
+fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api/search?title="+encodeURIComponent(_title))
 .then(function(r){return r.json();})
 .then(function(data){
 var results=data;
