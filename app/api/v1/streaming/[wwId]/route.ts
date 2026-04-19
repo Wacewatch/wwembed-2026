@@ -138,7 +138,7 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .tag-q{background:#7c3aed;color:#fff}
 .tag-l{background:#0891b2;color:#fff}
 
-/* ── MODAL PUB ── */
+/* ── OVERLAY PUB ── */
 .mo{
   position:fixed;inset:0;
   background:linear-gradient(135deg,rgba(102,126,234,0.97),rgba(118,75,162,0.97));
@@ -151,40 +151,41 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
   box-shadow:0 24px 60px rgba(0,0,0,.4)
 }
 .mc h2{color:#1a1a2e;margin-bottom:6px;font-size:20px;font-weight:800}
-.mc-sub{color:#666;font-size:13px;margin-bottom:18px}
+.mc-sub{color:#777;font-size:13px;margin-bottom:18px}
 .bx{border-radius:10px;padding:11px 13px;margin:7px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
 .bx svg{width:18px;height:18px;flex-shrink:0;margin-top:1px}
 .bx b{display:block;font-size:13px;margin-bottom:2px}
 .bx span{font-size:11px;opacity:0.75}
 .bw{background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
 .bh{background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6}
-.bt-link{
-  display:block;width:100%;padding:15px;
-  border:none;border-radius:12px;
-  font-size:15px;font-weight:800;
-  cursor:pointer;text-decoration:none;text-align:center;
-  margin-top:12px;font-family:system-ui,sans-serif;
-  transition:transform .1s,box-shadow .1s;
-  position:relative;overflow:hidden
-}
-.bt-link:active{transform:scale(.98)}
-.bp{
+
+/*
+  LE BOUTON EST UN <a> NATIF
+  href + target="_blank" = navigation native = jamais bloquée,
+  même depuis un iframe cross-origin sans allow-popups.
+*/
+.btn-ad{
+  display:block;width:100%;padding:16px;
   background:linear-gradient(135deg,#667eea,#764ba2);
-  color:#fff;
-  box-shadow:0 6px 24px rgba(102,126,234,.5)
+  color:#fff;text-decoration:none;
+  border-radius:12px;font-size:15px;font-weight:800;
+  text-align:center;margin-top:14px;
+  box-shadow:0 6px 24px rgba(102,126,234,.5);
+  font-family:system-ui,sans-serif;
+  position:relative;overflow:hidden;
+  transition:opacity .15s
 }
-.bp::after{
+.btn-ad:active{opacity:.9}
+.btn-ad::after{
   content:'';position:absolute;inset:-4px;
-  border-radius:16px;border:2px solid rgba(102,126,234,.4);
+  border-radius:16px;border:2px solid rgba(255,255,255,.25);
   animation:ring 2s ease-out infinite;pointer-events:none
 }
-@keyframes ring{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(1.06)}}
+@keyframes ring{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(1.06)}}
 .adtag{
-  background:rgba(255,255,255,.2);
-  color:#fff;padding:2px 7px;
-  border-radius:4px;font-size:9px;
-  margin-left:6px;font-weight:700;
-  letter-spacing:.5px
+  background:rgba(255,255,255,.2);color:#fff;
+  padding:2px 7px;border-radius:4px;
+  font-size:9px;margin-left:7px;font-weight:700;letter-spacing:.5px
 }
 .cf{margin-top:12px;font-size:10px;color:#999}
 .cf a{color:#667eea;text-decoration:none}
@@ -206,7 +207,17 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 </head>
 <body>
 
-<!-- ══ MODAL PUB ══ -->
+<!-- ══════════════════════════════════════════
+     OVERLAY PUB
+     
+     POURQUOI <a> et non window.open() :
+     - L'embed est chargé dans un <iframe> sur des sites tiers
+     - window.open() depuis un iframe cross-origin est bloqué
+       par tous les navigateurs modernes (Chrome, Firefox, Safari)
+     - Un <a href target="_blank"> est une NAVIGATION, pas un popup
+       → jamais bloqué, même sans allow-popups sur l'iframe
+     - onclick="startPlayer()" déclenche le lecteur dans le même geste
+═══════════════════════════════════════════ -->
 <div class="mo" id="adOverlay">
   <div class="mc">
     <h2>Accéder au contenu</h2>
@@ -234,10 +245,16 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
       </div>
     </div>
 
-    <!-- UN SEUL BOUTON : ouvre la pub ET lance le player directement -->
-    <button class="bt-link bp" id="btnAd">
+    <a
+      id="btnAd"
+      href="${AD_URL}"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn-ad"
+      onclick="startPlayer()"
+    >
       ▶ Regarder maintenant<span class="adtag">PUB</span>
-    </button>
+    </a>
 
     <div class="cf">
       Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a>
@@ -302,11 +319,6 @@ var _usedSources={};
 
 function $(id){return document.getElementById(id);}
 
-/* Ouvre la pub dans le geste utilisateur direct → jamais bloqué par le navigateur */
-function openAd(){
-  try{window.open("${AD_URL}","_blank","noopener,noreferrer");}catch(e){}
-}
-
 function startPlayer(){
   if(_started)return;
   _started=true;
@@ -316,6 +328,22 @@ function startPlayer(){
     $("srcLabel").textContent=_src[0].name;
     loadPlayer();
   }
+}
+
+/* fireAd : utilisé uniquement pour les impressions au changement de source.
+   Ici on crée un <a> invisible et on le clique — dans le geste utilisateur
+   (onclick d'une card) donc toujours autorisé. */
+function fireAd(){
+  try{
+    var a=document.createElement("a");
+    a.href="${AD_URL}";
+    a.target="_blank";
+    a.rel="noopener noreferrer";
+    a.style.cssText="position:fixed;opacity:0;pointer-events:none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){document.body.removeChild(a);},300);
+  }catch(e){}
 }
 
 function buildGrid(){
@@ -344,10 +372,9 @@ function buildGrid(){
         $("srcLabel").textContent=s.name;
         $("srcModal").classList.remove("sh");
         if(_started){
-          /* 1 impression par nouvelle source visitée */
           if(!_usedSources[idx]){
             _usedSources[idx]=true;
-            openAd();
+            fireAd(); /* impression dans le geste utilisateur */
           }
           loadPlayer();
         }
@@ -361,27 +388,19 @@ function loadPlayer(){
   var p=$("player");
   if(!p||!_src.length)return;
   var s=_src[_idx];
-  if(!s||!s.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";return;}
+  if(!s||!s.url){
+    p.innerHTML="<div class='no-src'>Source indisponible</div>";
+    return;
+  }
   p.innerHTML='<iframe src="'+s.url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>';
 }
 
-/* ── BOUTON UNIQUE ──
-   window.open est dans le onclick direct → le navigateur ne peut pas le bloquer.
-   startPlayer() s'exécute dans le même geste → lecteur lance immédiatement,
-   pas besoin d'un 2ème clic "LANCER". */
-$("btnAd").onclick=function(){
-  openAd();
-  startPlayer();
-};
-
-/* ── SOURCES MODAL ── */
 $("srcBtn").onclick=function(){$("srcModal").classList.add("sh");buildGrid();};
 $("closeModal").onclick=function(){$("srcModal").classList.remove("sh");};
 $("srcModal").onclick=function(e){
   if(e.target===$("srcModal"))$("srcModal").classList.remove("sh");
 };
 
-/* ── BUG REPORT ── */
 $("bugBtn").onclick=function(){$("bugModal").classList.add("sh");};
 $("bugCancel").onclick=function(){$("bugModal").classList.remove("sh");};
 $("bugSubmit").onclick=async function(){
