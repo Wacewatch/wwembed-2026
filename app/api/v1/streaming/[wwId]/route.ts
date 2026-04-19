@@ -14,7 +14,8 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
     const { mediaType, tmdbId, seasonNumber, episodeNumber } = parsed
     const supabase = createAdminClient()
 
-    const AD_URL = "https://otieu.com/4/9248013"
+    const AD_URL_1 = "https://otieu.com/4/9248013"
+    const AD_URL_2 = "https://foreignabnormality.com/fgntgn3c16?key=9a04e35a6ffb54c93c0c35724fbca3c5"
 
     const tmdbData = mediaType === "movie" ? await getMovieDetails(tmdbId) : await getTVDetails(tmdbId)
     let episodeData = null
@@ -150,32 +151,58 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
   max-width:380px;width:100%;text-align:center;
   box-shadow:0 24px 60px rgba(0,0,0,.4)
 }
-.mc h2{color:#1a1a2e;margin-bottom:6px;font-size:20px;font-weight:800}
-.mc-sub{color:#777;font-size:13px;margin-bottom:18px}
+.mc h2{color:#1a1a2e;margin-bottom:4px;font-size:20px;font-weight:800}
+.mc-sub{color:#777;font-size:12px;margin-bottom:14px}
+
+/* ── STEPS ── */
+.steps{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:16px}
+.step-item{display:flex;align-items:center;gap:6px}
+.step-dot{
+  width:28px;height:28px;border-radius:50%;
+  font-size:12px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .3s
+}
+.step-dot.pending{background:#e5e7eb;color:#9ca3af}
+.step-dot.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;box-shadow:0 3px 12px rgba(102,126,234,.5)}
+.step-dot.done{background:#22c55e;color:#fff}
+.step-line{width:28px;height:2px;border-radius:99px;background:#e5e7eb;transition:background .3s}
+.step-line.done{background:#22c55e}
+.step-lbl{font-size:10px;color:#9ca3af;font-weight:600;margin-top:3px}
+.step-lbl.active{color:#667eea}
+.step-lbl.done{color:#22c55e}
+.step-col{display:flex;flex-direction:column;align-items:center;gap:2px}
+
 .bx{border-radius:10px;padding:11px 13px;margin:7px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
 .bx svg{width:18px;height:18px;flex-shrink:0;margin-top:1px}
 .bx b{display:block;font-size:13px;margin-bottom:2px}
 .bx span{font-size:11px;opacity:0.75}
 .bw{background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
 .bh{background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6}
+.bg{background:#dcfce7;border:1px solid #22c55e;color:#15803d}
 
-/*
-  LE BOUTON EST UN <a> NATIF
-  href + target="_blank" = navigation native = jamais bloquée,
-  même depuis un iframe cross-origin sans allow-popups.
-*/
+/* Bouton pub : <a> natif, jamais bloqué même dans un iframe */
 .btn-ad{
-  display:block;width:100%;padding:16px;
-  background:linear-gradient(135deg,#667eea,#764ba2);
-  color:#fff;text-decoration:none;
+  display:block;width:100%;padding:15px;
   border-radius:12px;font-size:15px;font-weight:800;
-  text-align:center;margin-top:14px;
-  box-shadow:0 6px 24px rgba(102,126,234,.5);
+  text-align:center;margin-top:12px;
   font-family:system-ui,sans-serif;
   position:relative;overflow:hidden;
-  transition:opacity .15s
+  transition:opacity .15s, transform .1s;
+  text-decoration:none;cursor:pointer
 }
-.btn-ad:active{opacity:.9}
+.btn-ad:active{opacity:.9;transform:scale(.99)}
+.btn-ad-1{
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  color:#fff;
+  box-shadow:0 6px 24px rgba(102,126,234,.45)
+}
+.btn-ad-2{
+  background:linear-gradient(135deg,#22c55e,#16a34a);
+  color:#fff;
+  box-shadow:0 6px 24px rgba(34,197,94,.45);
+  display:none
+}
 .btn-ad::after{
   content:'';position:absolute;inset:-4px;
   border-radius:16px;border:2px solid rgba(255,255,255,.25);
@@ -207,53 +234,98 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════
-     OVERLAY PUB
-     
-     POURQUOI <a> et non window.open() :
-     - L'embed est chargé dans un <iframe> sur des sites tiers
-     - window.open() depuis un iframe cross-origin est bloqué
-       par tous les navigateurs modernes (Chrome, Firefox, Safari)
-     - Un <a href target="_blank"> est une NAVIGATION, pas un popup
-       → jamais bloqué, même sans allow-popups sur l'iframe
-     - onclick="startPlayer()" déclenche le lecteur dans le même geste
-═══════════════════════════════════════════ -->
 <div class="mo" id="adOverlay">
   <div class="mc">
     <h2>Accéder au contenu</h2>
-    <div class="mc-sub">Une étape pour regarder gratuitement</div>
+    <div class="mc-sub">2 étapes rapides pour regarder gratuitement</div>
 
-    <div class="bx bw">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/>
-        <line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-      <div>
-        <b>Un onglet pub va s'ouvrir</b>
-        <span>Fermez-le après quelques secondes</span>
+    <!-- INDICATEUR D'ÉTAPES -->
+    <div class="steps">
+      <div class="step-col">
+        <div class="step-dot active" id="dot1">1</div>
+        <div class="step-lbl active" id="lbl1">Étape 1</div>
+      </div>
+      <div class="step-line" id="line1"></div>
+      <div class="step-col">
+        <div class="step-dot pending" id="dot2">2</div>
+        <div class="step-lbl pending" id="lbl2">Étape 2</div>
       </div>
     </div>
 
-    <div class="bx bh">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-      </svg>
-      <div>
-        <b>Soutenez le service gratuit</b>
-        <span>Votre clic nous aide à rester en ligne</span>
+    <!-- STEP 1 -->
+    <div id="step1-content">
+      <div class="bx bw">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <div>
+          <b>Un onglet pub va s'ouvrir</b>
+          <span>Fermez-le et revenez ici</span>
+        </div>
+      </div>
+      <div class="bx bh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+        <div>
+          <b>Soutenez le service gratuit</b>
+          <span>Votre clic nous aide à rester en ligne</span>
+        </div>
       </div>
     </div>
 
+    <!-- STEP 2 (masqué au départ) -->
+    <div id="step2-content" style="display:none">
+      <div class="bx bg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <div>
+          <b>Étape 1 validée ✓</b>
+          <span>Plus qu'une dernière étape !</span>
+        </div>
+      </div>
+      <div class="bx bh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        <div>
+          <b>Dernière étape — puis le lecteur s'ouvre</b>
+          <span>Merci pour votre soutien !</span>
+        </div>
+      </div>
+    </div>
+
+    <!--
+      BOUTON ÉTAPE 1 : <a> natif → ouvre AD_URL_1 dans un nouvel onglet
+      onclick → goStep2() bascule l'UI vers l'étape 2
+    -->
     <a
-      id="btnAd"
-      href="${AD_URL}"
+      id="btnAd1"
+      href="${AD_URL_1}"
       target="_blank"
       rel="noopener noreferrer"
-      class="btn-ad"
+      class="btn-ad btn-ad-1"
+      onclick="goStep2()"
+    >
+      ▶ Continuer — Étape 1/2<span class="adtag">PUB</span>
+    </a>
+
+    <!--
+      BOUTON ÉTAPE 2 : <a> natif → ouvre AD_URL_2 dans un nouvel onglet
+      onclick → startPlayer() lance le lecteur
+    -->
+    <a
+      id="btnAd2"
+      href="${AD_URL_2}"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn-ad btn-ad-2"
       onclick="startPlayer()"
     >
-      ▶ Regarder maintenant<span class="adtag">PUB</span>
+      ▶ Lancer le lecteur — Étape 2/2<span class="adtag">PUB</span>
     </a>
 
     <div class="cf">
@@ -319,6 +391,27 @@ var _usedSources={};
 
 function $(id){return document.getElementById(id);}
 
+/* ── STEP 1 → STEP 2 ──
+   Appelé quand l'utilisateur clique sur le bouton étape 1.
+   Le href du <a> ouvre déjà la pub, on met juste à jour l'UI. */
+function goStep2(){
+  /* Mettre à jour les dots */
+  $("dot1").className="step-dot done";$("dot1").textContent="✓";
+  $("lbl1").className="step-lbl done";
+  $("line1").className="step-line done";
+  $("dot2").className="step-dot active";
+  $("lbl2").className="step-lbl active";
+  /* Switcher le contenu */
+  $("step1-content").style.display="none";
+  $("step2-content").style.display="block";
+  /* Switcher les boutons */
+  $("btnAd1").style.display="none";
+  $("btnAd2").style.display="block";
+}
+
+/* ── LANCE LE LECTEUR ──
+   Appelé quand l'utilisateur clique sur le bouton étape 2.
+   Le href du <a> ouvre déjà la 2ème pub. */
 function startPlayer(){
   if(_started)return;
   _started=true;
@@ -330,13 +423,11 @@ function startPlayer(){
   }
 }
 
-/* fireAd : utilisé uniquement pour les impressions au changement de source.
-   Ici on crée un <a> invisible et on le clique — dans le geste utilisateur
-   (onclick d'une card) donc toujours autorisé. */
+/* Impression supplémentaire au changement de source */
 function fireAd(){
   try{
     var a=document.createElement("a");
-    a.href="${AD_URL}";
+    a.href="${AD_URL_1}";
     a.target="_blank";
     a.rel="noopener noreferrer";
     a.style.cssText="position:fixed;opacity:0;pointer-events:none";
@@ -374,7 +465,7 @@ function buildGrid(){
         if(_started){
           if(!_usedSources[idx]){
             _usedSources[idx]=true;
-            fireAd(); /* impression dans le geste utilisateur */
+            fireAd();
           }
           loadPlayer();
         }
