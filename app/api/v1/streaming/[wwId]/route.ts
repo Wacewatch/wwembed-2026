@@ -15,7 +15,6 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
     const supabase = createAdminClient()
 
     const AD_URL = "https://otieu.com/4/9248013"
-    const hasAds = true
 
     const tmdbData = mediaType === "movie" ? await getMovieDetails(tmdbId) : await getTVDetails(tmdbId)
     let episodeData = null
@@ -138,27 +137,59 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 .tag{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600}
 .tag-q{background:#7c3aed;color:#fff}
 .tag-l{background:#0891b2;color:#fff}
-.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
-.mc{background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center}
-.mc h2{color:#1a1a2e;margin-bottom:6px;font-size:18px}
-.mc-sub{color:#666;font-size:12px;margin-bottom:14px}
-.steps{display:flex;justify-content:center;gap:6px;margin-bottom:14px}
-.step{width:8px;height:8px;border-radius:50%;background:#ddd}
-.step.active{background:#667eea}
-.step.done{background:#22c55e}
-.bx{border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px}
-.bx svg{width:16px;height:16px;flex-shrink:0}
-.bx b{display:block;font-size:12px;margin-bottom:2px}
-.bx span{font-size:10px;opacity:0.8}
+
+/* ── MODAL PUB ── */
+.mo{
+  position:fixed;inset:0;
+  background:linear-gradient(135deg,rgba(102,126,234,0.97),rgba(118,75,162,0.97));
+  display:flex;align-items:center;justify-content:center;
+  z-index:9999;padding:16px
+}
+.mc{
+  background:#fff;border-radius:20px;padding:28px 24px;
+  max-width:380px;width:100%;text-align:center;
+  box-shadow:0 24px 60px rgba(0,0,0,.4)
+}
+.mc h2{color:#1a1a2e;margin-bottom:6px;font-size:20px;font-weight:800}
+.mc-sub{color:#666;font-size:13px;margin-bottom:18px}
+.bx{border-radius:10px;padding:11px 13px;margin:7px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
+.bx svg{width:18px;height:18px;flex-shrink:0;margin-top:1px}
+.bx b{display:block;font-size:13px;margin-bottom:2px}
+.bx span{font-size:11px;opacity:0.75}
 .bw{background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
 .bh{background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6}
-.bt-link{display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;margin-top:8px}
-.bp{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
-.bn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff}
-.hi{display:none}
-.cf{margin-top:10px;font-size:10px;color:#999}
-.cf a{color:#667eea}
-.adtag{background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px}
+.bt-link{
+  display:block;width:100%;padding:15px;
+  border:none;border-radius:12px;
+  font-size:15px;font-weight:800;
+  cursor:pointer;text-decoration:none;text-align:center;
+  margin-top:12px;font-family:system-ui,sans-serif;
+  transition:transform .1s,box-shadow .1s;
+  position:relative;overflow:hidden
+}
+.bt-link:active{transform:scale(.98)}
+.bp{
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  color:#fff;
+  box-shadow:0 6px 24px rgba(102,126,234,.5)
+}
+.bp::after{
+  content:'';position:absolute;inset:-4px;
+  border-radius:16px;border:2px solid rgba(102,126,234,.4);
+  animation:ring 2s ease-out infinite;pointer-events:none
+}
+@keyframes ring{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(1.06)}}
+.adtag{
+  background:rgba(255,255,255,.2);
+  color:#fff;padding:2px 7px;
+  border-radius:4px;font-size:9px;
+  margin-left:6px;font-weight:700;
+  letter-spacing:.5px
+}
+.cf{margin-top:12px;font-size:10px;color:#999}
+.cf a{color:#667eea;text-decoration:none}
+
+/* ── BUG MODAL ── */
 .bug-modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;z-index:200;padding:16px}
 .bug-modal.sh{display:flex}
 .bug-form{background:#1a1a28;border-radius:14px;padding:24px;max-width:500px;width:100%;border:1px solid #333}
@@ -174,135 +205,211 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
 </style>
 </head>
 <body>
+
+<!-- ══ MODAL PUB ══ -->
 <div class="mo" id="adOverlay">
-<div class="mc">
-<h2>Accéder au contenu</h2>
-<div class="mc-sub">Une dernière étape pour regarder</div>
-<div class="steps"><div class="step active" id="step1"></div><div class="step" id="step2"></div></div>
-<div class="bx bw">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-<div><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
+  <div class="mc">
+    <h2>Accéder au contenu</h2>
+    <div class="mc-sub">Une étape pour regarder gratuitement</div>
+
+    <div class="bx bw">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div>
+        <b>Un onglet pub va s'ouvrir</b>
+        <span>Fermez-le après quelques secondes</span>
+      </div>
+    </div>
+
+    <div class="bx bh">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+      <div>
+        <b>Soutenez le service gratuit</b>
+        <span>Votre clic nous aide à rester en ligne</span>
+      </div>
+    </div>
+
+    <!-- UN SEUL BOUTON : ouvre la pub ET lance le player directement -->
+    <button class="bt-link bp" id="btnAd">
+      ▶ Regarder maintenant<span class="adtag">PUB</span>
+    </button>
+
+    <div class="cf">
+      Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a>
+    </div>
+  </div>
 </div>
-<div class="bx bh">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-<div><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
-</div>
-<a href="${AD_URL}" target="_blank" rel="noopener" class="bt-link bp" id="btnAd">CONTINUER<span class="adtag">PUB</span></a>
-<button class="bt-link bn hi" id="btnStart">LANCER LE LECTEUR</button>
-<div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
-</div>
-</div>
+
+<!-- ══ PLAYER ══ -->
 <div class="wrap">
-<div class="hdr">
-<div class="logo">▶ WWEMBED</div>
-<div class="ttl">${title}</div>
-<div class="top-right">
-<button class="src-btn" id="srcBtn">☰ <span id="srcLabel">Source #1</span></button>
-<button class="bug-btn" id="bugBtn" title="Signaler un problème">🐛</button>
+  <div class="hdr">
+    <div class="logo">▶ WWEMBED</div>
+    <div class="ttl">${title}</div>
+    <div class="top-right">
+      <button class="src-btn" id="srcBtn">☰ <span id="srcLabel">Source #1</span></button>
+      <button class="bug-btn" id="bugBtn" title="Signaler un problème">🐛</button>
+    </div>
+  </div>
+  <div class="player" id="player"><div class="no-src">Chargement...</div></div>
 </div>
-</div>
-<div class="player" id="player"><div class="no-src">Chargement...</div></div>
-</div>
+
+<!-- ══ MODAL SOURCES ══ -->
 <div class="modal" id="srcModal">
-<div class="modal-box">
-<div class="modal-hdr">
-<div class="modal-ttl">Choisir un lecteur</div>
-<button class="modal-close" id="closeModal">×</button>
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div class="modal-ttl">Choisir un lecteur</div>
+      <button class="modal-close" id="closeModal">×</button>
+    </div>
+    <div class="modal-body"><div class="grid" id="srcGrid"></div></div>
+  </div>
 </div>
-<div class="modal-body"><div class="grid" id="srcGrid"></div></div>
-</div>
-</div>
+
+<!-- ══ MODAL BUG ══ -->
 <div class="bug-modal" id="bugModal">
-<div class="bug-form">
-<h3>🐛 Signaler un problème</h3>
-<div class="form-group">
-<label>Type de problème</label>
-<select id="bugType">
-<option value="ne_charge_pas">Ne charge pas</option>
-<option value="qualite_mauvaise">Qualité mauvaise</option>
-<option value="audio_desync">Audio désynchronisé</option>
-<option value="sous_titres">Problème sous-titres</option>
-<option value="autre">Autre</option>
-</select>
+  <div class="bug-form">
+    <h3>🐛 Signaler un problème</h3>
+    <div class="form-group">
+      <label>Type de problème</label>
+      <select id="bugType">
+        <option value="ne_charge_pas">Ne charge pas</option>
+        <option value="qualite_mauvaise">Qualité mauvaise</option>
+        <option value="audio_desync">Audio désynchronisé</option>
+        <option value="sous_titres">Problème sous-titres</option>
+        <option value="autre">Autre</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Description (optionnel)</label>
+      <textarea id="bugDesc" placeholder="Décrivez le problème..."></textarea>
+    </div>
+    <div class="bug-actions">
+      <button class="bug-cancel" id="bugCancel">Annuler</button>
+      <button class="bug-submit" id="bugSubmit">Envoyer</button>
+    </div>
+  </div>
 </div>
-<div class="form-group">
-<label>Description (optionnel)</label>
-<textarea id="bugDesc" placeholder="Décrivez le problème..."></textarea>
-</div>
-<div class="bug-actions">
-<button class="bug-cancel" id="bugCancel">Annuler</button>
-<button class="bug-submit" id="bugSubmit">Envoyer</button>
-</div>
-</div>
-</div>
+
 <script>
 var _src=${sourcesJson};
 var _idx=0;
 var _started=false;
+var _usedSources={};
 
 function $(id){return document.getElementById(id);}
 
+/* Ouvre la pub dans le geste utilisateur direct → jamais bloqué par le navigateur */
+function openAd(){
+  try{window.open("${AD_URL}","_blank","noopener,noreferrer");}catch(e){}
+}
+
 function startPlayer(){
-if(_started)return;
-_started=true;
-$("adOverlay").style.display="none";
-buildGrid();
-if(_src.length){$("srcLabel").textContent=_src[0].name;loadPlayer();}
+  if(_started)return;
+  _started=true;
+  $("adOverlay").style.display="none";
+  buildGrid();
+  if(_src.length){
+    $("srcLabel").textContent=_src[0].name;
+    loadPlayer();
+  }
 }
 
 function buildGrid(){
-var g=$("srcGrid");
-if(!g||!_src.length){g.innerHTML="<div style='text-align:center;padding:20px;color:#555'>Aucune source</div>";return;}
-g.innerHTML="";
-for(var i=0;i<_src.length;i++){
-(function(idx){
-var s=_src[idx];
-var d=document.createElement("div");
-d.className="card"+(idx===_idx?" act":"");
-d.innerHTML='<div class="card-name">'+s.name+'</div><div class="card-tags"><span class="tag tag-q">'+(s.quality||"HD")+'</span><span class="tag tag-l">'+(s.language||"VO")+'</span></div>';
-d.onclick=function(){_idx=idx;buildGrid();$("srcLabel").textContent=s.name;$("srcModal").classList.remove("sh");if(_started)loadPlayer();};
-g.appendChild(d);
-})(i);
-}
+  var g=$("srcGrid");
+  if(!g)return;
+  if(!_src.length){
+    g.innerHTML="<div style='text-align:center;padding:20px;color:#555'>Aucune source disponible</div>";
+    return;
+  }
+  g.innerHTML="";
+  for(var i=0;i<_src.length;i++){
+    (function(idx){
+      var s=_src[idx];
+      var d=document.createElement("div");
+      d.className="card"+(idx===_idx?" act":"");
+      d.innerHTML=
+        '<div class="card-name">'+s.name+'</div>'+
+        '<div class="card-tags">'+
+          '<span class="tag tag-q">'+(s.quality||"HD")+'</span>'+
+          '<span class="tag tag-l">'+(s.language||"VO")+'</span>'+
+        '</div>';
+      d.onclick=function(){
+        if(idx===_idx)return;
+        _idx=idx;
+        buildGrid();
+        $("srcLabel").textContent=s.name;
+        $("srcModal").classList.remove("sh");
+        if(_started){
+          /* 1 impression par nouvelle source visitée */
+          if(!_usedSources[idx]){
+            _usedSources[idx]=true;
+            openAd();
+          }
+          loadPlayer();
+        }
+      };
+      g.appendChild(d);
+    })(i);
+  }
 }
 
 function loadPlayer(){
-var p=$("player");if(!p||!_src.length)return;
-var s=_src[_idx];if(!s||!s.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";return;}
-p.innerHTML='<iframe src="'+s.url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>';
+  var p=$("player");
+  if(!p||!_src.length)return;
+  var s=_src[_idx];
+  if(!s||!s.url){p.innerHTML="<div class='no-src'>Source indisponible</div>";return;}
+  p.innerHTML='<iframe src="'+s.url+'" allowfullscreen allow="autoplay;fullscreen"></iframe>';
 }
 
+/* ── BOUTON UNIQUE ──
+   window.open est dans le onclick direct → le navigateur ne peut pas le bloquer.
+   startPlayer() s'exécute dans le même geste → lecteur lance immédiatement,
+   pas besoin d'un 2ème clic "LANCER". */
+$("btnAd").onclick=function(){
+  openAd();
+  startPlayer();
+};
+
+/* ── SOURCES MODAL ── */
 $("srcBtn").onclick=function(){$("srcModal").classList.add("sh");buildGrid();};
 $("closeModal").onclick=function(){$("srcModal").classList.remove("sh");};
-$("srcModal").onclick=function(e){if(e.target===$("srcModal"))$("srcModal").classList.remove("sh");};
-$("btnAd").addEventListener("click",function(){setTimeout(function(){$("step1").classList.remove("active");$("step1").classList.add("done");$("step2").classList.add("active");$("step2").classList.add("done");$("btnAd").classList.add("hi");$("btnStart").classList.remove("hi");},150);});
-$("btnStart").onclick=startPlayer;
+$("srcModal").onclick=function(e){
+  if(e.target===$("srcModal"))$("srcModal").classList.remove("sh");
+};
+
+/* ── BUG REPORT ── */
 $("bugBtn").onclick=function(){$("bugModal").classList.add("sh");};
 $("bugCancel").onclick=function(){$("bugModal").classList.remove("sh");};
 $("bugSubmit").onclick=async function(){
-var type=$("bugType").value;
-var desc=$("bugDesc").value;
-try{
-await fetch("/api/bug-report",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-ww_id:"${wwId}",
-tmdb_id:${tmdbId},
-media_type:"${mediaType}",
-season_number:${seasonNumber ?? null},
-episode_number:${episodeNumber ?? null},
-title:"${title.replace(/"/g, '\\"')}",
-source_name:_src[_idx]?.name||"Source #1",
-source_url:_src[_idx]?.url||"",
-message:type+(desc?" - "+desc:""),
-embed_type:"streaming"
-})
-});
-$("bugModal").classList.remove("sh");
-alert("Merci pour votre signalement!");
-$("bugDesc").value="";
-}catch(e){alert("Erreur lors de l'envoi");}
+  var type=$("bugType").value;
+  var desc=$("bugDesc").value;
+  try{
+    await fetch("/api/bug-report",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        ww_id:"${wwId}",
+        tmdb_id:${tmdbId},
+        media_type:"${mediaType}",
+        season_number:${seasonNumber ?? null},
+        episode_number:${episodeNumber ?? null},
+        title:"${title.replace(/"/g, '\\"')}",
+        source_name:_src[_idx]?.name||"Source #1",
+        source_url:_src[_idx]?.url||"",
+        message:type+(desc?" - "+desc:""),
+        embed_type:"streaming"
+      })
+    });
+    $("bugModal").classList.remove("sh");
+    alert("Merci pour votre signalement !");
+    $("bugDesc").value="";
+  }catch(e){
+    alert("Erreur lors de l'envoi");
+  }
 };
 </script>
 </body>
