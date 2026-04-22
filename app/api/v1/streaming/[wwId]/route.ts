@@ -113,7 +113,6 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
       progress: generateRandomId("g"),
       btnUnlock1: generateRandomId("u1"),
       btnUnlock2: generateRandomId("u2"),
-      btnStart: generateRandomId("d"),
       boxHelp: generateRandomId("bh"),
       boxThanks: generateRandomId("bk"),
       boxDone: generateRandomId("bd"),
@@ -279,8 +278,6 @@ html,body{height:100%;overflow:hidden;font-family:system-ui,sans-serif;backgroun
     <button class="bt bp" id="${ids.btnUnlock1}">ÉTAPE 1 / 2<span class="adtag">PUB</span></button>
     <!-- Pub 2 (hidden until step 1 done) -->
     <button class="bt bp2 hi" id="${ids.btnUnlock2}">ÉTAPE 2 / 2<span class="adtag2">PUB</span></button>
-    <!-- Start player (hidden until both steps done) -->
-    <button class="bt bn hi" id="${ids.btnStart}">▶ LANCER LE LECTEUR</button>
     <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
   </div>
 </div>
@@ -295,85 +292,70 @@ var _ids=${JSON.stringify(ids)};
 
 function $(id){return document.getElementById(id);}
 
-// ── Ad modal logic (same pattern as download) ──────────────────────
+// ── Ad modal logic ─────────────────────────────────────────────────
 function showAdModal(){
-  var o=$(_ids.overlay);
-  var s1=$(_ids.step1);
-  var s2=$(_ids.step2);
-  var pr=$(_ids.progress);
-  var bu1=$(_ids.btnUnlock1);
-  var bu2=$(_ids.btnUnlock2);
-  var bs=$(_ids.btnStart);
-  var bh=$(_ids.boxHelp);
-  var bk=$(_ids.boxThanks);
-  var bd=$(_ids.boxDone);
-
-  // Reset state
   _adStep=0;
-  s1.className="step active";
-  s2.className="step";
-  pr.style.width="0%";
-  bu1.classList.remove("hi");
-  bu2.classList.add("hi");
-  bs.classList.add("hi");
-  bh.style.display="";
-  bk.style.display="none";
-  bd.style.display="none";
-  o.classList.add("sh");
+  $(_ids.step1).className="step active";
+  $(_ids.step2).className="step";
+  $(_ids.progress).style.width="0%";
+  $(_ids.btnUnlock1).classList.remove("hi");
+  $(_ids.btnUnlock2).classList.add("hi");
+  $(_ids.btnStart).classList.add("hi");
+  $(_ids.boxHelp).style.display="";
+  $(_ids.boxThanks).style.display="none";
+  $(_ids.boxDone).style.display="none";
+  $(_ids.overlay).classList.add("sh");
 }
 
-// Step 1: first pub clicked
-$(_ids.btnUnlock1).addEventListener("click", function(){
-  if(_adStep>=1) return;
-  window.open("${AD_URL_1}", "_blank");
-  setTimeout(function(){
-    _adStep=1;
-    var s1=$(_ids.step1);
-    var s2=$(_ids.step2);
-    var pr=$(_ids.progress);
-    var bu1=$(_ids.btnUnlock1);
-    var bu2=$(_ids.btnUnlock2);
-    var bh=$(_ids.boxHelp);
-    var bk=$(_ids.boxThanks);
-    s1.className="step done";
-    s2.className="step active";
-    pr.style.width="50%";
-    bu1.classList.add("hi");
-    bu2.classList.remove("hi");
-    bh.style.display="none";
-    bk.style.display="";
-  }, 150);
-});
+// Clic 1 : ouvre pub 1 + passe à l'étape 2 immédiatement (synchrone)
+$(_ids.btnUnlock1).onclick = function(){
+  if(_adStep >= 1) return;
+  _adStep = 1;
+  // Ouvrir la pub dans le même fil d'exécution synchrone
+  var a = document.createElement("a");
+  a.href = "${AD_URL_1}";
+  a.target = "_blank";
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Mise à jour UI immédiate
+  $(_ids.step1).className = "step done";
+  $(_ids.step2).className = "step active";
+  $(_ids.progress).style.width = "50%";
+  $(_ids.btnUnlock1).classList.add("hi");
+  $(_ids.btnUnlock2).classList.remove("hi");
+  $(_ids.boxHelp).style.display = "none";
+  $(_ids.boxThanks).style.display = "";
+};
 
-// Step 2: second pub clicked
-$(_ids.btnUnlock2).addEventListener("click", function(){
-  if(_adStep>=2) return;
-  window.open("${AD_URL_2}", "_blank");
+// Clic 2 : ouvre pub 2 + lance le player directement (pas de 3ème clic)
+$(_ids.btnUnlock2).onclick = function(){
+  if(_adStep >= 2) return;
+  _adStep = 2;
+  // Ouvrir la pub dans le même fil d'exécution synchrone
+  var a = document.createElement("a");
+  a.href = "${AD_URL_2}";
+  a.target = "_blank";
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Mise à jour UI
+  $(_ids.step2).className = "step done";
+  $(_ids.progress).style.width = "100%";
+  $(_ids.btnUnlock2).classList.add("hi");
+  $(_ids.boxThanks).style.display = "none";
+  $(_ids.boxDone).style.display = "";
+  // Lancer le player directement après 300ms (pas de 3ème clic)
   setTimeout(function(){
-    _adStep=2;
-    var s2=$(_ids.step2);
-    var pr=$(_ids.progress);
-    var bu2=$(_ids.btnUnlock2);
-    var bs=$(_ids.btnStart);
-    var bk=$(_ids.boxThanks);
-    var bd=$(_ids.boxDone);
-    s2.className="step done";
-    pr.style.width="100%";
-    bu2.classList.add("hi");
-    bs.classList.remove("hi");
-    bk.style.display="none";
-    bd.style.display="";
-  }, 150);
-});
-
-// Start player button
-$(_ids.btnStart).onclick = function(){
-  if(!_started){
-    _started=true;
-    $(_ids.overlay).classList.remove("sh");
-    buildGrid();
-    if(_src.length){ $("srcLabel").textContent=_src[0].name; loadPlayer(); }
-  }
+    if(!_started){
+      _started = true;
+      $(_ids.overlay).classList.remove("sh");
+      buildGrid();
+      if(_src.length){ $("srcLabel").textContent = _src[0].name; loadPlayer(); }
+    }
+  }, 300);
 };
 
 // ── Source grid & player ───────────────────────────────────────────
