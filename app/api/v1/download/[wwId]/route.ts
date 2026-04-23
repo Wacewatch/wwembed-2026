@@ -504,8 +504,7 @@ if(!data||!data.success||!data.embed_url){
 if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
 return;
 }
-var embed=data.embed_url;
-var finalUrl = (typeof data.embed_url === "string" ? data.embed_url : data.embed_url.lien) || "#";
+var finalUrl=(typeof data.embed_url==="string"?data.embed_url:data.embed_url.lien)||"#";
 
 if(details)details.classList.remove("show");
 
@@ -1139,7 +1138,7 @@ if(!data||!data.success||!data.embed_url){
 if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#ef4444"><p>Lien indisponible</p></div>';
 return;
 }
-var finalUrl=data.embed_url.lien||"#";
+var finalUrl=(typeof data.embed_url==="string"?data.embed_url:data.embed_url.lien)||"#";
 
 fetch("/api/link-click",{
   method:"POST",
