@@ -300,7 +300,6 @@ function showAdModal(){
   $(_ids.progress).style.width="0%";
   $(_ids.btnUnlock1).classList.remove("hi");
   $(_ids.btnUnlock2).classList.add("hi");
-  $(_ids.btnStart).classList.add("hi");
   $(_ids.boxHelp).style.display="";
   $(_ids.boxThanks).style.display="none";
   $(_ids.boxDone).style.display="none";
