@@ -505,7 +505,7 @@ if(details)details.innerHTML='<div style="text-align:center;padding:30px;color:#
 return;
 }
 var embed=data.embed_url;
-var finalUrl=embed.lien||"#";
+var finalUrl = (typeof data.embed_url === "string" ? data.embed_url : data.embed_url.lien) || "#";
 
 if(details)details.classList.remove("show");
 
