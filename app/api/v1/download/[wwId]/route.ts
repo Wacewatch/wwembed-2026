@@ -254,10 +254,31 @@ var _ids=${JSON.stringify(ids)};
 var _extIds=${JSON.stringify(externalIds)};
 var _title="${title.replace(/"/g, '\\"')}";
 var _wwId="${digitalContent.ww_id}";
+var _contentType="${contentType}"; // ebook | music | software | game
 var _allExtLinks=[];
 var _currentExtLinks=[];
 
 var AD_URL_EXT="https://foreignabnormality.com/q7jywq0h?key=6eb56670c09233e007f1bfb9cf0e1b55";
+
+// Map our content type to what movix.cash returns as "type" in search results
+function _getExpectedTypes(){
+  if(_contentType==="game")return["games","game"];
+  if(_contentType==="music")return["music","album","titre"];
+  if(_contentType==="ebook")return["doc","ebook","book","livre"];
+  if(_contentType==="software")return["software","logiciel","app"];
+  return null; // no filter = take first result
+}
+
+// Map to download endpoint segment
+function _getDownloadEndpoint(resultType){
+  var t=(resultType||"").toLowerCase();
+  if(t==="games"||t==="game")return"game";
+  if(t==="music"||t==="album"||t==="titre")return"music";
+  if(t==="doc"||t==="ebook"||t==="book"||t==="livre")return"ebook";
+  if(t==="software"||t==="logiciel"||t==="app")return"software";
+  if(t==="series"||t==="tv")return"tv";
+  return"movie";
+}
 
 function openAdPopup() {
   if(!_u)return;
@@ -374,8 +395,9 @@ function _loadExternal(){
   var content=document.getElementById(_extIds.content);
   var filters=document.getElementById(_extIds.filters);
   var countBadge=document.getElementById(_extIds.count);
+  var BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
 
-  fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api/search?title="+encodeURIComponent(_title))
+  fetch(BASE+"/search?title="+encodeURIComponent(_title))
   .then(function(r){return r.json();})
   .then(function(data){
     var results=data;
@@ -388,23 +410,42 @@ function _loadExternal(){
       content.innerHTML='<div class="em">Aucune source externe trouvée</div>';
       countBadge.textContent="0";return;
     }
-    var first=results[0];
-    var movieId=first.id||first.movie_id||first.tmdb_id;
-    fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api/darkiworld/download/movie/"+movieId)
-    .then(function(r){return r.json();})
-    .then(function(dlData){
-      loading.style.display="none";
-      var links=(dlData&&dlData.success&&dlData.all)?dlData.all.filter(function(l){return l.lien;}):null;
-      if(!links||links.length===0){
-        content.innerHTML='<div class="em">Aucun lien externe disponible</div>';
-        countBadge.textContent="0";return;
+    // Find best matching result by content type
+    var expectedTypes=_getExpectedTypes();
+    var best=null;
+    if(expectedTypes){
+      for(var i=0;i<results.length;i++){
+        var t=(results[i].type||"").toLowerCase();
+        for(var j=0;j<expectedTypes.length;j++){
+          if(t===expectedTypes[j]){best=results[i];break;}
+        }
+        if(best)break;
       }
-      _allExtLinks=links;
-      countBadge.textContent=links.length;
-      _populateFilters(links);
-      filters.style.display="flex";
-      _renderExtLinks(links);
-    }).catch(function(){loading.style.display="none";content.innerHTML='<div class="em">Erreur de chargement</div>';countBadge.textContent="0";});
+    }
+    if(!best)best=results[0];
+    var itemId=best.id||best.movie_id;
+    var endpoint=_getDownloadEndpoint(best.type||"movie");
+    var dlUrl=BASE+"/darkiworld/download/"+endpoint+"/"+itemId;
+    function _fetchLinks(url,useFallback){
+      fetch(url).then(function(r){return r.json();})
+      .then(function(dlData){
+        var links=(dlData&&dlData.success&&dlData.all)?dlData.all.filter(function(l){return l.lien;}):null;
+        if((!links||links.length===0)&&useFallback){
+          _fetchLinks(BASE+"/darkiworld/download/movie/"+itemId,false);return;
+        }
+        loading.style.display="none";
+        if(!links||links.length===0){
+          content.innerHTML='<div class="em">Aucun lien externe disponible</div>';
+          countBadge.textContent="0";return;
+        }
+        _allExtLinks=links;countBadge.textContent=links.length;
+        _populateFilters(links);filters.style.display="flex";_renderExtLinks(links);
+      }).catch(function(){
+        if(useFallback){_fetchLinks(BASE+"/darkiworld/download/movie/"+itemId,false);return;}
+        loading.style.display="none";content.innerHTML='<div class="em">Erreur de chargement</div>';countBadge.textContent="0";
+      });
+    }
+    _fetchLinks(dlUrl,endpoint!=="movie");
   }).catch(function(){loading.style.display="none";content.innerHTML='<div class="em">Erreur de chargement</div>';countBadge.textContent="0";});
 }
 
