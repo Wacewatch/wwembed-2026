@@ -71,6 +71,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       content: generateRandomId("extc"),
       filters: generateRandomId("extf"),
       count: generateRandomId("extn"),
+      altContent: generateRandomId("exa"),
+      altLoading: generateRandomId("exal"),
+      altCount: generateRandomId("exac"),
     }
 
     const ids = {
@@ -121,6 +124,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .sec-title{display:flex;align-items:center;gap:10px;padding:16px;background:linear-gradient(135deg,rgba(102,126,234,0.2),rgba(118,75,162,0.2));border:1px solid rgba(102,126,234,0.3);border-radius:12px;margin:24px 0 16px;font-weight:700;color:#a78bfa}
 .sec-title svg{width:20px;height:20px}
 .sec-title .badge{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;margin-left:auto}
+.ext-tabs{display:flex;gap:8px;margin-bottom:16px}
+.ext-tab{flex:1;padding:10px 14px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.ext-tab.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;box-shadow:0 4px 12px rgba(102,126,234,0.4)}
+.ext-tab:not(.active){background:rgba(30,58,79,0.4);color:#94a3b8;border:1px solid rgba(30,58,79,0.6)}
+.ext-tab:not(.active):hover{background:rgba(30,58,79,0.7);color:#e5e7eb}
+.ext-tab-badge{background:rgba(255,255,255,0.2);padding:2px 7px;border-radius:10px;font-size:11px}
+.ext-tab.active .ext-tab-badge{background:rgba(255,255,255,0.25)}
+.ext-tab:not(.active) .ext-tab-badge{background:rgba(102,126,234,0.3);color:#a78bfa}
 .ext-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:30px;color:#8ba3b5}
 .ext-loading svg{animation:spin 1s linear infinite;width:24px;height:24px}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
@@ -129,6 +140,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ext-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .ext-card{background:rgba(22,34,48,0.8);border-radius:12px;border:1px solid rgba(102,126,234,0.3);overflow:hidden;transition:all 0.2s}
 .ext-card:hover{border-color:rgba(102,126,234,0.6);transform:translateY(-2px)}
+.ext-card.alt-card{border-color:rgba(245,158,11,0.3)}
+.ext-card.alt-card:hover{border-color:rgba(245,158,11,0.6)}
 .ext-card-body{padding:16px}
 .ext-provider{font-size:11px;color:#667eea;font-weight:600;text-transform:uppercase;margin-bottom:8px}
 .ext-quality{display:inline-block;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;margin-bottom:10px}
@@ -140,7 +153,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ext-stat-label{font-size:10px;color:#6b7280}
 .ext-stat-value{font-size:13px;font-weight:600;color:#e5e7eb}
 .ext-btn{display:block;width:100%;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-top:12px}
-.ext-btn:disabled{opacity:0.4;cursor:not-allowed;background:#374151}
+.alt-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:800;letter-spacing:0.5px;vertical-align:middle}
+.alt-filename{font-size:11px;color:#94a3b8;word-break:break-word;margin-top:6px;line-height:1.4;max-height:3.2em;overflow:hidden}
+.ext-btn.alt-btn{background:linear-gradient(135deg,#f59e0b,#d97706)}
 .mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px)}
 .mo.sh{display:flex}
 .mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4)}
@@ -191,7 +206,19 @@ ${cover ? `<img src="${cover}" alt="${title}" class="ps">` : ""}
 <div class="sec-title">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
 Sources externes
-<span class="badge" id="${externalIds.count}">...</span>
+</div>
+
+<div class="ext-tabs">
+<button class="ext-tab active" id="tabMovix" onclick="switchTab('movix')">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+  Sources externes
+  <span class="ext-tab-badge" id="${externalIds.count}">...</span>
+</button>
+<button class="ext-tab" id="tabAlt" onclick="switchTab('alt')">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+  Sources Alt
+  <span class="ext-tab-badge" id="${externalIds.altCount}">...</span>
+</button>
 </div>
 
 <div id="${externalIds.container}">
@@ -205,6 +232,14 @@ Recherche de sources externes...
 <select id="extProviderFilter" class="ext-select"><option value="">Provider</option></select>
 </div>
 <div id="${externalIds.content}" class="ext-grid"></div>
+</div>
+
+<div id="${externalIds.altContent}_wrap" style="display:none">
+<div class="ext-loading" id="${externalIds.altLoading}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+Recherche de sources alternatives...
+</div>
+<div id="${externalIds.altContent}" class="ext-grid"></div>
 </div>
 
 <div class="link-display-area" id="linkDisplayArea"></div>
@@ -261,9 +296,26 @@ var _wwId="${digitalContent.ww_id}";
 var _contentType="${contentType}";
 var _allExtLinks=[];
 var _currentExtLinks=[];
+var _allAltLinks=[];
+var _altLoaded=false;
 var _movixContentId=null;
 var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
 var AD_URL_EXT="https://foreignabnormality.com/q7jywq0h?key=6eb56670c09233e007f1bfb9cf0e1b55";
+
+window.switchTab=function(tab){
+  var movixWrap=document.getElementById(_extIds.container);
+  var altWrap=document.getElementById(_extIds.altContent+"_wrap");
+  var tabMovix=document.getElementById("tabMovix");
+  var tabAlt=document.getElementById("tabAlt");
+  if(tab==="movix"){
+    movixWrap.style.display="block";altWrap.style.display="none";
+    tabMovix.classList.add("active");tabAlt.classList.remove("active");
+  }else{
+    movixWrap.style.display="none";altWrap.style.display="block";
+    tabAlt.classList.add("active");tabMovix.classList.remove("active");
+    if(!_altLoaded){_altLoaded=true;_loadAltExternal();}
+  }
+};
 
 function _getExpectedTypes(){
   if(_contentType==="game")return["games","game"];
@@ -432,7 +484,6 @@ function _loadExternal(){
     function _fetchLinks(url,useFallback){
       fetch(url).then(function(r){return r.json();})
       .then(function(dlData){
-        // Garder tous les liens ayant un id (lien peut être null → decode)
         var links=(dlData&&dlData.success&&dlData.all)?dlData.all.filter(function(l){return l.id;}):null;
         if((!links||links.length===0)&&useFallback){
           _fetchLinks(_BASE+"/darkiworld/download/movie/"+itemId,false);return;
@@ -451,6 +502,80 @@ function _loadExternal(){
     }
     _fetchLinks(dlUrl,endpoint!=="movie");
   }).catch(function(){loading.style.display="none";content.innerHTML='<div class="em">Erreur de chargement</div>';countBadge.textContent="0";});
+}
+
+function _loadAltExternal(){
+  var altLoading=document.getElementById(_extIds.altLoading);
+  var altContent=document.getElementById(_extIds.altContent);
+  var altCountBadge=document.getElementById(_extIds.altCount);
+  // Digital content uses title search - build query from title
+  var altUrl="https://apis.wavewatch.top/wawa.php?_route=api&type=movie&id="+encodeURIComponent(_title);
+  // For digital we use title as search param since no tmdbId
+  altUrl="https://apis.wavewatch.top/wawa.php?_route=api&type=search&q="+encodeURIComponent(_title);
+  fetch(altUrl)
+  .then(function(r){return r.json();})
+  .then(function(data){
+    altLoading.style.display="none";
+    var links=_extractAndFilterAltLinks(data);
+    _allAltLinks=links;
+    altCountBadge.textContent=links.length;
+    if(links.length===0){altContent.innerHTML='<div class="em">Aucune source alternative disponible</div>';return;}
+    _renderAltLinks(links,altContent);
+  }).catch(function(){
+    altLoading.style.display="none";
+    altContent.innerHTML='<div class="em">Erreur de chargement</div>';
+    altCountBadge.textContent="0";
+  });
+}
+
+function _extractAndFilterAltLinks(data){
+  var raw=[];
+  if(Array.isArray(data))raw=data;
+  else if(data&&Array.isArray(data.links))raw=data.links;
+  else if(data&&Array.isArray(data.downloadLinks))raw=data.downloadLinks;
+  else if(data&&Array.isArray(data.results))raw=data.results;
+  return raw.filter(function(l){
+    var u=l.url||l.lien||l.link||"";
+    if(!u)return false;
+    if(u.indexOf("rqts-url")!==-1)return false;
+    if(u.indexOf("wawacity.news")!==-1)return false;
+    if(u.indexOf("Boutique")!==-1)return false;
+    if(u.indexOf("/pub/")!==-1)return false;
+    return true;
+  });
+}
+
+function _renderAltLinks(links,container){
+  if(links.length===0){container.innerHTML='<div class="em">Aucun résultat</div>';return;}
+  var html="";
+  links.forEach(function(l,idx){
+    var u=l.url||l.lien||l.link||"";
+    var host=l.host||l.provider||"";
+    var prot=l.protection||l.quality||"N/A";
+    var fname=l.filename||l.name||"";
+    var size=l.size||"";
+    html+='<div class="ext-card alt-card" data-alt-idx="'+idx+'"><div class="ext-card-body">';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">';
+    html+='<span class="ext-quality">'+prot+'</span>';
+    html+='<span class="alt-badge">ALT</span>';
+    html+='</div>';
+    if(host)html+='<div class="ext-provider">'+host+'</div>';
+    if(fname)html+='<div class="alt-filename">'+fname+'</div>';
+    if(size)html+='<div class="ext-info" style="margin-top:6px">Taille: '+size+'</div>';
+    html+='<button class="ext-btn alt-btn">Télécharger</button>';
+    html+='</div></div>';
+  });
+  container.innerHTML=html;
+  container.querySelectorAll(".alt-card").forEach(function(card){
+    card.querySelector(".ext-btn").onclick=function(e){
+      e.stopPropagation();
+      var idx=parseInt(card.getAttribute("data-alt-idx"));
+      var l=_allAltLinks[idx];
+      var u=l.url||l.lien||l.link||"";
+      if(!u){alert("Lien non disponible");return;}
+      _openExtAdModal(u,{provider:l.host,quality:l.protection});
+    };
+  });
 }
 
 function _populateFilters(links){
@@ -552,41 +677,23 @@ function _openExtAdModal(finalUrl, extLink){
 
 function _showExtDetails(extLink){
   if(!extLink)return;
-
-  // Lien direct disponible
-  if(extLink.lien){
-    _openExtAdModal(extLink.lien, extLink);
-    return;
-  }
-
-  // Lien null → appel decode
-  if(!extLink.id){
-    alert("Lien non disponible pour ce fichier");return;
-  }
-
-  // Afficher loader
+  if(extLink.lien){_openExtAdModal(extLink.lien,extLink);return;}
+  if(!extLink.id){alert("Lien non disponible pour ce fichier");return;}
   var tmpLoader=document.createElement("div");
-  tmpLoader.className="decode-loading";
-  tmpLoader.id="decodeLoader";
+  tmpLoader.className="decode-loading";tmpLoader.id="decodeLoader";
   tmpLoader.innerHTML='<div class="decode-loading-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p>Décodage du lien...</p></div>';
   document.body.appendChild(tmpLoader);
-
   var decodeUrl=_BASE+"/darkiworld/decode/"+extLink.id+"?title_id="+_movixContentId;
-  fetch(decodeUrl)
-  .then(function(r){return r.json();})
+  fetch(decodeUrl).then(function(r){return r.json();})
   .then(function(data){
-    var loader=document.getElementById("decodeLoader");
-    if(loader)loader.remove();
-    // Récupérer le lien depuis la réponse decode
+    var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
     var finalUrl=null;
     if(data&&data.lien)finalUrl=data.lien;
     else if(data&&data.embed_url&&data.embed_url.lien)finalUrl=data.embed_url.lien;
     if(!finalUrl){alert("Lien non disponible pour ce fichier");return;}
-    _openExtAdModal(finalUrl, extLink);
-  })
-  .catch(function(){
-    var loader=document.getElementById("decodeLoader");
-    if(loader)loader.remove();
+    _openExtAdModal(finalUrl,extLink);
+  }).catch(function(){
+    var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
     alert("Erreur lors du décodage du lien");
   });
 }
@@ -687,6 +794,9 @@ _loadExternal();
     loading: generateRandomId("exl"),
     filters: generateRandomId("exf"),
     count: generateRandomId("exn"),
+    altContent: generateRandomId("exa"),
+    altLoading: generateRandomId("exal"),
+    altCount: generateRandomId("exac"),
   }
 
   const movieHtml = `<!DOCTYPE html>
@@ -717,7 +827,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ft a{color:#14B8A6}
 .sec-title{display:flex;align-items:center;gap:10px;padding:16px;background:linear-gradient(135deg,rgba(102,126,234,0.2),rgba(118,75,162,0.2));border:1px solid rgba(102,126,234,0.3);border-radius:12px;margin:24px 0 16px;font-weight:700;color:#a78bfa}
 .sec-title svg{width:20px;height:20px}
-.sec-title .badge{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;margin-left:auto}
+.ext-tabs{display:flex;gap:8px;margin-bottom:16px}
+.ext-tab{flex:1;padding:10px 14px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.ext-tab.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;box-shadow:0 4px 12px rgba(102,126,234,0.4)}
+.ext-tab:not(.active){background:rgba(30,58,79,0.4);color:#94a3b8;border:1px solid rgba(30,58,79,0.6)}
+.ext-tab:not(.active):hover{background:rgba(30,58,79,0.7);color:#e5e7eb}
+.ext-tab-badge{background:rgba(255,255,255,0.2);padding:2px 7px;border-radius:10px;font-size:11px}
+.ext-tab.active .ext-tab-badge{background:rgba(255,255,255,0.25)}
+.ext-tab:not(.active) .ext-tab-badge{background:rgba(102,126,234,0.3);color:#a78bfa}
 .ext-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:30px;color:#8ba3b5}
 .ext-loading svg{animation:spin 1s linear infinite;width:24px;height:24px}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
@@ -726,6 +843,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ext-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .ext-card{background:rgba(22,34,48,0.8);border-radius:12px;border:1px solid rgba(102,126,234,0.3);overflow:hidden;transition:all 0.2s}
 .ext-card:hover{border-color:rgba(102,126,234,0.6);transform:translateY(-2px)}
+.ext-card.alt-card{border-color:rgba(245,158,11,0.3)}
+.ext-card.alt-card:hover{border-color:rgba(245,158,11,0.6)}
 .ext-card-body{padding:16px}
 .ext-provider{font-size:11px;color:#667eea;font-weight:600;text-transform:uppercase;margin-bottom:8px}
 .ext-quality{display:inline-block;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;margin-bottom:10px}
@@ -737,6 +856,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ext-stat-label{font-size:10px;color:#6b7280}
 .ext-stat-value{font-size:13px;font-weight:600;color:#e5e7eb}
 .ext-btn{display:block;width:100%;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-top:12px}
+.alt-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:800;letter-spacing:0.5px;vertical-align:middle}
+.alt-filename{font-size:11px;color:#94a3b8;word-break:break-word;margin-top:6px;line-height:1.4;max-height:3.2em;overflow:hidden}
+.ext-btn.alt-btn{background:linear-gradient(135deg,#f59e0b,#d97706)}
 .link-display-area{display:none;margin:20px 0;padding:20px;background:linear-gradient(135deg,rgba(16,185,129,0.1),rgba(20,184,166,0.1));border:2px solid #10b981;border-radius:12px}
 .link-display-title{font-size:16px;font-weight:700;color:#10b981;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .link-display-url{background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;font-family:monospace;font-size:12px;color:#5eead4;word-break:break-all;margin-bottom:16px;border:1px solid rgba(94,234,212,0.3)}
@@ -791,7 +913,19 @@ ${posterUrl ? `<img src="${posterUrl}" alt="${title}" class="ps">` : ""}
 <div class="sec-title">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
 Sources externes
-<span class="badge" id="${externalIds.count}">...</span>
+</div>
+
+<div class="ext-tabs">
+<button class="ext-tab active" id="tabMovix" onclick="switchTab('movix')">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+  Sources externes
+  <span class="ext-tab-badge" id="${externalIds.count}">...</span>
+</button>
+<button class="ext-tab" id="tabAlt" onclick="switchTab('alt')">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+  Sources Alt
+  <span class="ext-tab-badge" id="${externalIds.altCount}">...</span>
+</button>
 </div>
 
 <div id="${externalIds.container}">
@@ -805,6 +939,18 @@ Recherche de sources externes...
 <select id="extProviderFilter" class="ext-select"><option value="">Provider</option></select>
 </div>
 <div id="${externalIds.content}" class="ext-grid"></div>
+</div>
+
+<div id="${externalIds.altContent}_wrap" style="display:none">
+<div class="ext-loading" id="${externalIds.altLoading}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+Recherche de sources alternatives...
+</div>
+<div id="${externalIds.content}_altfilters" class="ext-filters" style="display:none">
+<select id="altQualityFilter" class="ext-select"><option value="">Qualité</option></select>
+<select id="altHostFilter" class="ext-select"><option value="">Host</option></select>
+</div>
+<div id="${externalIds.altContent}" class="ext-grid"></div>
 </div>
 
 <div class="link-display-area" id="linkDisplayArea"></div>
@@ -865,10 +1011,163 @@ var _episodeNum=${episodeNumber !== undefined ? episodeNumber : "null"};
 var _wwId="${wwId}";
 var _allExtLinks=[];
 var _currentExtLinks=[];
+var _allAltLinks=[];
+var _currentAltLinks=[];
+var _altLoaded=false;
 var _movixMovieId=null;
 var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
 var AD_URL_EXT="https://foreignabnormality.com/q7jywq0h?key=6eb56670c09233e007f1bfb9cf0e1b55";
+var ALT_BASE="https://apis.wavewatch.top/wawa.php";
 
+// ── Tab switching ──────────────────────────────────────────────────────────
+window.switchTab=function(tab){
+  var movixWrap=document.getElementById(_extIds.container);
+  var altWrap=document.getElementById(_extIds.altContent+"_wrap");
+  var tabMovix=document.getElementById("tabMovix");
+  var tabAlt=document.getElementById("tabAlt");
+  if(tab==="movix"){
+    movixWrap.style.display="block";altWrap.style.display="none";
+    tabMovix.classList.add("active");tabAlt.classList.remove("active");
+  }else{
+    movixWrap.style.display="none";altWrap.style.display="block";
+    tabAlt.classList.add("active");tabMovix.classList.remove("active");
+    if(!_altLoaded){_altLoaded=true;_loadAltExternal();}
+  }
+};
+
+// ── Alt source: filter helper ─────────────────────────────────────────────
+function _filterAltLinks(raw){
+  return (raw||[]).filter(function(l){
+    var u=l.url||l.lien||l.link||"";
+    if(!u)return false;
+    if(u.indexOf("rqts-url")!==-1)return false;
+    if(u.indexOf("wawacity.news")!==-1)return false;
+    if(u.indexOf("Boutique")!==-1)return false;
+    if(u.indexOf("/pub/")!==-1)return false;
+    // keep only items with an actual filename or non-empty host
+    // (empty filename + empty host = likely ad filler)
+    var fname=l.filename||l.name||"";
+    var host=l.host||l.provider||"";
+    if(!fname&&!host)return false;
+    return true;
+  });
+}
+
+// ── Alt source: load ──────────────────────────────────────────────────────
+function _loadAltExternal(){
+  var altLoading=document.getElementById(_extIds.altLoading);
+  var altContent=document.getElementById(_extIds.altContent);
+  var altFilters=document.getElementById(_extIds.content+"_altfilters");
+  var altCountBadge=document.getElementById(_extIds.altCount);
+
+  var url;
+  if(_mediaType==="tv"){
+    var s=_seasonNum||1;
+    var e=_episodeNum||1;
+    url=ALT_BASE+"?_route=api&type=tv&id="+_tmdbId+"&s="+s+"&e="+e;
+  }else{
+    url=ALT_BASE+"?_route=api&type=movie&id="+_tmdbId;
+  }
+
+  fetch(url)
+  .then(function(r){return r.json();})
+  .then(function(data){
+    altLoading.style.display="none";
+    // Normalise response shape
+    var raw=[];
+    if(Array.isArray(data))raw=data;
+    else if(data&&Array.isArray(data.links))raw=data.links;
+    else if(data&&Array.isArray(data.downloadLinks))raw=data.downloadLinks;
+    else if(data&&Array.isArray(data.results))raw=data.results;
+    else if(data&&Array.isArray(data.data))raw=data.data;
+
+    var links=_filterAltLinks(raw);
+    _allAltLinks=links;
+    _currentAltLinks=links;
+    altCountBadge.textContent=links.length;
+
+    if(links.length===0){
+      altContent.innerHTML='<div class="em">Aucune source alternative disponible</div>';
+      return;
+    }
+    _populateAltFilters(links,altFilters);
+    altFilters.style.display="flex";
+    _renderAltLinks(links);
+  }).catch(function(){
+    altLoading.style.display="none";
+    altContent.innerHTML='<div class="em">Erreur de chargement</div>';
+    altCountBadge.textContent="0";
+  });
+}
+
+function _populateAltFilters(links,filtersEl){
+  var qualities=new Set(),hosts=new Set();
+  links.forEach(function(l){
+    var q=l.protection||l.quality||"";
+    var h=l.host||l.provider||"";
+    if(q)qualities.add(q);
+    if(h)hosts.add(h);
+  });
+  var qf=document.getElementById("altQualityFilter");
+  var hf=document.getElementById("altHostFilter");
+  qualities.forEach(function(q){var o=document.createElement("option");o.value=q;o.textContent=q;qf.appendChild(o);});
+  hosts.forEach(function(h){var o=document.createElement("option");o.value=h;o.textContent=h;hf.appendChild(o);});
+  qf.onchange=hf.onchange=_applyAltFilters;
+}
+
+function _applyAltFilters(){
+  var qf=document.getElementById("altQualityFilter").value;
+  var hf=document.getElementById("altHostFilter").value;
+  var filtered=_allAltLinks.filter(function(l){
+    var q=l.protection||l.quality||"";
+    var h=l.host||l.provider||"";
+    if(qf&&q!==qf)return false;
+    if(hf&&h!==hf)return false;
+    return true;
+  });
+  _currentAltLinks=filtered;
+  _renderAltLinks(filtered);
+}
+
+function _renderAltLinks(links){
+  var content=document.getElementById(_extIds.altContent);
+  if(!links||links.length===0){content.innerHTML='<div class="em">Aucun résultat</div>';return;}
+  var html="";
+  links.forEach(function(l,idx){
+    var u=l.url||l.lien||l.link||"";
+    var host=l.host||l.provider||"";
+    var prot=l.protection||l.quality||"N/A";
+    var fname=l.filename||l.name||"";
+    var size=l.size||"";
+    html+='<div class="ext-card alt-card" data-alt-idx="'+idx+'"><div class="ext-card-body">';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">';
+    html+='<span class="ext-quality">'+prot+'</span>';
+    html+='<span class="alt-badge">ALT</span>';
+    html+='</div>';
+    if(host)html+='<div class="ext-provider">'+host+'</div>';
+    if(fname)html+='<div class="alt-filename">'+fname+'</div>';
+    if(size)html+='<div class="ext-info" style="margin-top:6px">Taille: '+size+'</div>';
+    html+=(u
+      ?'<button class="ext-btn alt-btn">Voir le lien</button>'
+      :'<button class="ext-btn alt-btn" disabled style="opacity:0.4;cursor:not-allowed">Indisponible</button>');
+    html+='</div></div>';
+  });
+  content.innerHTML=html;
+  content.querySelectorAll(".alt-card").forEach(function(card){
+    var btn=card.querySelector(".ext-btn");
+    if(btn.disabled)return;
+    btn.onclick=function(e){
+      e.stopPropagation();
+      var idx=parseInt(card.getAttribute("data-alt-idx"));
+      var l=_currentAltLinks[idx];
+      var u=l.url||l.lien||l.link||"";
+      if(!u){alert("Lien non disponible");return;}
+      _openExtAdModal(u,{provider:l.host||l.provider,quality:l.protection||l.quality});
+    };
+  });
+}
+
+// ── Main links ─────────────────────────────────────────────────────────────
 function _renderLink(l){
   var url=l.source_url||"";
   var release=l.release_name||l.source_name||"Fichier téléchargeable";
@@ -993,6 +1292,7 @@ function _sa(url){
   };
 }
 
+// ── Movix external source ─────────────────────────────────────────────────
 function _loadExternal(){
   var loading=document.getElementById(_extIds.loading);
   var content=document.getElementById(_extIds.content);
@@ -1012,7 +1312,6 @@ function _loadExternal(){
       content.innerHTML='<div class="em">Aucune source externe trouvée</div>';
       countBadge.textContent="0";return;
     }
-    // Chercher le meilleur résultat par tmdbId, sinon le premier
     var first=results[0];
     for(var i=0;i<results.length;i++){
       if(results[i].tmdb_id===_tmdbId||results[i].tmdb_id===String(_tmdbId)){
@@ -1020,7 +1319,7 @@ function _loadExternal(){
       }
     }
     var movieId=first.id||first.movie_id||first.tmdb_id;
-    _movixMovieId=movieId; // stocker pour le decode
+    _movixMovieId=movieId;
     var isTv=(_mediaType==="tv")||first.is_series||(first.type==="series");
     var dlUrl;
     if(isTv){
@@ -1034,7 +1333,6 @@ function _loadExternal(){
     .then(function(r){return r.json();})
     .then(function(dlData){
       loading.style.display="none";
-      // Garder tous les liens ayant un id (lien peut être null → decode au clic)
       var links=(dlData&&dlData.success&&dlData.all)?dlData.all.filter(function(l){return l.id;}):null;
       if(!links||links.length===0){
         content.innerHTML='<div class="em">Aucun lien externe disponible</div>';
@@ -1102,7 +1400,8 @@ function _renderExtLinks(links){
   });
 }
 
-function _openExtAdModal(finalUrl, extLink){
+// ── Shared ad modal for external links ────────────────────────────────────
+function _openExtAdModal(finalUrl,extLink){
   fetch("/api/link-click",{
     method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
@@ -1124,11 +1423,9 @@ function _openExtAdModal(finalUrl, extLink){
   var box=document.createElement("div");
   box.style.cssText="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center";
   var title=document.createElement("h2");
-  title.style.cssText="color:#1a1a2e;margin-bottom:6px;font-size:18px";
-  title.textContent="Votre lien est prêt";
+  title.style.cssText="color:#1a1a2e;margin-bottom:6px;font-size:18px";title.textContent="Votre lien est prêt";
   var subtitle=document.createElement("p");
-  subtitle.style.cssText="color:#666;font-size:12px;margin-bottom:14px";
-  subtitle.textContent="Cliquez pour accéder au téléchargement";
+  subtitle.style.cssText="color:#666;font-size:12px;margin-bottom:14px";subtitle.textContent="Cliquez pour accéder au téléchargement";
   var warning=document.createElement("div");
   warning.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e";
   warning.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div>';
@@ -1154,41 +1451,23 @@ function _openExtAdModal(finalUrl, extLink){
 
 function _showExtDetails(extLink){
   if(!extLink)return;
-
-  // Lien direct disponible → ouvrir directement la modale
-  if(extLink.lien){
-    _openExtAdModal(extLink.lien, extLink);
-    return;
-  }
-
-  // Lien null → appel decode pour récupérer l'URL finale
-  if(!extLink.id){
-    alert("Lien non disponible pour ce fichier");return;
-  }
-
-  // Afficher un loader pendant le decode
+  if(extLink.lien){_openExtAdModal(extLink.lien,extLink);return;}
+  if(!extLink.id){alert("Lien non disponible pour ce fichier");return;}
   var tmpLoader=document.createElement("div");
-  tmpLoader.className="decode-loading";
-  tmpLoader.id="decodeLoader";
+  tmpLoader.className="decode-loading";tmpLoader.id="decodeLoader";
   tmpLoader.innerHTML='<div class="decode-loading-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p>Décodage du lien...</p></div>';
   document.body.appendChild(tmpLoader);
-
   var decodeUrl=_BASE+"/darkiworld/decode/"+extLink.id+"?title_id="+_movixMovieId;
-  fetch(decodeUrl)
-  .then(function(r){return r.json();})
+  fetch(decodeUrl).then(function(r){return r.json();})
   .then(function(data){
-    var loader=document.getElementById("decodeLoader");
-    if(loader)loader.remove();
-    // Extraire le lien depuis la réponse decode
+    var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
     var finalUrl=null;
     if(data&&data.lien)finalUrl=data.lien;
     else if(data&&data.embed_url&&data.embed_url.lien)finalUrl=data.embed_url.lien;
     if(!finalUrl){alert("Lien non disponible pour ce fichier");return;}
-    _openExtAdModal(finalUrl, extLink);
-  })
-  .catch(function(){
-    var loader=document.getElementById("decodeLoader");
-    if(loader)loader.remove();
+    _openExtAdModal(finalUrl,extLink);
+  }).catch(function(){
+    var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
     alert("Erreur lors du décodage du lien");
   });
 }
