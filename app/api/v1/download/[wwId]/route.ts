@@ -171,6 +171,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .link-display-title{font-size:14px;color:#14B8A6;margin-bottom:12px;font-weight:600}
 .link-display-url{background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;word-break:break-all;font-family:monospace;font-size:12px;color:#e5e7eb;margin-bottom:12px}
 .link-display-btn{display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#14B8A6,#0d9488);color:#0c1520;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px}
+.decode-loading{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:99999}
+.decode-loading-box{background:#1e293b;border-radius:12px;padding:32px 24px;text-align:center;color:#e2e8f0;min-width:200px}
+.decode-loading-box svg{animation:spin 1s linear infinite;width:36px;height:36px;margin-bottom:14px;color:#667eea}
+.decode-loading-box p{font-size:14px;color:#94a3b8}
 </style>
 </head>
 <body>
@@ -254,22 +258,21 @@ var _ids=${JSON.stringify(ids)};
 var _extIds=${JSON.stringify(externalIds)};
 var _title="${title.replace(/"/g, '\\"')}";
 var _wwId="${digitalContent.ww_id}";
-var _contentType="${contentType}"; // ebook | music | software | game
+var _contentType="${contentType}";
 var _allExtLinks=[];
 var _currentExtLinks=[];
-
+var _movixContentId=null;
+var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
 var AD_URL_EXT="https://foreignabnormality.com/q7jywq0h?key=6eb56670c09233e007f1bfb9cf0e1b55";
 
-// Map our content type to what movix.cash returns as "type" in search results
 function _getExpectedTypes(){
   if(_contentType==="game")return["games","game"];
   if(_contentType==="music")return["music","album","titre"];
   if(_contentType==="ebook")return["doc","ebook","book","livre"];
   if(_contentType==="software")return["software","logiciel","app"];
-  return null; // no filter = take first result
+  return null;
 }
 
-// Map to download endpoint segment
 function _getDownloadEndpoint(resultType){
   var t=(resultType||"").toLowerCase();
   if(t==="games"||t==="game")return"game";
@@ -395,9 +398,8 @@ function _loadExternal(){
   var content=document.getElementById(_extIds.content);
   var filters=document.getElementById(_extIds.filters);
   var countBadge=document.getElementById(_extIds.count);
-  var BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
 
-  fetch(BASE+"/search?title="+encodeURIComponent(_title))
+  fetch(_BASE+"/search?title="+encodeURIComponent(_title))
   .then(function(r){return r.json();})
   .then(function(data){
     var results=data;
@@ -410,7 +412,6 @@ function _loadExternal(){
       content.innerHTML='<div class="em">Aucune source externe trouvée</div>';
       countBadge.textContent="0";return;
     }
-    // Find best matching result by content type
     var expectedTypes=_getExpectedTypes();
     var best=null;
     if(expectedTypes){
@@ -424,14 +425,17 @@ function _loadExternal(){
     }
     if(!best)best=results[0];
     var itemId=best.id||best.movie_id;
+    _movixContentId=itemId;
     var endpoint=_getDownloadEndpoint(best.type||"movie");
-    var dlUrl=BASE+"/darkiworld/download/"+endpoint+"/"+itemId;
+    var dlUrl=_BASE+"/darkiworld/download/"+endpoint+"/"+itemId;
+
     function _fetchLinks(url,useFallback){
       fetch(url).then(function(r){return r.json();})
       .then(function(dlData){
-        var links=(dlData&&dlData.success&&dlData.all)?dlData.all.filter(function(l){return l.lien;}):null;
+        // Garder tous les liens ayant un id (lien peut être null → decode)
+        var links=(dlData&&dlData.success&&dlData.all)?dlData.all.filter(function(l){return l.id;}):null;
         if((!links||links.length===0)&&useFallback){
-          _fetchLinks(BASE+"/darkiworld/download/movie/"+itemId,false);return;
+          _fetchLinks(_BASE+"/darkiworld/download/movie/"+itemId,false);return;
         }
         loading.style.display="none";
         if(!links||links.length===0){
@@ -441,7 +445,7 @@ function _loadExternal(){
         _allExtLinks=links;countBadge.textContent=links.length;
         _populateFilters(links);filters.style.display="flex";_renderExtLinks(links);
       }).catch(function(){
-        if(useFallback){_fetchLinks(BASE+"/darkiworld/download/movie/"+itemId,false);return;}
+        if(useFallback){_fetchLinks(_BASE+"/darkiworld/download/movie/"+itemId,false);return;}
         loading.style.display="none";content.innerHTML='<div class="em">Erreur de chargement</div>';countBadge.textContent="0";
       });
     }
@@ -502,17 +506,10 @@ function _renderExtLinks(links){
   });
 }
 
-// NO MORE DECODE - lien is now direct in the response
-function _showExtDetails(extLink){
-  if(!extLink)return;
-  var finalUrl=extLink.lien;
-  if(!finalUrl){
-    alert("Lien non disponible pour ce fichier");return;
-  }
-
+function _openExtAdModal(finalUrl, extLink){
   fetch("/api/link-click",{
     method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({linkType:"external",wwId:_wwId,provider:extLink.provider||null,hostName:extLink.host_name||null,quality:extLink.quality||null,language:extLink.language||null,fileSize:extLink.size||null})
+    body:JSON.stringify({linkType:"external",wwId:_wwId,provider:(extLink&&extLink.provider)||null,hostName:(extLink&&extLink.host_name)||null,quality:(extLink&&extLink.quality)||null,language:(extLink&&extLink.language)||null,fileSize:(extLink&&extLink.size)||null})
   }).catch(function(){});
 
   window._extFinalUrl=finalUrl;
@@ -522,49 +519,76 @@ function _showExtDetails(extLink){
   var modal=document.createElement("div");
   modal.id="extAdModal";
   modal.style.cssText="position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px";
-
   var box=document.createElement("div");
   box.style.cssText="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center";
-
   var title=document.createElement("h2");
   title.style.cssText="color:#1a1a2e;margin-bottom:6px;font-size:18px";
   title.textContent="Votre lien est prêt";
-
   var subtitle=document.createElement("p");
   subtitle.style.cssText="color:#666;font-size:12px;margin-bottom:14px";
   subtitle.textContent="Cliquez pour accéder au téléchargement";
-
   var warning=document.createElement("div");
   warning.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e";
   warning.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div>';
-
   var support=document.createElement("div");
   support.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6";
   support.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide à rester en ligne</span></div>';
-
   var adBtn=document.createElement("a");
   adBtn.href=AD_URL_EXT;adBtn.target="_blank";adBtn.rel="noopener";
   adBtn.style.cssText="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;cursor:pointer";
   adBtn.innerHTML='CONTINUER <span style="background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span>';
-
   var startBtn=document.createElement("button");
   startBtn.style.cssText="display:none;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff";
   startBtn.textContent="VOIR LE LIEN";
-
   adBtn.onclick=function(){this.style.display="none";startBtn.style.display="block";};
-
-  startBtn.onclick=function(){
-    modal.remove();
-    _displayLink(window._extFinalUrl);
-  };
-
+  startBtn.onclick=function(){modal.remove();_displayLink(window._extFinalUrl);};
   var footer=document.createElement("p");
   footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
   footer.innerHTML='Propulsé par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a>';
-
   box.appendChild(title);box.appendChild(subtitle);box.appendChild(warning);box.appendChild(support);
   box.appendChild(adBtn);box.appendChild(startBtn);box.appendChild(footer);
   modal.appendChild(box);document.body.appendChild(modal);
+}
+
+function _showExtDetails(extLink){
+  if(!extLink)return;
+
+  // Lien direct disponible
+  if(extLink.lien){
+    _openExtAdModal(extLink.lien, extLink);
+    return;
+  }
+
+  // Lien null → appel decode
+  if(!extLink.id){
+    alert("Lien non disponible pour ce fichier");return;
+  }
+
+  // Afficher loader
+  var tmpLoader=document.createElement("div");
+  tmpLoader.className="decode-loading";
+  tmpLoader.id="decodeLoader";
+  tmpLoader.innerHTML='<div class="decode-loading-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p>Décodage du lien...</p></div>';
+  document.body.appendChild(tmpLoader);
+
+  var decodeUrl=_BASE+"/darkiworld/decode/"+extLink.id+"?title_id="+_movixContentId;
+  fetch(decodeUrl)
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var loader=document.getElementById("decodeLoader");
+    if(loader)loader.remove();
+    // Récupérer le lien depuis la réponse decode
+    var finalUrl=null;
+    if(data&&data.lien)finalUrl=data.lien;
+    else if(data&&data.embed_url&&data.embed_url.lien)finalUrl=data.embed_url.lien;
+    if(!finalUrl){alert("Lien non disponible pour ce fichier");return;}
+    _openExtAdModal(finalUrl, extLink);
+  })
+  .catch(function(){
+    var loader=document.getElementById("decodeLoader");
+    if(loader)loader.remove();
+    alert("Erreur lors du décodage du lien");
+  });
 }
 
 _renderLinks();
@@ -747,6 +771,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .cf{margin-top:12px;font-size:11px;color:#9ca3af}
 .cf a{color:#667eea}
 .tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;font-weight:600}
+.decode-loading{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:99999}
+.decode-loading-box{background:#1e293b;border-radius:12px;padding:32px 24px;text-align:center;color:#e2e8f0;min-width:200px}
+.decode-loading-box svg{animation:spin 1s linear infinite;width:36px;height:36px;margin-bottom:14px;color:#667eea}
+.decode-loading-box p{font-size:14px;color:#94a3b8}
 </style>
 </head>
 <body>
@@ -837,7 +865,8 @@ var _episodeNum=${episodeNumber !== undefined ? episodeNumber : "null"};
 var _wwId="${wwId}";
 var _allExtLinks=[];
 var _currentExtLinks=[];
-
+var _movixMovieId=null;
+var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
 var AD_URL_EXT="https://foreignabnormality.com/q7jywq0h?key=6eb56670c09233e007f1bfb9cf0e1b55";
 
 function _renderLink(l){
@@ -934,7 +963,6 @@ function _sa(url){
   if(s2){s2.classList.remove("active");s2.classList.remove("done");}
   if(s3){s3.classList.remove("active");s3.classList.remove("done");}
   o.classList.add("sh");
-  // Clone to remove old listeners
   var buClone=bu.cloneNode(true);bu.parentNode.replaceChild(buClone,bu);
   buClone.addEventListener("click",function(){
     var adLink=document.createElement("a");
@@ -971,7 +999,7 @@ function _loadExternal(){
   var filters=document.getElementById(_extIds.filters);
   var countBadge=document.getElementById(_extIds.count);
 
-  fetch("https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api/search?title="+encodeURIComponent(_title))
+  fetch(_BASE+"/search?title="+encodeURIComponent(_title))
   .then(function(r){return r.json();})
   .then(function(data){
     var results=data;
@@ -984,7 +1012,7 @@ function _loadExternal(){
       content.innerHTML='<div class="em">Aucune source externe trouvée</div>';
       countBadge.textContent="0";return;
     }
-    // Try to find the best matching result by tmdbId, otherwise take first
+    // Chercher le meilleur résultat par tmdbId, sinon le premier
     var first=results[0];
     for(var i=0;i<results.length;i++){
       if(results[i].tmdb_id===_tmdbId||results[i].tmdb_id===String(_tmdbId)){
@@ -992,23 +1020,22 @@ function _loadExternal(){
       }
     }
     var movieId=first.id||first.movie_id||first.tmdb_id;
+    _movixMovieId=movieId; // stocker pour le decode
     var isTv=(_mediaType==="tv")||first.is_series||(first.type==="series");
     var dlUrl;
     if(isTv){
       var s=_seasonNum||1;
       var e=_episodeNum||1;
-      // For TV: tmdbId param
-      dlUrl="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api/darkiworld/download/tv/"+movieId+"?season="+s+"&episode="+e+"&tmdbId="+_tmdbId;
+      dlUrl=_BASE+"/darkiworld/download/tv/"+movieId+"?season="+s+"&episode="+e+"&tmdbId="+_tmdbId;
     }else{
-      // For movie: tmdbdId param (double d, as per API)
-      dlUrl="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api/darkiworld/download/movie/"+movieId+"?tmdbdId="+_tmdbId;
+      dlUrl=_BASE+"/darkiworld/download/movie/"+movieId+"?tmdbdId="+_tmdbId;
     }
     fetch(dlUrl)
     .then(function(r){return r.json();})
     .then(function(dlData){
       loading.style.display="none";
-      // Filter out null lien - no more decode needed, lien is direct URL
-      var links=(dlData&&dlData.success&&dlData.all)?dlData.all.filter(function(l){return l.lien;}):null;
+      // Garder tous les liens ayant un id (lien peut être null → decode au clic)
+      var links=(dlData&&dlData.success&&dlData.all)?dlData.all.filter(function(l){return l.id;}):null;
       if(!links||links.length===0){
         content.innerHTML='<div class="em">Aucun lien externe disponible</div>';
         countBadge.textContent="0";return;
@@ -1075,21 +1102,15 @@ function _renderExtLinks(links){
   });
 }
 
-// NO MORE DECODE - lien is now direct in the API response
-function _showExtDetails(extLink){
-  if(!extLink)return;
-  var finalUrl=extLink.lien;
-  if(!finalUrl){
-    alert("Lien non disponible pour ce fichier");return;
-  }
-
+function _openExtAdModal(finalUrl, extLink){
   fetch("/api/link-click",{
     method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
       linkType:"external",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType,
       seasonNumber:_seasonNum||null,episodeNumber:_episodeNum||null,
-      provider:extLink.provider||null,hostName:extLink.host_name||null,
-      quality:extLink.quality||null,language:extLink.language||null,fileSize:extLink.size||null
+      provider:(extLink&&extLink.provider)||null,hostName:(extLink&&extLink.host_name)||null,
+      quality:(extLink&&extLink.quality)||null,language:(extLink&&extLink.language)||null,
+      fileSize:(extLink&&extLink.size)||null
     })
   }).catch(function(){});
 
@@ -1100,49 +1121,76 @@ function _showExtDetails(extLink){
   var modal=document.createElement("div");
   modal.id="extAdModal";
   modal.style.cssText="position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px";
-
   var box=document.createElement("div");
   box.style.cssText="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center";
-
   var title=document.createElement("h2");
   title.style.cssText="color:#1a1a2e;margin-bottom:6px;font-size:18px";
   title.textContent="Votre lien est prêt";
-
   var subtitle=document.createElement("p");
   subtitle.style.cssText="color:#666;font-size:12px;margin-bottom:14px";
   subtitle.textContent="Cliquez pour accéder au téléchargement";
-
   var warning=document.createElement("div");
   warning.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e";
   warning.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div>';
-
   var support=document.createElement("div");
   support.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6";
   support.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide à rester en ligne</span></div>';
-
   var adBtn=document.createElement("a");
   adBtn.href=AD_URL_EXT;adBtn.target="_blank";adBtn.rel="noopener";
   adBtn.style.cssText="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;cursor:pointer";
   adBtn.innerHTML='CONTINUER <span style="background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span>';
-
   var startBtn=document.createElement("button");
   startBtn.style.cssText="display:none;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff";
   startBtn.textContent="VOIR LE LIEN";
-
   adBtn.onclick=function(){this.style.display="none";startBtn.style.display="block";};
-
-  startBtn.onclick=function(){
-    modal.remove();
-    _displayLink(window._extFinalUrl);
-  };
-
+  startBtn.onclick=function(){modal.remove();_displayLink(window._extFinalUrl);};
   var footer=document.createElement("p");
   footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
   footer.innerHTML='Propulsé par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a>';
-
   box.appendChild(title);box.appendChild(subtitle);box.appendChild(warning);box.appendChild(support);
   box.appendChild(adBtn);box.appendChild(startBtn);box.appendChild(footer);
   modal.appendChild(box);document.body.appendChild(modal);
+}
+
+function _showExtDetails(extLink){
+  if(!extLink)return;
+
+  // Lien direct disponible → ouvrir directement la modale
+  if(extLink.lien){
+    _openExtAdModal(extLink.lien, extLink);
+    return;
+  }
+
+  // Lien null → appel decode pour récupérer l'URL finale
+  if(!extLink.id){
+    alert("Lien non disponible pour ce fichier");return;
+  }
+
+  // Afficher un loader pendant le decode
+  var tmpLoader=document.createElement("div");
+  tmpLoader.className="decode-loading";
+  tmpLoader.id="decodeLoader";
+  tmpLoader.innerHTML='<div class="decode-loading-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p>Décodage du lien...</p></div>';
+  document.body.appendChild(tmpLoader);
+
+  var decodeUrl=_BASE+"/darkiworld/decode/"+extLink.id+"?title_id="+_movixMovieId;
+  fetch(decodeUrl)
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var loader=document.getElementById("decodeLoader");
+    if(loader)loader.remove();
+    // Extraire le lien depuis la réponse decode
+    var finalUrl=null;
+    if(data&&data.lien)finalUrl=data.lien;
+    else if(data&&data.embed_url&&data.embed_url.lien)finalUrl=data.embed_url.lien;
+    if(!finalUrl){alert("Lien non disponible pour ce fichier");return;}
+    _openExtAdModal(finalUrl, extLink);
+  })
+  .catch(function(){
+    var loader=document.getElementById("decodeLoader");
+    if(loader)loader.remove();
+    alert("Erreur lors du décodage du lien");
+  });
 }
 
 _renderLinks();
