@@ -504,7 +504,6 @@ function _loadExternal(){
   }).catch(function(){loading.style.display="none";content.innerHTML='<div class="em">Erreur de chargement</div>';countBadge.textContent="0";});
 }
 
-// ── FIXED: Alt source loader for digital content ──────────────────────────
 function _loadAltExternal(){
   var altLoading=document.getElementById(_extIds.altLoading);
   var altContent=document.getElementById(_extIds.altContent);
@@ -526,7 +525,43 @@ function _loadAltExternal(){
   });
 }
 
-// ── FIXED: Properly parses qualities[].downloadLinks[] structure ──────────
+// ── Parse quality & language from filename ────────────────────────────────
+function _parseFilename(fname){
+  if(!fname)return{quality:"",lang:""};
+  var up=fname.toUpperCase();
+  var quality="";
+  var lang="";
+  // Quality tokens (order matters: check more specific first)
+  var qualities=["2160P","4K","1080P","720P","480P","576P","1080I","720I",
+    "BDRIP","BLURAY","BLU-RAY","BDREMUX","REMUX","WEBDL","WEB-DL","WEBRIP",
+    "WEB-RIP","HDRIP","HDTV","DVDSCR","DVDRIP","DVD","TVRIP","VHSRIP",
+    "HDCAM","CAM","TS","R5","SCR","VODRIP"];
+  for(var i=0;i<qualities.length;i++){
+    if(up.indexOf(qualities[i])!==-1){quality=qualities[i].replace("-","");break;}
+  }
+  // Language tokens
+  var langs=[
+    ["MULTI","MULTI"],["TRUEFRENCH","TRUEFRENCH"],["FRENCH","FR"],
+    ["VOSTFR","VOSTFR"],["VOSTSUB","VOSTSUB"],["VOST","VOST"],
+    ["VFF","VFF"],["VFQ","VFQ"],["VF","VF"],
+    ["FANSUB","FANSUB"],
+    ["ENGLISH","EN"],["ENGLISH","EN"],["ENG","EN"],
+    ["SPANISH","ES"],["SPANISH","ES"],["SPA","ES"],
+    ["GERMAN","DE"],["GER","DE"],["DEUTSCH","DE"],
+    ["ITALIAN","IT"],["ITA","IT"],
+    ["PORTUGUESE","PT"],["POR","PT"],
+    ["ARABIC","AR"],["ARA","AR"],
+    ["RUSSIAN","RU"],["RUS","RU"],
+    ["JAPANESE","JA"],["JPN","JA"],
+    ["KOREAN","KO"],["KOR","KO"],
+    ["CHINESE","ZH"],["CHI","ZH"]
+  ];
+  for(var j=0;j<langs.length;j++){
+    if(up.indexOf(langs[j][0])!==-1){lang=langs[j][1];break;}
+  }
+  return{quality:quality,lang:lang};
+}
+
 function _extractAndFilterAltLinks(data){
   var raw=[];
   if(Array.isArray(data)){
@@ -562,6 +597,7 @@ function _filterAltLinks(raw){
     if(u.indexOf("wawacity.news")!==-1)return false;
     if(u.indexOf("/pub/")!==-1)return false;
     if(host==="wawacity")return false;
+    if(host==="mamot")return false;
     var badFilenames=["vod(+18)","webcams","rencontres sexe","boutique","rencontres","adulte","xxx"];
     for(var i=0;i<badFilenames.length;i++){
       if(fname.indexOf(badFilenames[i])!==-1)return false;
@@ -577,12 +613,16 @@ function _renderAltLinks(links,container){
   links.forEach(function(l,idx){
     var u=l.url||l.lien||l.link||"";
     var host=l.host||l.provider||"";
-    var prot=l.protection||l.quality||l._qualityGroup||"N/A";
     var fname=l.filename||l.name||"";
     var size=l.size||"";
+    var prot=l.protection||l.quality||l._qualityGroup||"";
+    var parsed=_parseFilename(fname);
+    var dispQuality=prot||parsed.quality||"N/A";
+    var dispLang=l.language||parsed.lang||"";
     html+='<div class="ext-card alt-card" data-alt-idx="'+idx+'"><div class="ext-card-body">';
-    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">';
-    html+='<span class="ext-quality">'+prot+'</span>';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">';
+    html+='<span class="ext-quality">'+dispQuality+'</span>';
+    if(dispLang)html+='<span style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700">'+dispLang+'</span>';
     html+='<span class="alt-badge">ALT</span>';
     html+='</div>';
     if(host)html+='<div class="ext-provider">'+host+'</div>';
@@ -1049,7 +1089,6 @@ var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movi
 var AD_URL_EXT="https://foreignabnormality.com/q7jywq0h?key=6eb56670c09233e007f1bfb9cf0e1b55";
 var ALT_BASE="https://apis.wavewatch.top/wawa.php";
 
-// ── Tab switching ──────────────────────────────────────────────────────────
 window.switchTab=function(tab){
   var movixWrap=document.getElementById(_extIds.container);
   var altWrap=document.getElementById(_extIds.altContent+"_wrap");
@@ -1065,7 +1104,41 @@ window.switchTab=function(tab){
   }
 };
 
-// ── FIXED: Properly parses qualities[].downloadLinks[] + flat arrays ──────
+// ── Parse quality & language from filename ────────────────────────────────
+function _parseFilename(fname){
+  if(!fname)return{quality:"",lang:""};
+  var up=fname.toUpperCase();
+  var quality="";
+  var lang="";
+  var qualities=["2160P","4K","1080P","720P","480P","576P","1080I","720I",
+    "BDRIP","BLURAY","BLU-RAY","BDREMUX","REMUX","WEBDL","WEB-DL","WEBRIP",
+    "WEB-RIP","HDRIP","HDTV","DVDSCR","DVDRIP","DVD","TVRIP","VHSRIP",
+    "HDCAM","CAM","TS","R5","SCR","VODRIP"];
+  for(var i=0;i<qualities.length;i++){
+    if(up.indexOf(qualities[i])!==-1){quality=qualities[i].replace("-","");break;}
+  }
+  var langs=[
+    ["MULTI","MULTI"],["TRUEFRENCH","TRUEFRENCH"],["FRENCH","FR"],
+    ["VOSTFR","VOSTFR"],["VOSTSUB","VOSTSUB"],["VOST","VOST"],
+    ["VFF","VFF"],["VFQ","VFQ"],["VF","VF"],
+    ["FANSUB","FANSUB"],
+    ["ENGLISH","EN"],["ENG","EN"],
+    ["SPANISH","ES"],["SPA","ES"],
+    ["GERMAN","DE"],["GER","DE"],["DEUTSCH","DE"],
+    ["ITALIAN","IT"],["ITA","IT"],
+    ["PORTUGUESE","PT"],["POR","PT"],
+    ["ARABIC","AR"],["ARA","AR"],
+    ["RUSSIAN","RU"],["RUS","RU"],
+    ["JAPANESE","JA"],["JPN","JA"],
+    ["KOREAN","KO"],["KOR","KO"],
+    ["CHINESE","ZH"],["CHI","ZH"]
+  ];
+  for(var j=0;j<langs.length;j++){
+    if(up.indexOf(langs[j][0])!==-1){lang=langs[j][1];break;}
+  }
+  return{quality:quality,lang:lang};
+}
+
 function _normaliseAltLinks(data){
   var raw=[];
   if(Array.isArray(data)){
@@ -1104,6 +1177,7 @@ function _filterAltLinks(raw){
     if(u.indexOf("wawacity.news")!==-1)return false;
     if(u.indexOf("/pub/")!==-1)return false;
     if(host==="wawacity")return false;
+    if(host==="mamot")return false;
     var badFilenames=["vod(+18)","webcams","rencontres sexe","boutique","rencontres","adulte","xxx"];
     for(var i=0;i<badFilenames.length;i++){
       if(fname.indexOf(badFilenames[i])!==-1)return false;
@@ -1113,7 +1187,6 @@ function _filterAltLinks(raw){
   });
 }
 
-// ── Alt source: load ──────────────────────────────────────────────────────
 function _loadAltExternal(){
   var altLoading=document.getElementById(_extIds.altLoading);
   var altContent=document.getElementById(_extIds.altContent);
@@ -1189,12 +1262,16 @@ function _renderAltLinks(links){
   links.forEach(function(l,idx){
     var u=l.url||l.lien||l.link||"";
     var host=l.host||l.provider||"";
-    var prot=l.protection||l.quality||l._qualityGroup||"N/A";
     var fname=l.filename||l.name||"";
     var size=l.size||"";
+    var prot=l.protection||l.quality||l._qualityGroup||"";
+    var parsed=_parseFilename(fname);
+    var dispQuality=prot||parsed.quality||"N/A";
+    var dispLang=l.language||parsed.lang||"";
     html+='<div class="ext-card alt-card" data-alt-idx="'+idx+'"><div class="ext-card-body">';
-    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">';
-    html+='<span class="ext-quality">'+prot+'</span>';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">';
+    html+='<span class="ext-quality">'+dispQuality+'</span>';
+    if(dispLang)html+='<span style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700">'+dispLang+'</span>';
     html+='<span class="alt-badge">ALT</span>';
     html+='</div>';
     if(host)html+='<div class="ext-provider">'+host+'</div>';
@@ -1220,7 +1297,6 @@ function _renderAltLinks(links){
   });
 }
 
-// ── Main links ─────────────────────────────────────────────────────────────
 function _renderLink(l){
   var url=l.source_url||"";
   var release=l.release_name||l.source_name||"Fichier téléchargeable";
@@ -1345,7 +1421,6 @@ function _sa(url){
   };
 }
 
-// ── Movix external source ─────────────────────────────────────────────────
 function _loadExternal(){
   var loading=document.getElementById(_extIds.loading);
   var content=document.getElementById(_extIds.content);
@@ -1453,7 +1528,6 @@ function _renderExtLinks(links){
   });
 }
 
-// ── Shared ad modal for external links ────────────────────────────────────
 function _openExtAdModal(finalUrl,extLink){
   fetch("/api/link-click",{
     method:"POST",headers:{"Content-Type":"application/json"},
