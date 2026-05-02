@@ -504,14 +504,59 @@ function _loadExternal(){
   }).catch(function(){loading.style.display="none";content.innerHTML='<div class="em">Erreur de chargement</div>';countBadge.textContent="0";});
 }
 
+// ── FIXED: Alt source loader for digital content ──────────────────────────
 function _loadAltExternal(){
   var altLoading=document.getElementById(_extIds.altLoading);
   var altContent=document.getElementById(_extIds.altContent);
   var altCountBadge=document.getElementById(_extIds.altCount);
-  // Digital content: no tmdbId, can't query alt source meaningfully
-  altLoading.style.display="none";
-  altContent.innerHTML='<div class="em">Sources Alt non disponibles pour ce type de contenu</div>';
-  altCountBadge.textContent="0";
+  var altUrl="https://apis.wavewatch.top/wawa.php?_route=api&type=search&q="+encodeURIComponent(_title);
+  fetch(altUrl)
+  .then(function(r){return r.json();})
+  .then(function(data){
+    altLoading.style.display="none";
+    var links=_extractAndFilterAltLinks(data);
+    _allAltLinks=links;
+    altCountBadge.textContent=links.length;
+    if(links.length===0){altContent.innerHTML='<div class="em">Aucune source alternative disponible</div>';return;}
+    _renderAltLinks(links,altContent);
+  }).catch(function(){
+    altLoading.style.display="none";
+    altContent.innerHTML='<div class="em">Erreur de chargement</div>';
+    altCountBadge.textContent="0";
+  });
+}
+
+// ── FIXED: Properly parses qualities[].downloadLinks[] structure ──────────
+function _extractAndFilterAltLinks(data){
+  var raw=[];
+  if(Array.isArray(data)){
+    raw=data;
+  } else if(data&&Array.isArray(data.links)){
+    raw=data.links;
+  } else if(data&&Array.isArray(data.downloadLinks)){
+    raw=data.downloadLinks;
+  } else if(data&&Array.isArray(data.results)){
+    raw=data.results;
+  } else if(data&&Array.isArray(data.data)){
+    raw=data.data;
+  } else if(data&&Array.isArray(data.qualities)){
+    // Handle nested qualities[].downloadLinks[] structure
+    data.qualities.forEach(function(q){
+      if(Array.isArray(q.downloadLinks)){
+        q.downloadLinks.forEach(function(l){
+          raw.push(Object.assign({},l,{quality:l.protection||q.quality||"",_qualityGroup:q.quality||""}));
+        });
+      }
+    });
+  }
+  return raw.filter(function(l){
+    var u=l.url||l.lien||l.link||"";
+    if(!u)return false;
+    if(u.indexOf("rqts-url")!==-1)return false;
+    if(u.indexOf("wawacity.news")!==-1)return false;
+    if(u.indexOf("/pub/")!==-1)return false;
+    return true;
+  });
 }
 
 function _renderAltLinks(links,container){
@@ -520,7 +565,7 @@ function _renderAltLinks(links,container){
   links.forEach(function(l,idx){
     var u=l.url||l.lien||l.link||"";
     var host=l.host||l.provider||"";
-    var prot=l.protection||l.quality||"N/A";
+    var prot=l.protection||l.quality||l._qualityGroup||"N/A";
     var fname=l.filename||l.name||"";
     var size=l.size||"";
     html+='<div class="ext-card alt-card" data-alt-idx="'+idx+'"><div class="ext-card-body">';
@@ -531,18 +576,22 @@ function _renderAltLinks(links,container){
     if(host)html+='<div class="ext-provider">'+host+'</div>';
     if(fname)html+='<div class="alt-filename">'+fname+'</div>';
     if(size)html+='<div class="ext-info" style="margin-top:6px">Taille: '+size+'</div>';
-    html+='<button class="ext-btn alt-btn">Télécharger</button>';
+    html+=(u
+      ?'<button class="ext-btn alt-btn">Télécharger</button>'
+      :'<button class="ext-btn alt-btn" disabled style="opacity:0.4;cursor:not-allowed">Indisponible</button>');
     html+='</div></div>';
   });
   container.innerHTML=html;
   container.querySelectorAll(".alt-card").forEach(function(card){
-    card.querySelector(".ext-btn").onclick=function(e){
+    var btn=card.querySelector(".ext-btn");
+    if(btn.disabled)return;
+    btn.onclick=function(e){
       e.stopPropagation();
       var idx=parseInt(card.getAttribute("data-alt-idx"));
       var l=_allAltLinks[idx];
       var u=l.url||l.lien||l.link||"";
       if(!u){alert("Lien non disponible");return;}
-      _openExtAdModal(u,{provider:l.host,quality:l.protection});
+      _openExtAdModal(u,{provider:l.host,quality:l.protection||l._qualityGroup});
     };
   });
 }
@@ -1004,64 +1053,42 @@ window.switchTab=function(tab){
   }
 };
 
-// ── Alt source: normalise response → flat link array ─────────────────────
-// Real API shape: { qualities: [ { quality, lang, size, downloadLinks: [...] } ] }
-// Each downloadLink: { host, protection, filename, size, url, season, episode }
-function _normaliseAltData(data){
-  var flat=[];
-  // Shape 1: { qualities: [...] }  ← actual wawa.php response
-  if(data&&Array.isArray(data.qualities)){
+// ── FIXED: Properly parses qualities[].downloadLinks[] + flat arrays ──────
+function _normaliseAltLinks(data){
+  var raw=[];
+  if(Array.isArray(data)){
+    raw=data;
+  } else if(data&&Array.isArray(data.links)){
+    raw=data.links;
+  } else if(data&&Array.isArray(data.downloadLinks)){
+    raw=data.downloadLinks;
+  } else if(data&&Array.isArray(data.results)){
+    raw=data.results;
+  } else if(data&&Array.isArray(data.data)){
+    raw=data.data;
+  } else if(data&&Array.isArray(data.qualities)){
+    // Handle nested qualities[].downloadLinks[] structure (confirmed from API)
     data.qualities.forEach(function(q){
-      var qLabel=q.quality||"";
-      var lang=q.lang||"";
-      var qSize=q.size||"";
-      (q.downloadLinks||[]).forEach(function(l){
-        flat.push({
-          quality:   qLabel,
-          lang:      lang,
-          host:      l.host||"",
-          protection:l.protection||"",
-          filename:  l.filename||"",
-          size:      l.size||qSize||"",
-          url:       l.url||"",
-          season:    l.season,
-          episode:   l.episode
+      if(Array.isArray(q.downloadLinks)){
+        q.downloadLinks.forEach(function(l){
+          raw.push(Object.assign({},l,{
+            quality: l.protection||q.quality||"",
+            _qualityGroup: q.quality||""
+          }));
         });
-      });
+      }
     });
-    return flat;
   }
-  // Shape 2: plain array
-  if(Array.isArray(data))return data;
-  // Shape 3: wrapped arrays
-  if(data&&Array.isArray(data.links))return data.links;
-  if(data&&Array.isArray(data.downloadLinks))return data.downloadLinks;
-  if(data&&Array.isArray(data.results))return data.results;
-  if(data&&Array.isArray(data.data))return data.data;
-  return [];
+  return raw;
 }
-
-// ── Ad / nav-link blacklist ───────────────────────────────────────────────
-var _AD_PATTERNS=["rqts-url","wawacity.news\\/","wawacity.news\\/VOD","wawacity.news\\/Webcams",
-  "wawacity.news\\/Rencontres","wawacity.news\\/Boutique","wawacity.news\\/","Boutique","\\/pub\\/",
-  "wawacity.news\\/$","wawacity.news\\/#","wawacity.news\\/?"];
-var _NAV_FILENAMES=["VOD(+18)","Webcams","Rencontres Sexe","Boutique","","Accueil","Homepage"];
 
 function _filterAltLinks(raw){
   return (raw||[]).filter(function(l){
     var u=l.url||l.lien||l.link||"";
-    var fname=l.filename||l.name||"";
     if(!u)return false;
-    // drop pure wawacity.news homepage / nav links
-    if(/wawacity\.news\/?$/.test(u))return false;
-    if(/wawacity\.news\/(VOD|Webcams|Rencontres|Boutique|#|\?)/.test(u))return false;
-    // drop rqts-url trackers
     if(u.indexOf("rqts-url")!==-1)return false;
-    // drop /pub/ paths
+    if(u.indexOf("wawacity.news")!==-1)return false;
     if(u.indexOf("/pub/")!==-1)return false;
-    // drop nav filenames (no real file)
-    if(_NAV_FILENAMES.indexOf(fname)!==-1)return false;
-    // keep dl-protect and other real hosts
     return true;
   });
 }
@@ -1086,7 +1113,7 @@ function _loadAltExternal(){
   .then(function(r){return r.json();})
   .then(function(data){
     altLoading.style.display="none";
-    var raw=_normaliseAltData(data);
+    var raw=_normaliseAltLinks(data);
     var links=_filterAltLinks(raw);
     _allAltLinks=links;
     _currentAltLinks=links;
@@ -1109,7 +1136,7 @@ function _loadAltExternal(){
 function _populateAltFilters(links,filtersEl){
   var qualities=new Set(),hosts=new Set();
   links.forEach(function(l){
-    var q=l.protection||l.quality||"";
+    var q=l.protection||l.quality||l._qualityGroup||"";
     var h=l.host||l.provider||"";
     if(q)qualities.add(q);
     if(h)hosts.add(h);
@@ -1125,7 +1152,7 @@ function _applyAltFilters(){
   var qf=document.getElementById("altQualityFilter").value;
   var hf=document.getElementById("altHostFilter").value;
   var filtered=_allAltLinks.filter(function(l){
-    var q=l.protection||l.quality||"";
+    var q=l.protection||l.quality||l._qualityGroup||"";
     var h=l.host||l.provider||"";
     if(qf&&q!==qf)return false;
     if(hf&&h!==hf)return false;
@@ -1142,7 +1169,7 @@ function _renderAltLinks(links){
   links.forEach(function(l,idx){
     var u=l.url||l.lien||l.link||"";
     var host=l.host||l.provider||"";
-    var prot=l.protection||l.quality||"N/A";
+    var prot=l.protection||l.quality||l._qualityGroup||"N/A";
     var fname=l.filename||l.name||"";
     var size=l.size||"";
     html+='<div class="ext-card alt-card" data-alt-idx="'+idx+'"><div class="ext-card-body">';
@@ -1168,7 +1195,7 @@ function _renderAltLinks(links){
       var l=_currentAltLinks[idx];
       var u=l.url||l.lien||l.link||"";
       if(!u){alert("Lien non disponible");return;}
-      _openExtAdModal(u,{provider:l.host||l.provider,quality:l.protection||l.quality});
+      _openExtAdModal(u,{provider:l.host||l.provider,quality:l.protection||l.quality||l._qualityGroup});
     };
   });
 }
