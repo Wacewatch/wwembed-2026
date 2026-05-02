@@ -540,7 +540,6 @@ function _extractAndFilterAltLinks(data){
   } else if(data&&Array.isArray(data.data)){
     raw=data.data;
   } else if(data&&Array.isArray(data.qualities)){
-    // Handle nested qualities[].downloadLinks[] structure
     data.qualities.forEach(function(q){
       if(Array.isArray(q.downloadLinks)){
         q.downloadLinks.forEach(function(l){
@@ -549,12 +548,25 @@ function _extractAndFilterAltLinks(data){
       }
     });
   }
-  return raw.filter(function(l){
+  return _filterAltLinks(raw);
+}
+
+function _filterAltLinks(raw){
+  return (raw||[]).filter(function(l){
     var u=l.url||l.lien||l.link||"";
+    var fname=(l.filename||l.name||"").toLowerCase();
+    var host=(l.host||l.provider||"").toLowerCase();
+    var prot=l.protection||l.quality||l._qualityGroup||"";
     if(!u)return false;
     if(u.indexOf("rqts-url")!==-1)return false;
     if(u.indexOf("wawacity.news")!==-1)return false;
     if(u.indexOf("/pub/")!==-1)return false;
+    if(host==="wawacity")return false;
+    var badFilenames=["vod(+18)","webcams","rencontres sexe","boutique","rencontres","adulte","xxx"];
+    for(var i=0;i<badFilenames.length;i++){
+      if(fname.indexOf(badFilenames[i])!==-1)return false;
+    }
+    if(!fname&&!prot)return false;
     return true;
   });
 }
@@ -1067,7 +1079,6 @@ function _normaliseAltLinks(data){
   } else if(data&&Array.isArray(data.data)){
     raw=data.data;
   } else if(data&&Array.isArray(data.qualities)){
-    // Handle nested qualities[].downloadLinks[] structure (confirmed from API)
     data.qualities.forEach(function(q){
       if(Array.isArray(q.downloadLinks)){
         q.downloadLinks.forEach(function(l){
@@ -1085,10 +1096,19 @@ function _normaliseAltLinks(data){
 function _filterAltLinks(raw){
   return (raw||[]).filter(function(l){
     var u=l.url||l.lien||l.link||"";
+    var fname=(l.filename||l.name||"").toLowerCase();
+    var host=(l.host||l.provider||"").toLowerCase();
+    var prot=l.protection||l.quality||l._qualityGroup||"";
     if(!u)return false;
     if(u.indexOf("rqts-url")!==-1)return false;
     if(u.indexOf("wawacity.news")!==-1)return false;
     if(u.indexOf("/pub/")!==-1)return false;
+    if(host==="wawacity")return false;
+    var badFilenames=["vod(+18)","webcams","rencontres sexe","boutique","rencontres","adulte","xxx"];
+    for(var i=0;i<badFilenames.length;i++){
+      if(fname.indexOf(badFilenames[i])!==-1)return false;
+    }
+    if(!fname&&!prot)return false;
     return true;
   });
 }
