@@ -8,6 +8,35 @@ function generateRandomId(prefix = "x"): string {
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
   const { wwId } = await params
+
+  // ============================================
+  // DECODE PROXY — forward l'IP user au worker
+  // ============================================
+  const decodeId = request.nextUrl.searchParams.get("decode")
+  const titleId = request.nextUrl.searchParams.get("title_id") || ""
+
+  if (decodeId) {
+    const userIp =
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+      request.headers.get("x-real-ip") ||
+      "127.0.0.1"
+
+    const workerUrl = `https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api/darkiworld/decode/${decodeId}?title_id=${titleId}`
+
+    try {
+      const resp = await fetch(workerUrl, {
+        headers: {
+          "X-Forwarded-For": userIp,
+          "X-Real-IP": userIp,
+        },
+      })
+      const data = await resp.json()
+      return NextResponse.json(data)
+    } catch {
+      return NextResponse.json({ error: "decode_failed" }, { status: 500 })
+    }
+  }
+
   const supabase = createAdminClient()
 
   const isDigitalContent =
@@ -123,7 +152,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ft a{color:#14B8A6}
 .sec-title{display:flex;align-items:center;gap:10px;padding:16px;background:linear-gradient(135deg,rgba(102,126,234,0.2),rgba(118,75,162,0.2));border:1px solid rgba(102,126,234,0.3);border-radius:12px;margin:24px 0 16px;font-weight:700;color:#a78bfa}
 .sec-title svg{width:20px;height:20px}
-.sec-title .badge{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;margin-left:auto}
 .ext-tabs{display:flex;gap:8px;margin-bottom:16px}
 .ext-tab{flex:1;padding:10px 14px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px}
 .ext-tab.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;box-shadow:0 4px 12px rgba(102,126,234,0.4)}
@@ -302,6 +330,41 @@ var _movixContentId=null;
 var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
 var AD_URL_EXT="https://foreignabnormality.com/q7jywq0h?key=6eb56670c09233e007f1bfb9cf0e1b55";
 
+// ── Rate limit modal ──────────────────────────────────────────────────────
+function _formatRetryTime(retryAt){
+  if(!retryAt)return"quelques minutes";
+  var diff=Math.max(0,retryAt-Date.now());
+  var h=Math.floor(diff/3600000);
+  var m=Math.floor((diff%3600000)/60000);
+  var s=Math.floor((diff%60000)/1000);
+  if(h>0)return h+"h "+m+"min";
+  if(m>0)return m+"min "+s+"s";
+  return s+"s";
+}
+
+function _showRateLimitModal(retryAt){
+  var existing=document.getElementById("extAdModal");if(existing)existing.remove();
+  var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
+  var timeStr=_formatRetryTime(retryAt);
+  var modal=document.createElement("div");
+  modal.id="extAdModal";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px";
+  var box=document.createElement("div");
+  box.style.cssText="background:#1e293b;border-radius:16px;padding:28px 24px;max-width:380px;width:100%;text-align:center;border:1px solid rgba(239,68,68,0.3)";
+  box.innerHTML=
+    '<div style="font-size:36px;margin-bottom:12px">\u23F3</div>'+
+    '<h2 style="color:#ef4444;font-size:18px;margin-bottom:8px">Limite atteinte</h2>'+
+    '<p style="color:#94a3b8;font-size:13px;margin-bottom:16px;line-height:1.5">Trop de d\u00e9codages ont \u00e9t\u00e9 effectu\u00e9s r\u00e9cemment.<br>Veuillez patienter avant de r\u00e9essayer.</p>'+
+    '<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px;margin-bottom:20px">'+
+    '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">Disponible dans</div>'+
+    '<div style="font-size:20px;font-weight:700;color:#fca5a5">'+timeStr+'</div>'+
+    '</div>'+
+    '<button style="width:100%;padding:12px;background:linear-gradient(135deg,#374151,#1f2937);color:#e5e7eb;border:1px solid #374151;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer" onclick="document.getElementById(\'extAdModal\').remove()">Fermer</button>'+
+    '<p style="margin-top:12px;font-size:10px;color:#4b5563">Propuls\u00e9 par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a></p>';
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+}
+
 window.switchTab=function(tab){
   var movixWrap=document.getElementById(_extIds.container);
   var altWrap=document.getElementById(_extIds.altContent+"_wrap");
@@ -335,7 +398,7 @@ function _getDownloadEndpoint(resultType){
   return"movie";
 }
 
-function openAdPopup() {
+function openAdPopup(){
   if(!_u)return;
   var link=document.createElement('a');
   link.href=_u;link.target='_blank';link.rel='noopener noreferrer';
@@ -344,7 +407,7 @@ function openAdPopup() {
 
 function _renderLink(l){
   var url=l.source_url||"";
-  var release=l.release_name||l.source_name||"Fichier téléchargeable";
+  var release=l.release_name||l.source_name||"Fichier t\u00e9l\u00e9chargeable";
   var meta='<div class="li-meta">';
   if(l.quality)meta+='<span class="li-tag" style="background:#0d9488;color:#fff">'+l.quality+'</span>';
   if(l.resolution)meta+='<span class="li-tag" style="background:#7c3aed;color:#fff">'+l.resolution+'</span>';
@@ -354,7 +417,7 @@ function _renderLink(l){
   if(l.codec_audio)meta+='<span class="li-tag" style="background:#ea580c;color:#fff">'+l.codec_audio+'</span>';
   if(l.source_type)meta+='<span class="li-tag" style="background:#dc2626;color:#fff">'+l.source_type+'</span>';
   meta+='</div>';
-  var btnText=url?'Télécharger':'Lien indisponible';
+  var btnText=url?'T\u00e9l\u00e9charger':'Lien indisponible';
   var btnDisabled=!url?' disabled style="opacity:0.5;cursor:not-allowed"':'';
   return '<div class="li"><div class="li-top"><div class="li-header"><div class="li-nm">'+release+'</div></div>'+meta+'</div><div class="li-bottom"><button class="li-btn"'+btnDisabled+' data-url="'+encodeURIComponent(url)+'">'+btnText+'</button></div></div>';
 }
@@ -389,7 +452,7 @@ function _bindBtns(){
 function _displayLink(url){
   var area=document.getElementById("linkDisplayArea");
   area.style.display="block";
-  area.innerHTML='<div class="link-display"><div class="link-display-title">Votre lien est prêt !</div><div class="link-display-url">'+url+'</div><a href="'+url+'" target="_blank" class="link-display-btn">Ouvrir le lien</a></div>';
+  area.innerHTML='<div class="link-display"><div class="link-display-title">Votre lien est pr\u00eat !</div><div class="link-display-url">'+url+'</div><a href="'+url+'" target="_blank" class="link-display-btn">Ouvrir le lien</a></div>';
   area.scrollIntoView({behavior:"smooth"});
 }
 
@@ -450,7 +513,6 @@ function _loadExternal(){
   var content=document.getElementById(_extIds.content);
   var filters=document.getElementById(_extIds.filters);
   var countBadge=document.getElementById(_extIds.count);
-
   fetch(_BASE+"/search?title="+encodeURIComponent(_title))
   .then(function(r){return r.json();})
   .then(function(data){
@@ -461,7 +523,7 @@ function _loadExternal(){
     }
     if(!Array.isArray(results)||results.length===0){
       loading.style.display="none";
-      content.innerHTML='<div class="em">Aucune source externe trouvée</div>';
+      content.innerHTML='<div class="em">Aucune source externe trouv\u00e9e</div>';
       countBadge.textContent="0";return;
     }
     var expectedTypes=_getExpectedTypes();
@@ -480,7 +542,6 @@ function _loadExternal(){
     _movixContentId=itemId;
     var endpoint=_getDownloadEndpoint(best.type||"movie");
     var dlUrl=_BASE+"/darkiworld/download/"+endpoint+"/"+itemId;
-
     function _fetchLinks(url,useFallback){
       fetch(url).then(function(r){return r.json();})
       .then(function(dlData){
@@ -514,8 +575,7 @@ function _loadAltExternal(){
   .then(function(data){
     altLoading.style.display="none";
     var links=_extractAndFilterAltLinks(data);
-    _allAltLinks=links;
-    altCountBadge.textContent=links.length;
+    _allAltLinks=links;altCountBadge.textContent=links.length;
     if(links.length===0){altContent.innerHTML='<div class="em">Aucune source alternative disponible</div>';return;}
     _renderAltLinks(links,altContent);
   }).catch(function(){
@@ -525,61 +585,27 @@ function _loadAltExternal(){
   });
 }
 
-// ── Parse quality & language from filename ────────────────────────────────
 function _parseFilename(fname){
   if(!fname)return{quality:"",lang:""};
-  var up=fname.toUpperCase();
-  var quality="";
-  var lang="";
-  // Quality tokens (order matters: check more specific first)
-  var qualities=["2160P","4K","1080P","720P","480P","576P","1080I","720I",
-    "BDRIP","BLURAY","BLU-RAY","BDREMUX","REMUX","WEBDL","WEB-DL","WEBRIP",
-    "WEB-RIP","HDRIP","HDTV","DVDSCR","DVDRIP","DVD","TVRIP","VHSRIP",
-    "HDCAM","CAM","TS","R5","SCR","VODRIP"];
-  for(var i=0;i<qualities.length;i++){
-    if(up.indexOf(qualities[i])!==-1){quality=qualities[i].replace("-","");break;}
-  }
-  // Language tokens
-  var langs=[
-    ["MULTI","MULTI"],["TRUEFRENCH","TRUEFRENCH"],["FRENCH","FR"],
-    ["VOSTFR","VOSTFR"],["VOSTSUB","VOSTSUB"],["VOST","VOST"],
-    ["VFF","VFF"],["VFQ","VFQ"],["VF","VF"],
-    ["FANSUB","FANSUB"],
-    ["ENGLISH","EN"],["ENGLISH","EN"],["ENG","EN"],
-    ["SPANISH","ES"],["SPANISH","ES"],["SPA","ES"],
-    ["GERMAN","DE"],["GER","DE"],["DEUTSCH","DE"],
-    ["ITALIAN","IT"],["ITA","IT"],
-    ["PORTUGUESE","PT"],["POR","PT"],
-    ["ARABIC","AR"],["ARA","AR"],
-    ["RUSSIAN","RU"],["RUS","RU"],
-    ["JAPANESE","JA"],["JPN","JA"],
-    ["KOREAN","KO"],["KOR","KO"],
-    ["CHINESE","ZH"],["CHI","ZH"]
-  ];
-  for(var j=0;j<langs.length;j++){
-    if(up.indexOf(langs[j][0])!==-1){lang=langs[j][1];break;}
-  }
+  var up=fname.toUpperCase();var quality="";var lang="";
+  var qualities=["2160P","4K","1080P","720P","480P","576P","1080I","720I","BDRIP","BLURAY","BLU-RAY","BDREMUX","REMUX","WEBDL","WEB-DL","WEBRIP","WEB-RIP","HDRIP","HDTV","DVDSCR","DVDRIP","DVD","TVRIP","VHSRIP","HDCAM","CAM","TS","R5","SCR","VODRIP"];
+  for(var i=0;i<qualities.length;i++){if(up.indexOf(qualities[i])!==-1){quality=qualities[i].replace("-","");break;}}
+  var langs=[["MULTI","MULTI"],["TRUEFRENCH","TRUEFRENCH"],["FRENCH","FR"],["VOSTFR","VOSTFR"],["VOSTSUB","VOSTSUB"],["VOST","VOST"],["VFF","VFF"],["VFQ","VFQ"],["VF","VF"],["FANSUB","FANSUB"],["ENGLISH","EN"],["ENG","EN"],["SPANISH","ES"],["SPA","ES"],["GERMAN","DE"],["GER","DE"],["DEUTSCH","DE"],["ITALIAN","IT"],["ITA","IT"],["PORTUGUESE","PT"],["POR","PT"],["ARABIC","AR"],["ARA","AR"],["RUSSIAN","RU"],["RUS","RU"],["JAPANESE","JA"],["JPN","JA"],["KOREAN","KO"],["KOR","KO"],["CHINESE","ZH"],["CHI","ZH"]];
+  for(var j=0;j<langs.length;j++){if(up.indexOf(langs[j][0])!==-1){lang=langs[j][1];break;}}
   return{quality:quality,lang:lang};
 }
 
 function _extractAndFilterAltLinks(data){
   var raw=[];
-  if(Array.isArray(data)){
-    raw=data;
-  } else if(data&&Array.isArray(data.links)){
-    raw=data.links;
-  } else if(data&&Array.isArray(data.downloadLinks)){
-    raw=data.downloadLinks;
-  } else if(data&&Array.isArray(data.results)){
-    raw=data.results;
-  } else if(data&&Array.isArray(data.data)){
-    raw=data.data;
-  } else if(data&&Array.isArray(data.qualities)){
+  if(Array.isArray(data)){raw=data;}
+  else if(data&&Array.isArray(data.links)){raw=data.links;}
+  else if(data&&Array.isArray(data.downloadLinks)){raw=data.downloadLinks;}
+  else if(data&&Array.isArray(data.results)){raw=data.results;}
+  else if(data&&Array.isArray(data.data)){raw=data.data;}
+  else if(data&&Array.isArray(data.qualities)){
     data.qualities.forEach(function(q){
       if(Array.isArray(q.downloadLinks)){
-        q.downloadLinks.forEach(function(l){
-          raw.push(Object.assign({},l,{quality:l.protection||q.quality||"",_qualityGroup:q.quality||""}));
-        });
+        q.downloadLinks.forEach(function(l){raw.push(Object.assign({},l,{quality:l.protection||q.quality||"",_qualityGroup:q.quality||""}));});
       }
     });
   }
@@ -598,17 +624,15 @@ function _filterAltLinks(raw){
     if(u.indexOf("/pub/")!==-1)return false;
     if(host==="wawacity")return false;
     if(host==="mamot")return false;
-    var badFilenames=["vod(+18)","webcams","rencontres sexe","boutique","rencontres","adulte","xxx"];
-    for(var i=0;i<badFilenames.length;i++){
-      if(fname.indexOf(badFilenames[i])!==-1)return false;
-    }
+    var bad=["vod(+18)","webcams","rencontres sexe","boutique","rencontres","adulte","xxx"];
+    for(var i=0;i<bad.length;i++){if(fname.indexOf(bad[i])!==-1)return false;}
     if(!fname&&!prot)return false;
     return true;
   });
 }
 
 function _renderAltLinks(links,container){
-  if(links.length===0){container.innerHTML='<div class="em">Aucun résultat</div>';return;}
+  if(links.length===0){container.innerHTML='<div class="em">Aucun r\u00e9sultat</div>';return;}
   var html="";
   links.forEach(function(l,idx){
     var u=l.url||l.lien||l.link||"";
@@ -623,14 +647,11 @@ function _renderAltLinks(links,container){
     html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">';
     html+='<span class="ext-quality">'+dispQuality+'</span>';
     if(dispLang)html+='<span style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700">'+dispLang+'</span>';
-    html+='<span class="alt-badge">ALT</span>';
-    html+='</div>';
+    html+='<span class="alt-badge">ALT</span></div>';
     if(host)html+='<div class="ext-provider">'+host+'</div>';
     if(fname)html+='<div class="alt-filename">'+fname+'</div>';
     if(size)html+='<div class="ext-info" style="margin-top:6px">Taille: '+size+'</div>';
-    html+=(u
-      ?'<button class="ext-btn alt-btn">Télécharger</button>'
-      :'<button class="ext-btn alt-btn" disabled style="opacity:0.4;cursor:not-allowed">Indisponible</button>');
+    html+=(u?'<button class="ext-btn alt-btn">T\u00e9l\u00e9charger</button>':'<button class="ext-btn alt-btn" disabled style="opacity:0.4;cursor:not-allowed">Indisponible</button>');
     html+='</div></div>';
   });
   container.innerHTML=html;
@@ -679,7 +700,7 @@ function _formatSize(bytes){
 function _renderExtLinks(links){
   _currentExtLinks=links;
   var content=document.getElementById(_extIds.content);
-  if(links.length===0){content.innerHTML='<div class="em">Aucun résultat</div>';return;}
+  if(links.length===0){content.innerHTML='<div class="em">Aucun r\u00e9sultat</div>';return;}
   var html="";
   links.forEach(function(l,idx){
     html+='<div class="ext-card" data-idx="'+idx+'"><div class="ext-card-body">';
@@ -689,7 +710,7 @@ function _renderExtLinks(links){
     html+='<div class="ext-info">'+(l.language||"N/A")+'</div>';
     if(l.host_name)html+='<div class="ext-host"><span>'+l.host_name+'</span></div>';
     if(l.size)html+='<div class="ext-stats"><div class="ext-stat"><span class="ext-stat-label">Taille</span><span class="ext-stat-value">'+_formatSize(l.size)+'</span></div></div>';
-    html+='<button class="ext-btn">Télécharger</button></div></div>';
+    html+='<button class="ext-btn">T\u00e9l\u00e9charger</button></div></div>';
   });
   content.innerHTML=html;
   content.querySelectorAll(".ext-card").forEach(function(card){
@@ -701,33 +722,25 @@ function _renderExtLinks(links){
   });
 }
 
-function _openExtAdModal(finalUrl, extLink){
-  fetch("/api/link-click",{
-    method:"POST",headers:{"Content-Type":"application/json"},
+function _openExtAdModal(finalUrl,extLink){
+  fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({linkType:"external",wwId:_wwId,provider:(extLink&&extLink.provider)||null,hostName:(extLink&&extLink.host_name)||null,quality:(extLink&&extLink.quality)||null,language:(extLink&&extLink.language)||null,fileSize:(extLink&&extLink.size)||null})
   }).catch(function(){});
-
   window._extFinalUrl=finalUrl;
-  var existingModal=document.getElementById("extAdModal");
-  if(existingModal)existingModal.remove();
-
+  var existingModal=document.getElementById("extAdModal");if(existingModal)existingModal.remove();
   var modal=document.createElement("div");
   modal.id="extAdModal";
   modal.style.cssText="position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px";
   var box=document.createElement("div");
   box.style.cssText="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center";
-  var title=document.createElement("h2");
-  title.style.cssText="color:#1a1a2e;margin-bottom:6px;font-size:18px";
-  title.textContent="Votre lien est prêt";
-  var subtitle=document.createElement("p");
-  subtitle.style.cssText="color:#666;font-size:12px;margin-bottom:14px";
-  subtitle.textContent="Cliquez pour accéder au téléchargement";
-  var warning=document.createElement("div");
-  warning.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e";
-  warning.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div>';
-  var support=document.createElement("div");
-  support.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6";
-  support.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide à rester en ligne</span></div>';
+  var t=document.createElement("h2");t.style.cssText="color:#1a1a2e;margin-bottom:6px;font-size:18px";t.textContent="Votre lien est pr\u00eat";
+  var sub=document.createElement("p");sub.style.cssText="color:#666;font-size:12px;margin-bottom:14px";sub.textContent="Cliquez pour acc\u00e9der au t\u00e9l\u00e9chargement";
+  var warn=document.createElement("div");
+  warn.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e";
+  warn.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div>';
+  var sup=document.createElement("div");
+  sup.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6";
+  sup.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide \u00e0 rester en ligne</span></div>';
   var adBtn=document.createElement("a");
   adBtn.href=AD_URL_EXT;adBtn.target="_blank";adBtn.rel="noopener";
   adBtn.style.cssText="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;cursor:pointer";
@@ -737,11 +750,9 @@ function _openExtAdModal(finalUrl, extLink){
   startBtn.textContent="VOIR LE LIEN";
   adBtn.onclick=function(){this.style.display="none";startBtn.style.display="block";};
   startBtn.onclick=function(){modal.remove();_displayLink(window._extFinalUrl);};
-  var footer=document.createElement("p");
-  footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
-  footer.innerHTML='Propulsé par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a>';
-  box.appendChild(title);box.appendChild(subtitle);box.appendChild(warning);box.appendChild(support);
-  box.appendChild(adBtn);box.appendChild(startBtn);box.appendChild(footer);
+  var footer=document.createElement("p");footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
+  footer.innerHTML='Propuls\u00e9 par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a>';
+  box.appendChild(t);box.appendChild(sub);box.appendChild(warn);box.appendChild(sup);box.appendChild(adBtn);box.appendChild(startBtn);box.appendChild(footer);
   modal.appendChild(box);document.body.appendChild(modal);
 }
 
@@ -751,12 +762,13 @@ function _showExtDetails(extLink){
   if(!extLink.id){alert("Lien non disponible pour ce fichier");return;}
   var tmpLoader=document.createElement("div");
   tmpLoader.className="decode-loading";tmpLoader.id="decodeLoader";
-  tmpLoader.innerHTML='<div class="decode-loading-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p>Décodage du lien...</p></div>';
+  tmpLoader.innerHTML='<div class="decode-loading-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p>D\u00e9codage du lien...</p></div>';
   document.body.appendChild(tmpLoader);
-  var decodeUrl=_BASE+"/darkiworld/decode/"+extLink.id+"?title_id="+_movixContentId;
+  var decodeUrl=window.location.pathname+"?decode="+extLink.id+"&title_id="+_movixContentId;
   fetch(decodeUrl).then(function(r){return r.json();})
   .then(function(data){
     var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
+    if(data&&data.error==="rate_limited"){_showRateLimitModal(data.retry_at||null);return;}
     var finalUrl=null;
     if(data&&data.lien)finalUrl=data.lien;
     else if(data&&data.embed_url&&data.embed_url.lien)finalUrl=data.embed_url.lien;
@@ -764,7 +776,7 @@ function _showExtDetails(extLink){
     _openExtAdModal(finalUrl,extLink);
   }).catch(function(){
     var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
-    alert("Erreur lors du décodage du lien");
+    alert("Erreur lors du d\u00e9codage du lien");
   });
 }
 
@@ -874,7 +886,7 @@ _loadExternal();
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Téléchargement - ${title}</title>
+<title>T\u00e9l\u00e9chargement - ${title}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#0a0f1a 0%,#111827 50%,#0f172a 100%);color:#e5e7eb;padding:16px;min-height:100vh}
@@ -974,7 +986,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 ${posterUrl ? `<img src="${posterUrl}" alt="${title}" class="ps">` : ""}
 <div>
 <div class="tt">${title}</div>
-<div class="tg">${mediaType === "movie" ? "Film" : "Série"}</div>
+<div class="tg">${mediaType === "movie" ? "Film" : "S\u00e9rie"}</div>
 </div>
 </div>
 
@@ -1004,7 +1016,7 @@ Sources externes
 Recherche de sources externes...
 </div>
 <div id="${externalIds.filters}" class="ext-filters" style="display:none">
-<select id="extQualityFilter" class="ext-select"><option value="">Qualité</option></select>
+<select id="extQualityFilter" class="ext-select"><option value="">Qualit\u00e9</option></select>
 <select id="extLanguageFilter" class="ext-select"><option value="">Langue</option></select>
 <select id="extProviderFilter" class="ext-select"><option value="">Provider</option></select>
 </div>
@@ -1017,7 +1029,7 @@ Recherche de sources externes...
 Recherche de sources alternatives...
 </div>
 <div id="${externalIds.content}_altfilters" class="ext-filters" style="display:none">
-<select id="altQualityFilter" class="ext-select"><option value="">Qualité</option></select>
+<select id="altQualityFilter" class="ext-select"><option value="">Qualit\u00e9</option></select>
 <select id="altHostFilter" class="ext-select"><option value="">Host</option></select>
 </div>
 <div id="${externalIds.altContent}" class="ext-grid"></div>
@@ -1029,8 +1041,8 @@ Recherche de sources alternatives...
 
 <div class="mo" id="${ids.overlay}">
 <div class="mc">
-<h2>Votre téléchargement est prêt</h2>
-<div class="mc-sub">Une dernière étape pour accéder au fichier</div>
+<h2>Votre t\u00e9l\u00e9chargement est pr\u00eat</h2>
+<div class="mc-sub">Une derni\u00e8re \u00e9tape pour acc\u00e9der au fichier</div>
 <div class="steps">
 <div class="step active" id="${ids.step1}"></div>
 <div class="step" id="${ids.step2}"></div>
@@ -1042,24 +1054,24 @@ Recherche de sources alternatives...
 </div>
 <div class="bx bh" id="${ids.boxHelp}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-<div class="bx-content"><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
+<div class="bx-content"><b>Soutenez le service gratuit</b><span>Votre clic nous aide \u00e0 rester en ligne</span></div>
 </div>
 <div class="bx bi" id="${ids.boxTime}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-<div class="bx-content"><b>Temps restant: <span id="${ids.timer}">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div>
+<div class="bx-content"><b>Temps restant: <span id="${ids.timer}">3</span> seconde(s)</b><span>Cliquez et fermez la fen\u00eatre</span></div>
 </div>
 <div class="bx bo hi" id="${ids.boxThanks}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-<div class="bx-content"><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div>
+<div class="bx-content"><b>Merci pour votre soutien !</b><span>Vous aidez \u00e0 maintenir le service</span></div>
 </div>
 <div class="bx bo hi" id="${ids.boxDone}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-<div class="bx-content"><b>Tout est prêt !</b><span>Cliquez pour voir le lien</span></div>
+<div class="bx-content"><b>Tout est pr\u00eat !</b><span>Cliquez pour voir le lien</span></div>
 </div>
 <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
 <button class="bt bp" id="${ids.btnUnlock}">Continuer<span class="tag">PUB</span></button>
 <button class="bt bn hi" id="${ids.btnDownload}">Voir le lien</button>
-<div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
+<div class="cf">Propuls\u00e9 par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
 </div>
 </div>
 
@@ -1089,6 +1101,41 @@ var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movi
 var AD_URL_EXT="https://foreignabnormality.com/q7jywq0h?key=6eb56670c09233e007f1bfb9cf0e1b55";
 var ALT_BASE="https://apis.wavewatch.top/wawa.php";
 
+// ── Rate limit modal ──────────────────────────────────────────────────────
+function _formatRetryTime(retryAt){
+  if(!retryAt)return"quelques minutes";
+  var diff=Math.max(0,retryAt-Date.now());
+  var h=Math.floor(diff/3600000);
+  var m=Math.floor((diff%3600000)/60000);
+  var s=Math.floor((diff%60000)/1000);
+  if(h>0)return h+"h "+m+"min";
+  if(m>0)return m+"min "+s+"s";
+  return s+"s";
+}
+
+function _showRateLimitModal(retryAt){
+  var existing=document.getElementById("extAdModal");if(existing)existing.remove();
+  var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
+  var timeStr=_formatRetryTime(retryAt);
+  var modal=document.createElement("div");
+  modal.id="extAdModal";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px";
+  var box=document.createElement("div");
+  box.style.cssText="background:#1e293b;border-radius:16px;padding:28px 24px;max-width:380px;width:100%;text-align:center;border:1px solid rgba(239,68,68,0.3)";
+  box.innerHTML=
+    '<div style="font-size:36px;margin-bottom:12px">\u23F3</div>'+
+    '<h2 style="color:#ef4444;font-size:18px;margin-bottom:8px">Limite atteinte</h2>'+
+    '<p style="color:#94a3b8;font-size:13px;margin-bottom:16px;line-height:1.5">Trop de d\u00e9codages ont \u00e9t\u00e9 effectu\u00e9s r\u00e9cemment.<br>Veuillez patienter avant de r\u00e9essayer.</p>'+
+    '<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px;margin-bottom:20px">'+
+    '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">Disponible dans</div>'+
+    '<div style="font-size:20px;font-weight:700;color:#fca5a5">'+timeStr+'</div>'+
+    '</div>'+
+    '<button style="width:100%;padding:12px;background:linear-gradient(135deg,#374151,#1f2937);color:#e5e7eb;border:1px solid #374151;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer" onclick="document.getElementById(\'extAdModal\').remove()">Fermer</button>'+
+    '<p style="margin-top:12px;font-size:10px;color:#4b5563">Propuls\u00e9 par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a></p>';
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+}
+
 window.switchTab=function(tab){
   var movixWrap=document.getElementById(_extIds.container);
   var altWrap=document.getElementById(_extIds.altContent+"_wrap");
@@ -1104,62 +1151,27 @@ window.switchTab=function(tab){
   }
 };
 
-// ── Parse quality & language from filename ────────────────────────────────
 function _parseFilename(fname){
   if(!fname)return{quality:"",lang:""};
-  var up=fname.toUpperCase();
-  var quality="";
-  var lang="";
-  var qualities=["2160P","4K","1080P","720P","480P","576P","1080I","720I",
-    "BDRIP","BLURAY","BLU-RAY","BDREMUX","REMUX","WEBDL","WEB-DL","WEBRIP",
-    "WEB-RIP","HDRIP","HDTV","DVDSCR","DVDRIP","DVD","TVRIP","VHSRIP",
-    "HDCAM","CAM","TS","R5","SCR","VODRIP"];
-  for(var i=0;i<qualities.length;i++){
-    if(up.indexOf(qualities[i])!==-1){quality=qualities[i].replace("-","");break;}
-  }
-  var langs=[
-    ["MULTI","MULTI"],["TRUEFRENCH","TRUEFRENCH"],["FRENCH","FR"],
-    ["VOSTFR","VOSTFR"],["VOSTSUB","VOSTSUB"],["VOST","VOST"],
-    ["VFF","VFF"],["VFQ","VFQ"],["VF","VF"],
-    ["FANSUB","FANSUB"],
-    ["ENGLISH","EN"],["ENG","EN"],
-    ["SPANISH","ES"],["SPA","ES"],
-    ["GERMAN","DE"],["GER","DE"],["DEUTSCH","DE"],
-    ["ITALIAN","IT"],["ITA","IT"],
-    ["PORTUGUESE","PT"],["POR","PT"],
-    ["ARABIC","AR"],["ARA","AR"],
-    ["RUSSIAN","RU"],["RUS","RU"],
-    ["JAPANESE","JA"],["JPN","JA"],
-    ["KOREAN","KO"],["KOR","KO"],
-    ["CHINESE","ZH"],["CHI","ZH"]
-  ];
-  for(var j=0;j<langs.length;j++){
-    if(up.indexOf(langs[j][0])!==-1){lang=langs[j][1];break;}
-  }
+  var up=fname.toUpperCase();var quality="";var lang="";
+  var qualities=["2160P","4K","1080P","720P","480P","576P","1080I","720I","BDRIP","BLURAY","BLU-RAY","BDREMUX","REMUX","WEBDL","WEB-DL","WEBRIP","WEB-RIP","HDRIP","HDTV","DVDSCR","DVDRIP","DVD","TVRIP","VHSRIP","HDCAM","CAM","TS","R5","SCR","VODRIP"];
+  for(var i=0;i<qualities.length;i++){if(up.indexOf(qualities[i])!==-1){quality=qualities[i].replace("-","");break;}}
+  var langs=[["MULTI","MULTI"],["TRUEFRENCH","TRUEFRENCH"],["FRENCH","FR"],["VOSTFR","VOSTFR"],["VOSTSUB","VOSTSUB"],["VOST","VOST"],["VFF","VFF"],["VFQ","VFQ"],["VF","VF"],["FANSUB","FANSUB"],["ENGLISH","EN"],["ENG","EN"],["SPANISH","ES"],["SPA","ES"],["GERMAN","DE"],["GER","DE"],["DEUTSCH","DE"],["ITALIAN","IT"],["ITA","IT"],["PORTUGUESE","PT"],["POR","PT"],["ARABIC","AR"],["ARA","AR"],["RUSSIAN","RU"],["RUS","RU"],["JAPANESE","JA"],["JPN","JA"],["KOREAN","KO"],["KOR","KO"],["CHINESE","ZH"],["CHI","ZH"]];
+  for(var j=0;j<langs.length;j++){if(up.indexOf(langs[j][0])!==-1){lang=langs[j][1];break;}}
   return{quality:quality,lang:lang};
 }
 
 function _normaliseAltLinks(data){
   var raw=[];
-  if(Array.isArray(data)){
-    raw=data;
-  } else if(data&&Array.isArray(data.links)){
-    raw=data.links;
-  } else if(data&&Array.isArray(data.downloadLinks)){
-    raw=data.downloadLinks;
-  } else if(data&&Array.isArray(data.results)){
-    raw=data.results;
-  } else if(data&&Array.isArray(data.data)){
-    raw=data.data;
-  } else if(data&&Array.isArray(data.qualities)){
+  if(Array.isArray(data)){raw=data;}
+  else if(data&&Array.isArray(data.links)){raw=data.links;}
+  else if(data&&Array.isArray(data.downloadLinks)){raw=data.downloadLinks;}
+  else if(data&&Array.isArray(data.results)){raw=data.results;}
+  else if(data&&Array.isArray(data.data)){raw=data.data;}
+  else if(data&&Array.isArray(data.qualities)){
     data.qualities.forEach(function(q){
       if(Array.isArray(q.downloadLinks)){
-        q.downloadLinks.forEach(function(l){
-          raw.push(Object.assign({},l,{
-            quality: l.protection||q.quality||"",
-            _qualityGroup: q.quality||""
-          }));
-        });
+        q.downloadLinks.forEach(function(l){raw.push(Object.assign({},l,{quality:l.protection||q.quality||"",_qualityGroup:q.quality||""}));});
       }
     });
   }
@@ -1178,10 +1190,8 @@ function _filterAltLinks(raw){
     if(u.indexOf("/pub/")!==-1)return false;
     if(host==="wawacity")return false;
     if(host==="mamot")return false;
-    var badFilenames=["vod(+18)","webcams","rencontres sexe","boutique","rencontres","adulte","xxx"];
-    for(var i=0;i<badFilenames.length;i++){
-      if(fname.indexOf(badFilenames[i])!==-1)return false;
-    }
+    var bad=["vod(+18)","webcams","rencontres sexe","boutique","rencontres","adulte","xxx"];
+    for(var i=0;i<bad.length;i++){if(fname.indexOf(bad[i])!==-1)return false;}
     if(!fname&&!prot)return false;
     return true;
   });
@@ -1192,32 +1202,23 @@ function _loadAltExternal(){
   var altContent=document.getElementById(_extIds.altContent);
   var altFilters=document.getElementById(_extIds.content+"_altfilters");
   var altCountBadge=document.getElementById(_extIds.altCount);
-
   var url;
   if(_mediaType==="tv"){
-    var s=_seasonNum||1;
-    var e=_episodeNum||1;
+    var s=_seasonNum||1;var e=_episodeNum||1;
     url=ALT_BASE+"?_route=api&type=tv&id="+_tmdbId+"&s="+s+"&e="+e;
   }else{
     url=ALT_BASE+"?_route=api&type=movie&id="+_tmdbId;
   }
-
   fetch(url)
   .then(function(r){return r.json();})
   .then(function(data){
     altLoading.style.display="none";
     var raw=_normaliseAltLinks(data);
     var links=_filterAltLinks(raw);
-    _allAltLinks=links;
-    _currentAltLinks=links;
+    _allAltLinks=links;_currentAltLinks=links;
     altCountBadge.textContent=links.length;
-
-    if(links.length===0){
-      altContent.innerHTML='<div class="em">Aucune source alternative disponible</div>';
-      return;
-    }
-    _populateAltFilters(links,altFilters);
-    altFilters.style.display="flex";
+    if(links.length===0){altContent.innerHTML='<div class="em">Aucune source alternative disponible</div>';return;}
+    _populateAltFilters(links,altFilters);altFilters.style.display="flex";
     _renderAltLinks(links);
   }).catch(function(){
     altLoading.style.display="none";
@@ -1231,8 +1232,7 @@ function _populateAltFilters(links,filtersEl){
   links.forEach(function(l){
     var q=l.protection||l.quality||l._qualityGroup||"";
     var h=l.host||l.provider||"";
-    if(q)qualities.add(q);
-    if(h)hosts.add(h);
+    if(q)qualities.add(q);if(h)hosts.add(h);
   });
   var qf=document.getElementById("altQualityFilter");
   var hf=document.getElementById("altHostFilter");
@@ -1251,13 +1251,12 @@ function _applyAltFilters(){
     if(hf&&h!==hf)return false;
     return true;
   });
-  _currentAltLinks=filtered;
-  _renderAltLinks(filtered);
+  _currentAltLinks=filtered;_renderAltLinks(filtered);
 }
 
 function _renderAltLinks(links){
   var content=document.getElementById(_extIds.altContent);
-  if(!links||links.length===0){content.innerHTML='<div class="em">Aucun résultat</div>';return;}
+  if(!links||links.length===0){content.innerHTML='<div class="em">Aucun r\u00e9sultat</div>';return;}
   var html="";
   links.forEach(function(l,idx){
     var u=l.url||l.lien||l.link||"";
@@ -1272,14 +1271,11 @@ function _renderAltLinks(links){
     html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">';
     html+='<span class="ext-quality">'+dispQuality+'</span>';
     if(dispLang)html+='<span style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700">'+dispLang+'</span>';
-    html+='<span class="alt-badge">ALT</span>';
-    html+='</div>';
+    html+='<span class="alt-badge">ALT</span></div>';
     if(host)html+='<div class="ext-provider">'+host+'</div>';
     if(fname)html+='<div class="alt-filename">'+fname+'</div>';
     if(size)html+='<div class="ext-info" style="margin-top:6px">Taille: '+size+'</div>';
-    html+=(u
-      ?'<button class="ext-btn alt-btn">Voir le lien</button>'
-      :'<button class="ext-btn alt-btn" disabled style="opacity:0.4;cursor:not-allowed">Indisponible</button>');
+    html+=(u?'<button class="ext-btn alt-btn">Voir le lien</button>':'<button class="ext-btn alt-btn" disabled style="opacity:0.4;cursor:not-allowed">Indisponible</button>');
     html+='</div></div>';
   });
   content.innerHTML=html;
@@ -1299,7 +1295,7 @@ function _renderAltLinks(links){
 
 function _renderLink(l){
   var url=l.source_url||"";
-  var release=l.release_name||l.source_name||"Fichier téléchargeable";
+  var release=l.release_name||l.source_name||"Fichier t\u00e9l\u00e9chargeable";
   var up=l.username?'<div class="li-up">par <span>'+l.username+'</span></div>':"";
   var ep="";
   if(_mediaType==="tv"){
@@ -1317,7 +1313,7 @@ function _renderLink(l){
   if(l.source_name)meta+='<span class="li-tag" style="background:#dc2626;color:#fff">'+l.source_name+'</span>';
   if(l.subtitle)meta+='<span class="li-tag" style="background:#4f46e5;color:#fff">'+l.subtitle+'</span>';
   meta+='</div>';
-  var btnText=url?'Télécharger':'Lien indisponible';
+  var btnText=url?'T\u00e9l\u00e9charger':'Lien indisponible';
   var btnDisabled=!url?' disabled style="opacity:0.5;cursor:not-allowed"':'';
   return '<div class="li"><div class="li-top"><div class="li-header">'+ep+'<div class="li-nm">'+release+'</div>'+up+'</div>'+meta+'</div><div class="li-bottom"><button class="li-btn"'+btnDisabled+' data-url="'+encodeURIComponent(url)+'">'+btnText+'</button></div></div>';
 }
@@ -1352,7 +1348,7 @@ function _bindBtns(){
 function _displayLink(url){
   var area=document.getElementById("linkDisplayArea");
   area.style.display="block";
-  area.innerHTML='<div class="link-display-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Votre lien est prêt !</div><div class="link-display-url" id="linkUrlText">'+url+'</div><div class="link-display-btns"><a href="'+url+'" target="_blank" class="link-display-btn primary">Ouvrir le lien</a><button class="link-display-btn secondary" onclick="_copyLink()">Copier le lien</button></div><div class="copy-success" id="copySuccess">Lien copié !</div>';
+  area.innerHTML='<div class="link-display-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Votre lien est pr\u00eat !</div><div class="link-display-url" id="linkUrlText">'+url+'</div><div class="link-display-btns"><a href="'+url+'" target="_blank" class="link-display-btn primary">Ouvrir le lien</a><button class="link-display-btn secondary" onclick="_copyLink()">Copier le lien</button></div><div class="copy-success" id="copySuccess">Lien copi\u00e9 !</div>';
   area.scrollIntoView({behavior:"smooth"});
 }
 
@@ -1426,7 +1422,6 @@ function _loadExternal(){
   var content=document.getElementById(_extIds.content);
   var filters=document.getElementById(_extIds.filters);
   var countBadge=document.getElementById(_extIds.count);
-
   fetch(_BASE+"/search?title="+encodeURIComponent(_title))
   .then(function(r){return r.json();})
   .then(function(data){
@@ -1437,22 +1432,19 @@ function _loadExternal(){
     }
     if(!Array.isArray(results)||results.length===0){
       loading.style.display="none";
-      content.innerHTML='<div class="em">Aucune source externe trouvée</div>';
+      content.innerHTML='<div class="em">Aucune source externe trouv\u00e9e</div>';
       countBadge.textContent="0";return;
     }
     var first=results[0];
     for(var i=0;i<results.length;i++){
-      if(results[i].tmdb_id===_tmdbId||results[i].tmdb_id===String(_tmdbId)){
-        first=results[i];break;
-      }
+      if(results[i].tmdb_id===_tmdbId||results[i].tmdb_id===String(_tmdbId)){first=results[i];break;}
     }
     var movieId=first.id||first.movie_id||first.tmdb_id;
     _movixMovieId=movieId;
     var isTv=(_mediaType==="tv")||first.is_series||(first.type==="series");
     var dlUrl;
     if(isTv){
-      var s=_seasonNum||1;
-      var e=_episodeNum||1;
+      var s=_seasonNum||1;var e=_episodeNum||1;
       dlUrl=_BASE+"/darkiworld/download/tv/"+movieId+"?season="+s+"&episode="+e+"&tmdbId="+_tmdbId;
     }else{
       dlUrl=_BASE+"/darkiworld/download/movie/"+movieId+"?tmdbdId="+_tmdbId;
@@ -1466,11 +1458,8 @@ function _loadExternal(){
         content.innerHTML='<div class="em">Aucun lien externe disponible</div>';
         countBadge.textContent="0";return;
       }
-      _allExtLinks=links;
-      countBadge.textContent=links.length;
-      _populateExtFilters(links);
-      filters.style.display="flex";
-      _renderExtLinks(links);
+      _allExtLinks=links;countBadge.textContent=links.length;
+      _populateExtFilters(links);filters.style.display="flex";_renderExtLinks(links);
     }).catch(function(){loading.style.display="none";content.innerHTML='<div class="em">Erreur de chargement</div>';countBadge.textContent="0";});
   }).catch(function(){loading.style.display="none";content.innerHTML='<div class="em">Erreur de chargement</div>';countBadge.textContent="0";});
 }
@@ -1506,7 +1495,7 @@ function _formatSize(bytes){
 function _renderExtLinks(links){
   _currentExtLinks=links;
   var content=document.getElementById(_extIds.content);
-  if(links.length===0){content.innerHTML='<div class="em">Aucun résultat</div>';return;}
+  if(links.length===0){content.innerHTML='<div class="em">Aucun r\u00e9sultat</div>';return;}
   var html="";
   links.forEach(function(l,idx){
     html+='<div class="ext-card" data-idx="'+idx+'"><div class="ext-card-body">';
@@ -1529,8 +1518,7 @@ function _renderExtLinks(links){
 }
 
 function _openExtAdModal(finalUrl,extLink){
-  fetch("/api/link-click",{
-    method:"POST",headers:{"Content-Type":"application/json"},
+  fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
       linkType:"external",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType,
       seasonNumber:_seasonNum||null,episodeNumber:_episodeNum||null,
@@ -1539,26 +1527,21 @@ function _openExtAdModal(finalUrl,extLink){
       fileSize:(extLink&&extLink.size)||null
     })
   }).catch(function(){});
-
   window._extFinalUrl=finalUrl;
-  var existingModal=document.getElementById("extAdModal");
-  if(existingModal)existingModal.remove();
-
+  var existingModal=document.getElementById("extAdModal");if(existingModal)existingModal.remove();
   var modal=document.createElement("div");
   modal.id="extAdModal";
   modal.style.cssText="position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px";
   var box=document.createElement("div");
   box.style.cssText="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center";
-  var title=document.createElement("h2");
-  title.style.cssText="color:#1a1a2e;margin-bottom:6px;font-size:18px";title.textContent="Votre lien est prêt";
-  var subtitle=document.createElement("p");
-  subtitle.style.cssText="color:#666;font-size:12px;margin-bottom:14px";subtitle.textContent="Cliquez pour accéder au téléchargement";
-  var warning=document.createElement("div");
-  warning.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e";
-  warning.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div>';
-  var support=document.createElement("div");
-  support.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6";
-  support.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide à rester en ligne</span></div>';
+  var t=document.createElement("h2");t.style.cssText="color:#1a1a2e;margin-bottom:6px;font-size:18px";t.textContent="Votre lien est pr\u00eat";
+  var sub=document.createElement("p");sub.style.cssText="color:#666;font-size:12px;margin-bottom:14px";sub.textContent="Cliquez pour acc\u00e9der au t\u00e9l\u00e9chargement";
+  var warn=document.createElement("div");
+  warn.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e";
+  warn.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div>';
+  var sup=document.createElement("div");
+  sup.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6";
+  sup.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide \u00e0 rester en ligne</span></div>';
   var adBtn=document.createElement("a");
   adBtn.href=AD_URL_EXT;adBtn.target="_blank";adBtn.rel="noopener";
   adBtn.style.cssText="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;cursor:pointer";
@@ -1568,11 +1551,9 @@ function _openExtAdModal(finalUrl,extLink){
   startBtn.textContent="VOIR LE LIEN";
   adBtn.onclick=function(){this.style.display="none";startBtn.style.display="block";};
   startBtn.onclick=function(){modal.remove();_displayLink(window._extFinalUrl);};
-  var footer=document.createElement("p");
-  footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
-  footer.innerHTML='Propulsé par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a>';
-  box.appendChild(title);box.appendChild(subtitle);box.appendChild(warning);box.appendChild(support);
-  box.appendChild(adBtn);box.appendChild(startBtn);box.appendChild(footer);
+  var footer=document.createElement("p");footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
+  footer.innerHTML='Propuls\u00e9 par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a>';
+  box.appendChild(t);box.appendChild(sub);box.appendChild(warn);box.appendChild(sup);box.appendChild(adBtn);box.appendChild(startBtn);box.appendChild(footer);
   modal.appendChild(box);document.body.appendChild(modal);
 }
 
@@ -1582,12 +1563,13 @@ function _showExtDetails(extLink){
   if(!extLink.id){alert("Lien non disponible pour ce fichier");return;}
   var tmpLoader=document.createElement("div");
   tmpLoader.className="decode-loading";tmpLoader.id="decodeLoader";
-  tmpLoader.innerHTML='<div class="decode-loading-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p>Décodage du lien...</p></div>';
+  tmpLoader.innerHTML='<div class="decode-loading-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p>D\u00e9codage du lien...</p></div>';
   document.body.appendChild(tmpLoader);
-  var decodeUrl=_BASE+"/darkiworld/decode/"+extLink.id+"?title_id="+_movixMovieId;
+  var decodeUrl=window.location.pathname+"?decode="+extLink.id+"&title_id="+_movixMovieId;
   fetch(decodeUrl).then(function(r){return r.json();})
   .then(function(data){
     var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
+    if(data&&data.error==="rate_limited"){_showRateLimitModal(data.retry_at||null);return;}
     var finalUrl=null;
     if(data&&data.lien)finalUrl=data.lien;
     else if(data&&data.embed_url&&data.embed_url.lien)finalUrl=data.embed_url.lien;
@@ -1595,7 +1577,7 @@ function _showExtDetails(extLink){
     _openExtAdModal(finalUrl,extLink);
   }).catch(function(){
     var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
-    alert("Erreur lors du décodage du lien");
+    alert("Erreur lors du d\u00e9codage du lien");
   });
 }
 
