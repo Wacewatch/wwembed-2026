@@ -1181,27 +1181,93 @@ function _formatRetryTime(retryAt){
 }
 
 function _showRateLimitModal(retryAt){
-  var existing=document.getElementById("extAdModal");if(existing)existing.remove();
-  var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
-  var timeStr=_formatRetryTime(retryAt);
-  var modal=document.createElement("div");
-  modal.id="extAdModal";
-  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px";
-  var box=document.createElement("div");
-  box.style.cssText="background:#1e293b;border-radius:16px;padding:28px 24px;max-width:380px;width:100%;text-align:center;border:1px solid rgba(239,68,68,0.3)";
-  box.innerHTML=
-    '<div style="font-size:36px;margin-bottom:12px">\u23F3</div>'+
-    '<h2 style="color:#ef4444;font-size:18px;margin-bottom:8px">Limite atteinte</h2>'+
-    '<p style="color:#94a3b8;font-size:13px;margin-bottom:16px;line-height:1.5">Trop de d\u00e9codages ont \u00e9t\u00e9 effectu\u00e9s r\u00e9cemment.<br>Veuillez patienter avant de r\u00e9essayer.</p>'+
-    '<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px;margin-bottom:20px">'+
-    '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">Disponible dans</div>'+
-    '<div style="font-size:20px;font-weight:700;color:#fca5a5">'+timeStr+'</div>'+
-    '</div>'+
-    '<button id="closeRateLimitBtn" style="width:100%;padding:12px;background:linear-gradient(135deg,#374151,#1f2937);color:#e5e7eb;border:1px solid #374151;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Fermer</button>'+
-    '<p style="margin-top:12px;font-size:10px;color:#4b5563">Propuls\u00e9 par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a></p>';
+  var existing = document.getElementById("extAdModal");
+  if(existing) existing.remove();
+
+  var loader = document.getElementById("decodeLoader");
+  if(loader) loader.remove();
+
+  var timeStr = _formatRetryTime(retryAt);
+
+  var modal = document.createElement("div");
+  modal.id = "extAdModal";
+  modal.style.cssText =
+    "position:fixed;" +
+    "inset:0;" +
+    "background:rgba(0,0,0,0.85);" +
+    "display:flex;" +
+    "align-items:center;" +
+    "justify-content:center;" +
+    "z-index:99999;" +
+    "padding:16px;";
+
+  var box = document.createElement("div");
+  box.style.cssText =
+    "background:#1e293b;" +
+    "border-radius:16px;" +
+    "padding:28px 24px;" +
+    "max-width:380px;" +
+    "width:100%;" +
+    "text-align:center;" +
+    "border:1px solid rgba(249,115,22,0.35);" +
+    "box-shadow:0 20px 50px rgba(0,0,0,0.45);";
+
+  box.innerHTML =
+    '<div style="font-size:36px;margin-bottom:12px">⏳</div>' +
+
+    '<h2 style="color:#f97316;font-size:18px;margin-bottom:10px">' +
+    'Lien temporairement indisponible' +
+    '</h2>' +
+
+    '<p style="color:#94a3b8;font-size:13px;line-height:1.6;margin-bottom:18px">' +
+    'Ce lien a atteint sa limite temporaire.<br>' +
+    'Vous pouvez essayer un autre lien externe, un lien direct ou un lien alternatif disponible sur cette page.' +
+    '</p>' +
+
+    '<div style="' +
+      'background:rgba(249,115,22,0.08);' +
+      'border:1px solid rgba(249,115,22,0.25);' +
+      'border-radius:10px;' +
+      'padding:12px;' +
+      'margin-bottom:20px">' +
+
+        '<div style="font-size:11px;color:#9ca3af;margin-bottom:5px">' +
+        'Réessayez dans' +
+        '</div>' +
+
+        '<div id="rateLimitTime" style="font-size:22px;font-weight:700;color:#fdba74">' +
+        timeStr +
+        '</div>' +
+
+    '</div>' +
+
+    '<button id="closeRateLimitBtn" style="' +
+      'width:100%;' +
+      'padding:12px;' +
+      'background:linear-gradient(135deg,#374151,#1f2937);' +
+      'color:#e5e7eb;' +
+      'border:1px solid #374151;' +
+      'border-radius:8px;' +
+      'font-size:13px;' +
+      'font-weight:600;' +
+      'cursor:pointer">' +
+      'Fermer' +
+    '</button>' +
+
+    '<p style="margin-top:12px;font-size:10px;color:#4b5563">' +
+    'Propulsé par <a href="https://wavewatch.top" target="_blank" style="color:#60a5fa;text-decoration:none">WaveWatch</a>' +
+    '</p>';
+
   modal.appendChild(box);
   document.body.appendChild(modal);
-  document.getElementById("closeRateLimitBtn").onclick=function(){modal.remove();};
+
+  document.getElementById("closeRateLimitBtn").onclick = function(){
+    modal.remove();
+  };
+
+  modal.onclick = function(e){
+    if(e.target === modal) modal.remove();
+  };
 }
 
 window.switchTab=function(tab){
