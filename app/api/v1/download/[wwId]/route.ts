@@ -272,7 +272,7 @@ Recherche de sources alternatives...
 
 <div class="link-display-area" id="linkDisplayArea"></div>
 
-<div class="ft">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
+<div class="ft">par <a href="https://wavewatch.top" target="_blank">wavewatch.top</a></div>
 
 <div class="mo" id="${ids.overlay}">
 <div class="mc">
@@ -306,7 +306,7 @@ Recherche de sources alternatives...
 <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
 <a href="${adUrl}" target="_blank" rel="noopener" class="bt bp" id="${ids.btnUnlock}">CONTINUER<span class="tag">PUB</span></a>
 <button class="bt bn hi" id="${ids.btnDownload}">Voir le lien</button>
-<div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
+<div class="cf">Propulsé par <a href="https://wavewatch.top" target="_blank">WaveWatch</a></div>
 </div>
 </div>
 
@@ -818,7 +818,7 @@ function _openExtAdModal(finalUrl,extLink){
   adBtn.onclick=function(){this.style.display="none";startBtn.style.display="block";};
   startBtn.onclick=function(){modal.remove();_displayLink(window._extFinalUrl);};
   var footer=document.createElement("p");footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
-  footer.innerHTML='Propuls\u00e9 par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a>';
+  footer.innerHTML='Propuls\u00e9 par <a href="https://wavewatch.top" target="_blank" style="color:#667eea">WaveWatch</a>';
   box.appendChild(t);box.appendChild(sub);box.appendChild(warn);box.appendChild(sup);box.appendChild(adBtn);box.appendChild(startBtn);box.appendChild(footer);
   modal.appendChild(box);document.body.appendChild(modal);
 }
@@ -1104,7 +1104,7 @@ Recherche de sources alternatives...
 
 <div class="link-display-area" id="linkDisplayArea"></div>
 
-<div class="ft">par <a href="https://wavewatch.xyz" target="_blank">wavewatch.xyz</a></div>
+<div class="ft">par <a href="https://wavewatch.top" target="_blank">wavewatch.top</a></div>
 
 <div class="mo" id="${ids.overlay}">
 <div class="mc">
@@ -1138,7 +1138,7 @@ Recherche de sources alternatives...
 <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
 <button class="bt bp" id="${ids.btnUnlock}">Continuer<span class="tag">PUB</span></button>
 <button class="bt bn hi" id="${ids.btnDownload}">Voir le lien</button>
-<div class="cf">Propuls\u00e9 par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
+<div class="cf">Propuls\u00e9 par <a href="https://wavewatch.top" target="_blank">WaveWatch</a></div>
 </div>
 </div>
 
@@ -1686,7 +1686,7 @@ function _openExtAdModal(finalUrl,extLink){
   adBtn.onclick=function(){this.style.display="none";startBtn.style.display="block";};
   startBtn.onclick=function(){modal.remove();_displayLink(window._extFinalUrl);};
   var footer=document.createElement("p");footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
-  footer.innerHTML='Propuls\u00e9 par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a>';
+  footer.innerHTML='Propuls\u00e9 par <a href="https://wavewatch.top" target="_blank" style="color:#667eea">WaveWatch</a>';
   box.appendChild(t);box.appendChild(sub);box.appendChild(warn);box.appendChild(sup);box.appendChild(adBtn);box.appendChild(startBtn);box.appendChild(footer);
   modal.appendChild(box);document.body.appendChild(modal);
 }
