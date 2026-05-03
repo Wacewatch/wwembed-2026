@@ -359,10 +359,11 @@ function _showRateLimitModal(retryAt){
     '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">Disponible dans</div>'+
     '<div style="font-size:20px;font-weight:700;color:#fca5a5">'+timeStr+'</div>'+
     '</div>'+
-    '<button style="width:100%;padding:12px;background:linear-gradient(135deg,#374151,#1f2937);color:#e5e7eb;border:1px solid #374151;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer" onclick="document.getElementById(\'extAdModal\').remove()">Fermer</button>'+
+    '<button id="closeRateLimitBtn" style="width:100%;padding:12px;background:linear-gradient(135deg,#374151,#1f2937);color:#e5e7eb;border:1px solid #374151;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Fermer</button>'+
     '<p style="margin-top:12px;font-size:10px;color:#4b5563">Propuls\u00e9 par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a></p>';
   modal.appendChild(box);
   document.body.appendChild(modal);
+  document.getElementById("closeRateLimitBtn").onclick=function(){modal.remove();};
 }
 
 window.switchTab=function(tab){
@@ -1130,10 +1131,11 @@ function _showRateLimitModal(retryAt){
     '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">Disponible dans</div>'+
     '<div style="font-size:20px;font-weight:700;color:#fca5a5">'+timeStr+'</div>'+
     '</div>'+
-    '<button style="width:100%;padding:12px;background:linear-gradient(135deg,#374151,#1f2937);color:#e5e7eb;border:1px solid #374151;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer" onclick="document.getElementById(\'extAdModal\').remove()">Fermer</button>'+
+    '<button id="closeRateLimitBtn" style="width:100%;padding:12px;background:linear-gradient(135deg,#374151,#1f2937);color:#e5e7eb;border:1px solid #374151;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Fermer</button>'+
     '<p style="margin-top:12px;font-size:10px;color:#4b5563">Propuls\u00e9 par <a href="https://wavewatch.xyz" target="_blank" style="color:#667eea">WaveWatch</a></p>';
   modal.appendChild(box);
   document.body.appendChild(modal);
+  document.getElementById("closeRateLimitBtn").onclick=function(){modal.remove();};
 }
 
 window.switchTab=function(tab){
