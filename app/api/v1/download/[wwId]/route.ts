@@ -831,8 +831,8 @@ function _showExtDetails(extLink){
   tmpLoader.className="decode-loading";tmpLoader.id="decodeLoader";
   tmpLoader.innerHTML='<div class="decode-loading-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p>D\u00e9codage du lien...</p></div>';
   document.body.appendChild(tmpLoader);
-  var decodeUrl=window.location.pathname+"?decode="+extLink.id+"&title_id="+_movixContentId;
-  fetch(decodeUrl).then(function(r){return r.json();})
+  var decodeUrl = _BASE + "/darkiworld/decode/" + extLink.id + "?title_id=" + _movixMovieId;
+fetch(decodeUrl).then(function(r){return r.json();})
   .then(function(data){
     var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
     if(data&&data.error==="rate_limited"){_showRateLimitModal(data.retry_at||null);return;}
@@ -1699,8 +1699,8 @@ function _showExtDetails(extLink){
   tmpLoader.className="decode-loading";tmpLoader.id="decodeLoader";
   tmpLoader.innerHTML='<div class="decode-loading-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p>D\u00e9codage du lien...</p></div>';
   document.body.appendChild(tmpLoader);
-  var decodeUrl=window.location.pathname+"?decode="+extLink.id+"&title_id="+_movixMovieId;
-  fetch(decodeUrl).then(function(r){return r.json();})
+  var decodeUrl = _BASE + "/darkiworld/decode/" + extLink.id + "?title_id=" + _movixMovieId;
+fetch(decodeUrl).then(function(r){return r.json();})
   .then(function(data){
     var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
     if(data&&data.error==="rate_limited"){_showRateLimitModal(data.retry_at||null);return;}
