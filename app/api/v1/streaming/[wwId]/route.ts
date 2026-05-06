@@ -87,7 +87,6 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
       })
       .filter((link) => link.url && link.url.length > 0)
 
-    // DB links first, then third-party APIs
     const allSources = [
       ...(userLinks || []).map((l, i) => ({
         name: l.source_name || "Source #" + (i + 1),
@@ -139,10 +138,10 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 
 /* ── Header ── */
 .hdr{display:flex;align-items:center;padding:10px 14px;background:#151520;border-bottom:1px solid #222;gap:12px;flex-shrink:0}
-.logo{font-weight:700;font-size:13px;color:#00d4aa;letter-spacing:.02em}
-.ttl{flex:1;font-size:13px;font-weight:500;color:#ccc;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.top-right{display:flex;gap:8px}
-.src-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;background:#00d4aa;border:none;border-radius:8px;color:#003d30;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.logo{font-weight:700;font-size:13px;color:#00d4aa;letter-spacing:.02em;flex-shrink:0}
+.ttl{flex:1;font-size:13px;font-weight:500;color:#ccc;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.top-right{display:flex;gap:8px;flex-shrink:0}
+.src-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;background:#00d4aa;border:none;border-radius:8px;color:#003d30;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .src-btn svg{width:14px;height:14px;flex-shrink:0}
 .bug-btn{display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:#ef4444;border:none;border-radius:8px;color:#fff;font-size:16px;cursor:pointer;flex-shrink:0}
 
@@ -237,7 +236,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 /* ── Ad modal ── */
 .mo{position:fixed;inset:0;background:rgba(20,25,40,0.88);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(10px)}
 .mo.sh{display:flex}
-.mc{background:#1e2535;border:1px solid #2e3a50;border-radius:16px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.35)}
+.mc{background:#1e2535;border:1px solid #2e3a50;border-radius:16px;padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.35);max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .mc h2{color:#dde4f0;margin-bottom:8px;font-size:20px;font-weight:700}
 .mc-sub{color:#8894aa;font-size:13px;margin-bottom:16px}
 .steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
@@ -245,9 +244,10 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .step.active{background:#667eea;transform:scale(1.2)}
 .step.done{background:#10b981}
 .bx{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
-.bx svg{flex-shrink:0;width:18px;height:18px}
+.bx svg{flex-shrink:0;width:18px;height:18px;min-width:18px}
+.bx-content{flex:1;min-width:0}
 .bx-content b{display:block;font-size:14px;margin-bottom:2px;color:#e2e8f0}
-.bx-content span{font-size:12px;opacity:.65;display:block}
+.bx-content span{font-size:12px;opacity:.65;display:block;word-break:break-word}
 .bw{background:#272215;border:1px solid #40341a;color:#c9972e}
 .bh{background:#271520;border:1px solid #402030;color:#b06890}
 .bi{background:#1e1a2e;border:1px solid #302848;color:#8a7ab8}
@@ -263,13 +263,67 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .adtag{background:#2a3550;color:#8ba3d4;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px;font-weight:600}
 .adtag2{background:#2a3550;color:#f87171;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px;font-weight:600}
 
+/* ── Responsive ── */
 @media(max-width:480px){
-  .src-grid{grid-template-columns:1fr 1fr}
-  .hdr{padding:8px 10px}
+  /* Header */
+  .hdr{padding:8px 10px;gap:8px}
   .ttl{font-size:12px}
+  .src-btn{padding:6px 10px;font-size:11px;gap:4px}
+  .bug-btn{width:30px;height:30px;font-size:14px}
+
+  /* Sheet */
+  .sheet{max-height:92vh;border-radius:16px 16px 0 0}
+  .sheet-hdr{padding:14px 14px 12px}
+  .sheet-ttl{font-size:14px}
+  .sheet-body{padding:12px 12px 20px}
+
+  /* Cards grid — 2 colonnes */
+  .src-grid{grid-template-columns:1fr 1fr;gap:7px}
+  .card{padding:10px 11px;border-radius:10px}
+  .card-name{font-size:11px;margin-bottom:7px}
+  .card-badge{font-size:9px;padding:2px 6px;margin-bottom:7px}
+  .tag{font-size:9px;padding:2px 5px}
+  .card-check{width:16px;height:16px;top:8px;right:8px}
+  .card-check svg{width:8px;height:8px}
+
+  /* Filter pills */
+  .filter-pill{padding:4px 10px;font-size:11px}
+
+  /* Ad modal */
+  .mo{padding:8px;align-items:center}
+  .mc{padding:16px;border-radius:14px;max-height:92vh}
+  .mc h2{font-size:17px;margin-bottom:6px}
+  .mc-sub{font-size:12px;margin-bottom:12px}
+  .bx{padding:9px;gap:8px;margin:6px 0;border-radius:9px}
+  .bx svg{width:16px;height:16px;min-width:16px}
+  .bx-content b{font-size:13px}
+  .bx-content span{font-size:11px}
+  .bt{padding:11px;font-size:13px;border-radius:9px;margin-top:6px}
+  .pb{margin:10px 0}
+  .steps{margin-bottom:12px}
+  .cf{font-size:10px;margin-top:10px}
+
+  /* Bug form */
+  .bug-form{padding:18px;border-radius:12px}
+  .bug-form h3{font-size:15px;margin-bottom:14px}
 }
-@media(max-width:340px){
+
+@media(max-width:360px){
+  /* Cards grid — 1 colonne sur très petits écrans */
   .src-grid{grid-template-columns:1fr}
+
+  /* Masquer le texte du bouton source, garder l'icône */
+  .src-btn-text{display:none}
+  .src-btn{padding:6px 8px}
+
+  /* Ad modal encore plus compact */
+  .mc{padding:14px}
+  .mc h2{font-size:15px}
+  .bx{padding:8px;gap:6px}
+  .bx-content b{font-size:12px}
+  .bx-content span{font-size:10px}
+  .bt{font-size:12px;padding:10px;letter-spacing:.3px}
+  .adtag,.adtag2{display:none}
 }
 </style>
 </head>
@@ -281,7 +335,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     <div class="top-right">
       <button class="src-btn" id="srcBtn" onclick="openSheet()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-        <span id="srcLabel">Source #1</span>
+        <span class="src-btn-text" id="srcLabel">Source #1</span>
       </button>
       <button class="bug-btn" id="bugBtn" onclick="openBug()" title="Signaler un problème">🐛</button>
     </div>
@@ -439,7 +493,6 @@ function renderGrid(){
 
   var html="";
 
-  /* Direct DB sources first */
   if(dbLinks.length>0){
     html+='<div class="section-wrap">';
     html+='<div class="section-label">';
@@ -453,7 +506,6 @@ function renderGrid(){
     html+='</div></div>';
   }
 
-  /* Third-party API sources */
   if(apiLinks.length>0){
     html+='<div class="section-wrap">';
     html+='<div class="section-label">';
@@ -469,7 +521,6 @@ function renderGrid(){
 
   body.innerHTML=html;
 
-  /* Bind click events */
   body.querySelectorAll(".card").forEach(function(card){
     card.onclick=function(){
       var i=parseInt(card.getAttribute("data-idx"),10);
@@ -505,7 +556,8 @@ function escHtml(str){
 function selectSource(i){
   _idx=i;
   var s=_src[i];
-  $$("srcLabel").textContent=s.name;
+  var lbl=$$("srcLabel");
+  if(lbl) lbl.textContent=s.name;
   closeSheet();
   if(_started) loadPlayer();
 }
@@ -605,7 +657,8 @@ $$(_ids.btnUnlock2).onclick=function(){
       _started=true;
       $$(_ids.overlay).classList.remove("sh");
       if(_src.length){
-        $$("srcLabel").textContent=_src[0].name;
+        var lbl=$$("srcLabel");
+        if(lbl) lbl.textContent=_src[0].name;
         loadPlayer();
       }
     }
