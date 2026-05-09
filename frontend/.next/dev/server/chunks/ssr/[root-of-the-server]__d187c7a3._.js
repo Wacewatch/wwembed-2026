@@ -176,6 +176,93 @@ function maybeOid(value) {
     }
     return value;
 }
+/**
+ * Build a Mongo filter for `eq("id", value)` style queries.
+ * After Supabase migration:
+ *   - rows have _id = ObjectId(uuidHex.slice(0,24))  AND  legacy_uuid = original UUID string
+ *   - new rows (post-migration) have _id = fresh ObjectId, no legacy_uuid
+ * So when value is a UUID we have to match either (_id derived from UUID) or legacy_uuid.
+ */ function idFilter(value) {
+    if (typeof value !== "string") return {
+        _id: value
+    };
+    // 24-char hex → straight ObjectId
+    if (/^[a-f0-9]{24}$/i.test(value)) {
+        try {
+            return {
+                _id: new __TURBOPACK__imported__module__$5b$externals$5d2f$mongodb__$5b$external$5d$__$28$mongodb$2c$__cjs$29$__["ObjectId"](value)
+            };
+        } catch  {
+            return {
+                _id: value
+            };
+        }
+    }
+    // 36-char UUID → match by legacy_uuid OR by computed ObjectId
+    if (/^[0-9a-f-]{36}$/i.test(value)) {
+        const hex = value.replace(/-/g, "").slice(0, 24).padEnd(24, "0");
+        const ors = [
+            {
+                legacy_uuid: value
+            }
+        ];
+        try {
+            ors.push({
+                _id: new __TURBOPACK__imported__module__$5b$externals$5d2f$mongodb__$5b$external$5d$__$28$mongodb$2c$__cjs$29$__["ObjectId"](hex)
+            });
+        } catch  {}
+        return {
+            $or: ors
+        };
+    }
+    return {
+        _id: value
+    };
+}
+function idArrayFilter(values) {
+    // Build a $or with one branch per id
+    const ors = [];
+    const oidIds = [];
+    const stringIds = [];
+    const legacyUuids = [];
+    for (const v of values){
+        if (typeof v !== "string") {
+            stringIds.push(v);
+            continue;
+        }
+        if (/^[a-f0-9]{24}$/i.test(v)) {
+            try {
+                oidIds.push(new __TURBOPACK__imported__module__$5b$externals$5d2f$mongodb__$5b$external$5d$__$28$mongodb$2c$__cjs$29$__["ObjectId"](v));
+            } catch  {
+                stringIds.push(v);
+            }
+        } else if (/^[0-9a-f-]{36}$/i.test(v)) {
+            legacyUuids.push(v);
+            try {
+                oidIds.push(new __TURBOPACK__imported__module__$5b$externals$5d2f$mongodb__$5b$external$5d$__$28$mongodb$2c$__cjs$29$__["ObjectId"](v.replace(/-/g, "").slice(0, 24).padEnd(24, "0")));
+            } catch  {}
+        } else {
+            stringIds.push(v);
+        }
+    }
+    const idIns = [
+        ...oidIds,
+        ...stringIds
+    ];
+    if (idIns.length) ors.push({
+        _id: {
+            $in: idIns
+        }
+    });
+    if (legacyUuids.length) ors.push({
+        legacy_uuid: {
+            $in: legacyUuids
+        }
+    });
+    return ors.length === 1 ? ors[0] : {
+        $or: ors
+    };
+}
 function normalizeDoc(doc) {
     if (!doc) return doc;
     const out = {
@@ -260,13 +347,25 @@ class SupabaseShimQuery {
     }
     // ---- filters ----
     eq(col, val) {
-        this.filters[col === "id" ? "_id" : col] = col === "id" ? maybeOid(val) : val;
+        if (col === "id") {
+            Object.assign(this.filters, idFilter(val));
+        } else {
+            this.filters[col] = val;
+        }
         return this;
     }
     neq(col, val) {
-        this.filters[col === "id" ? "_id" : col] = {
-            $ne: col === "id" ? maybeOid(val) : val
-        };
+        if (col === "id") {
+            // negate id filter — rare. Best effort: $nor on the same filter.
+            this.filters.$nor = [
+                ...this.filters.$nor || [],
+                idFilter(val)
+            ];
+        } else {
+            this.filters[col] = {
+                $ne: val
+            };
+        }
         return this;
     }
     gt(col, val) {
@@ -298,11 +397,13 @@ class SupabaseShimQuery {
         return this;
     }
     in(col, arr) {
-        const key = col === "id" ? "_id" : col;
-        const vals = col === "id" ? arr.map(maybeOid) : arr;
-        this.filters[key] = {
-            $in: vals
-        };
+        if (col === "id") {
+            Object.assign(this.filters, idArrayFilter(arr));
+        } else {
+            this.filters[col] = {
+                $in: arr
+            };
+        }
         return this;
     }
     is(col, val) {
@@ -492,16 +593,7 @@ class SupabaseShimQuery {
                         ]);
                         if (doc.ww_id.startsWith("ww-live-")) {
                             const cid = doc.ww_id.slice("ww-live-".length);
-                            await db.collection("live_tv_channels").updateMany({
-                                $or: [
-                                    {
-                                        id: cid
-                                    },
-                                    {
-                                        _id: maybeOid(cid)
-                                    }
-                                ]
-                            }, {
+                            await db.collection("live_tv_channels").updateMany(idFilter(cid), {
                                 $inc: {
                                     view_count: 1
                                 }
@@ -561,9 +653,13 @@ class SupabaseShimQuery {
                 const conflictField = conflict === "id" ? "_id" : conflict;
                 const results = [];
                 for (const doc of this.payload){
-                    const filter = {};
-                    if (conflictField === "_id") filter._id = maybeOid(doc.id || doc._id);
-                    else filter[conflictField] = doc[conflictField];
+                    let filter = {};
+                    if (conflictField === "_id") {
+                        const idVal = doc.id || doc._id;
+                        filter = idVal ? idFilter(idVal) : {};
+                    } else {
+                        filter[conflictField] = doc[conflictField];
+                    }
                     const res = await coll.findOneAndUpdate(filter, {
                         $set: {
                             ...doc,
@@ -618,9 +714,7 @@ class MongoSupabaseClient {
         // Minimal RPC support — implement the known stored procs.
         const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getDb"])();
         if (fnName === "increment_ad_clicks") {
-            await db.collection("ads").updateOne({
-                _id: maybeOid(args.ad_id)
-            }, {
+            await db.collection("ads").updateOne(idFilter(args.ad_id), {
                 $inc: {
                     click_count: 1
                 }
@@ -631,9 +725,7 @@ class MongoSupabaseClient {
             };
         }
         if (fnName === "increment_live_tv_views") {
-            await db.collection("live_tv_channels").updateOne({
-                _id: maybeOid(args.channel_id)
-            }, {
+            await db.collection("live_tv_channels").updateOne(idFilter(args.channel_id), {
                 $inc: {
                     view_count: 1
                 }
@@ -694,9 +786,7 @@ class MongoSupabaseClient {
                 }),
             deleteUser: async (id)=>{
                 const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getDb"])();
-                await db.collection("users").deleteOne({
-                    _id: maybeOid(id)
-                });
+                await db.collection("users").deleteOne(idFilter(id));
                 return {
                     data: null,
                     error: null

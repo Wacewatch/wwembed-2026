@@ -1,6 +1,11 @@
 {
+  "/admin/page": "app/admin/page.js",
+  "/api/admin/stats/route": "app/api/admin/stats/route.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
   "/api/auth/me/route": "app/api/auth/me/route.js",
+  "/api/bug-reports/user/route": "app/api/bug-reports/user/route.js",
   "/api/db/route": "app/api/db/route.js",
-  "/api/tmdb-stats/route": "app/api/tmdb-stats/route.js",
-  "/page": "app/page.js"
+  "/api/server-stats/route": "app/api/server-stats/route.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/dashboard/page": "app/dashboard/page.js"
 }

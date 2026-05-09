@@ -42,6 +42,67 @@ function maybeOid(value: unknown): unknown {
   return value
 }
 
+/**
+ * Build a Mongo filter for `eq("id", value)` style queries.
+ * After Supabase migration:
+ *   - rows have _id = ObjectId(uuidHex.slice(0,24))  AND  legacy_uuid = original UUID string
+ *   - new rows (post-migration) have _id = fresh ObjectId, no legacy_uuid
+ * So when value is a UUID we have to match either (_id derived from UUID) or legacy_uuid.
+ */
+function idFilter(value: unknown): any {
+  if (typeof value !== "string") return { _id: value }
+  // 24-char hex → straight ObjectId
+  if (/^[a-f0-9]{24}$/i.test(value)) {
+    try {
+      return { _id: new ObjectId(value) }
+    } catch {
+      return { _id: value }
+    }
+  }
+  // 36-char UUID → match by legacy_uuid OR by computed ObjectId
+  if (/^[0-9a-f-]{36}$/i.test(value)) {
+    const hex = value.replace(/-/g, "").slice(0, 24).padEnd(24, "0")
+    const ors: any[] = [{ legacy_uuid: value }]
+    try {
+      ors.push({ _id: new ObjectId(hex) })
+    } catch {}
+    return { $or: ors }
+  }
+  return { _id: value }
+}
+
+function idArrayFilter(values: any[]): any {
+  // Build a $or with one branch per id
+  const ors: any[] = []
+  const oidIds: any[] = []
+  const stringIds: string[] = []
+  const legacyUuids: string[] = []
+  for (const v of values) {
+    if (typeof v !== "string") {
+      stringIds.push(v as any)
+      continue
+    }
+    if (/^[a-f0-9]{24}$/i.test(v)) {
+      try {
+        oidIds.push(new ObjectId(v))
+      } catch {
+        stringIds.push(v)
+      }
+    } else if (/^[0-9a-f-]{36}$/i.test(v)) {
+      legacyUuids.push(v)
+      try {
+        oidIds.push(new ObjectId(v.replace(/-/g, "").slice(0, 24).padEnd(24, "0")))
+      } catch {}
+    } else {
+      stringIds.push(v)
+    }
+  }
+  const idIns: any[] = [...oidIds, ...stringIds]
+  if (idIns.length) ors.push({ _id: { $in: idIns } })
+  if (legacyUuids.length) ors.push({ legacy_uuid: { $in: legacyUuids } })
+  return ors.length === 1 ? ors[0] : { $or: ors }
+}
+
 function normalizeDoc<T extends Record<string, any>>(doc: T | null): any {
   if (!doc) return doc
   const out: any = { ...doc }
@@ -118,11 +179,20 @@ class SupabaseShimQuery<T = any> implements PromiseLike<SupaResponse<T>> {
 
   // ---- filters ----
   eq(col: string, val: any) {
-    this.filters[col === "id" ? "_id" : col] = col === "id" ? maybeOid(val) : val
+    if (col === "id") {
+      Object.assign(this.filters, idFilter(val))
+    } else {
+      this.filters[col] = val
+    }
     return this
   }
   neq(col: string, val: any) {
-    this.filters[col === "id" ? "_id" : col] = { $ne: col === "id" ? maybeOid(val) : val }
+    if (col === "id") {
+      // negate id filter — rare. Best effort: $nor on the same filter.
+      this.filters.$nor = [...((this.filters as any).$nor || []), idFilter(val)]
+    } else {
+      this.filters[col] = { $ne: val }
+    }
     return this
   }
   gt(col: string, val: any) {
@@ -142,9 +212,11 @@ class SupabaseShimQuery<T = any> implements PromiseLike<SupaResponse<T>> {
     return this
   }
   in(col: string, arr: any[]) {
-    const key = col === "id" ? "_id" : col
-    const vals = col === "id" ? arr.map(maybeOid) : arr
-    this.filters[key] = { $in: vals }
+    if (col === "id") {
+      Object.assign(this.filters, idArrayFilter(arr))
+    } else {
+      this.filters[col] = { $in: arr }
+    }
     return this
   }
   is(col: string, val: any) {
@@ -287,10 +359,7 @@ class SupabaseShimQuery<T = any> implements PromiseLike<SupaResponse<T>> {
               const cid = doc.ww_id.slice("ww-live-".length)
               await db
                 .collection("live_tv_channels")
-                .updateMany(
-                  { $or: [{ id: cid }, { _id: maybeOid(cid) as any }] },
-                  { $inc: { view_count: 1 } }
-                )
+                .updateMany(idFilter(cid), { $inc: { view_count: 1 } })
             }
           }
         } else if (this.collectionName === "link_clicks") {
@@ -325,9 +394,13 @@ class SupabaseShimQuery<T = any> implements PromiseLike<SupaResponse<T>> {
         const conflictField = conflict === "id" ? "_id" : conflict
         const results: any[] = []
         for (const doc of this.payload as any[]) {
-          const filter: any = {}
-          if (conflictField === "_id") filter._id = maybeOid(doc.id || doc._id)
-          else filter[conflictField] = doc[conflictField]
+          let filter: any = {}
+          if (conflictField === "_id") {
+            const idVal = doc.id || doc._id
+            filter = idVal ? idFilter(idVal) : {}
+          } else {
+            filter[conflictField] = doc[conflictField]
+          }
           const res = await coll.findOneAndUpdate(
             filter,
             { $set: { ...doc, updated_at: new Date().toISOString() } },
@@ -370,13 +443,13 @@ export class MongoSupabaseClient {
     if (fnName === "increment_ad_clicks") {
       await db
         .collection("ads")
-        .updateOne({ _id: maybeOid(args.ad_id) as any }, { $inc: { click_count: 1 } })
+        .updateOne(idFilter(args.ad_id), { $inc: { click_count: 1 } })
       return { data: null, error: null }
     }
     if (fnName === "increment_live_tv_views") {
       await db
         .collection("live_tv_channels")
-        .updateOne({ _id: maybeOid(args.channel_id) as any }, { $inc: { view_count: 1 } })
+        .updateOne(idFilter(args.channel_id), { $inc: { view_count: 1 } })
       return { data: null, error: null }
     }
     return { data: null, error: { message: `Unknown RPC: ${fnName}` } }
@@ -399,7 +472,7 @@ export class MongoSupabaseClient {
       listUsers: async () => ({ data: { users: [] }, error: null }),
       deleteUser: async (id: string) => {
         const db = await getDb()
-        await db.collection("users").deleteOne({ _id: maybeOid(id) as any })
+        await db.collection("users").deleteOne(idFilter(id) as any)
         return { data: null, error: null }
       },
     },

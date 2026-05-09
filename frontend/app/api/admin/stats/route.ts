@@ -336,24 +336,43 @@ export async function GET(req: NextRequest) {
   }
 
   const ObjectIdLib = (await import("mongodb")).ObjectId
+  const uuidToObjectIdHex = (uuid: string): string => uuid.replace(/-/g, "").slice(0, 24).padEnd(24, "0")
+
   const channelMap = new Map<string, any>()
   if (channelIds.size > 0) {
-    const ids = Array.from(channelIds).flatMap((cid) => {
-      const arr: any[] = [cid]
+    const stringIds: any[] = []
+    const objectIds: any[] = []
+    const legacyUuids: string[] = []
+    for (const cid of channelIds) {
+      stringIds.push(cid)
+      // Direct ObjectId hex (24-char hex)
       if (/^[a-f0-9]{24}$/i.test(cid)) {
-        try {
-          arr.push(new ObjectIdLib(cid))
-        } catch {}
+        try { objectIds.push(new ObjectIdLib(cid)) } catch {}
       }
-      return arr
-    })
+      // UUID → ObjectId derived (post-migration mapping)
+      if (/^[0-9a-f-]{36}$/i.test(cid)) {
+        try { objectIds.push(new ObjectIdLib(uuidToObjectIdHex(cid))) } catch {}
+        legacyUuids.push(cid)
+      }
+    }
+    const allIds = [...stringIds, ...objectIds]
     const channels = await db
       .collection("live_tv_channels")
-      .find({ $or: [{ _id: { $in: ids } }, { id: { $in: ids } }] })
-      .project({ channel_name: 1, channel_logo: 1 })
+      .find({
+        $or: [
+          { _id: { $in: allIds } },
+          { id: { $in: stringIds } },
+          { legacy_uuid: { $in: legacyUuids } },
+        ],
+      })
+      .project({ channel_name: 1, channel_logo: 1, legacy_uuid: 1 })
       .toArray()
-    for (const c of channels)
-      channelMap.set(c._id?.toString(), { title: c.channel_name, poster: c.channel_logo })
+    for (const c of channels) {
+      const entry = { title: c.channel_name, poster: c.channel_logo }
+      // Index by both _id (string form) and legacy_uuid so the lookup at line 384 hits.
+      channelMap.set(c._id?.toString(), entry)
+      if (c.legacy_uuid) channelMap.set(c.legacy_uuid, entry)
+    }
   }
 
   // Digital lookups
