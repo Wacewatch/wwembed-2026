@@ -6,8 +6,8 @@
 - Rôle: `admin`
 
 ## URLs
-- Frontend: https://0151cd43-a485-4da9-bacc-1ea74d776ad1.preview.emergentagent.com/
-- Backend proxy (FastAPI): https://0151cd43-a485-4da9-bacc-1ea74d776ad1.preview.emergentagent.com/api/health
+- Frontend: https://content-embed.preview.emergentagent.com/
+- Backend proxy (FastAPI): https://content-embed.preview.emergentagent.com/api/health
 - Login: /auth/login
 - Sign up: /auth/sign-up
 - Dashboard: /dashboard
