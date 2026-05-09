@@ -11,7 +11,7 @@ import uuid
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://content-embed.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://wwembed-preview.preview.emergentagent.com").rstrip("/")
 
 ADMIN_EMAIL = "admin@wwembed.test"
 ADMIN_PASSWORD = "admin1234"
