@@ -402,6 +402,23 @@ async function POST(req) {
     const userDoc = await db.collection("users").findOne({
         _id: userId
     });
+    // Mirror the user as a `profiles` row (same _id) so the existing
+    // dashboard / admin pages that read from `profiles` keep working.
+    await db.collection("profiles").updateOne({
+        _id: userId
+    }, {
+        $set: {
+            email: userDoc?.email,
+            username: userDoc?.username,
+            role: userDoc?.role || "member",
+            updated_at: new Date().toISOString()
+        },
+        $setOnInsert: {
+            created_at: new Date().toISOString()
+        }
+    }, {
+        upsert: true
+    });
     const res = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
         id,
         email,

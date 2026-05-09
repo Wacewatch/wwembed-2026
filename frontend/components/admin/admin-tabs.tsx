@@ -34,89 +34,89 @@ export function AdminTabs() {
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-      <div className="overflow-x-auto pb-2">
-        <TabsList className="bg-secondary/50 backdrop-blur-sm flex-nowrap h-auto gap-1 p-1.5 w-max min-w-full">
+      <div className="overflow-x-auto pb-2 scrollbar-thin">
+        <TabsList className="glass-subtle backdrop-blur-md flex-nowrap h-auto gap-1 p-1.5 w-max min-w-full rounded-2xl border border-white/5">
           <TabsTrigger
             value="pending"
-            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+            className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 whitespace-nowrap transition-all"
           >
             <Clock className="w-4 h-4" />
             <span>En Attente</span>
           </TabsTrigger>
           <TabsTrigger
             value="apis"
-            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+            className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 whitespace-nowrap transition-all"
           >
             <Globe className="w-4 h-4" />
             <span>APIs</span>
           </TabsTrigger>
           <TabsTrigger
             value="streaming"
-            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+            className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 whitespace-nowrap transition-all"
           >
             <Play className="w-4 h-4" />
             <span>Streaming</span>
           </TabsTrigger>
           <TabsTrigger
             value="download"
-            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+            className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 whitespace-nowrap transition-all"
           >
             <Download className="w-4 h-4" />
             <span>Download</span>
           </TabsTrigger>
           <TabsTrigger
             value="digital"
-            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+            className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 whitespace-nowrap transition-all"
           >
             <Book className="w-4 h-4" />
             <span>Digital</span>
           </TabsTrigger>
           <TabsTrigger
             value="livetv"
-            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+            className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 whitespace-nowrap transition-all"
           >
             <Tv className="w-4 h-4" />
             <span>TV Live</span>
           </TabsTrigger>
           <TabsTrigger
             value="bugs"
-            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap relative"
+            className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 whitespace-nowrap transition-all relative"
           >
             <Bug className="w-4 h-4" />
             <span>Bugs</span>
             {pendingBugsCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+              <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ring-2 ring-background">
                 {pendingBugsCount}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger
             value="ads"
-            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+            className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 whitespace-nowrap transition-all"
           >
             <Megaphone className="w-4 h-4" />
             <span>Pubs</span>
           </TabsTrigger>
           <TabsTrigger
             value="users"
-            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+            className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 whitespace-nowrap transition-all"
           >
             <Users className="w-4 h-4" />
             <span>Users</span>
           </TabsTrigger>
           <TabsTrigger
             value="stats"
-            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+            className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 whitespace-nowrap transition-all"
           >
             <BarChart3 className="w-4 h-4" />
             <span>Stats</span>
           </TabsTrigger>
           <TabsTrigger
             value="settings"
-            className="gap-2 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap"
+            className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 whitespace-nowrap transition-all"
           >
             <Settings className="w-4 h-4" />
-            <span>Parametres</span>
+            <span>Paramètres</span>
           </TabsTrigger>
         </TabsList>
       </div>

@@ -27,7 +27,7 @@ const PUBLIC_READ_TABLES = new Set([
   "ad_clicks",
 ])
 
-const ADMIN_ONLY_WRITE = new Set(["third_party_apis", "ads", "site_settings", "users", "live_tv_channels"])
+const ADMIN_ONLY_WRITE = new Set(["third_party_apis", "ads", "site_settings", "users"])
 
 export async function POST(req: NextRequest) {
   try {

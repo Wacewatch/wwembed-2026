@@ -1382,10 +1382,16 @@ export function DashboardContent({
                               <td className="py-3 px-4">{link.language}</td>
                               <td className="py-3 px-4">{getStatusBadge(link.status)}</td>
                               <td className="py-3 px-4">
-                                <div className="flex items-center gap-1 text-orange-500">
+                                <Link
+                                  href={`/embed/${link.ww_id}/stats`}
+                                  target="_blank"
+                                  className="flex items-center gap-1 text-orange-500 hover:text-orange-400 hover:underline underline-offset-2"
+                                  title="Voir les stats détaillées"
+                                >
                                   <Eye className="w-3 h-3" />
                                   <span>{link.view_count}</span>
-                                </div>
+                                  <BarChart3 className="w-3 h-3 opacity-50" />
+                                </Link>
                               </td>
                               <td className="py-3 px-4 text-muted-foreground">
                                 {new Date(link.created_at).toLocaleDateString("fr-FR")}
@@ -1570,10 +1576,16 @@ export function DashboardContent({
                                     )}
                                   </td>
                                   <td className="py-3 px-4">
-                                    <div className="flex items-center gap-1 text-orange-500">
+                                    <Link
+                                      href={`/embed/${link.ww_id}/stats`}
+                                      target="_blank"
+                                      className="flex items-center gap-1 text-orange-500 hover:text-orange-400 hover:underline underline-offset-2"
+                                      title="Voir les stats détaillées"
+                                    >
                                       <Eye className="w-3 h-3" />
                                       <span>{link.view_count}</span>
-                                    </div>
+                                      <BarChart3 className="w-3 h-3 opacity-50" />
+                                    </Link>
                                   </td>
                                   <td className="py-3 px-4 text-muted-foreground">
                                     {new Date(link.created_at).toLocaleDateString("fr-FR")}
@@ -1932,10 +1944,16 @@ export function DashboardContent({
                           <td className="py-3 px-4 font-mono text-xs text-primary">{content.ww_id}</td>
                           <td className="py-3 px-4">{getStatusBadge(content.status)}</td>
                           <td className="py-3 px-4">
-                            <div className="flex items-center gap-1 text-orange-500">
+                            <Link
+                              href={`/embed/${content.ww_id}/stats`}
+                              target="_blank"
+                              className="flex items-center gap-1 text-orange-500 hover:text-orange-400 hover:underline underline-offset-2"
+                              title="Voir les stats détaillées"
+                            >
                               <Eye className="w-3 h-3" />
                               <span>{content.view_count}</span>
-                            </div>
+                              <BarChart3 className="w-3 h-3 opacity-50" />
+                            </Link>
                           </td>
                           <td className="py-3 px-4 text-muted-foreground">
                             {new Date(content.created_at).toLocaleDateString("fr-FR")}

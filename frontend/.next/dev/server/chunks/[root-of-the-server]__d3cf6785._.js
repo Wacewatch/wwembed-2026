@@ -876,8 +876,7 @@ const ADMIN_ONLY_WRITE = new Set([
     "third_party_apis",
     "ads",
     "site_settings",
-    "users",
-    "live_tv_channels"
+    "users"
 ]);
 async function POST(req) {
     try {
