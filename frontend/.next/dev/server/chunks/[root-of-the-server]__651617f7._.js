@@ -478,15 +478,18 @@ async function GET(req) {
                 $match: {
                     viewed_at: {
                         $gte: startDate
-                    },
-                    ip_hash: {
-                        $ne: null
                     }
                 }
             },
+            // Use ip_hash when available, fallback to user_agent (legacy data has no ip_hash)
             {
                 $group: {
-                    _id: "$ip_hash"
+                    _id: {
+                        $ifNull: [
+                            "$ip_hash",
+                            "$user_agent"
+                        ]
+                    }
                 }
             },
             {
@@ -603,15 +606,17 @@ async function GET(req) {
                 $match: {
                     viewed_at: {
                         $gte: fiveMinAgo
-                    },
-                    ip_hash: {
-                        $ne: null
                     }
                 }
             },
             {
                 $group: {
-                    _id: "$ip_hash"
+                    _id: {
+                        $ifNull: [
+                            "$ip_hash",
+                            "$user_agent"
+                        ]
+                    }
                 }
             },
             {
@@ -623,15 +628,17 @@ async function GET(req) {
                 $match: {
                     viewed_at: {
                         $gte: fifteenMinAgo
-                    },
-                    ip_hash: {
-                        $ne: null
                     }
                 }
             },
             {
                 $group: {
-                    _id: "$ip_hash"
+                    _id: {
+                        $ifNull: [
+                            "$ip_hash",
+                            "$user_agent"
+                        ]
+                    }
                 }
             },
             {
@@ -643,15 +650,17 @@ async function GET(req) {
                 $match: {
                     viewed_at: {
                         $gte: oneHourAgo
-                    },
-                    ip_hash: {
-                        $ne: null
                     }
                 }
             },
             {
                 $group: {
-                    _id: "$ip_hash"
+                    _id: {
+                        $ifNull: [
+                            "$ip_hash",
+                            "$user_agent"
+                        ]
+                    }
                 }
             },
             {
@@ -663,15 +672,17 @@ async function GET(req) {
                 $match: {
                     viewed_at: {
                         $gte: twentyFourHoursAgo
-                    },
-                    ip_hash: {
-                        $ne: null
                     }
                 }
             },
             {
                 $group: {
-                    _id: "$ip_hash"
+                    _id: {
+                        $ifNull: [
+                            "$ip_hash",
+                            "$user_agent"
+                        ]
+                    }
                 }
             },
             {
@@ -1019,13 +1030,15 @@ async function GET(req) {
             if (c.legacy_uuid) channelMap.set(c.legacy_uuid, entry);
         }
     }
-    // Digital lookups
+    // Digital lookups — collect ww_ids from topMedia, topDownload, activePages, recentVisitors
     const digitalIds = new Set();
-    for (const m of topDownloadRaw){
-        if (m._id?.ww_id && /^ww-(ebook|music|software|game)-/.test(m._id.ww_id)) {
-            digitalIds.add(m._id.ww_id);
-        }
-    }
+    const collectDigitalIds = (ww)=>{
+        if (ww && /^ww-(ebook|music|soft|game)-/.test(ww)) digitalIds.add(ww);
+    };
+    for (const m of topMediaRaw)collectDigitalIds(m._id?.ww_id);
+    for (const m of topDownloadRaw)collectDigitalIds(m._id?.ww_id);
+    for (const p of activePagesRaw)collectDigitalIds(p._id);
+    for (const v of recentVisitorsRaw)collectDigitalIds(v.ww_id);
     const digitalMap = new Map();
     if (digitalIds.size > 0) {
         const digitals = await db.collection("digital_content").find({
@@ -1035,11 +1048,13 @@ async function GET(req) {
         }).project({
             ww_id: 1,
             title: 1,
-            cover_url: 1
+            cover_url: 1,
+            content_type: 1
         }).toArray();
         for (const d of digitals)digitalMap.set(d.ww_id, {
             title: d.title,
-            poster: d.cover_url
+            poster: d.cover_url,
+            content_type: d.content_type
         });
     }
     const enrich = async (item, kind)=>{
@@ -1053,7 +1068,7 @@ async function GET(req) {
             const ch = channelMap.get(cid) || channelMap.get(cid);
             title = ch?.title || "Chaîne TV";
             poster = ch?.poster || null;
-        } else if (wwId && /^ww-(ebook|music|software|game)-/.test(wwId)) {
+        } else if (wwId && /^ww-(ebook|music|soft|game)-/.test(wwId)) {
             const dg = digitalMap.get(wwId);
             title = dg?.title || "Contenu Digital";
             poster = dg?.poster || null;
@@ -1064,7 +1079,7 @@ async function GET(req) {
         }
         return {
             tmdb_id: tmdbId,
-            media_type: wwId?.startsWith?.("ww-live-") ? "live" : wwId && /^ww-(ebook|music|software|game)-/.test(wwId) ? "digital" : mediaType,
+            media_type: wwId?.startsWith?.("ww-live-") ? "live" : wwId && /^ww-(ebook|music|soft|game)-/.test(wwId) ? "digital" : mediaType,
             ww_id: wwId,
             title,
             poster,
@@ -1082,10 +1097,17 @@ async function GET(req) {
         const wwId = p._id;
         let title = wwId;
         let poster = null;
+        let mediaType = p.media_type;
         if (wwId?.startsWith?.("ww-live-")) {
             const ch = channelMap.get(wwId.slice("ww-live-".length));
             title = ch?.title || wwId;
             poster = ch?.poster || null;
+            mediaType = "live";
+        } else if (wwId && /^ww-(ebook|music|soft|game)-/.test(wwId)) {
+            const dg = digitalMap.get(wwId);
+            title = dg?.title || "Contenu Digital";
+            poster = dg?.poster || null;
+            mediaType = dg?.content_type || "digital";
         } else if (p.tmdb_id && (p.media_type === "movie" || p.media_type === "tv")) {
             const tm = await fetchTmdb(p.media_type, p.tmdb_id);
             title = tm.title;
@@ -1094,7 +1116,7 @@ async function GET(req) {
         return {
             ww_id: wwId,
             count: p.count,
-            media_type: p.media_type,
+            media_type: mediaType,
             title,
             poster
         };
@@ -1108,10 +1130,17 @@ async function GET(req) {
     }).slice(0, 12).map(async (v)=>{
         let title = v.ww_id || "N/A";
         let poster = null;
+        let mediaType = v.media_type || "?";
         if (v.ww_id?.startsWith?.("ww-live-")) {
             const ch = channelMap.get(v.ww_id.slice("ww-live-".length));
             title = ch?.title || v.ww_id;
             poster = ch?.poster || null;
+            mediaType = "live";
+        } else if (v.ww_id && /^ww-(ebook|music|soft|game)-/.test(v.ww_id)) {
+            const dg = digitalMap.get(v.ww_id);
+            title = dg?.title || "Contenu Digital";
+            poster = dg?.poster || null;
+            mediaType = dg?.content_type || "digital";
         } else if (v.tmdb_id && (v.media_type === "movie" || v.media_type === "tv")) {
             const tm = await fetchTmdb(v.media_type, v.tmdb_id);
             title = tm.title;
@@ -1121,7 +1150,7 @@ async function GET(req) {
             ip_hash: v.ip_hash ? v.ip_hash.substring(0, 8) + "…" : "Anonyme",
             viewed_at: v.viewed_at,
             ww_id: v.ww_id || "N/A",
-            media_type: v.media_type || "?",
+            media_type: mediaType,
             title,
             poster
         };

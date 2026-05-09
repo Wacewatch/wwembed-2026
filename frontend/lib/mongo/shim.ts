@@ -106,9 +106,15 @@ function idArrayFilter(values: any[]): any {
 function normalizeDoc<T extends Record<string, any>>(doc: T | null): any {
   if (!doc) return doc
   const out: any = { ...doc }
-  // Keep `id` field (some Supabase patterns use that). Map _id → id when not present.
-  if (out._id && !out.id) {
-    out.id = typeof out._id === "object" && out._id?.toString ? out._id.toString() : out._id
+  // Map _id → id, preferring legacy_uuid if present so foreign key joins with
+  // post-migration data continue to work (FKs in migrated rows still reference
+  // the original Supabase UUIDs, not the new ObjectIds).
+  if (!out.id) {
+    if (out.legacy_uuid) {
+      out.id = out.legacy_uuid
+    } else if (out._id) {
+      out.id = typeof out._id === "object" && out._id?.toString ? out._id.toString() : out._id
+    }
   }
   delete out._id
   return out

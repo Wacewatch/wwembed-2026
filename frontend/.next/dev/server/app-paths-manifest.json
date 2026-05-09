@@ -1,4 +1,5 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
   "/admin/page": "app/admin/page.js",
   "/api/admin/stats/route": "app/api/admin/stats/route.js",
   "/api/auth/login/route": "app/api/auth/login/route.js",
@@ -6,6 +7,10 @@
   "/api/bug-reports/user/route": "app/api/bug-reports/user/route.js",
   "/api/db/route": "app/api/db/route.js",
   "/api/server-stats/route": "app/api/server-stats/route.js",
+  "/api/tmdb-stats/route": "app/api/tmdb-stats/route.js",
+  "/api/tmdb/[type]/[id]/route": "app/api/tmdb/[type]/[id]/route.js",
+  "/api/v1/live/[wwId]/route": "app/api/v1/live/[wwId]/route.js",
   "/auth/login/page": "app/auth/login/page.js",
-  "/dashboard/page": "app/dashboard/page.js"
+  "/dashboard/page": "app/dashboard/page.js",
+  "/page": "app/page.js"
 }
