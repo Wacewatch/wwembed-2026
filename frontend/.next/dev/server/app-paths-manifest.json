@@ -4,6 +4,7 @@
   "/api/auth/logout/route": "app/api/auth/logout/route.js",
   "/api/auth/me/route": "app/api/auth/me/route.js",
   "/api/auth/register/route": "app/api/auth/register/route.js",
+  "/api/bug-reports/user/route": "app/api/bug-reports/user/route.js",
   "/api/db/route": "app/api/db/route.js",
   "/api/link-click/route": "app/api/link-click/route.js",
   "/api/media/[type]/[id]/route": "app/api/media/[type]/[id]/route.js",

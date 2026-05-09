@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY || "demo"
 const TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
 export async function GET() {
   try {
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const supabase = createAdminClient()
 
     // Fetch TMDB stats and database stats in parallel
     const [discoverMovies, discoverTv, allApis, downloadLinks, digitalDownloadLinks] = await Promise.all([
