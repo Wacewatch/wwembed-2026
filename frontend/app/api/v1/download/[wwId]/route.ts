@@ -184,32 +184,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .alt-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:800;letter-spacing:0.5px;vertical-align:middle}
 .alt-filename{font-size:11px;color:#94a3b8;word-break:break-word;margin-top:6px;line-height:1.4;max-height:3.2em;overflow:hidden}
 .ext-btn.alt-btn{background:linear-gradient(135deg,#f59e0b,#d97706)}
-.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px);overflow-y:auto}
+.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:8px;backdrop-filter:blur(8px);overflow-y:auto}
 .mo.sh{display:flex}
-.mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;max-height:calc(100vh - 24px);overflow-y:auto;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4);margin:auto}
-.mc h2{color:#1a1a2e;margin-bottom:8px;font-size:20px;font-weight:700}
-.mc-sub{color:#6b7280;font-size:13px;margin-bottom:16px}
-.steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
-.step{width:10px;height:10px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
-.step.active{background:linear-gradient(135deg,#667eea,#764ba2);transform:scale(1.2)}
+.mc{background:rgba(255,255,255,0.98);border-radius:16px;padding:14px 16px;max-width:380px;width:100%;max-height:calc(100vh - 16px);display:flex;flex-direction:column;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4);margin:auto}
+.mc-body{flex:1 1 auto;overflow-y:auto;min-height:0}
+.mc-foot{flex:0 0 auto;padding-top:6px}
+.mc h2{color:#1a1a2e;margin:0 0 4px;font-size:16px;font-weight:700;line-height:1.2}
+.mc-sub{color:#6b7280;font-size:11px;margin-bottom:8px}
+.steps{display:flex;justify-content:center;gap:6px;margin-bottom:8px}
+.step{width:7px;height:7px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
+.step.active{background:linear-gradient(135deg,#667eea,#764ba2);transform:scale(1.3)}
 .step.done{background:#10b981}
-.bx{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
-.bx svg{flex-shrink:0;width:18px;height:18px}
-.bx-content b{display:block;font-size:14px;margin-bottom:2px}
-.bx-content span{font-size:12px;opacity:0.8;display:block}
+.bx{border-radius:8px;padding:7px 10px;margin:5px 0;text-align:left;display:flex;align-items:center;gap:8px}
+.bx svg{flex-shrink:0;width:14px;height:14px}
+.bx-content b{display:block;font-size:12px;margin-bottom:0;line-height:1.2}
+.bx-content span{font-size:10.5px;opacity:0.8;display:block;line-height:1.3}
 .bw{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
 .bh{background:linear-gradient(135deg,#fce7f3,#fbcfe8);border:1px solid #ec4899;color:#9d174d}
 .bi{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #8b5cf6;color:#5b21b6}
-.bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
-.pb{height:5px;background:#e5e7eb;border-radius:3px;margin:12px 0;overflow:hidden}
+.bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46;cursor:pointer}
+.bo:hover{background:linear-gradient(135deg,#a7f3d0,#6ee7b7)}
+.pb{height:4px;background:#e5e7eb;border-radius:3px;margin:8px 0 6px;overflow:hidden}
 .pf{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2,#ec4899);transition:width 0.3s;border-radius:3px}
-.bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
+.bt{width:100%;padding:11px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:6px;text-transform:uppercase;letter-spacing:0.4px;transition:all 0.2s;text-decoration:none;display:block;text-align:center}
+.bt:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,0.15)}
 .bp{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
 .bn{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
-.hi{display:none}
-.cf{margin-top:12px;font-size:11px;color:#9ca3af}
+.hi{display:none !important}
+.cf{margin-top:8px;font-size:10px;color:#9ca3af}
 .cf a{color:#667eea}
-.tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;font-weight:600}
+.tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:1px 5px;border-radius:4px;font-size:9px;margin-left:5px;font-weight:600}
 .link-display{background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.3);border-radius:12px;padding:16px;margin-top:16px;text-align:center}
 .link-display-title{font-size:14px;color:#14B8A6;margin-bottom:12px;font-weight:600}
 .link-display-url{background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;word-break:break-all;font-family:monospace;font-size:12px;color:#e5e7eb;margin-bottom:12px}
@@ -276,6 +280,7 @@ Recherche de sources alternatives...
 
 <div class="mo" id="${ids.overlay}">
 <div class="mc">
+<div class="mc-body">
 <h2>Votre téléchargement est prêt</h2>
 <div class="mc-sub">Une dernière étape pour accéder au fichier</div>
 <div class="steps">
@@ -304,9 +309,12 @@ Recherche de sources alternatives...
 <div class="bx-content"><b>Tout est prêt !</b><span>Cliquez pour voir le lien</span></div>
 </div>
 <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
+</div>
+<div class="mc-foot">
 <a href="${adUrl}" target="_blank" rel="noopener" class="bt bp" id="${ids.btnUnlock}">CONTINUER<span class="tag">PUB</span></a>
 <button class="bt bn hi" id="${ids.btnDownload}">Voir le lien</button>
 <div class="cf">Propulsé par <a href="https://wavewatch.top" target="_blank">WaveWatch</a></div>
+</div>
 </div>
 </div>
 
@@ -1023,32 +1031,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .link-display-btn.primary{background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none}
 .link-display-btn.secondary{background:transparent;color:#5eead4;border:2px solid #5eead4;cursor:pointer}
 .copy-success{color:#10b981;font-size:12px;margin-top:8px;display:none}
-.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:12px;backdrop-filter:blur(8px);overflow-y:auto}
+.mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:8px;backdrop-filter:blur(8px);overflow-y:auto}
 .mo.sh{display:flex}
-.mc{background:rgba(255,255,255,0.98);border-radius:20px;padding:24px;max-width:400px;width:100%;max-height:calc(100vh - 24px);overflow-y:auto;text-align:center;margin:auto}
-.mc h2{color:#1a1a2e;margin-bottom:8px;font-size:20px;font-weight:700}
-.mc-sub{color:#6b7280;font-size:13px;margin-bottom:16px}
-.steps{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
-.step{width:10px;height:10px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
-.step.active{background:linear-gradient(135deg,#667eea,#764ba2);transform:scale(1.2)}
+.mc{background:rgba(255,255,255,0.98);border-radius:16px;padding:14px 16px;max-width:380px;width:100%;max-height:calc(100vh - 16px);display:flex;flex-direction:column;text-align:center;margin:auto}
+.mc-body{flex:1 1 auto;overflow-y:auto;min-height:0}
+.mc-foot{flex:0 0 auto;padding-top:6px}
+.mc h2{color:#1a1a2e;margin:0 0 4px;font-size:16px;font-weight:700;line-height:1.2}
+.mc-sub{color:#6b7280;font-size:11px;margin-bottom:8px}
+.steps{display:flex;justify-content:center;gap:6px;margin-bottom:8px}
+.step{width:7px;height:7px;border-radius:50%;background:#e5e7eb;transition:all 0.3s}
+.step.active{background:linear-gradient(135deg,#667eea,#764ba2);transform:scale(1.3)}
 .step.done{background:#10b981}
-.bx{border-radius:10px;padding:12px;margin:8px 0;text-align:left;display:flex;align-items:flex-start;gap:10px}
-.bx svg{flex-shrink:0;width:18px;height:18px}
-.bx-content b{display:block;font-size:14px;margin-bottom:2px}
-.bx-content span{font-size:12px;opacity:0.8}
+.bx{border-radius:8px;padding:7px 10px;margin:5px 0;text-align:left;display:flex;align-items:center;gap:8px}
+.bx svg{flex-shrink:0;width:14px;height:14px}
+.bx-content b{display:block;font-size:12px;margin-bottom:0;line-height:1.2}
+.bx-content span{font-size:10.5px;opacity:0.8;line-height:1.3;display:block}
 .bw{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;color:#92400e}
 .bh{background:linear-gradient(135deg,#fce7f3,#fbcfe8);border:1px solid #ec4899;color:#9d174d}
 .bi{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid #8b5cf6;color:#5b21b6}
-.bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46}
-.pb{height:5px;background:#e5e7eb;border-radius:3px;margin:12px 0;overflow:hidden}
+.bo{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #10b981;color:#065f46;cursor:pointer}
+.bo:hover{background:linear-gradient(135deg,#a7f3d0,#6ee7b7)}
+.pb{height:4px;background:#e5e7eb;border-radius:3px;margin:8px 0 6px;overflow:hidden}
 .pf{height:100%;width:0;background:linear-gradient(90deg,#667eea,#764ba2,#ec4899);transition:width 0.3s}
-.bt{width:100%;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
+.bt{width:100%;padding:11px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:6px;text-transform:uppercase;letter-spacing:0.4px;transition:all 0.2s;text-decoration:none;display:block;text-align:center}
+.bt:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,0.15)}
 .bp{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
 .bn{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
-.hi{display:none}
-.cf{margin-top:12px;font-size:11px;color:#9ca3af}
+.hi{display:none !important}
+.cf{margin-top:8px;font-size:10px;color:#9ca3af}
 .cf a{color:#667eea}
-.tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:6px;font-weight:600}
+.tag{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:1px 5px;border-radius:4px;font-size:9px;margin-left:5px;font-weight:600}
 .decode-loading{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:99999}
 .decode-loading-box{background:#1e293b;border-radius:12px;padding:32px 24px;text-align:center;color:#e2e8f0;min-width:200px}
 .decode-loading-box svg{animation:spin 1s linear infinite;width:36px;height:36px;margin-bottom:14px;color:#667eea}
@@ -1115,6 +1127,7 @@ Recherche de sources alternatives...
 
 <div class="mo" id="${ids.overlay}">
 <div class="mc">
+<div class="mc-body">
 <h2>Votre t\u00e9l\u00e9chargement est pr\u00eat</h2>
 <div class="mc-sub">Une derni\u00e8re \u00e9tape pour acc\u00e9der au fichier</div>
 <div class="steps">
@@ -1143,9 +1156,12 @@ Recherche de sources alternatives...
 <div class="bx-content"><b>Tout est pr\u00eat !</b><span>Cliquez pour voir le lien</span></div>
 </div>
 <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
+</div>
+<div class="mc-foot">
 <button class="bt bp" id="${ids.btnUnlock}">Continuer<span class="tag">PUB</span></button>
 <button class="bt bn hi" id="${ids.btnDownload}">Voir le lien</button>
 <div class="cf">Propuls\u00e9 par <a href="https://wavewatch.top" target="_blank">WaveWatch</a></div>
+</div>
 </div>
 </div>
 
