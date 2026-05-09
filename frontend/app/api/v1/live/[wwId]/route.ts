@@ -11,19 +11,18 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
     const channelIdPart = match[1]
     const supabase = createAdminClient()
 
-    let channel = null
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    // Lookup by id (shim auto-handles 24-hex Mongo ObjectId or legacy UUID)
+    let channel: any = null
+    const { data: byId } = await supabase
+      .from("live_tv_channels")
+      .select("*")
+      .eq("id", channelIdPart)
+      .eq("is_active", true)
+      .eq("status", "approved")
+      .maybeSingle()
+    channel = byId
 
-    if (uuidRegex.test(channelIdPart)) {
-      const { data } = await supabase
-        .from("live_tv_channels")
-        .select("*")
-        .eq("id", channelIdPart)
-        .eq("is_active", true)
-        .eq("status", "approved")
-        .single()
-      channel = data
-    }
+    // Fallback: prefix match (for shortened URL ids)
     if (!channel) {
       const { data } = await supabase
         .from("live_tv_channels")
@@ -31,7 +30,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
         .ilike("id", channelIdPart + "%")
         .eq("is_active", true)
         .eq("status", "approved")
-        .single()
+        .maybeSingle()
       channel = data
     }
     if (!channel) return new NextResponse("Channel not found", { status: 404 })

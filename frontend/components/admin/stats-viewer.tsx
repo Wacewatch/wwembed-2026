@@ -177,60 +177,6 @@ export function StatsViewer() {
             />
           </div>
 
-          {/* Real-time online */}
-          <Card className="glass-strong border-white/5">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-emerald-400 animate-pulse" />
-                  Utilisateurs en ligne
-                </span>
-                <Badge variant="outline" className="text-emerald-400 border-emerald-400/40">
-                  Temps réel
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-                <RealTimeTile color="emerald" Icon={Activity} label="5 min" v={data.online.online5min} sub="actifs" />
-                <RealTimeTile color="amber" Icon={Clock} label="15 min" v={data.online.online15min} sub="actifs" />
-                <RealTimeTile color="cyan" Icon={UserCheck} label="1 heure" v={data.online.online1hour} sub="uniques" />
-                <RealTimeTile color="violet" Icon={Calendar} label="24 heures" v={data.online.online24h} sub="uniques" />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="glass-subtle rounded-xl p-4 border border-white/5">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                    <Play className="w-4 h-4" /> Pages actives (15 min)
-                  </h4>
-                  <div className="space-y-2 max-h-[280px] overflow-y-auto scrollbar-thin pr-1">
-                    {data.online.activePages.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">Aucune activité récente</p>
-                    ) : (
-                      data.online.activePages.map((p, i) => (
-                        <PageRow key={p.ww_id} index={i + 1} title={p.title} poster={p.poster} type={p.media_type} count={p.count} />
-                      ))
-                    )}
-                  </div>
-                </div>
-                <div className="glass-subtle rounded-xl p-4 border border-white/5">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                    <Users className="w-4 h-4" /> Visiteurs récents
-                  </h4>
-                  <div className="space-y-2 max-h-[280px] overflow-y-auto scrollbar-thin pr-1">
-                    {data.online.recentVisitors.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">Aucun visiteur récent</p>
-                    ) : (
-                      data.online.recentVisitors.map((v, i) => (
-                        <VisitorRow key={`${v.ip_hash}-${i}`} title={v.title} poster={v.poster} type={v.media_type} ip={v.ip_hash} time={v.viewed_at} />
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Type breakdown */}
           <Card className="glass-strong border-white/5">
             <CardHeader>
