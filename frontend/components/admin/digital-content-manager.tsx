@@ -275,7 +275,7 @@ export function DigitalContentManager() {
 
         <TabsContent value="contents" className="space-y-3 mt-4">
           {filteredContents.map((content) => (
-            <Card key={content.id} className="bg-card border-border">
+            <Card key={content.id} className="admin-card border-0">
               <CardContent className="py-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
@@ -354,7 +354,7 @@ export function DigitalContentManager() {
 
         <TabsContent value="links" className="space-y-3 mt-4">
           {filteredLinks.map((link) => (
-            <Card key={link.id} className="bg-card border-border">
+            <Card key={link.id} className="admin-card border-0">
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div>

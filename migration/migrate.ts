@@ -17,6 +17,10 @@ import { MongoClient, ObjectId } from "mongodb"
 import * as fs from "fs"
 import * as path from "path"
 import * as dotenv from "dotenv"
+import ws from "ws"
+
+// Polyfill WebSocket for Node <22 (needed by @supabase/realtime-js)
+;(globalThis as any).WebSocket = (globalThis as any).WebSocket || ws
 
 const envPath = path.resolve(__dirname, "../frontend/.env")
 if (fs.existsSync(envPath)) dotenv.config({ path: envPath })

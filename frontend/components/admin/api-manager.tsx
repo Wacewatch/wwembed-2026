@@ -138,7 +138,7 @@ export function ApiManager() {
       </div>
 
       {showForm && (
-        <Card className="bg-card border-border">
+        <Card className="admin-card border-0">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               {editingApi ? "Modifier l'API" : "Nouvelle API"}
@@ -274,7 +274,7 @@ export function ApiManager() {
 
       <div className="space-y-3">
         {apis.map((api, index) => (
-          <Card key={api.id} className="bg-card border-border">
+          <Card key={api.id} className="admin-card border-0">
             <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">

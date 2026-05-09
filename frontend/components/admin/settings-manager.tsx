@@ -79,7 +79,7 @@ export function SettingsManager() {
         <h2 className="text-xl font-semibold">Parametres du site</h2>
       </div>
 
-      <Card className="bg-card border-border">
+      <Card className="admin-card border-0">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Tv className="w-5 h-5 text-red-500" />

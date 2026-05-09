@@ -147,7 +147,7 @@ export function BugReportsManager() {
         </Card>
       </div>
 
-      <Card className="bg-card border-border">
+      <Card className="admin-card border-0">
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <CardTitle className="flex items-center gap-2">

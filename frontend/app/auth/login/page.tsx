@@ -127,15 +127,26 @@ export default function LoginPage() {
             )}
           </Button>
 
-          <div className="text-center text-sm text-muted-foreground pt-1">
-            Pas encore de compte ?{" "}
-            <Link
-              href="/auth/sign-up"
-              data-testid="goto-signup"
-              className="text-primary hover:underline underline-offset-4 font-medium"
-            >
-              Créer un compte
-            </Link>
+          <div className="text-center text-sm text-muted-foreground pt-1 space-y-2">
+            <div>
+              <Link
+                href="/auth/forgot-password"
+                data-testid="goto-forgot"
+                className="text-primary/80 hover:text-primary hover:underline underline-offset-4 text-xs"
+              >
+                Mot de passe oublié ?
+              </Link>
+            </div>
+            <div>
+              Pas encore de compte ?{" "}
+              <Link
+                href="/auth/sign-up"
+                data-testid="goto-signup"
+                className="text-primary hover:underline underline-offset-4 font-medium"
+              >
+                Créer un compte
+              </Link>
+            </div>
           </div>
         </form>
       </div>

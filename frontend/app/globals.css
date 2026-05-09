@@ -174,6 +174,26 @@
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid oklch(1 0 0 / 0.05);
   }
+  /* Reusable admin card surface — glass + hover lift */
+  .admin-card {
+    background: oklch(0.18 0.02 240 / 0.5);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid oklch(1 0 0 / 0.06);
+    border-radius: 16px;
+    transition: border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+  }
+  .admin-card:hover {
+    border-color: oklch(0.78 0.16 195 / 0.28);
+    box-shadow: 0 6px 24px -8px oklch(0.78 0.16 195 / 0.18);
+  }
+  .admin-stat-card {
+    background: linear-gradient(180deg, oklch(0.2 0.022 240 / 0.7) 0%, oklch(0.16 0.018 240 / 0.55) 100%);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid oklch(1 0 0 / 0.07);
+    border-radius: 18px;
+  }
   .ring-glow {
     box-shadow:
       0 0 0 1px oklch(0.78 0.16 195 / 0.18),
@@ -220,6 +240,28 @@
   opacity: 0.55;
   animation: float-orb 14s ease-in-out infinite;
   pointer-events: none;
+}
+
+/* Auto-glass treatment for shadcn Cards inside dark theme.
+   This upgrades the entire admin UI without changing component code. */
+.dark [data-slot="card"] {
+  background: oklch(0.18 0.02 240 / 0.5);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid oklch(1 0 0 / 0.06);
+  border-radius: 16px;
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.03) inset, 0 8px 24px -16px oklch(0 0 0 / 0.4);
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+.dark [data-slot="card"]:hover {
+  border-color: oklch(0.78 0.16 195 / 0.22);
+}
+/* Tabs list also gets a glass treatment in admin */
+.dark [data-slot="tabs-list"] {
+  background: oklch(0.18 0.02 240 / 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid oklch(1 0 0 / 0.05);
 }
 
 /* Fade-in entrance */

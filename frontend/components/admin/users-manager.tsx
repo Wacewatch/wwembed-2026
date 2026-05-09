@@ -133,7 +133,7 @@ export function UsersManager() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-card border-border">
+        <Card className="admin-card border-0">
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
@@ -146,7 +146,7 @@ export function UsersManager() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
+        <Card className="admin-card border-0">
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-red-500/10">
@@ -159,7 +159,7 @@ export function UsersManager() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
+        <Card className="admin-card border-0">
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-purple-500/10">
@@ -172,7 +172,7 @@ export function UsersManager() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
+        <Card className="admin-card border-0">
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-blue-500/10">
@@ -188,7 +188,7 @@ export function UsersManager() {
       </div>
 
       {/* Users List */}
-      <Card className="border-border">
+      <Card className="admin-card border-0">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

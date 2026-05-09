@@ -216,7 +216,7 @@ export function OnlineUsersModule() {
   }
 
   return (
-    <Card className="bg-card border-border">
+    <Card className="admin-card border-0">
       <CardHeader>
         <CardTitle className="text-lg flex items-center justify-between">
           <span className="flex items-center gap-2">

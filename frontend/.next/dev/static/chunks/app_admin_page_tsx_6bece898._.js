@@ -9,7 +9,7 @@
   "static/chunks/components_admin_731fdff5._.js",
   "static/chunks/components_7fda3223._.js",
   "static/chunks/lib_b08beadd._.js",
-  "static/chunks/node_modules_lucide-react_dist_esm_daaf4330._.js",
+  "static/chunks/node_modules_lucide-react_dist_esm_f4f136b5._.js",
   "static/chunks/node_modules_recharts_es6_util_c5f99dd0._.js",
   "static/chunks/node_modules_recharts_es6_component_28950e9a._.js",
   "static/chunks/node_modules_recharts_es6_state_895e53b6._.js",

@@ -145,7 +145,7 @@ export function AdsManager() {
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-secondary/50">
+        <Card className="admin-stat-card border-0">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/20 rounded-lg">
@@ -158,7 +158,7 @@ export function AdsManager() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-secondary/50">
+        <Card className="admin-stat-card border-0">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500/20 rounded-lg">
@@ -171,7 +171,7 @@ export function AdsManager() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-secondary/50">
+        <Card className="admin-stat-card border-0">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/20 rounded-lg">
@@ -192,7 +192,7 @@ export function AdsManager() {
           const state = slots[num]
           const existingAd = ads.find((a) => a.slot_number === num)
           return (
-            <Card key={num} className="bg-card border-border">
+            <Card key={num} className="admin-card border-0">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Pub #{num}</span>

@@ -1,1 +1,18 @@
-{}
+{
+  "/admin/page": "app/admin/page.js",
+  "/api/auth/forgot-password/route": "app/api/auth/forgot-password/route.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/api/auth/me/route": "app/api/auth/me/route.js",
+  "/api/auth/reset-password/route": "app/api/auth/reset-password/route.js",
+  "/api/bug-reports/user/route": "app/api/bug-reports/user/route.js",
+  "/api/db/route": "app/api/db/route.js",
+  "/api/openapi/route": "app/api/openapi/route.js",
+  "/api/server-stats/route": "app/api/server-stats/route.js",
+  "/api/tmdb-stats/route": "app/api/tmdb-stats/route.js",
+  "/auth/forgot-password/page": "app/auth/forgot-password/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/auth/reset-password/page": "app/auth/reset-password/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/docs/page": "app/docs/page.js",
+  "/page": "app/page.js"
+}

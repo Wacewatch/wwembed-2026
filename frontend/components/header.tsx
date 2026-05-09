@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { LogOut, Shield, LayoutDashboard, Home } from "lucide-react"
+import { LogOut, Shield, LayoutDashboard, Home, BookOpen } from "lucide-react"
 import type { Profile } from "@/lib/types"
 
 export function Header() {
@@ -72,6 +72,7 @@ export function Header() {
             {!loading && user && navLink("/dashboard", "Dashboard", LayoutDashboard, pathname === "/dashboard")}
             {!loading && user && user.role === "admin" &&
               navLink("/admin", "Admin", Shield, pathname.startsWith("/admin"))}
+            {navLink("/docs", "API", BookOpen, pathname.startsWith("/docs"))}
           </div>
 
           {!loading && user && (
