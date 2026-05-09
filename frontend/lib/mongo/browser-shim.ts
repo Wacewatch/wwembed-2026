@@ -21,8 +21,13 @@ class BrowserQuery<T = any> implements PromiseLike<SupaResponse<T>> {
   constructor(private table: string) {}
 
   select(cols?: string, opts?: { count?: any; head?: boolean }) {
-    this.mode = "select"
-    this.selectStr = cols
+    // .select() called AFTER insert/update/upsert/delete is a "RETURNING" hint,
+    // not a query mode change. Only set mode if we're still in default state.
+    if (this.mode === "select") this.selectStr = cols
+    else this.selectStr = cols
+    if (this.mode === "select" || (!this.payload && this.mode !== "delete")) {
+      this.mode = "select"
+    }
     if (opts?.count) this.countMode = opts.count
     if (opts?.head) this.headOnly = true
     return this

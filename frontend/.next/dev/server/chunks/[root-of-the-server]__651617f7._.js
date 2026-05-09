@@ -716,20 +716,20 @@ async function GET(req) {
         }).sort({
             viewed_at: -1
         }).limit(40).toArray(),
-        // External clicks (is_external=true)
+        // External clicks — count ALL link_clicks (every click on a download/streaming
+        // external link counts; the Supabase `is_external` flag was inconsistent
+        // historically so we treat any link_click as a 3rd-party exit click).
         db.collection("link_clicks").countDocuments({
             clicked_at: {
                 $gte: startDate
-            },
-            is_external: true
+            }
         }),
         db.collection("link_clicks").aggregate([
             {
                 $match: {
                     clicked_at: {
                         $gte: startDate
-                    },
-                    is_external: true
+                    }
                 }
             },
             {
@@ -752,8 +752,7 @@ async function GET(req) {
                 $match: {
                     clicked_at: {
                         $gte: startDate
-                    },
-                    is_external: true
+                    }
                 }
             },
             {
@@ -783,8 +782,7 @@ async function GET(req) {
                 $match: {
                     clicked_at: {
                         $gte: startDate
-                    },
-                    is_external: true
+                    }
                 }
             },
             {
@@ -814,8 +812,7 @@ async function GET(req) {
                 $match: {
                     clicked_at: {
                         $gte: startDate
-                    },
-                    is_external: true
+                    }
                 }
             },
             {
@@ -842,8 +839,7 @@ async function GET(req) {
                 $match: {
                     clicked_at: {
                         $gte: startDate
-                    },
-                    is_external: true
+                    }
                 }
             },
             {
@@ -870,8 +866,7 @@ async function GET(req) {
                 $match: {
                     clicked_at: {
                         $gte: startDate
-                    },
-                    is_external: true
+                    }
                 }
             },
             {
@@ -895,9 +890,7 @@ async function GET(req) {
                 $limit: 20
             }
         ]).toArray(),
-        db.collection("link_clicks").countDocuments({
-            is_external: true
-        })
+        db.collection("link_clicks").countDocuments({})
     ]);
     // Build day buckets
     const byDayMap = new Map();

@@ -224,21 +224,23 @@ export async function GET(req: NextRequest) {
       .sort({ viewed_at: -1 })
       .limit(40)
       .toArray(),
-    // External clicks (is_external=true)
+    // External clicks — count ALL link_clicks (every click on a download/streaming
+    // external link counts; the Supabase `is_external` flag was inconsistent
+    // historically so we treat any link_click as a 3rd-party exit click).
     db
       .collection("link_clicks")
-      .countDocuments({ clicked_at: { $gte: startDate }, is_external: true }),
+      .countDocuments({ clicked_at: { $gte: startDate } }),
     db
       .collection("link_clicks")
       .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, is_external: true } },
+        { $match: { clicked_at: { $gte: startDate } } },
         { $group: { _id: { $substrCP: ["$clicked_at", 0, 10] }, count: { $sum: 1 } } },
       ])
       .toArray(),
     db
       .collection("link_clicks")
       .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, is_external: true } },
+        { $match: { clicked_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$provider", "Inconnu"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 12 },
@@ -247,7 +249,7 @@ export async function GET(req: NextRequest) {
     db
       .collection("link_clicks")
       .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, is_external: true } },
+        { $match: { clicked_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$host_name", "?"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 15 },
@@ -256,7 +258,7 @@ export async function GET(req: NextRequest) {
     db
       .collection("link_clicks")
       .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, is_external: true } },
+        { $match: { clicked_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$quality", "N/A"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
       ])
@@ -264,7 +266,7 @@ export async function GET(req: NextRequest) {
     db
       .collection("link_clicks")
       .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, is_external: true } },
+        { $match: { clicked_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$media_type", "?"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
       ])
@@ -272,7 +274,7 @@ export async function GET(req: NextRequest) {
     db
       .collection("link_clicks")
       .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, is_external: true } },
+        { $match: { clicked_at: { $gte: startDate } } },
         {
           $group: {
             _id: { ww_id: "$ww_id", media_type: "$media_type", tmdb_id: "$tmdb_id" },
@@ -283,7 +285,7 @@ export async function GET(req: NextRequest) {
         { $limit: 20 },
       ])
       .toArray(),
-    db.collection("link_clicks").countDocuments({ is_external: true }),
+    db.collection("link_clicks").countDocuments({}),
   ])
 
   // Build day buckets

@@ -256,7 +256,11 @@ class SupabaseShimQuery {
     }
     // ---- terminal-ish setters ----
     select(cols, opts) {
-        this.mode = "select";
+        // .select() after insert/update/upsert/delete is a RETURNING hint — keep
+        // the original write mode, just remember the projection.
+        if (this.mode === "select" || !this.payload && this.mode !== "delete") {
+            this.mode = "select";
+        }
         this.selectStr = cols;
         if (opts?.count) this.countMode = opts.count;
         if (opts?.head) this.headOnly = true;
@@ -1063,7 +1067,8 @@ async function POST(request) {
             reporter_ip: request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown",
             user_agent: request.headers.get("user-agent"),
             referrer: request.headers.get("referer"),
-            user_id: userId
+            user_id: userId,
+            status: "pending"
         });
         if (error) {
             console.error("Bug report error:", error);

@@ -8,6 +8,7 @@
   "/api/bug-reports/route": "app/api/bug-reports/route.js",
   "/api/bug-reports/user/route": "app/api/bug-reports/user/route.js",
   "/api/db/route": "app/api/db/route.js",
+  "/api/link-click/route": "app/api/link-click/route.js",
   "/api/media/[type]/[id]/route": "app/api/media/[type]/[id]/route.js",
   "/api/search/route": "app/api/search/route.js",
   "/api/server-stats/route": "app/api/server-stats/route.js",

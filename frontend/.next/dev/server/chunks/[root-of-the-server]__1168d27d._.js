@@ -250,7 +250,11 @@ class SupabaseShimQuery {
     }
     // ---- terminal-ish setters ----
     select(cols, opts) {
-        this.mode = "select";
+        // .select() after insert/update/upsert/delete is a RETURNING hint — keep
+        // the original write mode, just remember the projection.
+        if (this.mode === "select" || !this.payload && this.mode !== "delete") {
+            this.mode = "select";
+        }
         this.selectStr = cols;
         if (opts?.count) this.countMode = opts.count;
         if (opts?.head) this.headOnly = true;
@@ -472,15 +476,85 @@ class SupabaseShimQuery {
                 };
             }
             if (this.mode === "insert") {
-                const docs = this.payload.map((d)=>({
+                const tableTimeField = {
+                    embed_views: "viewed_at",
+                    link_clicks: "clicked_at",
+                    ad_clicks: "clicked_at"
+                };
+                const timeField = tableTimeField[this.collectionName];
+                const docs = this.payload.map((d)=>{
+                    const out = {
                         ...d,
                         created_at: d.created_at || new Date().toISOString()
-                    }));
+                    };
+                    if (timeField && !out[timeField]) out[timeField] = out.created_at;
+                    return out;
+                });
                 const res = await coll.insertMany(docs);
                 const inserted = docs.map((d, i)=>normalizeDoc({
                         ...d,
                         _id: res.insertedIds[i]
                     }));
+                // Side-effect: when recording an embed view or link click, also bump
+                // the parent record's view_count / download_count for fast dashboard reads.
+                if (this.collectionName === "embed_views") {
+                    for (const doc of docs){
+                        if (!doc.ww_id) continue;
+                        await Promise.all([
+                            db.collection("streaming_links").updateMany({
+                                ww_id: doc.ww_id
+                            }, {
+                                $inc: {
+                                    view_count: 1
+                                }
+                            }),
+                            db.collection("digital_content").updateMany({
+                                ww_id: doc.ww_id
+                            }, {
+                                $inc: {
+                                    view_count: 1
+                                }
+                            })
+                        ]);
+                        if (doc.ww_id.startsWith("ww-live-")) {
+                            const cid = doc.ww_id.slice("ww-live-".length);
+                            await db.collection("live_tv_channels").updateMany({
+                                $or: [
+                                    {
+                                        id: cid
+                                    },
+                                    {
+                                        _id: maybeOid(cid)
+                                    }
+                                ]
+                            }, {
+                                $inc: {
+                                    view_count: 1
+                                }
+                            });
+                        }
+                    }
+                } else if (this.collectionName === "link_clicks") {
+                    for (const doc of docs){
+                        if (!doc.ww_id) continue;
+                        await Promise.all([
+                            db.collection("download_links").updateMany({
+                                ww_id: doc.ww_id
+                            }, {
+                                $inc: {
+                                    click_count: 1
+                                }
+                            }),
+                            db.collection("digital_download_links").updateMany({
+                                ww_id: doc.ww_id
+                            }, {
+                                $inc: {
+                                    click_count: 1
+                                }
+                            })
+                        ]);
+                    }
+                }
                 return {
                     data: this.isSingle ? inserted[0] : inserted,
                     error: null

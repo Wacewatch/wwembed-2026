@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
       user_agent: request.headers.get("user-agent"),
       referrer: request.headers.get("referer"),
       user_id: userId,
+      status: "pending",
     })
 
     if (error) {
