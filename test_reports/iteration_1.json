@@ -1,0 +1,41 @@
+{
+  "summary": "Comprehensive backend + frontend testing of WWEmbed (Next.js full-stack behind FastAPI proxy + MongoDB). Fixed a critical Set-Cookie multi-header collapse bug in the FastAPI proxy (httpx merged duplicate Set-Cookie headers; we now preserve them via multi_items + raw_headers). After the fix, all 14 backend tests pass (auth register/login/me/logout, embed v1 routes, /api/db RBAC, TMDB search & media). Frontend: homepage, sign-up and login pages render the new dark glassmorphism design correctly. CRITICAL middleware/redirect bug: login API succeeds and returns valid ww_access JWT (verified — /api/auth/me returns the admin), but the Next.js middleware/auth guard rejects the same cookies for protected pages so /dashboard 307-redirects back to /auth/login and the login form never lands the user on /dashboard. Also /api/stats (called by PlatformStats on homepage) returns 500/401 in console.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/stats (or similar PlatformStats source)", "issue": "Returns 500 (and a 401) on public homepage causing 'Error fetching stats: Failed to fetch' console error. Endpoint not in test list but visible in browser console."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Login → Dashboard", "issue": "POST /api/auth/login returns 200 and Set-Cookie ww_access/ww_refresh are stored, but the page does not redirect to /dashboard. Direct navigation to /dashboard (with valid cookies that work for /api/auth/me) is 307-redirected to /auth/login by the Next.js middleware. The middleware/auth-guard does not accept the JWT cookies issued by /api/auth/login. Likely a mismatch in cookie name, JWT secret, or verification logic in middleware.ts vs lib/mongo/auth.ts.", "affected_selectors": ["button[name='Se connecter']", "/dashboard route"]},
+      {"flow": "Homepage stats", "issue": "PlatformStats useEffect fires fetchStats which fails with TypeError: Failed to fetch (and 500/401 from upstream).", "affected_selectors": ["PlatformStats component"]}
+    ],
+    "design_issues": [
+      {"screen": "/", "issues": ["Visual design is on-brand: dark glassmorphism, cyan accents, hero, search tabs (Films & Séries / TV Live / Digital). Looks good."]},
+      {"screen": "/auth/login & /auth/sign-up", "issues": ["Glass card form is well-styled and centered. No obvious contrast or spacing issues."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_wwembed_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Investigate Next.js middleware.ts auth check: verify it reads the ww_access cookie name and uses the same JWT_SECRET as lib/mongo/auth.ts. /api/auth/me works with the cookies, so the JWT itself is valid — middleware just isn't accepting it.",
+    "Fix login page redirect: after successful login the React handler should router.push('/dashboard') AND/OR refresh router so middleware sees the cookies. Currently page stays on /auth/login.",
+    "Fix /api/stats 500 (PlatformStats fetch). Either implement the endpoint or make the component degrade gracefully without console errors.",
+    "Consider adding data-testid attributes to login/signup form inputs and submit buttons for more robust E2E testing."
+  ],
+  "critical_code_review_comments": [
+    "FIXED by testing agent: backend/server.py was collapsing duplicate Set-Cookie headers via dict-comprehension on httpx headers (only one cookie reached client). Replaced with multi_items() + raw_headers list of (bytes, bytes) tuples so all Set-Cookie headers are preserved.",
+    "Auth cookies are HttpOnly + SameSite=Lax but missing the Secure flag. The site is HTTPS-only via Cloudflare; consider adding Secure for hardening (low priority).",
+    "Frontend uses both REACT_APP_BACKEND_URL and same-origin /api/* — ensure consistency; same-origin works because the public ingress already maps /api to the proxy.",
+    "Middleware-cookie mismatch is the highest-priority issue: it blocks the entire authenticated UX (dashboard, admin) even though backend auth is fully functional."
+  ],
+  "updated_files": ["/app/backend/server.py", "/app/backend/tests/test_wwembed_api.py"],
+  "success_rate": {"backend": "100%", "frontend": "70%"},
+  "test_credentials": "admin@wwembed.test / admin1234 (works on /api/auth/login → 200; verified by /api/auth/me returning role=admin)",
+  "seed_data_creation": "None. Existing seed (4 third_party_apis + site_settings + admin user) was sufficient. Each register test uses a uuid-suffixed email so it remains idempotent.",
+  "retest_needed": true,
+  "main_agent_can_self_test": false,
+  "context_for_next_testing_agent": "Backend proxy fix is in place — Set-Cookie now propagates correctly. Run pytest /app/backend/tests/test_wwembed_api.py to re-validate (all 14 should pass). For frontend, the next agent should re-test the login → /dashboard flow once middleware.ts is patched. Use admin@wwembed.test / admin1234. The valid JWT cookies set by /api/auth/login: ww_access (Max-Age=43200, HttpOnly, SameSite=Lax) and ww_refresh (Max-Age=2592000). /api/auth/me with these cookies returns the admin user — proves the JWT is correct; only the route middleware is wrong.",
+  "rca of the issue": "1) Set-Cookie collapse: FastAPI proxy used `dict(upstream.headers.items())` which folds duplicate header names. httpx returns Set-Cookie as one entry per cookie; the dict collapsed them to one comma-joined value, which Python requests cannot parse and even curl only partially recovered. Reproduce: POST /api/auth/login → only `__cf_bm` lands in the cookie jar; `ww_access`/`ww_refresh` are silently lost. Mitigation applied: use `httpx.Headers.multi_items()` and assign the result to `Response.raw_headers` as `(bytes, bytes)` tuples. 2) Login redirect / dashboard guard: not yet fixed — likely in /app/frontend/middleware.ts cookie-name or JWT verification. /api/auth/me succeeds with the same cookies, so JWT signing is consistent on the API route; the middleware must use a different secret, different cookie name, or run before the cookie is committed."
+}

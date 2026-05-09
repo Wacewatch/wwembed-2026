@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/lib/supabase/proxy.ts"],"sourcesContent":["/**\n * Drop-in replacement: middleware proxy. The original Supabase proxy refreshed\n * cookies. Our JWT cookies don't need refresh per request — just pass through.\n */\nimport type { NextRequest } from \"next/server\"\nimport { NextResponse } from \"next/server\"\n\nexport async function updateSession(_request: NextRequest) {\n  return NextResponse.next()\n}\n"],"names":[],"mappings":"AAAA;;;CAGC;;;;AAED;AAAA;;AAEO,eAAe,cAAc,QAAqB;IACvD,OAAO,gMAAY,CAAC,IAAI;AAC1B"}},
+    {"offset": {"line": 33, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/middleware.ts"],"sourcesContent":["import { updateSession } from \"@/lib/supabase/proxy\"\nimport type { NextRequest } from \"next/server\"\n\nexport async function middleware(request: NextRequest) {\n  return await updateSession(request)\n}\n\nexport const config = {\n  matcher: [\"/((?!_next/static|_next/image|favicon.ico|api/v1/.*|.*\\\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)\"],\n}\n"],"names":[],"mappings":";;;;;;AAAA;;AAGO,eAAe,WAAW,OAAoB;IACnD,OAAO,MAAM,IAAA,iJAAa,EAAC;AAC7B;AAEO,MAAM,SAAS;IACpB,SAAS;QAAC;KAA8F;AAC1G"}}]
+}
