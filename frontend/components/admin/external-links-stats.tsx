@@ -1,440 +1,321 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Globe, Download, TrendingUp, Server, Film, Tv, Book, Loader2 } from "lucide-react"
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from "recharts"
+import { Globe, Download, TrendingUp, Server, Film, Tv, Book } from "lucide-react"
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  CartesianGrid,
+} from "recharts"
 
-interface ExternalClickStats {
+const COLORS = ["oklch(0.78 0.16 195)", "oklch(0.7 0.18 280)", "oklch(0.74 0.2 50)", "oklch(0.65 0.24 25)", "oklch(0.7 0.2 145)", "oklch(0.74 0.18 30)", "oklch(0.7 0.2 320)", "oklch(0.75 0.16 230)"]
+
+interface ExternalData {
   totalClicks: number
-  clicksByProvider: { provider: string; count: number }[]
-  clicksByHost: { host: string; count: number }[]
-  clicksByQuality: { quality: string; count: number }[]
-  clicksByMediaType: { type: string; count: number }[]
-  clicksByDay: { date: string; count: number }[]
-  topMedia: { wwId: string; title: string; poster?: string; mediaType: string; clicks: number }[]
+  totalClicksAllTime: number
+  byDay: { date: string; count: number }[]
+  byProvider: { provider: string; count: number }[]
+  byHost: { host: string; count: number }[]
+  byQuality: { quality: string; count: number }[]
+  byMediaType: { type: string; count: number }[]
+  topMedia: any[]
 }
 
-const COLORS = ["#0d9488", "#8b5cf6", "#f59e0b", "#ef4444", "#22c55e", "#3b82f6", "#ec4899", "#6366f1"]
-
-export function ExternalLinksStats() {
-  const [loading, setLoading] = useState(true)
-  const [period, setPeriod] = useState("7")
-  const [stats, setStats] = useState<ExternalClickStats | null>(null)
-
-  useEffect(() => {
-    loadStats()
-  }, [period])
-
-  const loadStats = async () => {
-    setLoading(true)
-    const supabase = createClient()
-
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - Number.parseInt(period))
-    const startDateStr = startDate.toISOString()
-
-    console.log("[v0] Loading external link stats from:", startDateStr)
-
-    try {
-      const { data: allExternalClicks, error: allError } = await supabase
-        .from("link_clicks")
-        .select("*")
-        .eq("is_external", true)
-        .limit(10)
-
-      console.log("[v0] Total external clicks in database (any date):", allExternalClicks?.length || 0)
-      console.log("[v0] Sample external clicks:", allExternalClicks)
-
-      const { data: allClicks, error: allClicksError } = await supabase
-        .from("link_clicks")
-        .select("is_external, provider, host_name")
-        .limit(20)
-
-      console.log("[v0] All clicks sample (with is_external flag):", allClicks)
-
-      // Fetch external link clicks for the period
-      const { data: clicks, error } = await supabase
-        .from("link_clicks")
-        .select("*")
-        .eq("is_external", true)
-        .gte("clicked_at", startDateStr)
-        .order("clicked_at", { ascending: false })
-
-      console.log("[v0] External clicks for period:", { clicksCount: clicks?.length || 0, error })
-
-      if (error) {
-        console.error("Error fetching external clicks:", error)
-        setLoading(false)
-        return
-      }
-
-      const externalClicks = clicks || []
-
-      // Process clicks by provider
-      const providerCount: Record<string, number> = {}
-      const hostCount: Record<string, number> = {}
-      const qualityCount: Record<string, number> = {}
-      const mediaTypeCount: Record<string, number> = {}
-      const dayCount: Record<string, number> = {}
-      const mediaCount: Record<string, { wwId: string; tmdbId: number; mediaType: string; clicks: number }> = {}
-
-      externalClicks.forEach((click: any) => {
-        // Provider
-        const provider = click.provider || "Inconnu"
-        providerCount[provider] = (providerCount[provider] || 0) + 1
-
-        // Host
-        const host = click.host_name || "Inconnu"
-        hostCount[host] = (hostCount[host] || 0) + 1
-
-        // Quality
-        const quality = click.quality || "N/A"
-        qualityCount[quality] = (qualityCount[quality] || 0) + 1
-
-        // Media type
-        const mediaType = click.media_type || "unknown"
-        mediaTypeCount[mediaType] = (mediaTypeCount[mediaType] || 0) + 1
-
-        // Day
-        const day = new Date(click.clicked_at).toISOString().split("T")[0]
-        dayCount[day] = (dayCount[day] || 0) + 1
-
-        // Top media
-        if (click.ww_id) {
-          if (!mediaCount[click.ww_id]) {
-            mediaCount[click.ww_id] = {
-              wwId: click.ww_id,
-              tmdbId: click.tmdb_id,
-              mediaType: click.media_type,
-              clicks: 0,
-            }
-          }
-          mediaCount[click.ww_id].clicks++
-        }
-      })
-
-      // Convert to arrays and sort
-      const clicksByProvider = Object.entries(providerCount)
-        .map(([provider, count]) => ({ provider, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10)
-
-      const clicksByHost = Object.entries(hostCount)
-        .map(([host, count]) => ({ host, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10)
-
-      const clicksByQuality = Object.entries(qualityCount)
-        .map(([quality, count]) => ({ quality, count }))
-        .sort((a, b) => b.count - a.count)
-
-      const clicksByMediaType = Object.entries(mediaTypeCount)
-        .map(([type, count]) => ({ type, count }))
-        .sort((a, b) => b.count - a.count)
-
-      // Fill in missing days
-      const clicksByDay: { date: string; count: number }[] = []
-      for (let i = Number.parseInt(period) - 1; i >= 0; i--) {
-        const d = new Date()
-        d.setDate(d.getDate() - i)
-        const dateStr = d.toISOString().split("T")[0]
-        clicksByDay.push({
-          date: dateStr,
-          count: dayCount[dateStr] || 0,
-        })
-      }
-
-      // Get top media with titles
-      const topMediaList = Object.values(mediaCount)
-        .sort((a, b) => b.clicks - a.clicks)
-        .slice(0, 10)
-
-      const topMedia = await Promise.all(
-        topMediaList.map(async (m) => {
-          let title = m.wwId
-          let poster: string | undefined
-
-          if (
-            m.wwId.startsWith("ww-ebook-") ||
-            m.wwId.startsWith("ww-music-") ||
-            m.wwId.startsWith("ww-software-") ||
-            m.wwId.startsWith("ww-game-")
-          ) {
-            const { data: digital } = await supabase
-              .from("digital_content")
-              .select("title, cover_url")
-              .eq("ww_id", m.wwId)
-              .single()
-            title = digital?.title || m.wwId
-            poster = digital?.cover_url
-          } else if (m.tmdbId && (m.mediaType === "movie" || m.mediaType === "tv")) {
-            try {
-              const res = await fetch(`/api/tmdb/${m.mediaType}/${m.tmdbId}`)
-              if (res.ok) {
-                const data = await res.json()
-                title = data.title || data.name || m.wwId
-                poster = data.poster
-              }
-            } catch (e) {
-              // Ignore
-            }
-          }
-
-          return {
-            wwId: m.wwId,
-            title,
-            poster,
-            mediaType: m.mediaType,
-            clicks: m.clicks,
-          }
-        }),
-      )
-
-      setStats({
-        totalClicks: externalClicks.length,
-        clicksByProvider,
-        clicksByHost,
-        clicksByQuality,
-        clicksByMediaType,
-        clicksByDay,
-        topMedia,
-      })
-    } catch (error) {
-      console.error("Error loading external link stats:", error)
-    }
-
-    setLoading(false)
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
-  if (!stats) {
-    return <div className="text-center py-12 text-muted-foreground">Aucune donnée disponible</div>
-  }
+export function ExternalLinksStats({
+  period,
+  setPeriod,
+  data,
+}: {
+  period: string
+  setPeriod: (p: string) => void
+  data: ExternalData
+}) {
+  const dayChart = data.byDay.map((d) => ({
+    ...d,
+    formattedDate: new Date(d.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
+  }))
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Globe className="h-5 w-5 text-teal-500" />
-            Statistiques Liens Externes
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Clics sur les liens externes (Movix API) pour films, séries et digital
-          </p>
-        </div>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
+          <Globe className="w-6 h-6 text-primary" />
+          Liens externes (3rd-party)
+        </h2>
         <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-44 glass-subtle border-white/10">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="7">7 jours</SelectItem>
-            <SelectItem value="14">14 jours</SelectItem>
-            <SelectItem value="30">30 jours</SelectItem>
-            <SelectItem value="90">90 jours</SelectItem>
+            <SelectItem value="7">7 derniers jours</SelectItem>
+            <SelectItem value="14">14 derniers jours</SelectItem>
+            <SelectItem value="30">30 derniers jours</SelectItem>
+            <SelectItem value="90">90 derniers jours</SelectItem>
+            <SelectItem value="365">12 derniers mois</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Total Clicks */}
-      <Card className="bg-gradient-to-br from-teal-500/10 to-teal-500/5 border-teal-500/20">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-teal-500/20">
-              <Download className="h-6 w-6 text-teal-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Clics Externes</p>
-              <p className="text-3xl font-bold text-teal-500">{stats.totalClicks.toLocaleString()}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Clicks by Day */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Clics par Jour
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={stats.clicksByDay}>
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(d) => new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
-                  tick={{ fontSize: 10 }}
-                />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip
-                  labelFormatter={(d) => new Date(d).toLocaleDateString("fr-FR")}
-                  formatter={(value: number) => [value, "Clics"]}
-                />
-                <Bar dataKey="count" fill="#0d9488" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Clicks by Media Type */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Film className="h-4 w-4" />
-              Par Type de Média
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={stats.clicksByMediaType}
-                  dataKey="count"
-                  nameKey="type"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={70}
-                  label={({ type, count }) => `${type}: ${count}`}
-                >
-                  {stats.clicksByMediaType.map((_, index) => (
-                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      {/* Top totals */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <Tile icon={Download} label="Clics période" value={data.totalClicks} accent="oklch(0.65 0.22 295)" />
+        <Tile icon={TrendingUp} label="Clics all-time" value={data.totalClicksAllTime} accent="oklch(0.7 0.18 220)" />
+        <Tile icon={Server} label="Sources distinctes" value={data.byProvider.length} accent="oklch(0.7 0.2 145)" />
+        <Tile icon={Globe} label="Hôtes distincts" value={data.byHost.length} accent="oklch(0.74 0.2 50)" />
       </div>
 
-      {/* Provider & Host Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Top Providers */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Server className="h-4 w-4" />
-              Top Providers
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {stats.clicksByProvider.map((item, idx) => (
-                <div key={item.provider} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-4">{idx + 1}</span>
-                    <span className="font-medium">{item.provider}</span>
-                  </div>
-                  <Badge variant="secondary">{item.count}</Badge>
-                </div>
-              ))}
-              {stats.clicksByProvider.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center">Aucune donnée</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Top Hosts */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              Top Hébergeurs
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {stats.clicksByHost.map((item, idx) => (
-                <div key={item.host} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-4">{idx + 1}</span>
-                    <span className="font-medium truncate max-w-[200px]">{item.host}</span>
-                  </div>
-                  <Badge variant="secondary">{item.count}</Badge>
-                </div>
-              ))}
-              {stats.clicksByHost.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center">Aucune donnée</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quality Stats */}
-      <Card>
+      {/* Day chart */}
+      <Card className="glass-strong border-white/5">
         <CardHeader>
-          <CardTitle className="text-sm">Clics par Qualité</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {stats.clicksByQuality.map((item) => (
-              <Badge key={item.quality} variant="outline" className="text-sm py-1 px-3">
-                {item.quality}: <span className="font-bold ml-1">{item.count}</span>
-              </Badge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Top Media */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Top Médias (Liens Externes)
+          <CardTitle className="text-base flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" /> Clics externes / jour
+            </span>
+            <Badge variant="outline" className="border-primary/30 text-primary">
+              {data.totalClicks.toLocaleString()} clics
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {stats.topMedia.map((item, idx) => (
-              <div key={item.wwId} className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground w-4">{idx + 1}</span>
-                {item.poster ? (
-                  <img
-                    src={item.poster || "/placeholder.svg"}
-                    alt={item.title}
-                    className="w-10 h-14 rounded object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-14 rounded bg-muted flex items-center justify-center">
-                    {item.mediaType === "movie" ? (
-                      <Film className="h-4 w-4 text-muted-foreground" />
-                    ) : item.mediaType === "tv" ? (
-                      <Tv className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Book className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{item.title}</p>
-                  <p className="text-xs text-muted-foreground">{item.wwId}</p>
-                </div>
-                <Badge className="bg-teal-500/20 text-teal-500">{item.clicks} clics</Badge>
-              </div>
-            ))}
-            {stats.topMedia.length === 0 && <p className="text-sm text-muted-foreground text-center">Aucune donnée</p>}
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dayChart} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="formattedDate" stroke="#6b7280" tick={{ fill: "#9ca3af", fontSize: 11 }} />
+                <YAxis stroke="#6b7280" tick={{ fill: "#9ca3af", fontSize: 11 }} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "rgba(20,30,50,0.85)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 12,
+                    backdropFilter: "blur(8px)",
+                  }}
+                />
+                <Bar dataKey="count" fill="oklch(0.78 0.16 195)" radius={[6, 6, 0, 0]} name="Clics" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
+
+      {/* Pie + breakdowns */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card className="glass-strong border-white/5">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Server className="w-4 h-4 text-primary" /> Top providers
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data.byProvider.length === 0 ? (
+              <p className="text-muted-foreground text-sm py-4 text-center">Aucune donnée</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={data.byProvider}
+                        dataKey="count"
+                        nameKey="provider"
+                        innerRadius={50}
+                        outerRadius={80}
+                        paddingAngle={3}
+                      >
+                        {data.byProvider.map((_, i) => (
+                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "rgba(20,30,50,0.85)",
+                          border: "1px solid rgba(255,255,255,0.1)",
+                          borderRadius: 12,
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <ul className="space-y-2 max-h-56 overflow-y-auto scrollbar-thin pr-1">
+                  {data.byProvider.map((p, i) => {
+                    const max = data.byProvider[0]?.count || 1
+                    return (
+                      <li key={p.provider + i} className="flex items-center gap-2 text-sm">
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ background: COLORS[i % COLORS.length] }}
+                        />
+                        <span className="flex-1 truncate">{p.provider}</span>
+                        <span className="text-muted-foreground tabular-nums text-xs">
+                          {((p.count / max) * 100).toFixed(0)}%
+                        </span>
+                        <span className="font-bold tabular-nums w-10 text-right">{p.count}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="glass-strong border-white/5">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Globe className="w-4 h-4 text-primary" /> Top hôtes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-72 overflow-y-auto scrollbar-thin pr-1">
+              {data.byHost.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-4 text-center">Aucune donnée</p>
+              ) : (
+                data.byHost.map((h, i) => {
+                  const max = data.byHost[0]?.count || 1
+                  return (
+                    <div key={h.host + i} className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground w-6 text-right tabular-nums text-xs">{i + 1}.</span>
+                      <span className="flex-1 truncate" title={h.host}>
+                        {h.host}
+                      </span>
+                      <div className="w-20 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-primary to-cyan-400"
+                          style={{ width: `${(h.count / max) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-primary font-bold tabular-nums w-12 text-right">{h.count.toLocaleString()}</span>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Type + Quality */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card className="glass-strong border-white/5">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Film className="w-4 h-4 text-primary" /> Par type de média
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
+              {data.byMediaType.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-4 text-center col-span-2">Aucune donnée</p>
+              ) : (
+                data.byMediaType.map((t) => (
+                  <div key={t.type} className="glass-subtle rounded-xl p-4 text-center border border-white/5">
+                    {t.type === "movie" && <Film className="w-6 h-6 mx-auto mb-2 text-blue-400" />}
+                    {t.type === "tv" && <Tv className="w-6 h-6 mx-auto mb-2 text-purple-400" />}
+                    {!["movie", "tv"].includes(t.type) && <Book className="w-6 h-6 mx-auto mb-2 text-amber-400" />}
+                    <p className="text-2xl font-black tabular-nums">{t.count.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {t.type === "movie" ? "Films" : t.type === "tv" ? "Séries" : t.type}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-strong border-white/5">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-primary" /> Par qualité
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-2">
+              {data.byQuality.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-4 text-center col-span-3">Aucune donnée</p>
+              ) : (
+                data.byQuality.map((q, i) => (
+                  <div key={q.quality + i} className="glass-subtle rounded-xl p-3 text-center border border-white/5">
+                    <p className="text-xl font-black tabular-nums">{q.count.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">{q.quality}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Top media for external clicks */}
+      <Card className="glass-strong border-white/5">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Download className="w-4 h-4 text-orange-400" /> Top médias (clics externes)
+            </span>
+            <Badge variant="outline" className="border-orange-400/30 text-orange-400">
+              {data.topMedia.reduce((s: number, m: any) => s + (m.downloads || 0), 0).toLocaleString()}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[480px] overflow-y-auto scrollbar-thin pr-1">
+            {data.topMedia.length === 0 ? (
+              <p className="text-muted-foreground text-sm py-4 text-center col-span-2">Aucune donnée</p>
+            ) : (
+              data.topMedia.map((m: any, i: number) => (
+                <a
+                  key={`${m.ww_id || m.tmdb_id}-${i}`}
+                  href={m.ww_id ? `/embed/${m.ww_id}/stats` : "#"}
+                  target={m.ww_id ? "_blank" : undefined}
+                  rel="noreferrer"
+                  className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                >
+                  <span className="text-muted-foreground w-6 text-right tabular-nums text-xs">{i + 1}.</span>
+                  {m.poster ? (
+                    <img src={m.poster} alt={m.title} className="w-9 h-12 object-cover rounded" loading="lazy" />
+                  ) : (
+                    <div className="w-9 h-12 bg-white/5 rounded grid place-items-center">
+                      <Film className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{m.title}</p>
+                    <p className="text-[10px] text-muted-foreground capitalize">{m.media_type}</p>
+                  </div>
+                  <span className="text-orange-400 font-bold tabular-nums">{(m.downloads || 0).toLocaleString()}</span>
+                </a>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function Tile({ icon: Icon, label, value, accent }: any) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl glass border border-white/5 p-5">
+      <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl opacity-30" style={{ background: accent }} />
+      <div className="relative flex items-center justify-between">
+        <div>
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">{label}</p>
+          <p className="text-3xl font-black mt-2 tabular-nums">{(value || 0).toLocaleString()}</p>
+        </div>
+        <div className="w-11 h-11 rounded-xl grid place-items-center ring-1 ring-white/10" style={{ background: accent }}>
+          <Icon className="w-5 h-5 text-white" />
+        </div>
+      </div>
     </div>
   )
 }
