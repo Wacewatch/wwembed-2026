@@ -7637,7 +7637,6 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/supabase/client.ts [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/ui/card.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/ui/badge.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$activity$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Activity$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/activity.js [app-client] (ecmascript) <export default as Activity>");
@@ -7651,7 +7650,6 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 ;
 var _s = __turbopack_context__.k.signature();
 "use client";
-;
 ;
 ;
 ;
@@ -7670,139 +7668,34 @@ function OnlineUsersModule() {
     }["OnlineUsersModule.useEffect"], []);
     const loadOnlineStats = async ()=>{
         try {
-            const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["createClient"])();
-            const now = new Date();
-            const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
-            const fifteenMinAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
-            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
-            const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-            const fetchAllViews24h = async ()=>{
-                const pageSize = 1000;
-                let allData = [];
-                let from = 0;
-                let hasMore = true;
-                while(hasMore){
-                    const { data, error } = await supabase.from("embed_views").select("ip_hash, viewed_at, ww_id, media_type, tmdb_id").gte("viewed_at", twentyFourHoursAgo).order("viewed_at", {
-                        ascending: false
-                    }).range(from, from + pageSize - 1);
-                    if (error) {
-                        console.error("Error fetching views:", error);
-                        break;
-                    }
-                    if (data && data.length > 0) {
-                        allData = [
-                            ...allData,
-                            ...data
-                        ];
-                        from += pageSize;
-                        hasMore = data.length === pageSize;
-                    } else {
-                        hasMore = false;
-                    }
-                }
-                return allData;
-            };
-            const recentViews = await fetchAllViews24h();
-            const views5min = recentViews?.filter((v)=>new Date(v.viewed_at) >= new Date(fiveMinAgo)) || [];
-            const views15min = recentViews?.filter((v)=>new Date(v.viewed_at) >= new Date(fifteenMinAgo)) || [];
-            const views1hour = recentViews?.filter((v)=>new Date(v.viewed_at) >= new Date(oneHourAgo)) || [];
-            const uniqueIps5min = new Set(views5min.map((v)=>v.ip_hash).filter((ip)=>ip != null)).size || views5min.length;
-            const uniqueIps15min = new Set(views15min.map((v)=>v.ip_hash).filter((ip)=>ip != null)).size || views15min.length;
-            const uniqueIps1hour = new Set(views1hour.map((v)=>v.ip_hash).filter((ip)=>ip != null)).size || views1hour.length;
-            const uniqueIps24h = new Set(recentViews?.map((v)=>v.ip_hash).filter((ip)=>ip != null)).size || recentViews?.length || 0;
-            const pageCount = {};
-            views15min.forEach((v)=>{
-                if (v.ww_id) {
-                    if (!pageCount[v.ww_id]) {
-                        pageCount[v.ww_id] = {
-                            count: 0,
-                            tmdb_id: v.tmdb_id,
-                            media_type: v.media_type
-                        };
-                    }
-                    pageCount[v.ww_id].count++;
-                }
+            // Use the unified server-side stats endpoint — it already enriches
+            // digital (ebook/music/soft/game), live channels and TMDB titles.
+            const res = await fetch("/api/admin/stats", {
+                credentials: "include"
             });
-            const activePages = Object.entries(pageCount).map(([ww_id, data])=>({
-                    ww_id,
-                    count: data.count,
-                    tmdb_id: data.tmdb_id,
-                    media_type: data.media_type
-                })).sort((a, b)=>b.count - a.count).slice(0, 10);
-            const activePagesWithTitles = await Promise.all(activePages.map(async (page)=>{
-                if (page.ww_id?.startsWith("ww-live-")) {
-                    const channelId = page.ww_id.replace("ww-live-", "");
-                    const { data: channel } = await supabase.from("live_tv_channels").select("channel_name, channel_logo").eq("id", channelId).single();
-                    return {
-                        ...page,
-                        title: channel?.channel_name || page.ww_id,
-                        poster: channel?.channel_logo || null
-                    };
-                }
-                if (page.tmdb_id && page.media_type && (page.media_type === "movie" || page.media_type === "tv")) {
-                    try {
-                        const res = await fetch(`/api/tmdb/${page.media_type}/${page.tmdb_id}`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            return {
-                                ...page,
-                                title: data.title || data.name || page.ww_id,
-                                poster: data.poster || null
-                            };
-                        }
-                    } catch (e) {
-                    // Ignore
-                    }
-                }
-                return {
-                    ...page,
-                    title: page.ww_id,
-                    poster: null
-                };
-            }));
-            const seenKeys = new Set();
-            const recentVisitorsRaw = views1hour?.sort((a, b)=>new Date(b.viewed_at).getTime() - new Date(a.viewed_at).getTime()).filter((v)=>{
-                const uniqueKey = v.ww_id || `${v.viewed_at}`;
-                if (seenKeys.has(uniqueKey)) return false;
-                seenKeys.add(uniqueKey);
-                return true;
-            }).slice(0, 10) || [];
-            const recentVisitors = await Promise.all(recentVisitorsRaw.map(async (v)=>{
-                let title = v.ww_id || "N/A";
-                let poster = null;
-                if (v.ww_id?.startsWith("ww-live-")) {
-                    const channelId = v.ww_id.replace("ww-live-", "");
-                    const { data: channel } = await supabase.from("live_tv_channels").select("channel_name, channel_logo").eq("id", channelId).single();
-                    title = channel?.channel_name || v.ww_id;
-                    poster = channel?.channel_logo || null;
-                } else if (v.tmdb_id && v.media_type && (v.media_type === "movie" || v.media_type === "tv")) {
-                    try {
-                        const res = await fetch(`/api/tmdb/${v.media_type}/${v.tmdb_id}`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            title = data.title || data.name || v.ww_id;
-                            poster = data.poster || null;
-                        }
-                    } catch (e) {
-                    // Ignore
-                    }
-                }
-                return {
-                    ip_hash: v.ip_hash ? v.ip_hash.substring(0, 8) + "..." : "Anonyme",
-                    viewed_at: v.viewed_at,
-                    ww_id: v.ww_id || "N/A",
-                    media_type: v.media_type || "N/A",
-                    title,
-                    poster
-                };
-            }));
+            if (!res.ok) return;
+            const data = await res.json();
+            const o = data?.online || {};
             setOnlineStats({
-                usersOnline5min: uniqueIps5min,
-                usersOnline15min: uniqueIps15min,
-                usersOnline1hour: uniqueIps1hour,
-                usersOnline24h: uniqueIps24h,
-                activePages: activePagesWithTitles,
-                recentVisitors
+                usersOnline5min: o.online5min || 0,
+                usersOnline15min: o.online15min || 0,
+                usersOnline1hour: o.online1hour || 0,
+                usersOnline24h: o.online24h || 0,
+                activePages: (o.activePages || []).map((p)=>({
+                        ww_id: p.ww_id,
+                        count: p.count,
+                        title: p.title || p.ww_id,
+                        poster: p.poster || null,
+                        media_type: p.media_type
+                    })),
+                recentVisitors: (o.recentVisitors || []).map((v)=>({
+                        ip_hash: v.ip_hash || "Anonyme",
+                        viewed_at: v.viewed_at,
+                        ww_id: v.ww_id,
+                        media_type: v.media_type || "N/A",
+                        title: v.title || v.ww_id,
+                        poster: v.poster || null
+                    }))
             });
         } catch (error) {
             console.error("Error loading online stats:", error);
@@ -7825,14 +7718,14 @@ function OnlineUsersModule() {
                                     className: "w-5 h-5 text-green-500 animate-pulse"
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/online-users-module.tsx",
-                                    lineNumber: 223,
+                                    lineNumber: 83,
                                     columnNumber: 13
                                 }, this),
                                 "Utilisateurs en ligne"
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/admin/online-users-module.tsx",
-                            lineNumber: 222,
+                            lineNumber: 82,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -7841,18 +7734,18 @@ function OnlineUsersModule() {
                             children: "En temps réel"
                         }, void 0, false, {
                             fileName: "[project]/components/admin/online-users-module.tsx",
-                            lineNumber: 226,
+                            lineNumber: 86,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/admin/online-users-module.tsx",
-                    lineNumber: 221,
+                    lineNumber: 81,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/admin/online-users-module.tsx",
-                lineNumber: 220,
+                lineNumber: 80,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -7870,7 +7763,7 @@ function OnlineUsersModule() {
                                                 className: "w-2 h-2 bg-green-500 rounded-full animate-pulse"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                lineNumber: 235,
+                                                lineNumber: 95,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -7878,13 +7771,13 @@ function OnlineUsersModule() {
                                                 children: "5 dernières min"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                lineNumber: 236,
+                                                lineNumber: 96,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 234,
+                                        lineNumber: 94,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7892,7 +7785,7 @@ function OnlineUsersModule() {
                                         children: onlineStats.usersOnline5min
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 238,
+                                        lineNumber: 98,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7900,13 +7793,13 @@ function OnlineUsersModule() {
                                         children: "utilisateurs actifs"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 239,
+                                        lineNumber: 99,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                lineNumber: 233,
+                                lineNumber: 93,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7919,7 +7812,7 @@ function OnlineUsersModule() {
                                                 className: "w-4 h-4 text-yellow-500"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                lineNumber: 243,
+                                                lineNumber: 103,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -7927,13 +7820,13 @@ function OnlineUsersModule() {
                                                 children: "15 dernières min"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                lineNumber: 244,
+                                                lineNumber: 104,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 242,
+                                        lineNumber: 102,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7941,7 +7834,7 @@ function OnlineUsersModule() {
                                         children: onlineStats.usersOnline15min
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 246,
+                                        lineNumber: 106,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7949,13 +7842,13 @@ function OnlineUsersModule() {
                                         children: "utilisateurs actifs"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 247,
+                                        lineNumber: 107,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                lineNumber: 241,
+                                lineNumber: 101,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7968,7 +7861,7 @@ function OnlineUsersModule() {
                                                 className: "w-4 h-4 text-blue-500"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                lineNumber: 251,
+                                                lineNumber: 111,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -7976,13 +7869,13 @@ function OnlineUsersModule() {
                                                 children: "Dernière heure"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                lineNumber: 252,
+                                                lineNumber: 112,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 250,
+                                        lineNumber: 110,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7990,7 +7883,7 @@ function OnlineUsersModule() {
                                         children: onlineStats.usersOnline1hour
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 254,
+                                        lineNumber: 114,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7998,13 +7891,13 @@ function OnlineUsersModule() {
                                         children: "visiteurs uniques"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 255,
+                                        lineNumber: 115,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                lineNumber: 249,
+                                lineNumber: 109,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -8017,7 +7910,7 @@ function OnlineUsersModule() {
                                                 className: "w-4 h-4 text-purple-500"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                lineNumber: 259,
+                                                lineNumber: 119,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -8025,13 +7918,13 @@ function OnlineUsersModule() {
                                                 children: "24 dernières heures"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                lineNumber: 260,
+                                                lineNumber: 120,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 258,
+                                        lineNumber: 118,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -8039,7 +7932,7 @@ function OnlineUsersModule() {
                                         children: onlineStats.usersOnline24h
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 262,
+                                        lineNumber: 122,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -8047,19 +7940,19 @@ function OnlineUsersModule() {
                                         children: "visiteurs uniques"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 263,
+                                        lineNumber: 123,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                lineNumber: 257,
+                                lineNumber: 117,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/online-users-module.tsx",
-                        lineNumber: 232,
+                        lineNumber: 92,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -8075,14 +7968,14 @@ function OnlineUsersModule() {
                                                 className: "w-4 h-4"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                lineNumber: 270,
+                                                lineNumber: 130,
                                                 columnNumber: 15
                                             }, this),
                                             "Pages les plus actives (15 min)"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 269,
+                                        lineNumber: 129,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -8098,7 +7991,7 @@ function OnlineUsersModule() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                                        lineNumber: 277,
+                                                        lineNumber: 137,
                                                         columnNumber: 21
                                                     }, this),
                                                     page.poster ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
@@ -8107,7 +8000,7 @@ function OnlineUsersModule() {
                                                         className: "w-8 h-12 object-cover rounded"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                                        lineNumber: 279,
+                                                        lineNumber: 139,
                                                         columnNumber: 23
                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                         className: "w-8 h-12 bg-muted rounded flex items-center justify-center",
@@ -8115,18 +8008,18 @@ function OnlineUsersModule() {
                                                             className: "w-4 h-4 text-muted-foreground"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/admin/online-users-module.tsx",
-                                                            lineNumber: 289,
+                                                            lineNumber: 149,
                                                             columnNumber: 27
                                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$film$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Film$3e$__["Film"], {
                                                             className: "w-4 h-4 text-muted-foreground"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/admin/online-users-module.tsx",
-                                                            lineNumber: 291,
+                                                            lineNumber: 151,
                                                             columnNumber: 27
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                                        lineNumber: 287,
+                                                        lineNumber: 147,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -8137,22 +8030,22 @@ function OnlineUsersModule() {
                                                                 children: page.title || page.ww_id
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                                lineNumber: 296,
+                                                                lineNumber: 156,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
                                                                 variant: "outline",
-                                                                className: `text-xs ${page.media_type === "movie" ? "text-blue-400 border-blue-400/50" : page.media_type === "tv" ? "text-purple-400 border-purple-400/50" : "text-red-400 border-red-400/50"}`,
-                                                                children: page.media_type === "movie" ? "Film" : page.media_type === "tv" ? "Série" : "TV Live"
+                                                                className: `text-xs ${page.media_type === "movie" ? "text-blue-400 border-blue-400/50" : page.media_type === "tv" ? "text-purple-400 border-purple-400/50" : page.media_type === "ebook" ? "text-amber-400 border-amber-400/50" : page.media_type === "music" ? "text-pink-400 border-pink-400/50" : page.media_type === "soft" || page.media_type === "software" ? "text-cyan-400 border-cyan-400/50" : page.media_type === "game" ? "text-emerald-400 border-emerald-400/50" : page.media_type === "live" ? "text-red-400 border-red-400/50" : "text-muted-foreground border-muted"}`,
+                                                                children: page.media_type === "movie" ? "Film" : page.media_type === "tv" ? "Série" : page.media_type === "live" ? "TV Live" : page.media_type === "ebook" ? "Ebook" : page.media_type === "music" ? "Musique" : page.media_type === "soft" || page.media_type === "software" ? "Logiciel" : page.media_type === "game" ? "Jeu" : page.media_type || "?"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                                lineNumber: 297,
+                                                                lineNumber: 157,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                                        lineNumber: 295,
+                                                        lineNumber: 155,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -8161,31 +8054,31 @@ function OnlineUsersModule() {
                                                         children: page.count
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                                        lineNumber: 310,
+                                                        lineNumber: 194,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, page.ww_id, true, {
                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                lineNumber: 276,
+                                                lineNumber: 136,
                                                 columnNumber: 19
                                             }, this)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                             className: "text-muted-foreground text-sm",
                                             children: "Aucune activité récente"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/online-users-module.tsx",
-                                            lineNumber: 316,
+                                            lineNumber: 200,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 273,
+                                        lineNumber: 133,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                lineNumber: 268,
+                                lineNumber: 128,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -8198,14 +8091,14 @@ function OnlineUsersModule() {
                                                 className: "w-4 h-4"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                lineNumber: 323,
+                                                lineNumber: 207,
                                                 columnNumber: 15
                                             }, this),
                                             "Visiteurs récents"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 322,
+                                        lineNumber: 206,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -8217,7 +8110,7 @@ function OnlineUsersModule() {
                                                         className: "w-2 h-2 bg-green-500 rounded-full flex-shrink-0"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                                        lineNumber: 333,
+                                                        lineNumber: 217,
                                                         columnNumber: 21
                                                     }, this),
                                                     visitor.poster ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
@@ -8226,7 +8119,7 @@ function OnlineUsersModule() {
                                                         className: "w-8 h-12 object-cover rounded"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                                        lineNumber: 335,
+                                                        lineNumber: 219,
                                                         columnNumber: 23
                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                         className: "w-8 h-12 bg-muted rounded flex items-center justify-center",
@@ -8234,18 +8127,18 @@ function OnlineUsersModule() {
                                                             className: "w-4 h-4 text-muted-foreground"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/admin/online-users-module.tsx",
-                                                            lineNumber: 347,
+                                                            lineNumber: 231,
                                                             columnNumber: 27
                                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$film$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Film$3e$__["Film"], {
                                                             className: "w-4 h-4 text-muted-foreground"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/admin/online-users-module.tsx",
-                                                            lineNumber: 349,
+                                                            lineNumber: 233,
                                                             columnNumber: 27
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                                        lineNumber: 345,
+                                                        lineNumber: 229,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -8256,7 +8149,7 @@ function OnlineUsersModule() {
                                                                 children: visitor.title || visitor.ww_id
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                                lineNumber: 354,
+                                                                lineNumber: 238,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -8264,13 +8157,13 @@ function OnlineUsersModule() {
                                                                 children: visitor.ip_hash
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                                lineNumber: 355,
+                                                                lineNumber: 239,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                                        lineNumber: 353,
+                                                        lineNumber: 237,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -8278,49 +8171,49 @@ function OnlineUsersModule() {
                                                         children: new Date(visitor.viewed_at).toLocaleTimeString("fr-FR")
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                                        lineNumber: 357,
+                                                        lineNumber: 241,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, `${visitor.ip_hash}-${i}`, true, {
                                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                                lineNumber: 329,
+                                                lineNumber: 213,
                                                 columnNumber: 19
                                             }, this)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                             className: "text-muted-foreground text-sm",
                                             children: "Aucun visiteur récent"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/online-users-module.tsx",
-                                            lineNumber: 363,
+                                            lineNumber: 247,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
-                                        lineNumber: 326,
+                                        lineNumber: 210,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/online-users-module.tsx",
-                                lineNumber: 321,
+                                lineNumber: 205,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/online-users-module.tsx",
-                        lineNumber: 267,
+                        lineNumber: 127,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/online-users-module.tsx",
-                lineNumber: 231,
+                lineNumber: 91,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/admin/online-users-module.tsx",
-        lineNumber: 219,
+        lineNumber: 79,
         columnNumber: 5
     }, this);
 }

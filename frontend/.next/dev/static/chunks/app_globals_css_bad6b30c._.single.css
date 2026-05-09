@@ -2029,6 +2029,16 @@
     }
   }
 
+  .border-amber-400\/50 {
+    border-color: #fcbb0080;
+  }
+
+  @supports (color: color-mix(in lab, red, red)) {
+    .border-amber-400\/50 {
+      border-color: color-mix(in oklab, var(--color-amber-400) 50%, transparent);
+    }
+  }
+
   .border-amber-500\/30 {
     border-color: #f99c004d;
   }
@@ -2209,6 +2219,16 @@
     }
   }
 
+  .border-emerald-400\/50 {
+    border-color: #00d29480;
+  }
+
+  @supports (color: color-mix(in lab, red, red)) {
+    .border-emerald-400\/50 {
+      border-color: color-mix(in oklab, var(--color-emerald-400) 50%, transparent);
+    }
+  }
+
   .border-emerald-500 {
     border-color: var(--color-emerald-500);
   }
@@ -2309,6 +2329,10 @@
     }
   }
 
+  .border-muted {
+    border-color: var(--muted);
+  }
+
   .border-neutral-700 {
     border-color: var(--color-neutral-700);
   }
@@ -2350,6 +2374,16 @@
   @supports (color: color-mix(in lab, red, red)) {
     .border-orange-700\/50 {
       border-color: color-mix(in oklab, var(--color-orange-700) 50%, transparent);
+    }
+  }
+
+  .border-pink-400\/50 {
+    border-color: #fb64b680;
+  }
+
+  @supports (color: color-mix(in lab, red, red)) {
+    .border-pink-400\/50 {
+      border-color: color-mix(in oklab, var(--color-pink-400) 50%, transparent);
     }
   }
 

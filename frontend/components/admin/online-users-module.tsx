@@ -39,172 +39,32 @@ export function OnlineUsersModule() {
 
   const loadOnlineStats = async () => {
     try {
-      const supabase = createClient()
-      const now = new Date()
-      const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString()
-      const fifteenMinAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString()
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
-      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
-
-      const fetchAllViews24h = async () => {
-        const pageSize = 1000
-        let allData: any[] = []
-        let from = 0
-        let hasMore = true
-
-        while (hasMore) {
-          const { data, error } = await supabase
-            .from("embed_views")
-            .select("ip_hash, viewed_at, ww_id, media_type, tmdb_id")
-            .gte("viewed_at", twentyFourHoursAgo)
-            .order("viewed_at", { ascending: false })
-            .range(from, from + pageSize - 1)
-
-          if (error) {
-            console.error("Error fetching views:", error)
-            break
-          }
-
-          if (data && data.length > 0) {
-            allData = [...allData, ...data]
-            from += pageSize
-            hasMore = data.length === pageSize
-          } else {
-            hasMore = false
-          }
-        }
-
-        return allData
-      }
-
-      const recentViews = await fetchAllViews24h()
-
-      const views5min = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(fiveMinAgo)) || []
-      const views15min = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(fifteenMinAgo)) || []
-      const views1hour = recentViews?.filter((v: any) => new Date(v.viewed_at) >= new Date(oneHourAgo)) || []
-
-      const uniqueIps5min =
-        new Set(views5min.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size || views5min.length
-
-      const uniqueIps15min =
-        new Set(views15min.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size || views15min.length
-
-      const uniqueIps1hour =
-        new Set(views1hour.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size || views1hour.length
-
-      const uniqueIps24h =
-        new Set(recentViews?.map((v: any) => v.ip_hash).filter((ip: any) => ip != null)).size ||
-        recentViews?.length ||
-        0
-
-      const pageCount: Record<string, { count: number; tmdb_id?: number; media_type?: string }> = {}
-      views15min.forEach((v: any) => {
-        if (v.ww_id) {
-          if (!pageCount[v.ww_id]) {
-            pageCount[v.ww_id] = { count: 0, tmdb_id: v.tmdb_id, media_type: v.media_type }
-          }
-          pageCount[v.ww_id].count++
-        }
-      })
-
-      const activePages = Object.entries(pageCount)
-        .map(([ww_id, data]) => ({ ww_id, count: data.count, tmdb_id: data.tmdb_id, media_type: data.media_type }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10)
-
-      const activePagesWithTitles = await Promise.all(
-        activePages.map(async (page: any) => {
-          if (page.ww_id?.startsWith("ww-live-")) {
-            const channelId = page.ww_id.replace("ww-live-", "")
-            const { data: channel } = await supabase
-              .from("live_tv_channels")
-              .select("channel_name, channel_logo")
-              .eq("id", channelId)
-              .single()
-            return {
-              ...page,
-              title: channel?.channel_name || page.ww_id,
-              poster: channel?.channel_logo || null,
-            }
-          }
-
-          if (page.tmdb_id && page.media_type && (page.media_type === "movie" || page.media_type === "tv")) {
-            try {
-              const res = await fetch(`/api/tmdb/${page.media_type}/${page.tmdb_id}`)
-              if (res.ok) {
-                const data = await res.json()
-                return {
-                  ...page,
-                  title: data.title || data.name || page.ww_id,
-                  poster: data.poster || null,
-                }
-              }
-            } catch (e) {
-              // Ignore
-            }
-          }
-
-          return { ...page, title: page.ww_id, poster: null }
-        }),
-      )
-
-      const seenKeys = new Set<string>()
-      const recentVisitorsRaw =
-        views1hour
-          ?.sort((a: any, b: any) => new Date(b.viewed_at).getTime() - new Date(a.viewed_at).getTime())
-          .filter((v: any) => {
-            const uniqueKey = v.ww_id || `${v.viewed_at}`
-            if (seenKeys.has(uniqueKey)) return false
-            seenKeys.add(uniqueKey)
-            return true
-          })
-          .slice(0, 10) || []
-
-      const recentVisitors = await Promise.all(
-        recentVisitorsRaw.map(async (v: any) => {
-          let title = v.ww_id || "N/A"
-          let poster = null
-
-          if (v.ww_id?.startsWith("ww-live-")) {
-            const channelId = v.ww_id.replace("ww-live-", "")
-            const { data: channel } = await supabase
-              .from("live_tv_channels")
-              .select("channel_name, channel_logo")
-              .eq("id", channelId)
-              .single()
-            title = channel?.channel_name || v.ww_id
-            poster = channel?.channel_logo || null
-          } else if (v.tmdb_id && v.media_type && (v.media_type === "movie" || v.media_type === "tv")) {
-            try {
-              const res = await fetch(`/api/tmdb/${v.media_type}/${v.tmdb_id}`)
-              if (res.ok) {
-                const data = await res.json()
-                title = data.title || data.name || v.ww_id
-                poster = data.poster || null
-              }
-            } catch (e) {
-              // Ignore
-            }
-          }
-
-          return {
-            ip_hash: v.ip_hash ? v.ip_hash.substring(0, 8) + "..." : "Anonyme",
-            viewed_at: v.viewed_at,
-            ww_id: v.ww_id || "N/A",
-            media_type: v.media_type || "N/A",
-            title,
-            poster,
-          }
-        }),
-      )
-
+      // Use the unified server-side stats endpoint — it already enriches
+      // digital (ebook/music/soft/game), live channels and TMDB titles.
+      const res = await fetch("/api/admin/stats", { credentials: "include" })
+      if (!res.ok) return
+      const data = await res.json()
+      const o = data?.online || {}
       setOnlineStats({
-        usersOnline5min: uniqueIps5min,
-        usersOnline15min: uniqueIps15min,
-        usersOnline1hour: uniqueIps1hour,
-        usersOnline24h: uniqueIps24h,
-        activePages: activePagesWithTitles,
-        recentVisitors,
+        usersOnline5min: o.online5min || 0,
+        usersOnline15min: o.online15min || 0,
+        usersOnline1hour: o.online1hour || 0,
+        usersOnline24h: o.online24h || 0,
+        activePages: (o.activePages || []).map((p: any) => ({
+          ww_id: p.ww_id,
+          count: p.count,
+          title: p.title || p.ww_id,
+          poster: p.poster || null,
+          media_type: p.media_type,
+        })),
+        recentVisitors: (o.recentVisitors || []).map((v: any) => ({
+          ip_hash: v.ip_hash || "Anonyme",
+          viewed_at: v.viewed_at,
+          ww_id: v.ww_id,
+          media_type: v.media_type || "N/A",
+          title: v.title || v.ww_id,
+          poster: v.poster || null,
+        })),
       })
     } catch (error) {
       console.error("Error loading online stats:", error)
@@ -301,10 +161,34 @@ export function OnlineUsersModule() {
                             ? "text-blue-400 border-blue-400/50"
                             : page.media_type === "tv"
                               ? "text-purple-400 border-purple-400/50"
-                              : "text-red-400 border-red-400/50"
+                              : page.media_type === "ebook"
+                                ? "text-amber-400 border-amber-400/50"
+                                : page.media_type === "music"
+                                  ? "text-pink-400 border-pink-400/50"
+                                  : page.media_type === "soft" || page.media_type === "software"
+                                    ? "text-cyan-400 border-cyan-400/50"
+                                    : page.media_type === "game"
+                                      ? "text-emerald-400 border-emerald-400/50"
+                                      : page.media_type === "live"
+                                        ? "text-red-400 border-red-400/50"
+                                        : "text-muted-foreground border-muted"
                         }`}
                       >
-                        {page.media_type === "movie" ? "Film" : page.media_type === "tv" ? "Série" : "TV Live"}
+                        {page.media_type === "movie"
+                          ? "Film"
+                          : page.media_type === "tv"
+                            ? "Série"
+                            : page.media_type === "live"
+                              ? "TV Live"
+                              : page.media_type === "ebook"
+                                ? "Ebook"
+                                : page.media_type === "music"
+                                  ? "Musique"
+                                  : page.media_type === "soft" || page.media_type === "software"
+                                    ? "Logiciel"
+                                    : page.media_type === "game"
+                                      ? "Jeu"
+                                      : page.media_type || "?"}
                       </Badge>
                     </div>
                     <Badge variant="secondary" className="text-primary font-bold">

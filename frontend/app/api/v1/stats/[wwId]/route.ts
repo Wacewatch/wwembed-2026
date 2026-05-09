@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { getMovieDetails, getTVDetails, getPosterUrl } from "@/lib/tmdb"
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -34,10 +35,12 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: stri
   const target =
     (streaming as any) || (download as any) || (digital as any) || (liveChannel as any) || null
 
-  const title =
-    target?.title || target?.channel_name || (digital as any)?.title || `Contenu ${wwId}`
-  const poster = target?.poster_url || target?.cover_url || target?.channel_logo || null
-  const type = streaming
+  // Resolve title / poster — fallback to TMDB lookup for ww-movie-{id} / ww-tv-{id}
+  let title: string =
+    target?.title || target?.channel_name || (digital as any)?.title || ""
+  let poster: string | null =
+    target?.poster_url || target?.cover_url || target?.channel_logo || null
+  let type: string = streaming
     ? "streaming"
     : download
       ? "download"
@@ -46,6 +49,26 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: stri
         : liveChannel
           ? "live"
           : "unknown"
+
+  if (!title || !poster) {
+    const m = wwId.match(/^ww-(movie|tv)-(\d+)$/)
+    if (m) {
+      const mediaType = m[1]
+      const tmdbId = parseInt(m[2], 10)
+      try {
+        const tm = mediaType === "movie" ? await getMovieDetails(tmdbId) : await getTVDetails(tmdbId)
+        if (tm) {
+          title = title || (tm as any).title || (tm as any).name || ""
+          poster = poster || ((tm as any).poster_path ? getPosterUrl((tm as any).poster_path, "w342") : null)
+          if (type === "unknown") type = mediaType
+        }
+      } catch {
+        // Ignore TMDB lookup errors
+      }
+    }
+  }
+
+  if (!title) title = `Contenu ${wwId}`
 
   // Range = 30 jours par défaut
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
