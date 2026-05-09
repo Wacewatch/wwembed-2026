@@ -1,5 +1,6 @@
 // Seed default data — runnable once. Idempotent (uses upsert by name/slot).
-import { MongoClient } from "mongodb"
+import bcrypt from "bcryptjs"
+import { MongoClient, ObjectId } from "mongodb"
 import * as fs from "fs"
 import * as path from "path"
 import * as dotenv from "dotenv"
@@ -94,6 +95,48 @@ async function main() {
     { upsert: true }
   )
   console.log(`  ✓ site_settings`)
+
+  // Idempotent admin seeding — guarantees admin@wwembed.test exists with password admin1234
+  const ADMIN_EMAIL = "admin@wwembed.test"
+  const ADMIN_PASS = "admin1234"
+  const existingAdmin = await db.collection("users").findOne({ email: ADMIN_EMAIL })
+  const adminHash = await bcrypt.hash(ADMIN_PASS, 10)
+  const nowIso = new Date().toISOString()
+  let adminId: ObjectId
+  if (existingAdmin) {
+    await db.collection("users").updateOne(
+      { _id: existingAdmin._id },
+      {
+        $set: {
+          password_hash: adminHash,
+          role: "admin",
+          needs_password_reset: false,
+          username: existingAdmin.username || "admin",
+          updated_at: nowIso,
+        },
+      }
+    )
+    adminId = existingAdmin._id
+  } else {
+    const r = await db.collection("users").insertOne({
+      email: ADMIN_EMAIL,
+      username: "admin",
+      password_hash: adminHash,
+      role: "admin",
+      created_at: nowIso,
+      updated_at: nowIso,
+    })
+    adminId = r.insertedId
+  }
+  await db.collection("profiles").updateOne(
+    { _id: adminId },
+    {
+      $set: { email: ADMIN_EMAIL, username: "admin", role: "admin", updated_at: nowIso },
+      $setOnInsert: { created_at: nowIso },
+    },
+    { upsert: true }
+  )
+  console.log(`  ✓ admin user (${ADMIN_EMAIL}, password=${ADMIN_PASS})`)
 
   await mongo.close()
   console.log("✓ Seed done.")
