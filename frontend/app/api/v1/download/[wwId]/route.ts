@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { parseWWId, getMovieDetails, getTVDetails, getPosterUrl } from "@/lib/tmdb"
+import { buildAdModal2Step } from "@/lib/embed-ad-modal"
 
 function generateRandomId(prefix = "x"): string {
   return prefix + Math.random().toString(36).substring(2, 10)
@@ -125,6 +126,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const linksJson = JSON.stringify(downloadLinks || [])
       .replace(/'/g, "\\'")
       .replace(/</g, "\\u003c")
+
+    const adModalDigital = buildAdModal2Step({
+      variant: "download",
+      ad1: "https://otieu.com/4/9248013",
+      ad2: "https://foreignabnormality.com/fgntgn3c16?key=9a04e35a6ffb54c93c0c35724fbca3c5",
+      title: "Votre téléchargement est prêt",
+      subtitle: "Deux étapes pour accéder au lien",
+      doneText: "Cliquez pour voir le lien",
+      finalBtnLabel: "VOIR LE LIEN",
+      showFinalBtn: true,
+      autoShow: false,
+    })
 
     const digitalHtml = `<!DOCTYPE html>
 <html lang="fr">
@@ -278,45 +291,7 @@ Recherche de sources alternatives...
 
 <div class="ft">par <a href="https://wavewatch.top" target="_blank">wavewatch.top</a></div>
 
-<div class="mo" id="${ids.overlay}">
-<div class="mc">
-<div class="mc-body">
-<h2>Votre téléchargement est prêt</h2>
-<div class="mc-sub">Une dernière étape pour accéder au fichier</div>
-<div class="steps">
-<div class="step active" id="${ids.step1}"></div>
-<div class="step" id="${ids.step2}"></div>
-<div class="step" id="${ids.step3}"></div>
-</div>
-<div class="bx bw">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-<div class="bx-content"><b>Popup requis</b><span>Autorisez les popups pour continuer</span></div>
-</div>
-<div class="bx bh" id="${ids.boxHelp}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-<div class="bx-content"><b>Soutenez le service gratuit</b><span>Votre clic nous aide à rester en ligne</span></div>
-</div>
-<div class="bx bi" id="${ids.boxTime}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-<div class="bx-content"><b>Temps restant: <span id="${ids.timer}">3</span> seconde(s)</b><span>Cliquez et fermez la fenêtre</span></div>
-</div>
-<div class="bx bo hi" id="${ids.boxThanks}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-<div class="bx-content"><b>Merci pour votre soutien !</b><span>Vous aidez à maintenir le service</span></div>
-</div>
-<div class="bx bo hi" id="${ids.boxDone}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-<div class="bx-content"><b>Tout est prêt !</b><span>Cliquez pour voir le lien</span></div>
-</div>
-<div class="pb"><div class="pf" id="${ids.progress}"></div></div>
-</div>
-<div class="mc-foot">
-<a href="${adUrl}" target="_blank" rel="noopener" class="bt bp" id="${ids.btnUnlock}">CONTINUER<span class="tag">PUB</span></a>
-<button class="bt bn hi" id="${ids.btnDownload}">Voir le lien</button>
-<div class="cf">Propulsé par <a href="https://wavewatch.top" target="_blank">WaveWatch</a></div>
-</div>
-</div>
-</div>
+${adModalDigital.html}
 
 <script>
 (function(){
@@ -514,7 +489,7 @@ function _bindBtns(){
         e.preventDefault();
         var url=btn.getAttribute("data-url");
         if(!url||url==="undefined"){alert("Lien non disponible");return;}
-        if(_h&&_u){openAdPopup();_showAdModal(decodeURIComponent(url));}
+        if(_h){_showAdModal(decodeURIComponent(url));}
         else{
           fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"digital",wwId:_wwId})});
           _displayLink(decodeURIComponent(url));
@@ -532,62 +507,18 @@ function _displayLink(url){
 }
 
 function _showAdModal(downloadUrl){
-  _p=downloadUrl;
-  var o=document.getElementById(_ids.overlay);
-  var bt=document.getElementById(_ids.boxTime);
-  var bh=document.getElementById(_ids.boxHelp);
-  var bk=document.getElementById(_ids.boxThanks);
-  var bd=document.getElementById(_ids.boxDone);
-  var pr=document.getElementById(_ids.progress);
-  var tm=document.getElementById(_ids.timer);
-  var bu=document.getElementById(_ids.btnUnlock);
-  var dn=document.getElementById(_ids.btnDownload);
-  var s1=document.getElementById(_ids.step1);
-  var s2=document.getElementById(_ids.step2);
-  var s3=document.getElementById(_ids.step3);
-  if(bt)bt.classList.remove("hi");
-  if(bh)bh.classList.remove("hi");
-  if(bk)bk.classList.add("hi");
-  if(bd)bd.classList.add("hi");
-  if(pr)pr.style.width="0";
-  if(tm)tm.textContent="3";
-  if(bu)bu.classList.remove("hi");
-  if(dn)dn.classList.add("hi");
-  if(s1){s1.classList.add("active");s1.classList.remove("done");}
-  if(s2){s2.classList.remove("active");s2.classList.remove("done");}
-  if(s3){s3.classList.remove("active");s3.classList.remove("done");}
-  if(o)o.classList.add("sh");
-  // Real countdown timer: 3..2..1
-  if(tm){tm.textContent="3";var _t=3;var _ti=setInterval(function(){_t--;if(_t<=0){clearInterval(_ti);if(tm)tm.textContent="0";}else{if(tm)tm.textContent=String(_t);}},1000);}
-  var buClone=bu.cloneNode(true);bu.parentNode.replaceChild(buClone,bu);bu=buClone;
-  // Trigger when user clicks CONTINUE PUB
-  function _advance(){
-    if(s1){s1.classList.remove("active");s1.classList.add("done");}
-    if(s2){s2.classList.add("active");s2.classList.add("done");}
-    if(bt)bt.classList.add("hi");
-    if(bh)bh.classList.add("hi");
-    if(bk)bk.classList.add("hi");
-    if(bd)bd.classList.remove("hi");
-    if(pr)pr.style.width="100%";
-    bu.classList.add("hi");
-    if(dn)dn.classList.remove("hi");
-    fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})}).catch(function(){});
+  // Unified 2-step ad modal — see /app/frontend/lib/embed-ad-modal.ts
+  if(window._wwAdModal){
+    window._wwAdModal.show(downloadUrl, function(u){
+      if(u){
+        fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"digital",wwId:_wwId})}).catch(function(){});
+        fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})}).catch(function(){});
+        _displayLink(u);
+      }
+    });
+  }else{
+    _displayLink(downloadUrl);
   }
-  bu.addEventListener("click",function(){
-    setTimeout(_advance,150);
-  });
-  dn=document.getElementById(_ids.btnDownload);
-  var dnClone=dn.cloneNode(true);dn.parentNode.replaceChild(dnClone,dn);dn=dnClone;
-  function _reveal(){
-    o.classList.remove("sh");
-    if(_p){
-      fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"digital",wwId:_wwId})});
-      _displayLink(_p);_p=null;
-    }
-  }
-  dnClone.onclick=_reveal;
-  // Fallback: clicking "Tout est prêt" green box also reveals the link
-  if(bd){bd.style.cursor="pointer";bd.onclick=function(){if(!bd.classList.contains("hi"))_reveal();};}
 }
 
 function _loadExternal(){
@@ -808,34 +739,12 @@ function _openExtAdModal(finalUrl,extLink){
   fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({linkType:"external",wwId:_wwId,provider:(extLink&&extLink.provider)||null,hostName:(extLink&&extLink.host_name)||null,quality:(extLink&&extLink.quality)||null,language:(extLink&&extLink.language)||null,fileSize:(extLink&&extLink.size)||null})
   }).catch(function(){});
-  window._extFinalUrl=finalUrl;
-  var existingModal=document.getElementById("extAdModal");if(existingModal)existingModal.remove();
-  var modal=document.createElement("div");
-  modal.id="extAdModal";
-  modal.style.cssText="position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px";
-  var box=document.createElement("div");
-  box.style.cssText="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center";
-  var t=document.createElement("h2");t.style.cssText="color:#1a1a2e;margin-bottom:6px;font-size:18px";t.textContent="Votre lien est pr\u00eat";
-  var sub=document.createElement("p");sub.style.cssText="color:#666;font-size:12px;margin-bottom:14px";sub.textContent="Cliquez pour acc\u00e9der au t\u00e9l\u00e9chargement";
-  var warn=document.createElement("div");
-  warn.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e";
-  warn.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div>';
-  var sup=document.createElement("div");
-  sup.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6";
-  sup.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide \u00e0 rester en ligne</span></div>';
-  var adBtn=document.createElement("a");
-  adBtn.href=AD_URL_EXT;adBtn.target="_blank";adBtn.rel="noopener";
-  adBtn.style.cssText="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;cursor:pointer";
-  adBtn.innerHTML='CONTINUER <span style="background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span>';
-  var startBtn=document.createElement("button");
-  startBtn.style.cssText="display:none;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff";
-  startBtn.textContent="VOIR LE LIEN";
-  adBtn.onclick=function(){this.style.display="none";startBtn.style.display="block";};
-  startBtn.onclick=function(){modal.remove();_displayLink(window._extFinalUrl);};
-  var footer=document.createElement("p");footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
-  footer.innerHTML='Propuls\u00e9 par <a href="https://wavewatch.top" target="_blank" style="color:#667eea">WaveWatch</a>';
-  box.appendChild(t);box.appendChild(sub);box.appendChild(warn);box.appendChild(sup);box.appendChild(adBtn);box.appendChild(startBtn);box.appendChild(footer);
-  modal.appendChild(box);document.body.appendChild(modal);
+  // Unified 2-step ad modal — also used for direct DB links and alt sources
+  if(window._wwAdModal){
+    window._wwAdModal.show(finalUrl, function(u){ if(u) _displayLink(u); });
+  }else{
+    _displayLink(finalUrl);
+  }
 }
 
 function _showExtDetails(extLink){
@@ -864,6 +773,7 @@ fetch(decodeUrl).then(function(r){return r.json();})
 
 _renderLinks();
 _loadExternal();
+${adModalDigital.js}
 })();
 </script>
 </body>
