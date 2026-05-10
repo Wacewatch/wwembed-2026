@@ -1396,9 +1396,9 @@ async function GET(request, { params }) {
             ad2: "https://foreignabnormality.com/fgntgn3c16?key=9a04e35a6ffb54c93c0c35724fbca3c5",
             title: "Votre téléchargement est prêt",
             subtitle: "Deux étapes pour accéder au lien",
-            doneText: "Cliquez pour voir le lien",
+            doneText: "Affichage du lien...",
             finalBtnLabel: "VOIR LE LIEN",
-            showFinalBtn: true,
+            showFinalBtn: false,
             autoShow: false
         });
         const digitalHtml = `<!DOCTYPE html>
@@ -2286,11 +2286,10 @@ Recherche de sources alternatives...
 <div class="mc">
 <div class="mc-body">
 <h2>Votre t\u00e9l\u00e9chargement est pr\u00eat</h2>
-<div class="mc-sub">Une derni\u00e8re \u00e9tape pour acc\u00e9der au fichier</div>
+<div class="mc-sub">Deux \u00e9tapes pour acc\u00e9der au fichier</div>
 <div class="steps">
 <div class="step active" id="${ids.step1}"></div>
 <div class="step" id="${ids.step2}"></div>
-<div class="step" id="${ids.step3}"></div>
 </div>
 <div class="bx bw">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -2300,23 +2299,19 @@ Recherche de sources alternatives...
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
 <div class="bx-content"><b>Soutenez le service gratuit</b><span>Votre clic nous aide \u00e0 rester en ligne</span></div>
 </div>
-<div class="bx bi" id="${ids.boxTime}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-<div class="bx-content"><b>Temps restant: <span id="${ids.timer}">3</span> seconde(s)</b><span>Cliquez et fermez la fen\u00eatre</span></div>
-</div>
-<div class="bx bo hi" id="${ids.boxThanks}">
+<div class="bx bi hi" id="${ids.boxThanks}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-<div class="bx-content"><b>Merci pour votre soutien !</b><span>Vous aidez \u00e0 maintenir le service</span></div>
+<div class="bx-content"><b>\u00c9tape 1 valid\u00e9e !</b><span>Cliquez sur le 2\u00e8me bouton pour continuer</span></div>
 </div>
 <div class="bx bo hi" id="${ids.boxDone}">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-<div class="bx-content"><b>Tout est pr\u00eat !</b><span>Cliquez pour voir le lien</span></div>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+<div class="bx-content"><b>Tout est pr\u00eat !</b><span>Affichage du lien...</span></div>
 </div>
 <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
 </div>
 <div class="mc-foot">
-<button class="bt bp" id="${ids.btnUnlock}">Continuer<span class="tag">PUB</span></button>
-<button class="bt bn hi" id="${ids.btnDownload}">Voir le lien</button>
+<button class="bt bp" id="${ids.btnUnlock}">\u00c9TAPE 1 / 2<span class="tag">PUB</span></button>
+<button class="bt bp hi" id="${ids.btnDownload}">\u00c9TAPE 2 / 2<span class="tag">PUB</span></button>
 <div class="cf">Propuls\u00e9 par <a href="https://wavewatch.top" target="_blank">WaveWatch</a></div>
 </div>
 </div>
@@ -2678,63 +2673,62 @@ window._copyLink=function(){
 function _sa(url){
   _p=url;
   var o=document.getElementById(_ids.overlay);
-  var bt=document.getElementById(_ids.boxTime);
   var bh=document.getElementById(_ids.boxHelp);
   var bk=document.getElementById(_ids.boxThanks);
   var bd=document.getElementById(_ids.boxDone);
   var pr=document.getElementById(_ids.progress);
-  var tm=document.getElementById(_ids.timer);
   var bu=document.getElementById(_ids.btnUnlock);
   var dn=document.getElementById(_ids.btnDownload);
   var s1=document.getElementById(_ids.step1);
   var s2=document.getElementById(_ids.step2);
-  var s3=document.getElementById(_ids.step3);
-  if(bt)bt.classList.remove("hi");
+  // Reset state
   if(bh)bh.classList.remove("hi");
   if(bk)bk.classList.add("hi");
   if(bd)bd.classList.add("hi");
   if(pr)pr.style.width="0";
-  if(tm)tm.textContent="3";
   if(bu)bu.classList.remove("hi");
   if(dn)dn.classList.add("hi");
   if(s1){s1.classList.add("active");s1.classList.remove("done");}
   if(s2){s2.classList.remove("active");s2.classList.remove("done");}
-  if(s3){s3.classList.remove("active");s3.classList.remove("done");}
   o.classList.add("sh");
-  // Real countdown timer 3..2..1
-  if(tm){tm.textContent="3";var _t2=3;var _ti2=setInterval(function(){_t2--;if(_t2<=0){clearInterval(_ti2);if(tm)tm.textContent="0";}else{if(tm)tm.textContent=String(_t2);}},1000);}
-  var buClone=bu.cloneNode(true);bu.parentNode.replaceChild(buClone,bu);
-  function _advance2(){
-    if(s1){s1.classList.remove("active");s1.classList.add("done");}
-    if(s2){s2.classList.add("active");s2.classList.add("done");}
-    if(bt)bt.classList.add("hi");
-    if(bh)bh.classList.add("hi");
-    if(bk)bk.classList.add("hi");
-    if(bd)bd.classList.remove("hi");
-    if(pr)pr.style.width="100%";
-    buClone.classList.add("hi");
-    var dnEl2=document.getElementById(_ids.btnDownload);
-    if(dnEl2)dnEl2.classList.remove("hi");
-    fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})}).catch(function(){});
-  }
-  buClone.addEventListener("click",function(){
+  // Re-bind buttons (clone to reset listeners)
+  var buClone=bu.cloneNode(true);bu.parentNode.replaceChild(buClone,bu);bu=buClone;
+  var dnClone=dn.cloneNode(true);dn.parentNode.replaceChild(dnClone,dn);dn=dnClone;
+  var _step=0;
+  bu.addEventListener("click",function(){
+    if(_step>=1)return;
+    _step=1;
     var adLink=document.createElement("a");
     adLink.href=_u;adLink.target="_blank";adLink.rel="noopener noreferrer";
     document.body.appendChild(adLink);adLink.click();document.body.removeChild(adLink);
-    setTimeout(_advance2,150);
+    fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})}).catch(function(){});
+    if(s1){s1.classList.remove("active");s1.classList.add("done");}
+    if(s2)s2.classList.add("active");
+    if(pr)pr.style.width="50%";
+    bu.classList.add("hi");
+    if(dn)dn.classList.remove("hi");
+    if(bh)bh.classList.add("hi");
+    if(bk)bk.classList.remove("hi");
   });
-  var dnEl=document.getElementById(_ids.btnDownload);
-  var dnClone=dnEl.cloneNode(true);dnEl.parentNode.replaceChild(dnClone,dnEl);
-  function _reveal2(){
-    o.classList.remove("sh");
-    if(_p){
-      fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
-      _displayLink(_p);_p=null;
-    }
-  }
-  dnClone.onclick=_reveal2;
-  // Fallback: clicking "Tout est prêt" green box also reveals the link
-  if(bd){bd.style.cursor="pointer";bd.onclick=function(){if(!bd.classList.contains("hi"))_reveal2();};}
+  dn.addEventListener("click",function(){
+    if(_step>=2)return;
+    _step=2;
+    var adLink2=document.createElement("a");
+    adLink2.href=AD_URL_EXT;adLink2.target="_blank";adLink2.rel="noopener noreferrer";
+    document.body.appendChild(adLink2);adLink2.click();document.body.removeChild(adLink2);
+    if(s2){s2.classList.remove("active");s2.classList.add("done");}
+    if(pr)pr.style.width="100%";
+    dn.classList.add("hi");
+    if(bk)bk.classList.add("hi");
+    if(bd)bd.classList.remove("hi");
+    setTimeout(function(){
+      o.classList.remove("sh");
+      if(_p){
+        fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})}).catch(function(){});
+        _displayLink(_p);_p=null;
+      }
+    },350);
+  });
 }
 
 function _loadExternal(){
@@ -2855,25 +2849,29 @@ function _openExtAdModal(finalUrl,extLink){
   var box=document.createElement("div");
   box.style.cssText="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center";
   var t=document.createElement("h2");t.style.cssText="color:#1a1a2e;margin-bottom:6px;font-size:18px";t.textContent="Votre lien est pr\u00eat";
-  var sub=document.createElement("p");sub.style.cssText="color:#666;font-size:12px;margin-bottom:14px";sub.textContent="Cliquez pour acc\u00e9der au t\u00e9l\u00e9chargement";
+  var sub=document.createElement("p");sub.style.cssText="color:#666;font-size:12px;margin-bottom:14px";sub.textContent="Deux \u00e9tapes pour acc\u00e9der au t\u00e9l\u00e9chargement";
   var warn=document.createElement("div");
   warn.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e";
   warn.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Popup requis</b><span style="font-size:10px;opacity:0.8">Autorisez les popups pour continuer</span></div>';
   var sup=document.createElement("div");
   sup.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6";
   sup.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide \u00e0 rester en ligne</span></div>';
-  var adBtn=document.createElement("a");
-  adBtn.href=AD_URL_EXT;adBtn.target="_blank";adBtn.rel="noopener";
-  adBtn.style.cssText="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;cursor:pointer";
-  adBtn.innerHTML='CONTINUER <span style="background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span>';
-  var startBtn=document.createElement("button");
-  startBtn.style.cssText="display:none;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff";
-  startBtn.textContent="VOIR LE LIEN";
-  adBtn.onclick=function(){this.style.display="none";startBtn.style.display="block";};
-  startBtn.onclick=function(){modal.remove();_displayLink(window._extFinalUrl);};
+  var ad1Btn=document.createElement("a");
+  ad1Btn.href=AD_URL_EXT;ad1Btn.target="_blank";ad1Btn.rel="noopener";
+  ad1Btn.style.cssText="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;cursor:pointer";
+  ad1Btn.innerHTML='\u00c9TAPE 1 / 2 <span style="background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span>';
+  var ad2Btn=document.createElement("a");
+  ad2Btn.href=_u||AD_URL_EXT;ad2Btn.target="_blank";ad2Btn.rel="noopener";
+  ad2Btn.style.cssText="display:none;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;cursor:pointer";
+  ad2Btn.innerHTML='\u00c9TAPE 2 / 2 <span style="background:#fff;color:#ef4444;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span>';
+  ad1Btn.onclick=function(){this.style.display="none";ad2Btn.style.display="block";};
+  ad2Btn.onclick=function(){
+    ad2Btn.style.display="none";
+    setTimeout(function(){modal.remove();_displayLink(window._extFinalUrl);},350);
+  };
   var footer=document.createElement("p");footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
   footer.innerHTML='Propuls\u00e9 par <a href="https://wavewatch.top" target="_blank" style="color:#667eea">WaveWatch</a>';
-  box.appendChild(t);box.appendChild(sub);box.appendChild(warn);box.appendChild(sup);box.appendChild(adBtn);box.appendChild(startBtn);box.appendChild(footer);
+  box.appendChild(t);box.appendChild(sub);box.appendChild(warn);box.appendChild(sup);box.appendChild(ad1Btn);box.appendChild(ad2Btn);box.appendChild(footer);
   modal.appendChild(box);document.body.appendChild(modal);
 }
 

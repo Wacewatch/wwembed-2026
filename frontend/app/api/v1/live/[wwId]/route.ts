@@ -91,9 +91,9 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
       ad2: AD_URL_2,
       title: "Accédez au flux en direct",
       subtitle: "Deux étapes pour débloquer le contenu",
-      doneText: "Cliquez pour démarrer la lecture",
+      doneText: "Lancement automatique...",
       finalBtnLabel: "DÉMARRER LA LECTURE",
-      showFinalBtn: true,
+      showFinalBtn: false,
       autoShow: true,
       defaultOnComplete: "function(){if(typeof startPlayer==='function')startPlayer();}",
     })

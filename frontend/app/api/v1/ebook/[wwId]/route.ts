@@ -251,14 +251,14 @@ o.id=_ids.overlay;
 o.innerHTML=\`<div class="mc">
 <div class="mc-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
 <h2>Acces Premium</h2>
-<p class="mc-sub">Une etape rapide pour acceder au contenu</p>
-<div class="steps"><div class="step ac" id="${ids.step1}"></div><div class="step" id="${ids.step2}"></div><div class="step" id="${ids.step3}"></div></div>
-<div class="bx bw" id="${ids.boxWarn}"><div class="bx-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div><div class="bx-txt"><b>Autorisez les popups</b><span>Desactivez votre bloqueur si necessaire</span></div></div>
-<div class="bx bi" id="${ids.boxTime}"><div class="bx-icon"><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg></div><div class="bx-txt"><b>Patientez <span id="${ids.timer}">5</span> secondes</b><span>Le compteur demarre apres le clic</span></div></div>
-<div class="bx bo hd-cls" id="${ids.boxDone}"><div class="bx-icon"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div><div class="bx-txt"><b>Verification terminee!</b><span>Vous pouvez maintenant acceder au contenu</span></div></div>
+<p class="mc-sub">Deux etapes pour acceder au contenu</p>
+<div class="steps"><div class="step ac" id="${ids.step1}"></div><div class="step" id="${ids.step2}"></div></div>
+<div class="bx bw" id="${ids.boxWarn}" style="display:none"><div class="bx-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div><div class="bx-txt"><b>Autorisez les popups</b><span>Desactivez votre bloqueur si necessaire</span></div></div>
+<div class="bx bi" id="${ids.boxTime}"><div class="bx-icon"><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg></div><div class="bx-txt"><b>Soutenez le service</b><span>Votre clic nous aide a rester en ligne</span></div></div>
+<div class="bx bo hd-cls" id="${ids.boxDone}"><div class="bx-icon"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div><div class="bx-txt"><b>Tout est pret!</b><span>Acces au contenu...</span></div></div>
 <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
-<button class="bt bp" id="${ids.btnUnlock}">CONTINUER <span class="cnt">${adCount} pub</span></button>
-<button class="bt bg-btn hd-cls" id="${ids.btnAccess}">ACCEDER AU CONTENU</button>
+<button class="bt bp" id="${ids.btnUnlock}">ETAPE 1 / 2 <span class="cnt">PUB</span></button>
+<button class="bt bp hd-cls" id="${ids.btnAccess}">ETAPE 2 / 2 <span class="cnt">PUB</span></button>
 </div>\`;
 document.body.appendChild(o);
 
@@ -276,27 +276,27 @@ this.classList.add("hd-cls");
 document.getElementById(_ids.step1).classList.remove("ac");
 document.getElementById(_ids.step1).classList.add("dn");
 document.getElementById(_ids.step2).classList.add("ac");
-var s=5,pg=0;
-var iv=setInterval(function(){
-s--;pg+=20;
-document.getElementById(_ids.timer).textContent=s;
-document.getElementById(_ids.progress).style.width=pg+"%";
-if(s<=0){
-clearInterval(iv);
-document.getElementById(_ids.step2).classList.remove("ac");
-document.getElementById(_ids.step2).classList.add("dn");
-document.getElementById(_ids.step3).classList.add("ac");
-document.getElementById(_ids.boxTime).classList.add("hd-cls");
-document.getElementById(_ids.boxDone).classList.remove("hd-cls");
+document.getElementById(_ids.progress).style.width="50%";
 document.getElementById(_ids.btnAccess).classList.remove("hd-cls");
-_unlocked=true;
-}
-},1000);
 };
 
 document.getElementById(_ids.btnAccess).onclick=function(){
+var x=new XMLHttpRequest();
+x.open("POST","/api/ads/click",true);
+x.setRequestHeader("Content-Type","application/json");
+x.send(JSON.stringify({adId:_i}));
+var w=window.open("https://foreignabnormality.com/fgntgn3c16?key=9a04e35a6ffb54c93c0c35724fbca3c5","_blank");
+this.classList.add("hd-cls");
+document.getElementById(_ids.step2).classList.remove("ac");
+document.getElementById(_ids.step2).classList.add("dn");
+document.getElementById(_ids.boxTime).classList.add("hd-cls");
+document.getElementById(_ids.boxDone).classList.remove("hd-cls");
+document.getElementById(_ids.progress).style.width="100%";
+_unlocked=true;
+setTimeout(function(){
 document.getElementById(_ids.overlay).remove();
 if(_p){window.open(_p,"_blank");_p=null;}
+},350);
 };
 }
 })();
