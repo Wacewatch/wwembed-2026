@@ -1,0 +1,36 @@
+{
+  "summary": "E2E Playwright validation of unified 2-PUB ad-modal flow across the 7 WWEmbed v1 routes (streaming / live / download movie / download digital / digital direct / ebook / music). 5 of 7 flows validate end-to-end with real popups (otieu + adsterra) and no 3rd-button regression. 1 flow (music) is blocked by empty seed data (no tracks for ww-music-861486 — UI shows 'Aucune piste disponible'), code path is identical to ebook (which PASSES). 1 flow (digital direct, /api/v1/digital/{wwId}) is BROKEN at the route level — the regex validates ^ww-(software|game)- but every row in digital_content uses ww-soft- / ww-ebook- / ww-music-, so the route returns 400 'Invalid digital content WW ID format' for every real wwId.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "/api/v1/digital/[wwId]/route.ts line 14", "issue": "Regex /^ww-(software|game)-/ never matches real DB ids (ww-soft-*, ww-ebook-*, ww-music-*). Endpoint returns HTTP 400 for ww-soft-865259, ww-ebook-579975, ww-music-861486. Fix: change regex to /^ww-(soft|software|game|ebook|music)-/ and map the captured group to the right content_type ('soft' -> 'software').", "selector": "GET /api/v1/digital/ww-soft-865259", "priority": "HIGH"}
+    ],
+    "integration_issues": [
+      {"flow": "music (/api/v1/music/ww-music-861486)", "issue": "Page renders but 'Aucune piste disponible' — digital_download_links has 0 rows for this ww_id. The 2-PUB lk-btn never renders, so the ad flow could not be exercised. Code path is identical to ebook which passes; this is a SEED DATA issue (re-import or pick a music ww_id that actually has tracks).", "affected_selectors": ["button.lk-btn"]},
+      {"flow": "live (/api/v1/live/ww-live-cc0461f590ca4cb1a3bf5152)", "issue": "After the 2 PUB clicks the ad modal closes correctly, but the page then exposes a large 'Debloquer le stream' button + 'Cliquez ici si le bouton ne fonctionne pas' fallback link. This is NOT one of the forbidden labels (DÉMARRER LA LECTURE / VOIR LE LIEN / CONTINUER) and the player IS expected to auto-load via iframe behind it, but visually it can look like a 3rd action. Worth confirming with PM whether this fallback should be hidden by default and only revealed if iframe.onload doesn't fire.", "affected_selectors": ["text=Debloquer le stream"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_3.json"],
+  "action_items": [
+    "[CRITICAL] Fix regex in /app/frontend/app/api/v1/digital/[wwId]/route.ts line 14: replace /^ww-(software|game)-/ with /^ww-(soft|software|game|ebook|music)-/ and map the prefix to the correct content_type ('soft' -> 'software') before the .eq('content_type', ...) query. Currently the entire /api/v1/digital/* route is dead code for the real database.",
+    "[DATA] Re-seed at least one music ww_id with actual tracks in digital_download_links so the music flow can be exercised E2E (or pick a music wwId that already has tracks — only 1 music row exists in digital_content right now: ww-music-861486, which has no tracks).",
+    "[OPTIONAL] Confirm UX intent of the 'Debloquer le stream' button on the live page after 2 PUB clicks — should it be hidden until iframe load failure?"
+  ],
+  "critical_code_review_comments": [
+    "5/7 routes correctly enforce the unified 2-PUB pattern — both popups fire to exactly the spec'd URLs (https://otieu.com/4/9248013 and https://foreignabnormality.com/fgntgn3c16?key=9a04e35a6ffb54c93c0c35724fbca3c5), modal closes automatically, no 3rd button.",
+    "DOWNLOAD movie flow: after step 2, 'Votre lien est prêt !' panel appears at bottom with 'Ouvrir le lien' + 'Copier le lien' — exactly as specced.",
+    "EBOOK flow: after step 2, the final 1fichier URL window.open also fires automatically (3rd popup captured was the actual file URL — expected).",
+    "Static check confirmed: no 'q7jywq0h', no 'exemple.com', no 'CONTINUER>'/'DÉMARRER LA LECTURE'/'VOIR LE LIEN' labels as button text on any of the 7 routes. ('Voir le lien' DOES appear, but only as the *entry* button on external-source cards in /download — that's the user-facing trigger that *opens* the ad modal, not a post-ad button — this matches spec.)",
+    "DIGITAL DIRECT route is unreachable due to regex/data mismatch — no real wwId can pass the validator. Route is effectively dead.",
+    "Live TV: 'showFinalBtn:false' is honored — no third PUB button — but the underlying live-stream-unlock UI still surfaces a large 'Debloquer le stream' button after modal closes; verify with PM if this is intentional fallback or a UX leftover."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only request)", "frontend": "5/7 PASS, 1/7 BLOCKED (data), 1/7 FAIL (regex bug)"},
+  "test_credentials": "n/a — all routes are public",
+  "seed_data_creation": "None. Used existing seeded wwIds.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Routes covered with real popup capture: streaming/ww-movie-10948 (PASS), live/ww-live-cc0461f590ca4cb1a3bf5152 (PASS, see live-fallback note), download/ww-movie-74607 (PASS), download/ww-soft-865259 (PASS — uses button.li-btn as trigger), ebook/ww-ebook-579975 (PASS — uses button.lk-btn after clicking #btnDownloads tab). NOT exercisable as-is: digital/ww-soft-865259 (regex bug, returns 400), music/ww-music-861486 (no tracks in DB, page shows 'Aucune piste disponible'). Trigger selectors per flow: streaming/live = auto, download(movie or soft) = button.li-btn, ebook = #btnDownloads then button.lk-btn, music = #btnDl then button.lk-btn (once seed data exists), digital = button.btnUnlock (once regex is fixed).",
+  "rca of the issue": "BUG 1 (digital regex): /app/frontend/app/api/v1/digital/[wwId]/route.ts line 14 declares `const match = wwId.match(/^ww-(software|game)-/)`. The Mongo collection digital_content stores ww_id values with the prefix `ww-soft-` (8 rows), `ww-ebook-` (51 rows), `ww-music-` (1 row), `ww-game-` (0 rows), `ww-software-` (0 rows). So the regex matches 0 of the 60 rows; every legitimate request returns 400. Reproduction: `curl -s https://download-hub-268.preview.emergentagent.com/api/v1/digital/ww-soft-865259` → `{\"error\":\"Invalid digital content WW ID format\"}`. Mitigation: update regex to `/^ww-(soft|software|game|ebook|music)-/` AND map the captured prefix to the right content_type before the `.eq('content_type', contentType)` query (e.g. `const map={soft:'software',software:'software',game:'game',ebook:'ebook',music:'music'}; const contentType=map[match[1]]`). BUG 2 (music empty data): collection digital_download_links has 0 documents for ww_id='ww-music-861486' — the only seeded music row in digital_content has no tracks. Either re-import with track data or seed manually."
+}
