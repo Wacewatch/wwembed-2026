@@ -10,6 +10,7 @@
   "/api/tmdb-stats/route": "app/api/tmdb-stats/route.js",
   "/api/v1/download/[wwId]/route": "app/api/v1/download/[wwId]/route.js",
   "/api/v1/live/[wwId]/route": "app/api/v1/live/[wwId]/route.js",
+  "/api/v1/livetv/route": "app/api/v1/livetv/route.js",
   "/api/v1/streaming/[wwId]/route": "app/api/v1/streaming/[wwId]/route.js",
   "/docs/page": "app/docs/page.js",
   "/page": "app/page.js"
