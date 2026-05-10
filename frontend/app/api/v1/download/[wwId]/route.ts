@@ -235,6 +235,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .decode-loading-box{background:#1e293b;border-radius:12px;padding:32px 24px;text-align:center;color:#e2e8f0;min-width:200px}
 .decode-loading-box svg{animation:spin 1s linear infinite;width:36px;height:36px;margin-bottom:14px;color:#667eea}
 .decode-loading-box p{font-size:14px;color:#94a3b8}
+${adModalDigital.css}
 </style>
 </head>
 <body>
@@ -1452,7 +1453,7 @@ function _sa(url){
     if(_step>=1)return;
     _step=1;
     var adLink=document.createElement("a");
-    adLink.href=_u;adLink.target="_blank";adLink.rel="noopener noreferrer";
+    adLink.href="https://otieu.com/4/9248013";adLink.target="_blank";adLink.rel="noopener noreferrer";
     document.body.appendChild(adLink);adLink.click();document.body.removeChild(adLink);
     fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})}).catch(function(){});
     if(s1){s1.classList.remove("active");s1.classList.add("done");}
@@ -1467,7 +1468,7 @@ function _sa(url){
     if(_step>=2)return;
     _step=2;
     var adLink2=document.createElement("a");
-    adLink2.href=AD_URL_EXT;adLink2.target="_blank";adLink2.rel="noopener noreferrer";
+    adLink2.href="https://foreignabnormality.com/fgntgn3c16?key=9a04e35a6ffb54c93c0c35724fbca3c5";adLink2.target="_blank";adLink2.rel="noopener noreferrer";
     document.body.appendChild(adLink2);adLink2.click();document.body.removeChild(adLink2);
     if(s2){s2.classList.remove("active");s2.classList.add("done");}
     if(pr)pr.style.width="100%";
@@ -1610,11 +1611,11 @@ function _openExtAdModal(finalUrl,extLink){
   sup.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#ede9fe;border:1px solid #8b5cf6;color:#5b21b6";
   sup.innerHTML='<svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div><b style="display:block;font-size:12px;margin-bottom:2px">Soutenez le service gratuit</b><span style="font-size:10px;opacity:0.8">Votre clic nous aide \u00e0 rester en ligne</span></div>';
   var ad1Btn=document.createElement("a");
-  ad1Btn.href=AD_URL_EXT;ad1Btn.target="_blank";ad1Btn.rel="noopener";
+  ad1Btn.href="https://otieu.com/4/9248013";ad1Btn.target="_blank";ad1Btn.rel="noopener";
   ad1Btn.style.cssText="display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;cursor:pointer";
   ad1Btn.innerHTML='\u00c9TAPE 1 / 2 <span style="background:#fff;color:#667eea;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span>';
   var ad2Btn=document.createElement("a");
-  ad2Btn.href=_u||AD_URL_EXT;ad2Btn.target="_blank";ad2Btn.rel="noopener";
+  ad2Btn.href="https://foreignabnormality.com/fgntgn3c16?key=9a04e35a6ffb54c93c0c35724fbca3c5";ad2Btn.target="_blank";ad2Btn.rel="noopener";
   ad2Btn.style.cssText="display:none;width:100%;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;margin-top:8px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;cursor:pointer";
   ad2Btn.innerHTML='\u00c9TAPE 2 / 2 <span style="background:#fff;color:#ef4444;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:6px">PUB</span>';
   ad1Btn.onclick=function(){this.style.display="none";ad2Btn.style.display="block";};

@@ -4,6 +4,8 @@
   "/api/auth/me/route": "app/api/auth/me/route.js",
   "/api/db/route": "app/api/db/route.js",
   "/api/link-click/route": "app/api/link-click/route.js",
+  "/api/media/[type]/[id]/route": "app/api/media/[type]/[id]/route.js",
+  "/api/search/route": "app/api/search/route.js",
   "/api/tmdb-stats/route": "app/api/tmdb-stats/route.js",
   "/api/v1/digital/[wwId]/route": "app/api/v1/digital/[wwId]/route.js",
   "/api/v1/download/[wwId]/route": "app/api/v1/download/[wwId]/route.js",

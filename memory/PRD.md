@@ -10,6 +10,22 @@
 
 ## Sessions delivered
 
+### Session 9 (2026-05-10) — Modales pub harmonisées 2-PUB-clics partout + fix bug visuel ww-ebook
+- 🎯 Demande user : "dans streaming le modal a 2 clique pub et accède directement au résultat (pas de 3eme clique inutile). je veus le meme partout download, download digital, tv live etc. et gardant les couleur deja en place. les meme pub 2 clique pas plus" — puis (suite) : "il y a des bug visuel dans les download digital sans avoir cliquer sur un lien", "les 2 pub doivent etre les meme que streaming partout otieu et adsterra", "j'ai vu des clique pub sur exemple.com"
+- ✅ **Live TV** (`/api/v1/live/[wwId]`) : `showFinalBtn:true`→`false`. Plus de clic "DÉMARRER LA LECTURE" — le lecteur charge auto après les 2 pubs.
+- ✅ **Download digital flow** (`/api/v1/download/ww-{soft,ebook,music,game}-*`) : `showFinalBtn:true`→`false`. Plus de clic "VOIR LE LIEN".
+- ✅ **Download direct DB** (`_sa()` dans `/api/v1/download/[wwId]`) : modal refondue — 2 boutons PUB (ÉTAPE 1/2 + ÉTAPE 2/2) au lieu de "Continuer" + "Voir le lien". Auto-affichage du lien après le 2ème clic.
+- ✅ **Download external sources** (`_openExtAdModal()`) : 2 boutons PUB au lieu de "CONTINUER" + "VOIR LE LIEN".
+- ✅ **Digital / Ebook / Music** (`/api/v1/{digital,ebook,music}/[wwId]`) : modales refondues — 2 boutons PUB au lieu de 1 PUB + timer 5s + bouton final. Auto-déclenchement du résultat après le 2ème clic.
+- ✅ **Bug visuel critique fixé** : sur le flow digital de `/api/v1/download/[wwId]`, la HTML du modal unifié (`${adModalDigital.html}`) était insérée mais **le CSS associé (`adModalDigital.css`) manquait** dans la balise `<style>`. Conséquence : le `display:none` de l'overlay n'était pas appliqué et la modal apparaissait en bas de page comme un énorme SVG cassé. Ajout d'`${adModalDigital.css}` ligne 237.
+- ✅ **Pubs harmonisées partout** : les 6 routes utilisent maintenant LES MÊMES 2 URLs que streaming :
+  - PUB 1 = `https://otieu.com/4/9248013` (otieu)
+  - PUB 2 = `https://foreignabnormality.com/fgntgn3c16?key=9a04e35a6ffb54c93c0c35724fbca3c5` (adsterra)
+  - Plus aucun `window.open(_u)` (ad random DB) ni `AD_URL_EXT` différent — tout est désormais figé sur otieu + adsterra.
+- ✅ Couleurs originales préservées (streaming dark blue/purple, livetv orange, download violet/pink, digital/ebook/music dark glass).
+- ✅ Test E2E Playwright + curl : streaming, download direct, digital — tous PASS (2 clics → résultat direct).
+- ⚠️ Session précédente avait seedé des données de test (ww-movie-27205, ww-soft-test-1 etc) — **toutes supprimées** dans cette session. Le user doit re-importer depuis Supabase via /admin → onglet Import → "Démarrer l'import complet".
+
 ### Session 8 (2026-05-10) — Fix bug "modal pub digital download : pas de bouton 'voir le lien'"
 - 🐛 Bug user : sur `/api/v1/download/ww-soft-XXX` (et autres digital), click sur lien direct DB → modal pub s'affiche, click "CONTINUER" → la pub s'ouvre, mais ensuite la modal reste vide (ni lien ni bouton "voir le lien").
 - 🔍 RCA : dans `_showAdModal` du flow digital, le code clone le bouton btnDownload pour reset les listeners (`var dnClone = dn.cloneNode(true); dn.parentNode.replaceChild(dnClone, dn)`), mais — contrairement au bouton `bu` (CONTINUER) à la ligne 562 où on fait `bu = buClone` — la variable JS `dn` n'était PAS réassignée. Résultat : `dn` pointait vers l'ancien node DOM **détaché**, et l'appel `dn.classList.remove("hi")` dans `_advance()` modifiait un node fantôme. Le vrai bouton (dnClone) gardait la classe `hi` (`display:none !important`) → invisible.
