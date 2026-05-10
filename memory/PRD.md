@@ -10,6 +10,14 @@
 
 ## Sessions delivered
 
+### Session 7 (2026-05-10) — Bouton "Import Supabase → MongoDB" admin
+- ✅ Endpoint `POST /api/admin/import-supabase` (admin only, requireAdmin) — démarre un job d'import en background, retourne le jobId immédiatement
+- ✅ Endpoint `GET /api/admin/import-supabase` — retourne le dernier job (ou `?id=<id>`) avec status, phase, current_table, total_rows et état par table
+- ✅ Lib `/app/frontend/lib/mongo/supabase-import.ts` : logique de migration extraite (UUID→ObjectId hex 24, bulkWrite upsert idempotent, retries timeout/57014, ne réécrase pas un user qui a déjà un password_hash). Persiste le job dans la collection `import_jobs` à chaque page (500 rows) pour progress live.
+- ✅ Composant `/app/frontend/components/admin/import-supabase.tsx` : panel glass avec banner Cyan, bouton "Démarrer l'import complet" + confirmation, polling toutes les 2s tant que running, barre de progression, grid des 17 tables + auth.users avec icônes d'état (pending/running/done/error), succès/erreur summary.
+- ✅ Nouvel onglet "Import" dans `AdminTabs` (icône Database, accent cyan) — accessible uniquement aux admins (page /admin redirect non-admin)
+- ✅ Test E2E validé : login admin → /admin → onglet Import → click "Démarrer" → POST 200 → polling montre progress live (profiles 63 rows ✓, streaming_links 1211 ✓, embed_views en cours…)
+
 ### Session 6 (2026-05-10) — Test complet "tout vérifier"
 - ✅ Container frais : `node_modules` manquaient → `yarn install --ignore-engines` exécuté (Node 20 vs swagger-client requiert Node ≥22)
 - ✅ Frontend Next.js 16 redémarré, supervisor RUNNING

@@ -146,6 +146,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../../app/api/admin/import-supabase/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/import-supabase">> = Specific
+  const handler = {} as typeof import("../../../app/api/admin/import-supabase/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../app/api/admin/stats/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/stats">> = Specific
