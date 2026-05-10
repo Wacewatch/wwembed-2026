@@ -355,25 +355,31 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5
 ;
 const SB_URL = process.env.SUPABASE_URL || "";
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY || "";
-// Tables to migrate (order matters: profiles before users so we can enrich)
+// Tables to migrate.
+// ORDER MATTERS:
+//  - Phase 1 (small, user-facing) first so the UI/admin sees full content quickly
+//  - Phase 2 (huge log/analytics tables) last — they take the longest and are
+//    the least critical for app functionality.
 const TABLES = [
+    // --- Phase 1: small + critical user-facing data ---
     "profiles",
     "profile_settings",
     "third_party_apis",
-    "streaming_links",
-    "download_links",
-    "embed_views",
-    "link_clicks",
-    "api_usage",
-    "daily_stats",
     "ads",
-    "ad_clicks",
     "live_tv_channels",
     "live_tv_sources",
     "digital_content",
     "digital_download_links",
+    "streaming_links",
+    "download_links",
+    "site_settings",
+    "daily_stats",
     "bug_reports",
-    "site_settings"
+    // --- Phase 2: huge log/analytics tables (slow, can be re-run) ---
+    "api_usage",
+    "ad_clicks",
+    "link_clicks",
+    "embed_views"
 ];
 function uuidToObjectIdHex(uuid) {
     const hex = uuid.replace(/-/g, "");
@@ -582,9 +588,21 @@ async function startImportJob() {
     if (!SB_URL || !SB_KEY) {
         throw new Error("SUPABASE_URL / SUPABASE_SERVICE_KEY missing in environment");
     }
+    // 1. If something is *actually* running in this process, refuse.
     if (globalThis.__ww_import_running) {
-        throw new Error("An import is already running");
+        throw new Error("Un import est déjà en cours dans ce process");
     }
+    // 2. Mark any previously-running job in DB as stale (process restarted).
+    const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getDb"])();
+    await db.collection("import_jobs").updateMany({
+        status: "running"
+    }, {
+        $set: {
+            status: "error",
+            error: "Process restarted — relancez l'import",
+            finished_at: new Date().toISOString()
+        }
+    });
     globalThis.__ww_import_running = true;
     const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$supabase$2f$supabase$2d$js$2f$dist$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$locals$3e$__["createClient"])(SB_URL, SB_KEY, {
         auth: {

@@ -12,25 +12,31 @@ import { getDb } from "./db"
 const SB_URL = process.env.SUPABASE_URL || ""
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY || ""
 
-// Tables to migrate (order matters: profiles before users so we can enrich)
+// Tables to migrate.
+// ORDER MATTERS:
+//  - Phase 1 (small, user-facing) first so the UI/admin sees full content quickly
+//  - Phase 2 (huge log/analytics tables) last — they take the longest and are
+//    the least critical for app functionality.
 const TABLES = [
+  // --- Phase 1: small + critical user-facing data ---
   "profiles",
   "profile_settings",
   "third_party_apis",
-  "streaming_links",
-  "download_links",
-  "embed_views",
-  "link_clicks",
-  "api_usage",
-  "daily_stats",
   "ads",
-  "ad_clicks",
   "live_tv_channels",
   "live_tv_sources",
   "digital_content",
   "digital_download_links",
-  "bug_reports",
+  "streaming_links",
+  "download_links",
   "site_settings",
+  "daily_stats",
+  "bug_reports",
+  // --- Phase 2: huge log/analytics tables (slow, can be re-run) ---
+  "api_usage",
+  "ad_clicks",
+  "link_clicks",
+  "embed_views",
 ] as const
 
 export type ImportTableStatus = {
@@ -258,15 +264,38 @@ async function migrateAuthUsers(job: ImportJob, supabase: ReturnType<typeof crea
 
 /**
  * Start a new import job. Returns immediately with the job id.
- * Throws if env is missing or another import is already running.
+ * Throws if env is missing.
+ *
+ * If a previous job is marked "running" in MongoDB but the in-memory flag is
+ * false (i.e. the Node process restarted / hot-reloaded), we mark that stale
+ * job as `error` and allow a new one to start. This lets the admin click
+ * "Démarrer" again to resume after any crash/restart without manual cleanup.
  */
 export async function startImportJob(): Promise<ImportJob> {
   if (!SB_URL || !SB_KEY) {
     throw new Error("SUPABASE_URL / SUPABASE_SERVICE_KEY missing in environment")
   }
+
+  // 1. If something is *actually* running in this process, refuse.
   if (globalThis.__ww_import_running) {
-    throw new Error("An import is already running")
+    throw new Error("Un import est déjà en cours dans ce process")
   }
+
+  // 2. Mark any previously-running job in DB as stale (process restarted).
+  const db = await getDb()
+  await db
+    .collection("import_jobs")
+    .updateMany(
+      { status: "running" },
+      {
+        $set: {
+          status: "error",
+          error: "Process restarted — relancez l'import",
+          finished_at: new Date().toISOString(),
+        },
+      }
+    )
+
   globalThis.__ww_import_running = true
 
   const supabase = createClient(SB_URL, SB_KEY, {
