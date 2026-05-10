@@ -10,6 +10,12 @@
 
 ## Sessions delivered
 
+### Session 8 (2026-05-10) — Fix bug "modal pub digital download : pas de bouton 'voir le lien'"
+- 🐛 Bug user : sur `/api/v1/download/ww-soft-XXX` (et autres digital), click sur lien direct DB → modal pub s'affiche, click "CONTINUER" → la pub s'ouvre, mais ensuite la modal reste vide (ni lien ni bouton "voir le lien").
+- 🔍 RCA : dans `_showAdModal` du flow digital, le code clone le bouton btnDownload pour reset les listeners (`var dnClone = dn.cloneNode(true); dn.parentNode.replaceChild(dnClone, dn)`), mais — contrairement au bouton `bu` (CONTINUER) à la ligne 562 où on fait `bu = buClone` — la variable JS `dn` n'était PAS réassignée. Résultat : `dn` pointait vers l'ancien node DOM **détaché**, et l'appel `dn.classList.remove("hi")` dans `_advance()` modifiait un node fantôme. Le vrai bouton (dnClone) gardait la classe `hi` (`display:none !important`) → invisible.
+- ✅ Fix 1-ligne dans `/app/frontend/app/api/v1/download/[wwId]/route.ts:580` : ajouter `;dn=dnClone` après le `replaceChild` pour que la closure de `_advance` voie le nouveau node.
+- ✅ Test E2E Playwright complet : load page → click "Télécharger" → modal → click "CONTINUER" (pub s'ouvre) → bouton "VOIR LE LIEN" maintenant visible → click → modal se ferme + zone "Votre lien est prêt !" affiche l'URL + bouton "Ouvrir le lien".
+
 ### Session 7 (2026-05-10) — Bouton "Import Supabase → MongoDB" admin
 - ✅ Endpoint `POST /api/admin/import-supabase` (admin only, requireAdmin) — démarre un job d'import en background, retourne le jobId immédiatement
 - ✅ Endpoint `GET /api/admin/import-supabase` — retourne le dernier job (ou `?id=<id>`) avec status, phase, current_table, total_rows et état par table

@@ -577,7 +577,7 @@ function _showAdModal(downloadUrl){
     setTimeout(_advance,150);
   });
   dn=document.getElementById(_ids.btnDownload);
-  var dnClone=dn.cloneNode(true);dn.parentNode.replaceChild(dnClone,dn);
+  var dnClone=dn.cloneNode(true);dn.parentNode.replaceChild(dnClone,dn);dn=dnClone;
   function _reveal(){
     o.classList.remove("sh");
     if(_p){
