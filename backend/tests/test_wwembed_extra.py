@@ -13,7 +13,7 @@ import pytest
 import requests
 
 BASE_URL = os.environ.get(
-    "REACT_APP_BACKEND_URL", "https://wwembed-preview.preview.emergentagent.com"
+    "REACT_APP_BACKEND_URL", "https://instant-result.preview.emergentagent.com"
 ).rstrip("/")
 
 ADMIN_EMAIL = "admin@wwembed.test"
