@@ -1,0 +1,36 @@
+{
+  "summary": "Re-test of /api/v1/digital/[wwId] after regex fix (^ww-(soft|software|game|ebook|music)- with PREFIX_TO_TYPE mapping). All 3 real wwIds now return HTTP 200. The 2-PUB modal flow validates END-TO-END on ww-soft-865259 and ww-ebook-579975 with all 3 expected popups (otieu → foreignabnormality → real file URL) and modal auto-close. ww-music-861486 returns HTTP 200, page renders, but as expected has no tracks (Aucun lien de telechargement disponible) so the .db trigger does not exist — per request this counts as PASS. No forbidden labels (CONTINUER / VOIR LE LIEN / DÉMARRER LA LECTURE) found anywhere. Modal '.mo' is correctly absent from DOM on initial load (no SVG dump bug). REGEX FIX VERIFIED.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/ads/click", "issue": "Returns HTTP 500 when called from inside the 2-PUB modal (visible in browser console during both ETAPE 1 and ETAPE 2 clicks on ww-soft-865259 and ww-ebook-579975). The download flow is not blocked because the request is fire-and-forget XHR, but ad-click telemetry is being lost. Likely cause: payload {adId} or missing/invalid columns in the ad-click insert. Worth checking server logs."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "/api/v1/digital/[wwId]/route.ts lines 98-102 (typeLabel & iconSvg)", "issue": "Only 'software' is handled explicitly — every other content_type (game, ebook, music) falls through to the 'Jeu' label and the game-controller SVG. Result: ebook page (Journaux Français Locaux) and music page (Kate Bush) both show the 'Jeu' badge with a game-pad icon. Suggested fix: extend typeLabel/iconSvg switch to {software:'Logiciel', game:'Jeu', ebook:'Ebook', music:'Musique'} with matching icons.", "selector": ".tg span (badge in .hd > .ti)", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_4.json", "/app/test_reports/iteration_3.json"],
+  "action_items": [
+    "[MEDIUM] Fix typeLabel/iconSvg in /app/frontend/app/api/v1/digital/[wwId]/route.ts to handle ebook and music content_types (currently both display as 'Jeu' with game-pad icon).",
+    "[LOW] Investigate why POST /api/ads/click returns HTTP 500 — ad-click tracking is silently failing for the digital-direct route. Does NOT block end-user download flow, but telemetry is broken."
+  ],
+  "critical_code_review_comments": [
+    "Regex fix at line 14 (/^ww-(soft|software|game|ebook|music)-/) and the PREFIX_TO_TYPE mapping (lines 20-27) correctly resolve the iteration_3 critical bug. ww-soft-* now maps to content_type='software' and the .eq('content_type', contentType) lookup succeeds.",
+    "All 3 expected popup URLs fire to the EXACT spec'd targets: ETAPE 1 → https://otieu.com/4/9248013, ETAPE 2 → https://foreignabnormality.com/fgntgn3c16?key=9a04e35a6ffb54c93c0c35724fbca3c5, then setTimeout 350ms → real file URL (1fichier.com).",
+    "Modal '.mo' is created lazily on .db click — DOM is clean on initial render (no SVG dump / no premature visibility).",
+    "Modal correctly removes .sh class after step 2, file popup fires from setTimeout — exactly per spec.",
+    "Cosmetic miss: route.ts treats every non-software content_type as a 'Jeu' (game). Ebook and music pages show the wrong badge label and wrong SVG icon. The 2-PUB flow itself is unaffected."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only request)", "frontend": "3/3 PASS — soft (full flow), ebook (full flow), music (HTTP 200 + no error, no tracks expected)"},
+  "test_credentials": "n/a — public route",
+  "seed_data_creation": "None.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration_3 regex bug is FIXED and verified end-to-end with Playwright on ww-soft-865259 and ww-ebook-579975. Only remaining items: (1) wrong typeLabel/iconSvg for ebook/music (cosmetic 'Jeu' badge), (2) /api/ads/click returns 500 (tracking only, non-blocking). Re-seeding tracks for ww-music-861486 is no longer needed for THIS route since music falls under digital_content/digital_download_links and the route renders fine with empty links — though if PM wants the 2-PUB flow exercised on a music wwId, seed data would still be required.",
+  "rca of the issue": "Iteration_3 BUG was: regex /^ww-(software|game)-/ at line 14 of /api/v1/digital/[wwId]/route.ts only matched non-existent prefixes, so 100% of real wwIds returned HTTP 400. FIX (verified in iteration_4): regex was widened to /^ww-(soft|software|game|ebook|music)-/ and a PREFIX_TO_TYPE map was added so the captured prefix is normalised to the canonical content_type before the supabase.eq('content_type', contentType) call (e.g. 'soft' → 'software'). Reproduction post-fix: curl https://download-hub-268.preview.emergentagent.com/api/v1/digital/ww-soft-865259 → HTTP 200, 13.5 KB HTML; curl ww-ebook-579975 → HTTP 200, 13.4 KB; curl ww-music-861486 → HTTP 200, 13.6 KB. Playwright e2e: both popups fire to spec URLs, file URL popup fires after modal closes."
+}

@@ -877,8 +877,8 @@ function generateRandomId(prefix = "x") {
 }
 async function GET(request, { params }) {
     const { wwId } = await params;
-    // Validate format: ww-software-xxx or ww-game-xxx
-    const match = wwId.match(/^ww-(software|game)-/);
+    // Validate format: accept legacy/alias prefixes — DB stores ww-soft-*, ww-ebook-*, ww-music-* (no ww-software-*, no ww-game-* in current data, but kept for forward compat)
+    const match = wwId.match(/^ww-(soft|software|game|ebook|music)-/);
     if (!match) {
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             error: "Invalid digital content WW ID format"
@@ -886,7 +886,15 @@ async function GET(request, { params }) {
             status: 400
         });
     }
-    const contentType = match[1];
+    // Map prefix → canonical content_type stored in digital_content
+    const PREFIX_TO_TYPE = {
+        soft: "software",
+        software: "software",
+        game: "game",
+        ebook: "ebook",
+        music: "music"
+    };
+    const contentType = PREFIX_TO_TYPE[match[1]];
     const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createAdminClient"])();
     // Fetch the digital content
     const { data: content } = await supabase.from("digital_content").select("*").eq("ww_id", wwId).eq("content_type", contentType).eq("is_active", true).eq("status", "approved").single();

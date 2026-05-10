@@ -10,13 +10,21 @@ function generateRandomId(prefix = "x"): string {
 export async function GET(request: NextRequest, { params }: { params: Promise<{ wwId: string }> }) {
   const { wwId } = await params
 
-  // Validate format: ww-software-xxx or ww-game-xxx
-  const match = wwId.match(/^ww-(software|game)-/)
+  // Validate format: accept legacy/alias prefixes — DB stores ww-soft-*, ww-ebook-*, ww-music-* (no ww-software-*, no ww-game-* in current data, but kept for forward compat)
+  const match = wwId.match(/^ww-(soft|software|game|ebook|music)-/)
   if (!match) {
     return NextResponse.json({ error: "Invalid digital content WW ID format" }, { status: 400 })
   }
 
-  const contentType = match[1] as "software" | "game"
+  // Map prefix → canonical content_type stored in digital_content
+  const PREFIX_TO_TYPE: Record<string, string> = {
+    soft: "software",
+    software: "software",
+    game: "game",
+    ebook: "ebook",
+    music: "music",
+  }
+  const contentType = PREFIX_TO_TYPE[match[1]] as "software" | "game" | "ebook" | "music"
   const supabase = createAdminClient()
 
   // Fetch the digital content
