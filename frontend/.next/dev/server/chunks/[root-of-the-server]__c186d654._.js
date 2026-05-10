@@ -752,22 +752,47 @@ class MongoSupabaseClient {
         // Minimal RPC support — implement the known stored procs.
         const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getDb"])();
         if (fnName === "increment_ad_clicks") {
-            await db.collection("ads").updateOne(idFilter(args.ad_id), {
-                $inc: {
-                    click_count: 1
+            // Use aggregation pipeline so $inc works even when click_count is null/missing (legacy migrated rows).
+            await db.collection("ads").updateOne(idFilter(args.ad_id), [
+                {
+                    $set: {
+                        click_count: {
+                            $add: [
+                                {
+                                    $ifNull: [
+                                        "$click_count",
+                                        0
+                                    ]
+                                },
+                                1
+                            ]
+                        }
+                    }
                 }
-            });
+            ]);
             return {
                 data: null,
                 error: null
             };
         }
         if (fnName === "increment_live_tv_views") {
-            await db.collection("live_tv_channels").updateOne(idFilter(args.channel_id), {
-                $inc: {
-                    view_count: 1
+            await db.collection("live_tv_channels").updateOne(idFilter(args.channel_id), [
+                {
+                    $set: {
+                        view_count: {
+                            $add: [
+                                {
+                                    $ifNull: [
+                                        "$view_count",
+                                        0
+                                    ]
+                                },
+                                1
+                            ]
+                        }
+                    }
                 }
-            });
+            ]);
             return {
                 data: null,
                 error: null
@@ -882,16 +907,12 @@ async function POST(request) {
             referrer: request.headers.get("referer"),
             user_agent: request.headers.get("user-agent")
         });
-        // Increment click count directly
-        await supabase.from("ads").update({
-            click_count: supabase.rpc ? undefined : 0
-        }).eq("id", adId);
-        // Use raw SQL to increment
+        // Atomically increment click_count via the rpc shim (handles null legacy values)
         const { error } = await supabase.rpc("increment_ad_clicks", {
             ad_id: adId
         });
         if (error) {
-            // Fallback: manual increment
+            // Manual fallback (should never trigger after the shim fix)
             const { data: ad } = await supabase.from("ads").select("click_count").eq("id", adId).single();
             if (ad) {
                 await supabase.from("ads").update({

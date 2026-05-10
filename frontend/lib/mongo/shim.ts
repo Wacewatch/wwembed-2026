@@ -447,15 +447,20 @@ export class MongoSupabaseClient {
     // Minimal RPC support — implement the known stored procs.
     const db = await getDb()
     if (fnName === "increment_ad_clicks") {
+      // Use aggregation pipeline so $inc works even when click_count is null/missing (legacy migrated rows).
       await db
         .collection("ads")
-        .updateOne(idFilter(args.ad_id), { $inc: { click_count: 1 } })
+        .updateOne(idFilter(args.ad_id), [
+          { $set: { click_count: { $add: [{ $ifNull: ["$click_count", 0] }, 1] } } },
+        ])
       return { data: null, error: null }
     }
     if (fnName === "increment_live_tv_views") {
       await db
         .collection("live_tv_channels")
-        .updateOne(idFilter(args.channel_id), { $inc: { view_count: 1 } })
+        .updateOne(idFilter(args.channel_id), [
+          { $set: { view_count: { $add: [{ $ifNull: ["$view_count", 0] }, 1] } } },
+        ])
       return { data: null, error: null }
     }
     return { data: null, error: { message: `Unknown RPC: ${fnName}` } }

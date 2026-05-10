@@ -14,17 +14,11 @@ export async function POST(request: NextRequest) {
       user_agent: request.headers.get("user-agent"),
     })
 
-    // Increment click count directly
-    await supabase
-      .from("ads")
-      .update({ click_count: supabase.rpc ? undefined : 0 })
-      .eq("id", adId)
-
-    // Use raw SQL to increment
+    // Atomically increment click_count via the rpc shim (handles null legacy values)
     const { error } = await supabase.rpc("increment_ad_clicks", { ad_id: adId })
 
     if (error) {
-      // Fallback: manual increment
+      // Manual fallback (should never trigger after the shim fix)
       const { data: ad } = await supabase.from("ads").select("click_count").eq("id", adId).single()
       if (ad) {
         await supabase
