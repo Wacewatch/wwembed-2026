@@ -34,8 +34,13 @@ class BrowserQuery {
         this.chain = [];
     }
     select(cols, opts) {
-        this.mode = "select";
-        this.selectStr = cols;
+        // .select() called AFTER insert/update/upsert/delete is a "RETURNING" hint,
+        // not a query mode change. Only set mode if we're still in default state.
+        if (this.mode === "select") this.selectStr = cols;
+        else this.selectStr = cols;
+        if (this.mode === "select" || !this.payload && this.mode !== "delete") {
+            this.mode = "select";
+        }
         if (opts?.count) this.countMode = opts.count;
         if (opts?.head) this.headOnly = true;
         return this;
@@ -437,14 +442,20 @@ function createBrowserClient() {
 /**
  * Drop-in replacement: browser-side client backed by /api/db + /api/auth/*.
  * All existing UI code keeps using `createClient()` exactly as before.
+ *
+ * Returns the SAME instance across calls (singleton) — components like
+ * ads-manager memoize useEffect on `[loadAds]` which depends on the client;
+ * a new instance per render would loop.
  */ __turbopack_context__.s([
     "createClient",
     ()=>createClient
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$browser$2d$shim$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/mongo/browser-shim.ts [app-ssr] (ecmascript)");
 ;
+let _instance = null;
 function createClient() {
-    return (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$browser$2d$shim$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createBrowserClient"])();
+    if (!_instance) _instance = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$browser$2d$shim$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createBrowserClient"])();
+    return _instance;
 }
 }),
 "[project]/lib/utils.ts [app-ssr] (ecmascript)", ((__turbopack_context__) => {
