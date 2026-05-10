@@ -1,6 +1,8 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
+  "/api/admin/import-supabase/route": "app/api/admin/import-supabase/route.js",
   "/api/ads/click/route": "app/api/ads/click/route.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
   "/api/auth/me/route": "app/api/auth/me/route.js",
   "/api/db/route": "app/api/db/route.js",
   "/api/link-click/route": "app/api/link-click/route.js",

@@ -1118,7 +1118,7 @@ var x=new XMLHttpRequest();
 x.open("POST","/api/ads/click",true);
 x.setRequestHeader("Content-Type","application/json");
 x.send(JSON.stringify({adId:_i}));
-var w=window.open(_u,"_blank");
+var w=window.open("https://otieu.com/4/9248013","_blank");
 if(!w||w.closed||typeof w.closed=="undefined"){
 document.getElementById(_ids.boxWarn).style.display="flex";
 return;

@@ -1098,7 +1098,7 @@ var x=new XMLHttpRequest();
 x.open("POST","/api/ads/click",true);
 x.setRequestHeader("Content-Type","application/json");
 x.send(JSON.stringify({adId:_i}));
-var w=window.open(_u,"_blank");
+var w=window.open("https://otieu.com/4/9248013","_blank");
 if(!w||w.closed||typeof w.closed=="undefined"){
 document.getElementById(_ids.boxWarn).classList.remove("hd-cls");
 return;
@@ -1116,7 +1116,7 @@ var x=new XMLHttpRequest();
 x.open("POST","/api/ads/click",true);
 x.setRequestHeader("Content-Type","application/json");
 x.send(JSON.stringify({adId:_i}));
-var w=window.open("https://foreignabnormality.com/fgntgn3c16?key=9a04e35a6ffb54c93c0c35724fbca3c5","_blank");
+window.open("https://foreignabnormality.com/fgntgn3c16?key=9a04e35a6ffb54c93c0c35724fbca3c5","_blank");
 this.classList.add("hd-cls");
 document.getElementById(_ids.step2).classList.remove("ac");
 document.getElementById(_ids.step2).classList.add("dn");
