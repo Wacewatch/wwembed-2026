@@ -1,4 +1,5 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
   "/api/admin/import-supabase/route": "app/api/admin/import-supabase/route.js",
   "/api/ads/click/route": "app/api/ads/click/route.js",
   "/api/auth/login/route": "app/api/auth/login/route.js",

@@ -362,30 +362,6 @@ export async function GET(req: NextRequest) {
           responses: { "200": { description: "HTML", content: { "text/html": {} } } },
         },
       },
-      "/api/v1/links/{wwId}": {
-        get: {
-          tags: ["Embed"],
-          summary: "Liste des liens (download / streaming) au format JSON",
-          parameters: [
-            { name: "wwId", in: "path", required: true, schema: { type: "string" } },
-          ],
-          responses: {
-            "200": {
-              description: "JSON",
-              content: {
-                "application/json": {
-                  example: {
-                    wwId: "ww_xxx",
-                    streaming: [{ source_name: "VidSrc", quality: "HD" }],
-                    download: [{ source_name: "1fichier", quality: "1080p" }],
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-
       "/api/v1/stats/{wwId}": {
         get: {
           tags: ["Stats"],

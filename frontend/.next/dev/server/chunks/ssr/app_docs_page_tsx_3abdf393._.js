@@ -10,7 +10,6 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/client/app-dir/link.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$arrow$2d$left$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__ArrowLeft$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/arrow-left.js [app-ssr] (ecmascript) <export default as ArrowLeft>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$book$2d$open$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__BookOpen$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/book-open.js [app-ssr] (ecmascript) <export default as BookOpen>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$code$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Code$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/code.js [app-ssr] (ecmascript) <export default as Code>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$tv$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Tv$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/tv.js [app-ssr] (ecmascript) <export default as Tv>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$download$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Download$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/download.js [app-ssr] (ecmascript) <export default as Download>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$play$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Play$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/play.js [app-ssr] (ecmascript) <export default as Play>");
@@ -90,40 +89,6 @@ const SECTIONS = [
     }
   ]
 }`
-    },
-    {
-        id: "links-json",
-        icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$code$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Code$3e$__["Code"],
-        title: "Liste des liens d'un média (JSON)",
-        description: "Retourne en JSON les sources streaming + download pour un film ou une série donné·e.",
-        url: "/api/v1/links/{ww_id}",
-        exampleUrl: "/api/v1/links/ww-movie-27205",
-        jsonResponse: `{
-  "ww_id": "ww-movie-27205",
-  "tmdb_id": 27205,
-  "media_type": "movie",
-  "streaming": [
-    {
-      "id": "auto-...",
-      "source_name": "VidSrc",
-      "source_url": "https://vidsrc.xyz/embed/movie/27205",
-      "quality": "HD",
-      "language": "multi",
-      "is_auto": true
-    }
-  ],
-  "download": [
-    {
-      "id": "...",
-      "source_name": "1Fichier",
-      "source_url": "https://...",
-      "link_type": "direct",
-      "quality": "1080p",
-      "file_size": "4.5 GB",
-      "language": "VF"
-    }
-  ]
-}`
     }
 ];
 function CodeBlock({ children, copyable = true }) {
@@ -137,12 +102,12 @@ function CodeBlock({ children, copyable = true }) {
                     children: children
                 }, void 0, false, {
                     fileName: "[project]/app/docs/page.tsx",
-                    lineNumber: 136,
+                    lineNumber: 101,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/docs/page.tsx",
-                lineNumber: 135,
+                lineNumber: 100,
                 columnNumber: 7
             }, this),
             copyable && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -156,13 +121,13 @@ function CodeBlock({ children, copyable = true }) {
                 children: copied ? "✓ copié" : "copier"
             }, void 0, false, {
                 fileName: "[project]/app/docs/page.tsx",
-                lineNumber: 139,
+                lineNumber: 104,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/docs/page.tsx",
-        lineNumber: 134,
+        lineNumber: 99,
         columnNumber: 5
     }, this);
 }
@@ -174,7 +139,7 @@ function ApiDocsPage() {
                 className: "orb w-[420px] h-[420px] -top-32 -left-32 bg-primary/30 pointer-events-none"
             }, void 0, false, {
                 fileName: "[project]/app/docs/page.tsx",
-                lineNumber: 158,
+                lineNumber: 123,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -184,7 +149,7 @@ function ApiDocsPage() {
                 }
             }, void 0, false, {
                 fileName: "[project]/app/docs/page.tsx",
-                lineNumber: 159,
+                lineNumber: 124,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -202,14 +167,14 @@ function ApiDocsPage() {
                                         className: "w-4 h-4"
                                     }, void 0, false, {
                                         fileName: "[project]/app/docs/page.tsx",
-                                        lineNumber: 172,
+                                        lineNumber: 137,
                                         columnNumber: 13
                                     }, this),
                                     " Retour"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/docs/page.tsx",
-                                lineNumber: 167,
+                                lineNumber: 132,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -221,13 +186,13 @@ function ApiDocsPage() {
                                 children: "spec OpenAPI brute"
                             }, void 0, false, {
                                 fileName: "[project]/app/docs/page.tsx",
-                                lineNumber: 174,
+                                lineNumber: 139,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/docs/page.tsx",
-                        lineNumber: 166,
+                        lineNumber: 131,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -240,14 +205,14 @@ function ApiDocsPage() {
                                         className: "w-3.5 h-3.5"
                                     }, void 0, false, {
                                         fileName: "[project]/app/docs/page.tsx",
-                                        lineNumber: 188,
+                                        lineNumber: 153,
                                         columnNumber: 13
                                     }, this),
                                     "Documentation API"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/docs/page.tsx",
-                                lineNumber: 187,
+                                lineNumber: 152,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -258,14 +223,14 @@ function ApiDocsPage() {
                                         children: "WWEmbed"
                                     }, void 0, false, {
                                         fileName: "[project]/app/docs/page.tsx",
-                                        lineNumber: 192,
+                                        lineNumber: 157,
                                         columnNumber: 13
                                     }, this),
                                     " API"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/docs/page.tsx",
-                                lineNumber: 191,
+                                lineNumber: 156,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -273,13 +238,13 @@ function ApiDocsPage() {
                                 children: "Toutes les URLs d'embed et les endpoints JSON dont vous avez besoin pour intégrer WWEmbed dans votre site. Pas de clé API, pas d'authentification, prêt à l'emploi."
                             }, void 0, false, {
                                 fileName: "[project]/app/docs/page.tsx",
-                                lineNumber: 194,
+                                lineNumber: 159,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/docs/page.tsx",
-                        lineNumber: 186,
+                        lineNumber: 151,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -303,12 +268,12 @@ function ApiDocsPage() {
                                                     className: "w-5 h-5 text-primary"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/docs/page.tsx",
-                                                    lineNumber: 214,
+                                                    lineNumber: 179,
                                                     columnNumber: 21
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/docs/page.tsx",
-                                                lineNumber: 213,
+                                                lineNumber: 178,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -319,7 +284,7 @@ function ApiDocsPage() {
                                                         children: s.title
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/docs/page.tsx",
-                                                        lineNumber: 217,
+                                                        lineNumber: 182,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -327,19 +292,19 @@ function ApiDocsPage() {
                                                         children: s.description
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/docs/page.tsx",
-                                                        lineNumber: 220,
+                                                        lineNumber: 185,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/docs/page.tsx",
-                                                lineNumber: 216,
+                                                lineNumber: 181,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/docs/page.tsx",
-                                        lineNumber: 212,
+                                        lineNumber: 177,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -350,7 +315,7 @@ function ApiDocsPage() {
                                                 children: "URL"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/docs/page.tsx",
-                                                lineNumber: 228,
+                                                lineNumber: 193,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(CodeBlock, {
@@ -358,13 +323,13 @@ function ApiDocsPage() {
                                                 children: `GET ${s.url}`
                                             }, void 0, false, {
                                                 fileName: "[project]/app/docs/page.tsx",
-                                                lineNumber: 231,
+                                                lineNumber: 196,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/docs/page.tsx",
-                                        lineNumber: 227,
+                                        lineNumber: 192,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -375,14 +340,14 @@ function ApiDocsPage() {
                                                 children: "Exemple"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/docs/page.tsx",
-                                                lineNumber: 238,
+                                                lineNumber: 203,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(CodeBlock, {
                                                 children: fullEx
                                             }, void 0, false, {
                                                 fileName: "[project]/app/docs/page.tsx",
-                                                lineNumber: 241,
+                                                lineNumber: 206,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
@@ -394,13 +359,13 @@ function ApiDocsPage() {
                                                 children: "Tester dans un nouvel onglet →"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/docs/page.tsx",
-                                                lineNumber: 242,
+                                                lineNumber: 207,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/docs/page.tsx",
-                                        lineNumber: 237,
+                                        lineNumber: 202,
                                         columnNumber: 17
                                     }, this),
                                     s.notes && s.notes.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -411,7 +376,7 @@ function ApiDocsPage() {
                                                 children: "Formats acceptés"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/docs/page.tsx",
-                                                lineNumber: 256,
+                                                lineNumber: 221,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
@@ -424,7 +389,7 @@ function ApiDocsPage() {
                                                                 children: "›"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/docs/page.tsx",
-                                                                lineNumber: 262,
+                                                                lineNumber: 227,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -432,24 +397,24 @@ function ApiDocsPage() {
                                                                 children: n
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/docs/page.tsx",
-                                                                lineNumber: 263,
+                                                                lineNumber: 228,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, j, true, {
                                                         fileName: "[project]/app/docs/page.tsx",
-                                                        lineNumber: 261,
+                                                        lineNumber: 226,
                                                         columnNumber: 25
                                                     }, this))
                                             }, void 0, false, {
                                                 fileName: "[project]/app/docs/page.tsx",
-                                                lineNumber: 259,
+                                                lineNumber: 224,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/docs/page.tsx",
-                                        lineNumber: 255,
+                                        lineNumber: 220,
                                         columnNumber: 19
                                     }, this),
                                     s.jsonResponse && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -459,32 +424,32 @@ function ApiDocsPage() {
                                                 children: "Réponse JSON"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/docs/page.tsx",
-                                                lineNumber: 273,
+                                                lineNumber: 238,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(CodeBlock, {
                                                 children: s.jsonResponse
                                             }, void 0, false, {
                                                 fileName: "[project]/app/docs/page.tsx",
-                                                lineNumber: 276,
+                                                lineNumber: 241,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/docs/page.tsx",
-                                        lineNumber: 272,
+                                        lineNumber: 237,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, s.id, true, {
                                 fileName: "[project]/app/docs/page.tsx",
-                                lineNumber: 206,
+                                lineNumber: 171,
                                 columnNumber: 15
                             }, this);
                         })
                     }, void 0, false, {
                         fileName: "[project]/app/docs/page.tsx",
-                        lineNumber: 201,
+                        lineNumber: 166,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -498,7 +463,7 @@ function ApiDocsPage() {
                                     children: "<iframe>"
                                 }, void 0, false, {
                                     fileName: "[project]/app/docs/page.tsx",
-                                    lineNumber: 287,
+                                    lineNumber: 252,
                                     columnNumber: 58
                                 }, this),
                                 "avec ",
@@ -507,31 +472,31 @@ function ApiDocsPage() {
                                     children: "allowfullscreen"
                                 }, void 0, false, {
                                     fileName: "[project]/app/docs/page.tsx",
-                                    lineNumber: 288,
+                                    lineNumber: 253,
                                     columnNumber: 18
                                 }, this),
                                 ". Les endpoints JSON acceptent le CORS depuis n'importe quelle origine."
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/docs/page.tsx",
-                            lineNumber: 286,
+                            lineNumber: 251,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/app/docs/page.tsx",
-                        lineNumber: 285,
+                        lineNumber: 250,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/docs/page.tsx",
-                lineNumber: 164,
+                lineNumber: 129,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/docs/page.tsx",
-        lineNumber: 157,
+        lineNumber: 122,
         columnNumber: 5
     }, this);
 }

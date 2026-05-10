@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, BookOpen, Code, Tv, Download, Play, List } from "lucide-react"
+import { ArrowLeft, BookOpen, Tv, Download, Play, List } from "lucide-react"
 import { useState } from "react"
 
 const PREVIEW_BASE =
@@ -87,41 +87,6 @@ const SECTIONS: Section[] = [
       "embed_url": "${PREVIEW_BASE}/api/v1/live/ww-live-...",
       "name": "Canal+ Foot",
       ...
-    }
-  ]
-}`,
-  },
-  {
-    id: "links-json",
-    icon: Code,
-    title: "Liste des liens d'un média (JSON)",
-    description:
-      "Retourne en JSON les sources streaming + download pour un film ou une série donné·e.",
-    url: "/api/v1/links/{ww_id}",
-    exampleUrl: "/api/v1/links/ww-movie-27205",
-    jsonResponse: `{
-  "ww_id": "ww-movie-27205",
-  "tmdb_id": 27205,
-  "media_type": "movie",
-  "streaming": [
-    {
-      "id": "auto-...",
-      "source_name": "VidSrc",
-      "source_url": "https://vidsrc.xyz/embed/movie/27205",
-      "quality": "HD",
-      "language": "multi",
-      "is_auto": true
-    }
-  ],
-  "download": [
-    {
-      "id": "...",
-      "source_name": "1Fichier",
-      "source_url": "https://...",
-      "link_type": "direct",
-      "quality": "1080p",
-      "file_size": "4.5 GB",
-      "language": "VF"
     }
   ]
 }`,
