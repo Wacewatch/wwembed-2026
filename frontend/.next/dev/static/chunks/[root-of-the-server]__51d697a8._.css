@@ -1691,10 +1691,6 @@
     max-width: 960px;
   }
 
-  .max-w-\[1200px\] {
-    max-width: 1200px;
-  }
-
   .max-w-\[calc\(100\%-2rem\)\] {
     max-width: calc(100% - 2rem);
   }

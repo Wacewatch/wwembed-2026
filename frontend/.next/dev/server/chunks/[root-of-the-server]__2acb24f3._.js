@@ -1574,7 +1574,7 @@ var _allAltLinks=[];
 var _altLoaded=false;
 var _movixContentId=null;
 var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
-var AD_URL_EXT="https://foreignabnormality.com/q7jywq0h?key=6eb56670c09233e007f1bfb9cf0e1b55";
+// AD_URL_EXT removed in session 9 — all ad clicks now use the unified 2-step modal (otieu + adsterra)
 
 // ── Rate limit modal ──────────────────────────────────────────────────────
 function _formatRetryTime(retryAt){
@@ -2341,7 +2341,7 @@ var _currentAltLinks=[];
 var _altLoaded=false;
 var _movixMovieId=null;
 var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
-var AD_URL_EXT="https://foreignabnormality.com/q7jywq0h?key=6eb56670c09233e007f1bfb9cf0e1b55";
+// AD_URL_EXT removed in session 9 — all ad clicks now use the unified 2-step modal (otieu + adsterra)
 var ALT_BASE="https://apis.wavewatch.top/wawa.php";
 
 // ── Rate limit modal ──────────────────────────────────────────────────────

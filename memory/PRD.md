@@ -10,6 +10,24 @@
 
 ## Sessions delivered
 
+### Session 10 (2026-05-10) — Vérification complète des modales pub 2-clics partout
+- 🎯 Demande user : "continu mon code, ma derniere demande n'est pas fini (modal pub 2 clique comme streaming, pour download et download digital et les lien interne externe alt etc..)". Puis confirmation : "oui, vérifie".
+- ✅ **Audit complet des 7 routes de pub** par grep + curl HTML rendu :
+  - `/api/v1/streaming/[wwId]` → 2 boutons ÉTAPE 1/2 + 2/2, otieu + adsterra ✅ (showFinalBtn:false)
+  - `/api/v1/live/[wwId]` → idem ✅ (lecteur auto après 2e PUB)
+  - `/api/v1/download/[wwId]` flow movie/serie : `_sa()` lien interne DB → otieu + adsterra ✅ ; `_openExtAdModal()` lien externe (movix) → otieu + adsterra ✅ ; lien alt (wavewatch.top) → utilise `_openExtAdModal` → otieu + adsterra ✅
+  - `/api/v1/download/[wwId]` flow digital (ww-soft/ebook/music/game) : `_showAdModal()` lien interne → `window._wwAdModal` 2-step (otieu + adsterra) ✅ ; `_openExtAdModal()` lien externe + alt → `window._wwAdModal` ✅
+  - `/api/v1/digital/[wwId]` → 2 boutons ÉTAPE 1/2 + 2/2, otieu + adsterra ✅
+  - `/api/v1/ebook/[wwId]` → idem ✅
+  - `/api/v1/music/[wwId]` → idem ✅
+- ✅ **Test curl E2E** : `curl /api/v1/streaming/ww-movie-99999` et `/api/v1/download/ww-movie-99999` rendent du HTML. Grep confirme :
+  - Seules les 2 URLs pubs unifiées présentes : `otieu.com/4/9248013` + `foreignabnormality.com/fgntgn3c16?key=9a04e35a...`
+  - Boutons "ÉTAPE 1 / 2" et "ÉTAPE 2 / 2" présents
+  - Aucune trace de `VOIR LE LIEN` / `DÉMARRER LA LECTURE` / `CONTINUER` (3e clic) — ni de `q7jywq0h` (vieille pub) ni de `exemple.com`
+- 🧹 **Nettoyage dead code** : 2 déclarations orphelines `var AD_URL_EXT="https://foreignabnormality.com/q7jywq0h?..."` (lignes 315 et 1097) jamais utilisées après l'unification → supprimées (remplacées par un commentaire explicatif).
+- ⚙️ **Setup container** : `node_modules/` absent au démarrage → `yarn install --ignore-engines` (48s) + `supervisorctl restart frontend` → service RUNNING, `curl localhost:3000 → 200`.
+- ⚠️ DB toujours vide (collections existent mais 0 docs partout) — user doit re-cliquer "Démarrer l'import complet" sur `/admin → Import` pour récupérer les 4.5M rows depuis Supabase.
+
 ### Session 9 (2026-05-10) — Modales pub harmonisées 2-PUB-clics partout + fix bug visuel ww-ebook
 - 🎯 Demande user : "dans streaming le modal a 2 clique pub et accède directement au résultat (pas de 3eme clique inutile). je veus le meme partout download, download digital, tv live etc. et gardant les couleur deja en place. les meme pub 2 clique pas plus" — puis (suite) : "il y a des bug visuel dans les download digital sans avoir cliquer sur un lien", "les 2 pub doivent etre les meme que streaming partout otieu et adsterra", "j'ai vu des clique pub sur exemple.com"
 - ✅ **Live TV** (`/api/v1/live/[wwId]`) : `showFinalBtn:true`→`false`. Plus de clic "DÉMARRER LA LECTURE" — le lecteur charge auto après les 2 pubs.
