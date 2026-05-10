@@ -10,6 +10,17 @@
 
 ## Sessions delivered
 
+### Session 6 (2026-05-10) — Test complet "tout vérifier"
+- ✅ Container frais : `node_modules` manquaient → `yarn install --ignore-engines` exécuté (Node 20 vs swagger-client requiert Node ≥22)
+- ✅ Frontend Next.js 16 redémarré, supervisor RUNNING
+- ✅ Admin user re-seedé dans MongoDB (admin@wwembed.test / admin1234, bcrypt cost 10)
+- ✅ Pytest backend : **32/32 tests passent** (auth, embed v1 routes, TMDB, /api/db RBAC, /api/admin/stats, /api/openapi, /api/v1/stats)
+- ✅ Frontend e2e Playwright : homepage, /auth/login, /auth/sign-up, /auth/forgot-password, /dashboard, /admin, /docs, /profile/{username}, /embed/{wwId}/stats — tous green
+- ⚠️ Issues mineures non-bloquantes :
+  - Console TypeError sur /docs (apidom turbopack chunk) — UI fonctionne
+  - /profile et /embed/{wwId} (bare, sans paramètre) → 404 by design (les routes implémentées sont /profile/{username} et /embed/{wwId}/stats)
+  - ww_access / ww_refresh cookies en HttpOnly+SameSite=Lax mais sans flag Secure (hardening optionnel)
+
 ### Sessions 1-3 (2026-05-09)
 Architecture migrée vers Next.js + MongoDB shim, auth JWT, /api/db RBAC, refonte UI dark glass, /api/admin/stats endpoint unifié, public stats par embed, profile pages, embed routes 1:1 avec Supabase preserved.
 
