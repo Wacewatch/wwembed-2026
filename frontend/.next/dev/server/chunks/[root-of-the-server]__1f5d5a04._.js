@@ -752,22 +752,47 @@ class MongoSupabaseClient {
         // Minimal RPC support — implement the known stored procs.
         const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getDb"])();
         if (fnName === "increment_ad_clicks") {
-            await db.collection("ads").updateOne(idFilter(args.ad_id), {
-                $inc: {
-                    click_count: 1
+            // Use aggregation pipeline so $inc works even when click_count is null/missing (legacy migrated rows).
+            await db.collection("ads").updateOne(idFilter(args.ad_id), [
+                {
+                    $set: {
+                        click_count: {
+                            $add: [
+                                {
+                                    $ifNull: [
+                                        "$click_count",
+                                        0
+                                    ]
+                                },
+                                1
+                            ]
+                        }
+                    }
                 }
-            });
+            ]);
             return {
                 data: null,
                 error: null
             };
         }
         if (fnName === "increment_live_tv_views") {
-            await db.collection("live_tv_channels").updateOne(idFilter(args.channel_id), {
-                $inc: {
-                    view_count: 1
+            await db.collection("live_tv_channels").updateOne(idFilter(args.channel_id), [
+                {
+                    $set: {
+                        view_count: {
+                            $add: [
+                                {
+                                    $ifNull: [
+                                        "$view_count",
+                                        0
+                                    ]
+                                },
+                                1
+                            ]
+                        }
+                    }
                 }
-            });
+            ]);
             return {
                 data: null,
                 error: null
@@ -1592,7 +1617,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
     <button class="bt bp" id="${ids.btnUnlock1}">ÉTAPE 1 / 2<span class="adtag">PUB</span></button>
     <button class="bt bp2 hi" id="${ids.btnUnlock2}">ÉTAPE 2 / 2<span class="adtag2">PUB</span></button>
-    <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
+    <div class="cf">Propulsé par <a href="https://wavewatch.top" target="_blank">WaveWatch</a></div>
   </div>
 </div>
 

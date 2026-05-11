@@ -45,10 +45,14 @@ export async function POST(req: NextRequest) {
       headOnly,
     } = body
 
-    if (!table || !PUBLIC_READ_TABLES.has(table))
+    // Allow admin-only tables (writes-only) to bypass the public-read check —
+    // their writes are still gated by the ADMIN_ONLY_WRITE check below.
+    const writeOps = ["insert", "update", "upsert", "delete"]
+    const isAdminOnlyWriteThrough =
+      ADMIN_ONLY_WRITE.has(table) && writeOps.includes(mode) && !PUBLIC_READ_TABLES.has(table)
+    if (!table || (!PUBLIC_READ_TABLES.has(table) && !isAdminOnlyWriteThrough))
       return NextResponse.json({ data: null, error: { message: "Forbidden table" } }, { status: 403 })
 
-    const writeOps = ["insert", "update", "upsert", "delete"]
     if (writeOps.includes(mode)) {
       const user = await getCurrentUser(req)
       if (!user)

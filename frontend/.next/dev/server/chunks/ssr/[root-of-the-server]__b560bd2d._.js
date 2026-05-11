@@ -720,22 +720,47 @@ class MongoSupabaseClient {
         // Minimal RPC support — implement the known stored procs.
         const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getDb"])();
         if (fnName === "increment_ad_clicks") {
-            await db.collection("ads").updateOne(idFilter(args.ad_id), {
-                $inc: {
-                    click_count: 1
+            // Use aggregation pipeline so $inc works even when click_count is null/missing (legacy migrated rows).
+            await db.collection("ads").updateOne(idFilter(args.ad_id), [
+                {
+                    $set: {
+                        click_count: {
+                            $add: [
+                                {
+                                    $ifNull: [
+                                        "$click_count",
+                                        0
+                                    ]
+                                },
+                                1
+                            ]
+                        }
+                    }
                 }
-            });
+            ]);
             return {
                 data: null,
                 error: null
             };
         }
         if (fnName === "increment_live_tv_views") {
-            await db.collection("live_tv_channels").updateOne(idFilter(args.channel_id), {
-                $inc: {
-                    view_count: 1
+            await db.collection("live_tv_channels").updateOne(idFilter(args.channel_id), [
+                {
+                    $set: {
+                        view_count: {
+                            $add: [
+                                {
+                                    $ifNull: [
+                                        "$view_count",
+                                        0
+                                    ]
+                                },
+                                1
+                            ]
+                        }
+                    }
                 }
-            });
+            ]);
             return {
                 data: null,
                 error: null
@@ -1270,8 +1295,10 @@ async function AdminPage() {
     if (!user) {
         (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$components$2f$navigation$2e$react$2d$server$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["redirect"])("/auth/login");
     }
-    const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-    if (!profile || profile.role !== "admin") {
+    // Use the role from the authenticated user (sourced from the `users` collection
+    // via getCurrentUser) instead of the `profiles` mirror, which can drift out of
+    // sync. The Header navigation uses the same source, so behaviour stays consistent.
+    if (user.role !== "admin") {
         (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$components$2f$navigation$2e$react$2d$server$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["redirect"])("/");
     }
     const [{ count: totalViews }, { count: totalClicks }, { count: totalStreamingLinks }, { count: totalDownloadLinks }, { count: totalUsers }, { count: totalApis }, { count: totalLiveTvChannels }, { count: pendingStreaming }, { count: pendingDownload }, { count: pendingLiveTv }, { count: approvedStreaming }, { count: approvedDownload }, { data: adsData }, { count: totalEbooks }, { count: totalMusic }, { count: totalSoftware }, { count: totalGames }, { count: totalDigitalLinks }] = await Promise.all([
@@ -1368,7 +1395,7 @@ async function AdminPage() {
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$header$2e$tsx__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["Header"], {}, void 0, false, {
                 fileName: "[project]/app/admin/page.tsx",
-                lineNumber: 87,
+                lineNumber: 88,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
@@ -1382,7 +1409,7 @@ async function AdminPage() {
                                 children: "Administration"
                             }, void 0, false, {
                                 fileName: "[project]/app/admin/page.tsx",
-                                lineNumber: 90,
+                                lineNumber: 91,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1390,61 +1417,61 @@ async function AdminPage() {
                                 children: "Gérez les APIs, liens, chaînes TV, contenus digitaux et utilisateurs"
                             }, void 0, false, {
                                 fileName: "[project]/app/admin/page.tsx",
-                                lineNumber: 91,
+                                lineNumber: 92,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/admin/page.tsx",
-                        lineNumber: 89,
+                        lineNumber: 90,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$admin$2f$admin$2d$stats$2e$tsx__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["AdminStats"], {
                         stats: stats
                     }, void 0, false, {
                         fileName: "[project]/app/admin/page.tsx",
-                        lineNumber: 96,
+                        lineNumber: 97,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "mb-6",
                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$admin$2f$server$2d$stats$2d$module$2e$tsx__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["ServerStatsModule"], {}, void 0, false, {
                             fileName: "[project]/app/admin/page.tsx",
-                            lineNumber: 99,
+                            lineNumber: 100,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/app/admin/page.tsx",
-                        lineNumber: 98,
+                        lineNumber: 99,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "mb-6",
                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$admin$2f$online$2d$users$2d$module$2e$tsx__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["OnlineUsersModule"], {}, void 0, false, {
                             fileName: "[project]/app/admin/page.tsx",
-                            lineNumber: 103,
+                            lineNumber: 104,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/app/admin/page.tsx",
-                        lineNumber: 102,
+                        lineNumber: 103,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$admin$2f$admin$2d$tabs$2e$tsx__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["AdminTabs"], {}, void 0, false, {
                         fileName: "[project]/app/admin/page.tsx",
-                        lineNumber: 106,
+                        lineNumber: 107,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/admin/page.tsx",
-                lineNumber: 88,
+                lineNumber: 89,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/admin/page.tsx",
-        lineNumber: 86,
+        lineNumber: 87,
         columnNumber: 5
     }, this);
 }

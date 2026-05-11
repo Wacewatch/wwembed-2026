@@ -11,8 +11,8 @@
 - Rôle: `member`
 
 ## URLs
-- Frontend: https://download-hub-268.preview.emergentagent.com/
-- Backend proxy (FastAPI): https://download-hub-268.preview.emergentagent.com/api/health
+- Frontend: https://deployment-preview-15.preview.emergentagent.com/
+- Backend proxy (FastAPI): https://deployment-preview-15.preview.emergentagent.com/api/health
 - Login: /auth/login
 - Sign up: /auth/sign-up
 - Mot de passe oublié: /auth/forgot-password

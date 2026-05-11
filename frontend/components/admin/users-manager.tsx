@@ -36,14 +36,22 @@ export function UsersManager() {
 
   const updateRole = async (id: string, newRole: string) => {
     const supabase = createClient()
-    await supabase.from("profiles").update({ role: newRole }).eq("id", id)
+    // Update both `profiles` (legacy mirror) and `users` (auth source of truth)
+    // so the JWT-based header check stays consistent with the admin redirect.
+    await Promise.all([
+      supabase.from("profiles").update({ role: newRole }).eq("id", id),
+      supabase.from("users").update({ role: newRole }).eq("id", id),
+    ])
     loadUsers()
   }
 
   const deleteUser = async (id: string) => {
     if (!confirm("Supprimer cet utilisateur? Cette action est irreversible.")) return
     const supabase = createClient()
-    await supabase.from("profiles").delete().eq("id", id)
+    await Promise.all([
+      supabase.from("profiles").delete().eq("id", id),
+      supabase.from("users").delete().eq("id", id),
+    ])
     loadUsers()
   }
 

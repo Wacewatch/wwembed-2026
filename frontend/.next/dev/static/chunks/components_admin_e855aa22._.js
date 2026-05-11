@@ -1582,15 +1582,25 @@ function UsersManager() {
     };
     const updateRole = async (id, newRole)=>{
         const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["createClient"])();
-        await supabase.from("profiles").update({
-            role: newRole
-        }).eq("id", id);
+        // Update both `profiles` (legacy mirror) and `users` (auth source of truth)
+        // so the JWT-based header check stays consistent with the admin redirect.
+        await Promise.all([
+            supabase.from("profiles").update({
+                role: newRole
+            }).eq("id", id),
+            supabase.from("users").update({
+                role: newRole
+            }).eq("id", id)
+        ]);
         loadUsers();
     };
     const deleteUser = async (id)=>{
         if (!confirm("Supprimer cet utilisateur? Cette action est irreversible.")) return;
         const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["createClient"])();
-        await supabase.from("profiles").delete().eq("id", id);
+        await Promise.all([
+            supabase.from("profiles").delete().eq("id", id),
+            supabase.from("users").delete().eq("id", id)
+        ]);
         loadUsers();
     };
     const filteredUsers = users.filter((u)=>{
@@ -1608,14 +1618,14 @@ function UsersManager() {
                             className: "w-3 h-3"
                         }, void 0, false, {
                             fileName: "[project]/components/admin/users-manager.tsx",
-                            lineNumber: 62,
+                            lineNumber: 70,
                             columnNumber: 13
                         }, this),
                         "Admin"
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/admin/users-manager.tsx",
-                    lineNumber: 61,
+                    lineNumber: 69,
                     columnNumber: 11
                 }, this);
             case "uploader":
@@ -1626,14 +1636,14 @@ function UsersManager() {
                             className: "w-3 h-3"
                         }, void 0, false, {
                             fileName: "[project]/components/admin/users-manager.tsx",
-                            lineNumber: 69,
+                            lineNumber: 77,
                             columnNumber: 13
                         }, this),
                         "Uploader"
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/admin/users-manager.tsx",
-                    lineNumber: 68,
+                    lineNumber: 76,
                     columnNumber: 11
                 }, this);
             default:
@@ -1644,14 +1654,14 @@ function UsersManager() {
                             className: "w-3 h-3"
                         }, void 0, false, {
                             fileName: "[project]/components/admin/users-manager.tsx",
-                            lineNumber: 76,
+                            lineNumber: 84,
                             columnNumber: 13
                         }, this),
                         "Member"
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/admin/users-manager.tsx",
-                    lineNumber: 75,
+                    lineNumber: 83,
                     columnNumber: 11
                 }, this);
         }
@@ -1669,12 +1679,12 @@ function UsersManager() {
                 className: "animate-spin rounded-full h-8 w-8 border-b-2 border-primary"
             }, void 0, false, {
                 fileName: "[project]/components/admin/users-manager.tsx",
-                lineNumber: 93,
+                lineNumber: 101,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/components/admin/users-manager.tsx",
-            lineNumber: 92,
+            lineNumber: 100,
             columnNumber: 7
         }, this);
     }
@@ -1693,14 +1703,14 @@ function UsersManager() {
                                         className: "w-5 h-5 text-primary"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 104,
+                                        lineNumber: 112,
                                         columnNumber: 13
                                     }, this),
                                     "Gestion des utilisateurs"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                lineNumber: 103,
+                                lineNumber: 111,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1711,13 +1721,13 @@ function UsersManager() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                lineNumber: 107,
+                                lineNumber: 115,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/users-manager.tsx",
-                        lineNumber: 102,
+                        lineNumber: 110,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1730,7 +1740,7 @@ function UsersManager() {
                                         className: "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 111,
+                                        lineNumber: 119,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -1740,13 +1750,13 @@ function UsersManager() {
                                         className: "pl-9 w-64"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 112,
+                                        lineNumber: 120,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                lineNumber: 110,
+                                lineNumber: 118,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -1760,20 +1770,20 @@ function UsersManager() {
                                                 className: "w-4 h-4 mr-2"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 121,
+                                                lineNumber: 129,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectValue"], {
                                                 placeholder: "Filtrer"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 122,
+                                                lineNumber: 130,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 120,
+                                        lineNumber: 128,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -1783,7 +1793,7 @@ function UsersManager() {
                                                 children: "Tous les roles"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 125,
+                                                lineNumber: 133,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -1791,7 +1801,7 @@ function UsersManager() {
                                                 children: "Admins"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 126,
+                                                lineNumber: 134,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -1799,7 +1809,7 @@ function UsersManager() {
                                                 children: "Uploaders"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 127,
+                                                lineNumber: 135,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -1807,31 +1817,31 @@ function UsersManager() {
                                                 children: "Members"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 128,
+                                                lineNumber: 136,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 124,
+                                        lineNumber: 132,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                lineNumber: 119,
+                                lineNumber: 127,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/users-manager.tsx",
-                        lineNumber: 109,
+                        lineNumber: 117,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/users-manager.tsx",
-                lineNumber: 101,
+                lineNumber: 109,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1850,12 +1860,12 @@ function UsersManager() {
                                             className: "w-5 h-5 text-primary"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                            lineNumber: 140,
+                                            lineNumber: 148,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 139,
+                                        lineNumber: 147,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1865,7 +1875,7 @@ function UsersManager() {
                                                 children: stats.total
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 143,
+                                                lineNumber: 151,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1873,29 +1883,29 @@ function UsersManager() {
                                                 children: "Total"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 144,
+                                                lineNumber: 152,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 142,
+                                        lineNumber: 150,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                lineNumber: 138,
+                                lineNumber: 146,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/admin/users-manager.tsx",
-                            lineNumber: 137,
+                            lineNumber: 145,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/admin/users-manager.tsx",
-                        lineNumber: 136,
+                        lineNumber: 144,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -1911,12 +1921,12 @@ function UsersManager() {
                                             className: "w-5 h-5 text-red-500"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                            lineNumber: 153,
+                                            lineNumber: 161,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 152,
+                                        lineNumber: 160,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1926,7 +1936,7 @@ function UsersManager() {
                                                 children: stats.admins
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 156,
+                                                lineNumber: 164,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1934,29 +1944,29 @@ function UsersManager() {
                                                 children: "Admins"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 157,
+                                                lineNumber: 165,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 155,
+                                        lineNumber: 163,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                lineNumber: 151,
+                                lineNumber: 159,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/admin/users-manager.tsx",
-                            lineNumber: 150,
+                            lineNumber: 158,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/admin/users-manager.tsx",
-                        lineNumber: 149,
+                        lineNumber: 157,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -1972,12 +1982,12 @@ function UsersManager() {
                                             className: "w-5 h-5 text-purple-500"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                            lineNumber: 166,
+                                            lineNumber: 174,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 165,
+                                        lineNumber: 173,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1987,7 +1997,7 @@ function UsersManager() {
                                                 children: stats.uploaders
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 169,
+                                                lineNumber: 177,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1995,29 +2005,29 @@ function UsersManager() {
                                                 children: "Uploaders"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 170,
+                                                lineNumber: 178,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 168,
+                                        lineNumber: 176,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                lineNumber: 164,
+                                lineNumber: 172,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/admin/users-manager.tsx",
-                            lineNumber: 163,
+                            lineNumber: 171,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/admin/users-manager.tsx",
-                        lineNumber: 162,
+                        lineNumber: 170,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -2033,12 +2043,12 @@ function UsersManager() {
                                             className: "w-5 h-5 text-blue-500"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                            lineNumber: 179,
+                                            lineNumber: 187,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 178,
+                                        lineNumber: 186,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2048,7 +2058,7 @@ function UsersManager() {
                                                 children: stats.members
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 182,
+                                                lineNumber: 190,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2056,35 +2066,35 @@ function UsersManager() {
                                                 children: "Members"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 183,
+                                                lineNumber: 191,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 181,
+                                        lineNumber: 189,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                lineNumber: 177,
+                                lineNumber: 185,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/admin/users-manager.tsx",
-                            lineNumber: 176,
+                            lineNumber: 184,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/admin/users-manager.tsx",
-                        lineNumber: 175,
+                        lineNumber: 183,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/users-manager.tsx",
-                lineNumber: 135,
+                lineNumber: 143,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -2106,7 +2116,7 @@ function UsersManager() {
                                                     children: "Utilisateur"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                    lineNumber: 197,
+                                                    lineNumber: 205,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -2114,7 +2124,7 @@ function UsersManager() {
                                                     children: "Email"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                    lineNumber: 198,
+                                                    lineNumber: 206,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -2122,7 +2132,7 @@ function UsersManager() {
                                                     children: "Role"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                    lineNumber: 199,
+                                                    lineNumber: 207,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -2130,7 +2140,7 @@ function UsersManager() {
                                                     children: "Inscrit le"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                    lineNumber: 200,
+                                                    lineNumber: 208,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -2138,18 +2148,18 @@ function UsersManager() {
                                                     children: "Actions"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                    lineNumber: 201,
+                                                    lineNumber: 209,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                            lineNumber: 196,
+                                            lineNumber: 204,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 195,
+                                        lineNumber: 203,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -2166,7 +2176,7 @@ function UsersManager() {
                                                                     children: (user.username || user.email)[0].toUpperCase()
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                    lineNumber: 209,
+                                                                    lineNumber: 217,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2176,7 +2186,7 @@ function UsersManager() {
                                                                             children: user.username || user.email.split("@")[0]
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                                                            lineNumber: 213,
+                                                                            lineNumber: 221,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2188,24 +2198,24 @@ function UsersManager() {
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                                                            lineNumber: 214,
+                                                                            lineNumber: 222,
                                                                             columnNumber: 27
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                    lineNumber: 212,
+                                                                    lineNumber: 220,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                                            lineNumber: 208,
+                                                            lineNumber: 216,
                                                             columnNumber: 23
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                                        lineNumber: 207,
+                                                        lineNumber: 215,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -2217,25 +2227,25 @@ function UsersManager() {
                                                                     className: "w-4 h-4"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                    lineNumber: 220,
+                                                                    lineNumber: 228,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                                     children: user.email
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                    lineNumber: 221,
+                                                                    lineNumber: 229,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                                            lineNumber: 219,
+                                                            lineNumber: 227,
                                                             columnNumber: 23
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                                        lineNumber: 218,
+                                                        lineNumber: 226,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -2243,7 +2253,7 @@ function UsersManager() {
                                                         children: getRoleBadge(user.role)
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                                        lineNumber: 224,
+                                                        lineNumber: 232,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -2255,25 +2265,25 @@ function UsersManager() {
                                                                     className: "w-4 h-4"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                    lineNumber: 227,
+                                                                    lineNumber: 235,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                                     children: new Date(user.created_at).toLocaleDateString("fr-FR")
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                    lineNumber: 228,
+                                                                    lineNumber: 236,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                                            lineNumber: 226,
+                                                            lineNumber: 234,
                                                             columnNumber: 23
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                                        lineNumber: 225,
+                                                        lineNumber: 233,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -2289,12 +2299,12 @@ function UsersManager() {
                                                                             className: "w-32 h-8",
                                                                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                                                lineNumber: 235,
+                                                                                lineNumber: 243,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                                                            lineNumber: 234,
+                                                                            lineNumber: 242,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -2304,7 +2314,7 @@ function UsersManager() {
                                                                                     children: "Member"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                                    lineNumber: 238,
+                                                                                    lineNumber: 246,
                                                                                     columnNumber: 29
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -2312,7 +2322,7 @@ function UsersManager() {
                                                                                     children: "Uploader"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                                    lineNumber: 239,
+                                                                                    lineNumber: 247,
                                                                                     columnNumber: 29
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -2320,19 +2330,19 @@ function UsersManager() {
                                                                                     children: "Admin"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                                    lineNumber: 240,
+                                                                                    lineNumber: 248,
                                                                                     columnNumber: 29
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                                                            lineNumber: 237,
+                                                                            lineNumber: 245,
                                                                             columnNumber: 27
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                    lineNumber: 233,
+                                                                    lineNumber: 241,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$dropdown$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DropdownMenu"], {
@@ -2347,17 +2357,17 @@ function UsersManager() {
                                                                                     className: "w-4 h-4"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                                    lineNumber: 246,
+                                                                                    lineNumber: 254,
                                                                                     columnNumber: 31
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                                                lineNumber: 245,
+                                                                                lineNumber: 253,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                                                            lineNumber: 244,
+                                                                            lineNumber: 252,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$dropdown$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DropdownMenuContent"], {
@@ -2370,19 +2380,19 @@ function UsersManager() {
                                                                                             className: "w-4 h-4"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                                                                            lineNumber: 251,
+                                                                                            lineNumber: 259,
                                                                                             columnNumber: 31
                                                                                         }, this),
                                                                                         "Voir le profil"
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                                    lineNumber: 250,
+                                                                                    lineNumber: 258,
                                                                                     columnNumber: 29
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$dropdown$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DropdownMenuSeparator"], {}, void 0, false, {
                                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                                    lineNumber: 254,
+                                                                                    lineNumber: 262,
                                                                                     columnNumber: 29
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$dropdown$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DropdownMenuItem"], {
@@ -2393,59 +2403,59 @@ function UsersManager() {
                                                                                             className: "w-4 h-4"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                                                                            lineNumber: 259,
+                                                                                            lineNumber: 267,
                                                                                             columnNumber: 31
                                                                                         }, this),
                                                                                         "Supprimer"
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                                    lineNumber: 255,
+                                                                                    lineNumber: 263,
                                                                                     columnNumber: 29
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                                                            lineNumber: 249,
+                                                                            lineNumber: 257,
                                                                             columnNumber: 27
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                                                    lineNumber: 243,
+                                                                    lineNumber: 251,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/admin/users-manager.tsx",
-                                                            lineNumber: 232,
+                                                            lineNumber: 240,
                                                             columnNumber: 23
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                                        lineNumber: 231,
+                                                        lineNumber: 239,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, user.id, true, {
                                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                                lineNumber: 206,
+                                                lineNumber: 214,
                                                 columnNumber: 19
                                             }, this))
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/users-manager.tsx",
-                                        lineNumber: 204,
+                                        lineNumber: 212,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/users-manager.tsx",
-                                lineNumber: 194,
+                                lineNumber: 202,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/admin/users-manager.tsx",
-                            lineNumber: 193,
+                            lineNumber: 201,
                             columnNumber: 11
                         }, this),
                         filteredUsers.length === 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2455,37 +2465,37 @@ function UsersManager() {
                                     className: "w-12 h-12 mx-auto mb-4 opacity-50"
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                    lineNumber: 273,
+                                    lineNumber: 281,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     children: "Aucun utilisateur trouve"
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/users-manager.tsx",
-                                    lineNumber: 274,
+                                    lineNumber: 282,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/admin/users-manager.tsx",
-                            lineNumber: 272,
+                            lineNumber: 280,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/admin/users-manager.tsx",
-                    lineNumber: 192,
+                    lineNumber: 200,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/admin/users-manager.tsx",
-                lineNumber: 191,
+                lineNumber: 199,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/admin/users-manager.tsx",
-        lineNumber: 99,
+        lineNumber: 107,
         columnNumber: 5
     }, this);
 }

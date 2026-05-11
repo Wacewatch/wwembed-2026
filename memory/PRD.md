@@ -10,6 +10,15 @@
 
 ## Sessions delivered
 
+### Session 12 (2026-05-11) — Fix admin redirect + rebranding wavewatch.xyz → wavewatch.top
+- 🐛 **Bug "click sur Admin → rien ne se passe"** : `/app/admin/page.tsx` vérifiait `profiles.role` qui pouvait dériver de `users.role` (la source d'auth lue par `getCurrentUser()` et le Header). Quand un user était admin dans `users` mais "member" dans le miroir `profiles`, le Header montrait le lien "Admin", mais la page server-side faisait `redirect("/")` → aucune navigation visible.
+- ✅ **Fix 1** : `app/admin/page.tsx` utilise désormais `(user as any).role` (lecture directe du JWT, même source que le Header) au lieu de relire `profiles`.
+- ✅ **Fix 2** : `app/api/stats/route.ts` accepte `profile?.role || user.role` (fallback sur la collection `users` si le miroir est manquant/stale).
+- ✅ **Fix 3** : `components/admin/users-manager.tsx` propage les changements de rôle/suppression dans **les deux** collections (`profiles` ET `users`) pour rester en sync avec l'auth JWT. `/api/db/route.ts` autorise désormais les writes admin-only sur `users` (gate `ADMIN_ONLY_WRITE` déjà en place).
+- ✅ **Rebranding `wavewatch.xyz` → `wavewatch.top`** dans tous les sources : footer (`app/page.tsx`), embed streaming (`app/api/v1/streaming/[wwId]/route.ts`), embed digital (`app/api/v1/digital/[wwId]/route.ts`). Validé : `curl /` n'affiche plus que `wavewatch.top`, embed streaming idem.
+- ✅ **Validation manuelle** : register `admin@wwembed.test` → promotion `users.role=admin` + `profiles.role=member` (cas dégénéré) → `curl /admin` retourne **HTTP 200 + contenu "Administration"** (auparavant redirect vers `/`).
+
+
 ### Session 11 (2026-05-10) — Tests E2E Playwright complets + 3 fixes (regex digital, labels, ad-clicks)
 - 🎯 Demande user : "[Backlog P2] Tests E2E Playwright sur les flows pub avec données réelles" + "[User] Re-cliquer 'Démarrer l'import complet'".
 - ✅ **Re-import Supabase déclenché** : login admin (re-seedé via `npx tsx /app/migration/seed.ts` car users vide), POST `/api/admin/import-supabase`, polling 20s → 14 tables critiques DONE (profiles 63, third_party_apis 40, ads 2, live_tv_channels 85, live_tv_sources 370, digital_content 60, digital_download_links 57, streaming_links 1232, download_links 16436, etc.). ad_clicks et embed_views continuent en background.

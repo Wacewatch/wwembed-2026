@@ -16,9 +16,10 @@ export default async function AdminPage() {
     redirect("/auth/login")
   }
 
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-
-  if (!profile || profile.role !== "admin") {
+  // Use the role from the authenticated user (sourced from the `users` collection
+  // via getCurrentUser) instead of the `profiles` mirror, which can drift out of
+  // sync. The Header navigation uses the same source, so behaviour stays consistent.
+  if ((user as any).role !== "admin") {
     redirect("/")
   }
 

@@ -767,8 +767,8 @@ export default function HomePage() {
           <div className="text-sm text-muted-foreground text-center">
             <span className="text-gradient-primary font-semibold">WW</span>
             <span className="font-semibold">Embed</span> par{" "}
-            <a href="https://wavewatch.xyz" className="text-primary hover:underline underline-offset-4">
-              wavewatch.xyz
+            <a href="https://wavewatch.top" className="text-primary hover:underline underline-offset-4">
+              wavewatch.top
             </a>
           </div>
         </div>

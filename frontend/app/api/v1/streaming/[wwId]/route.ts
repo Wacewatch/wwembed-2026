@@ -605,7 +605,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     <div class="pb"><div class="pf" id="${ids.progress}"></div></div>
     <button class="bt bp" id="${ids.btnUnlock1}">ÉTAPE 1 / 2<span class="adtag">PUB</span></button>
     <button class="bt bp2 hi" id="${ids.btnUnlock2}">ÉTAPE 2 / 2<span class="adtag2">PUB</span></button>
-    <div class="cf">Propulsé par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
+    <div class="cf">Propulsé par <a href="https://wavewatch.top" target="_blank">WaveWatch</a></div>
   </div>
 </div>
 

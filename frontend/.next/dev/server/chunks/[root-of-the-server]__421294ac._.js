@@ -1080,7 +1080,7 @@ ${content.description ? `<div class="desc">${content.description}</div>` : ""}
 <div class="lk-hd"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg><span>Liens de telechargement</span></div>
 <div id="${ids.container}"></div>
 </div>
-<div class="ft">Propulse par <a href="https://wavewatch.xyz" target="_blank">WaveWatch</a></div>
+<div class="ft">Propulse par <a href="https://wavewatch.top" target="_blank">WaveWatch</a></div>
 <script>
 (function(){
 var _l=${linksJson};

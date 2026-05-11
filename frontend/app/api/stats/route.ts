@@ -14,7 +14,10 @@ export async function GET(request: NextRequest) {
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
 
-  if (!profile || profile.role !== "admin") {
+  // Fallback to the user's role from the auth source (users collection) so admins
+  // whose profile mirror is missing/stale still get through.
+  const effectiveRole = profile?.role || (user as any).role
+  if (effectiveRole !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
