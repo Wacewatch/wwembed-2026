@@ -7,15 +7,17 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, KeyRound, ArrowLeft, ShieldCheck } from "lucide-react"
+import { Loader2, KeyRound, ArrowLeft, ShieldCheck, Mail, Lock } from "lucide-react"
 
-function ResetPasswordInner() {
+function SetupPasswordInner() {
   const params = useSearchParams()
   const router = useRouter()
-  const token = params.get("token") || ""
+  const prefilledEmail = params.get("email") || ""
 
+  const [email, setEmail] = useState(prefilledEmail)
   const [password, setPassword] = useState("")
   const [confirm, setConfirm] = useState("")
+  const [adminCode, setAdminCode] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -31,15 +33,20 @@ function ResetPasswordInner() {
       setError("Les mots de passe ne correspondent pas")
       return
     }
+    if (!adminCode.trim()) {
+      setError("Le code admin est requis")
+      return
+    }
     setLoading(true)
     try {
-      const res = await fetch("/api/auth/reset-password", {
+      const res = await fetch("/api/auth/setup-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
+        credentials: "include",
+        body: JSON.stringify({ email, password, admin_code: adminCode }),
       })
       const j = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(j.error || "Erreur")
+      if (!res.ok) throw new Error(j.error || "Erreur lors de la création")
       setSuccess(true)
       setTimeout(() => {
         router.push("/dashboard")
@@ -52,36 +59,16 @@ function ResetPasswordInner() {
     }
   }
 
-  if (!token) {
-    return (
-      <div
-        data-testid="reset-no-token"
-        className="glass-strong rounded-2xl p-7 ring-glow text-center space-y-4"
-      >
-        <h2 className="text-lg font-semibold">Lien invalide</h2>
-        <p className="text-sm text-muted-foreground">
-          Ce lien de réinitialisation est incomplet. Refais une demande.
-        </p>
-        <Link
-          href="/auth/forgot-password"
-          className="inline-block text-primary hover:underline underline-offset-4 text-sm"
-        >
-          Demander un nouveau lien
-        </Link>
-      </div>
-    )
-  }
-
   if (success) {
     return (
       <div
-        data-testid="reset-success"
+        data-testid="setup-success"
         className="glass-strong rounded-2xl p-7 ring-glow text-center space-y-4"
       >
         <div className="mx-auto w-14 h-14 rounded-full bg-primary/15 ring-1 ring-primary/30 grid place-items-center">
           <ShieldCheck className="w-7 h-7 text-primary" />
         </div>
-        <h2 className="text-lg font-semibold">Mot de passe mis à jour</h2>
+        <h2 className="text-lg font-semibold">Mot de passe créé</h2>
         <p className="text-sm text-muted-foreground">Redirection vers le dashboard...</p>
       </div>
     )
@@ -91,8 +78,27 @@ function ResetPasswordInner() {
     <form
       onSubmit={handleSubmit}
       className="glass-strong rounded-2xl p-7 space-y-5 ring-glow"
-      data-testid="reset-form"
+      data-testid="setup-form"
     >
+      <div className="space-y-2">
+        <Label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          Email du compte
+        </Label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            id="email"
+            data-testid="setup-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            readOnly={!!prefilledEmail}
+            className="pl-10 h-11 bg-background/40 border-white/10 focus-visible:ring-primary/50"
+          />
+        </div>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="password" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Nouveau mot de passe
@@ -101,7 +107,7 @@ function ResetPasswordInner() {
           <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             id="password"
-            data-testid="reset-password"
+            data-testid="setup-password"
             type="password"
             required
             value={password}
@@ -111,6 +117,7 @@ function ResetPasswordInner() {
           />
         </div>
       </div>
+
       <div className="space-y-2">
         <Label htmlFor="confirm" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Confirmer le mot de passe
@@ -119,7 +126,7 @@ function ResetPasswordInner() {
           <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             id="confirm"
-            data-testid="reset-confirm"
+            data-testid="setup-confirm"
             type="password"
             required
             value={confirm}
@@ -129,9 +136,31 @@ function ResetPasswordInner() {
         </div>
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="admin-code" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          Code admin de confirmation
+        </Label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            id="admin-code"
+            data-testid="setup-admin-code"
+            type="password"
+            required
+            value={adminCode}
+            onChange={(e) => setAdminCode(e.target.value)}
+            placeholder="Code fourni par l'administrateur"
+            className="pl-10 h-11 bg-background/40 border-white/10 focus-visible:ring-primary/50"
+          />
+        </div>
+        <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
+          Ce code est nécessaire pour confirmer la création du mot de passe pour un compte existant.
+        </p>
+      </div>
+
       {error && (
         <div
-          data-testid="reset-error"
+          data-testid="setup-error"
           className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2"
         >
           {error}
@@ -140,23 +169,23 @@ function ResetPasswordInner() {
 
       <Button
         type="submit"
-        data-testid="reset-submit"
+        data-testid="setup-submit"
         className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/30"
-        disabled={loading || !password || !confirm}
+        disabled={loading || !email || !password || !confirm || !adminCode}
       >
         {loading ? (
           <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Mise à jour...
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Création...
           </>
         ) : (
-          "Mettre à jour le mot de passe"
+          "Créer le mot de passe"
         )}
       </Button>
     </form>
   )
 }
 
-export default function ResetPasswordPage() {
+export default function SetupPasswordPage() {
   return (
     <div className="relative min-h-screen flex items-center justify-center p-6 overflow-hidden">
       <div className="orb w-[420px] h-[420px] -top-32 -left-32 bg-primary/35" />
@@ -181,12 +210,14 @@ export default function ResetPasswordPage() {
               <span className="text-foreground">Embed</span>
             </span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Nouveau mot de passe</h1>
-          <p className="text-sm text-muted-foreground mt-2">Choisis un mot de passe sécurisé.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Créer un mot de passe</h1>
+          <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto leading-relaxed">
+            Ton compte existe déjà mais n'a pas encore de mot de passe. Crée-en un et confirme avec le code admin.
+          </p>
         </div>
 
         <Suspense fallback={<div className="text-muted-foreground text-center">Chargement...</div>}>
-          <ResetPasswordInner />
+          <SetupPasswordInner />
         </Suspense>
       </div>
     </div>

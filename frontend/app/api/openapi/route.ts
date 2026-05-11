@@ -81,11 +81,15 @@ export async function GET(req: NextRequest) {
         },
         ForgotPasswordBody: {
           type: "object",
+          deprecated: true,
+          description: "Deprecated: forgot-password endpoint removed. Use /api/auth/setup-password.",
           required: ["email"],
           properties: { email: { type: "string", format: "email" } },
         },
         ResetPasswordBody: {
           type: "object",
+          deprecated: true,
+          description: "Deprecated: reset-password endpoint removed. Use /api/auth/setup-password.",
           required: ["token", "password"],
           properties: {
             token: { type: "string" },
@@ -240,51 +244,36 @@ export async function GET(req: NextRequest) {
         },
       },
 
-      "/api/auth/forgot-password": {
+      "/api/auth/setup-password": {
         post: {
           tags: ["Auth"],
-          summary: "Demande d'un email de réinitialisation de mot de passe",
+          summary: "Crée le mot de passe d'un compte importé Supabase",
           description:
-            "Envoie un email Resend si l'email existe. Renvoie toujours `{ ok: true }` pour éviter l'énumération des emails.",
+            "Permet à un compte existant (importé Supabase ou flaggé `needs_password_reset`) de poser un mot de passe initial. Gated par le code admin `ADMIN_RESET_CODE`. Pose les cookies et auto-login.",
           requestBody: {
             required: true,
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/ForgotPasswordBody" },
+                schema: {
+                  type: "object",
+                  required: ["email", "password", "admin_code"],
+                  properties: {
+                    email: { type: "string", format: "email" },
+                    password: { type: "string", minLength: 6 },
+                    admin_code: { type: "string" },
+                  },
+                },
               },
             },
           },
           responses: {
             "200": {
-              description: "Demande prise en compte",
-              content: { "application/json": { example: { ok: true } } },
-            },
-          },
-        },
-      },
-
-      "/api/auth/reset-password": {
-        post: {
-          tags: ["Auth"],
-          summary: "Finalise la réinitialisation",
-          description: "Token reçu par email. Pose les cookies et auto-login.",
-          requestBody: {
-            required: true,
-            content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/ResetPasswordBody" },
-              },
-            },
-          },
-          responses: {
-            "200": {
-              description: "Mot de passe mis à jour, cookies posés",
+              description: "Mot de passe créé, cookies posés",
               content: { "application/json": { schema: { $ref: "#/components/schemas/UserPublic" } } },
             },
-            "400": {
-              description: "Token invalide / expiré / mot de passe trop court",
-              content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } },
-            },
+            "400": { description: "Données invalides / compte déjà actif" },
+            "403": { description: "Code admin invalide" },
+            "404": { description: "Compte introuvable" },
           },
         },
       },

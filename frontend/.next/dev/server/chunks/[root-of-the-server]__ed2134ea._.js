@@ -153,12 +153,7 @@ async function ensureIndexes(db) {
     await db.collection("bug_reports").createIndex({
         created_at: -1
     });
-    // sessions for password reset / login attempts
-    await db.collection("password_reset_tokens").createIndex({
-        expires_at: 1
-    }, {
-        expireAfterSeconds: 0
-    });
+    // login attempts
     await db.collection("login_attempts").createIndex({
         identifier: 1
     });
@@ -361,9 +356,14 @@ async function POST(req) {
     }, {
         status: 401
     });
-    if (user.needs_password_reset && !user.password_hash) {
+    // User imported from Supabase (or freshly seeded) without a usable password.
+    // Signal the client to redirect to the "setup password" page (which requires
+    // the admin code) instead of the old Resend-email flow.
+    if (user.needs_password_reset || !user.password_hash) {
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            error: "Compte importé : créez un mot de passe via l'inscription avec ce même email."
+            error: "Ce compte n'a pas encore de mot de passe. Crée-en un.",
+            needs_setup: true,
+            email: user.email
         }, {
             status: 401
         });

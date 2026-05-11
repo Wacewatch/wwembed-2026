@@ -13,9 +13,16 @@ export async function POST(req: NextRequest) {
   const user = await db.collection("users").findOne({ email })
   if (!user) return NextResponse.json({ error: "Identifiants invalides" }, { status: 401 })
 
-  if (user.needs_password_reset && !user.password_hash) {
+  // User imported from Supabase (or freshly seeded) without a usable password.
+  // Signal the client to redirect to the "setup password" page (which requires
+  // the admin code) instead of the old Resend-email flow.
+  if (user.needs_password_reset || !user.password_hash) {
     return NextResponse.json(
-      { error: "Compte importé : créez un mot de passe via l'inscription avec ce même email." },
+      {
+        error: "Ce compte n'a pas encore de mot de passe. Crée-en un.",
+        needs_setup: true,
+        email: user.email,
+      },
       { status: 401 }
     )
   }

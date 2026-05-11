@@ -1,0 +1,3 @@
+{
+  "/api/auth/setup-password/route": "app/api/auth/setup-password/route.js"
+}

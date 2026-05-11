@@ -10,6 +10,18 @@
 
 ## Sessions delivered
 
+### Session 13 (2026-05-11) — Suppression flow Resend, remplacement par setup-password + code admin
+- 🎯 Demande user : retirer le flow Resend (forgot/reset password) et permettre aux comptes importés Supabase de créer leur mot de passe via une page dédiée gated par un code admin (`AdminC26C789#@`).
+- ✅ **Login API** (`app/api/auth/login/route.ts`) : quand un user existe avec `needs_password_reset=true` OU sans `password_hash`, renvoie `{ error, needs_setup: true, email }` HTTP 401 au lieu de l'ancien message Resend.
+- ✅ **Login page** (`app/auth/login/page.tsx`) : appelle désormais `/api/auth/login` directement (au lieu du shim Supabase) et redirige vers `/auth/setup-password?email=...` quand `needs_setup` est retourné. Suppression du lien "Mot de passe oublié ?".
+- ✅ **Nouvelle page `/auth/setup-password`** : 4 champs (email pré-rempli readonly, nouveau mot de passe, confirmer, **code admin**). Tous data-testids ajoutés (`setup-form`, `setup-email`, `setup-password`, `setup-confirm`, `setup-admin-code`, `setup-submit`, `setup-error`, `setup-success`).
+- ✅ **Nouvelle API `/api/auth/setup-password`** : valide email + password (≥6) + admin_code, compare `admin_code === process.env.ADMIN_RESET_CODE`, vérifie que le compte est bien dans l'état "needs_setup", hash bcrypt le password, met à jour `users` ET miroir `profiles`, auto-login (cookies JWT). Retourne 400/403/404 selon le cas.
+- ✅ **ADMIN_RESET_CODE="AdminC26C789#@"** ajouté dans `/app/frontend/.env` (entre guillemets car dotenv traite `#` comme un commentaire sinon — bug attrapé pendant les tests).
+- ✅ **Cleanup** : supprimés `app/auth/forgot-password/`, `app/auth/reset-password/`, `app/api/auth/forgot-password/`, `app/api/auth/reset-password/`, `lib/email/` (Resend + templates). Retrait de l'index `password_reset_tokens` dans `lib/mongo/db.ts`. OpenAPI mis à jour (anciens endpoints marqués deprecated, nouveau `/api/auth/setup-password` documenté). Message de l'écran d'import Supabase mis à jour pour pointer vers le nouveau flow.
+- ✅ **Tests E2E curl** : tous OK — login d'un user `needs_password_reset=true` → 401 + `needs_setup:true` ; setup sans code → 400 ; setup avec mauvais code → 403 ; setup avec bon code → 200 + cookies posés ; relogin avec le nouveau mdp → 200 ; setup sur compte déjà actif → 400 "Ce compte a déjà un mot de passe".
+- 📸 Screenshot Playwright validé : page `/auth/setup-password?email=test@test.com` rend correctement avec email pré-rempli readonly et tous les champs.
+
+
 ### Session 12 (2026-05-11) — Fix admin redirect + rebranding wavewatch.xyz → wavewatch.top
 - 🐛 **Bug "click sur Admin → rien ne se passe"** : `/app/admin/page.tsx` vérifiait `profiles.role` qui pouvait dériver de `users.role` (la source d'auth lue par `getCurrentUser()` et le Header). Quand un user était admin dans `users` mais "member" dans le miroir `profiles`, le Header montrait le lien "Admin", mais la page server-side faisait `redirect("/")` → aucune navigation visible.
 - ✅ **Fix 1** : `app/admin/page.tsx` utilise désormais `(user as any).role` (lecture directe du JWT, même source que le Header) au lieu de relire `profiles`.

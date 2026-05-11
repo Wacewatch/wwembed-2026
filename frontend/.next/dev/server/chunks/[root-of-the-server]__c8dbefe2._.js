@@ -177,12 +177,7 @@ async function ensureIndexes(db) {
     await db.collection("bug_reports").createIndex({
         created_at: -1
     });
-    // sessions for password reset / login attempts
-    await db.collection("password_reset_tokens").createIndex({
-        expires_at: 1
-    }, {
-        expireAfterSeconds: 0
-    });
+    // login attempts
     await db.collection("login_attempts").createIndex({
         identifier: 1
     });

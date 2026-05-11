@@ -153,12 +153,7 @@ async function ensureIndexes(db) {
     await db.collection("bug_reports").createIndex({
         created_at: -1
     });
-    // sessions for password reset / login attempts
-    await db.collection("password_reset_tokens").createIndex({
-        expires_at: 1
-    }, {
-        expireAfterSeconds: 0
-    });
+    // login attempts
     await db.collection("login_attempts").createIndex({
         identifier: 1
     });
@@ -752,22 +747,47 @@ class MongoSupabaseClient {
         // Minimal RPC support — implement the known stored procs.
         const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getDb"])();
         if (fnName === "increment_ad_clicks") {
-            await db.collection("ads").updateOne(idFilter(args.ad_id), {
-                $inc: {
-                    click_count: 1
+            // Use aggregation pipeline so $inc works even when click_count is null/missing (legacy migrated rows).
+            await db.collection("ads").updateOne(idFilter(args.ad_id), [
+                {
+                    $set: {
+                        click_count: {
+                            $add: [
+                                {
+                                    $ifNull: [
+                                        "$click_count",
+                                        0
+                                    ]
+                                },
+                                1
+                            ]
+                        }
+                    }
                 }
-            });
+            ]);
             return {
                 data: null,
                 error: null
             };
         }
         if (fnName === "increment_live_tv_views") {
-            await db.collection("live_tv_channels").updateOne(idFilter(args.channel_id), {
-                $inc: {
-                    view_count: 1
+            await db.collection("live_tv_channels").updateOne(idFilter(args.channel_id), [
+                {
+                    $set: {
+                        view_count: {
+                            $add: [
+                                {
+                                    $ifNull: [
+                                        "$view_count",
+                                        0
+                                    ]
+                                },
+                                1
+                            ]
+                        }
+                    }
                 }
-            });
+            ]);
             return {
                 data: null,
                 error: null
@@ -1052,7 +1072,16 @@ async function POST(req) {
     try {
         const body = await req.json();
         const { table, mode, chain = [], payload, selectStr, upsertOnConflict, isSingle, isMaybeSingle, countMode, headOnly } = body;
-        if (!table || !PUBLIC_READ_TABLES.has(table)) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+        // Allow admin-only tables (writes-only) to bypass the public-read check —
+        // their writes are still gated by the ADMIN_ONLY_WRITE check below.
+        const writeOps = [
+            "insert",
+            "update",
+            "upsert",
+            "delete"
+        ];
+        const isAdminOnlyWriteThrough = ADMIN_ONLY_WRITE.has(table) && writeOps.includes(mode) && !PUBLIC_READ_TABLES.has(table);
+        if (!table || !PUBLIC_READ_TABLES.has(table) && !isAdminOnlyWriteThrough) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             data: null,
             error: {
                 message: "Forbidden table"
@@ -1060,12 +1089,6 @@ async function POST(req) {
         }, {
             status: 403
         });
-        const writeOps = [
-            "insert",
-            "update",
-            "upsert",
-            "delete"
-        ];
         if (writeOps.includes(mode)) {
             const user = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getCurrentUser"])(req);
             if (!user) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({

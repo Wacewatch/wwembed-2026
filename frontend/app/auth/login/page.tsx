@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,12 +18,26 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const supabase = createClient()
     setIsLoading(true)
     setError(null)
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) throw error
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      })
+      const json = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        // User imported from Supabase without password → setup-password page.
+        if (json?.needs_setup) {
+          router.push(`/auth/setup-password?email=${encodeURIComponent(json.email || email)}`)
+          return
+        }
+        throw new Error(json?.error || "Identifiants invalides")
+      }
+
       router.push("/dashboard")
       router.refresh()
     } catch (err: unknown) {
@@ -128,15 +141,6 @@ export default function LoginPage() {
           </Button>
 
           <div className="text-center text-sm text-muted-foreground pt-1 space-y-2">
-            <div>
-              <Link
-                href="/auth/forgot-password"
-                data-testid="goto-forgot"
-                className="text-primary/80 hover:text-primary hover:underline underline-offset-4 text-xs"
-              >
-                Mot de passe oublié ?
-              </Link>
-            </div>
             <div>
               Pas encore de compte ?{" "}
               <Link

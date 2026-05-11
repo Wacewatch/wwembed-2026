@@ -340,8 +340,9 @@ export function ImportSupabase() {
                 Import terminé avec succès.{" "}
                 <strong>{fmt(job.total_rows)} lignes</strong> ont été persistées dans MongoDB.
                 Les comptes utilisateurs migrés depuis <code>auth.users</code> sont marqués
-                <code className="mx-1">needs_password_reset: true</code> — ils peuvent réinitialiser
-                via /auth/forgot-password ou se ré-inscrire avec le même email.
+                <code className="mx-1">needs_password_reset: true</code> — ils créent leur mot de
+                passe via <code>/auth/setup-password</code> (page accessible en tentant de se
+                connecter avec leur email Supabase) avec le code admin du fichier <code>.env</code>.
               </div>
             </div>
           )}
