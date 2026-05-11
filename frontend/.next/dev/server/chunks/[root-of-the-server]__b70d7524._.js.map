@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 46, "column": 0}, "map": {"version":3,"sources":["file:///app/frontend/app/health/route.ts"],"sourcesContent":["import { NextResponse } from \"next/server\"\n\nexport const dynamic = \"force-dynamic\"\n\n// Plain healthcheck — no auth required. Mirror at /api/v1/health.\nexport async function GET() {\n  return NextResponse.json({ status: \"ok\" })\n}\n"],"names":[],"mappings":";;;;;;AAAA;;AAEO,MAAM,UAAU;AAGhB,eAAe;IACpB,OAAO,gJAAY,CAAC,IAAI,CAAC;QAAE,QAAQ;IAAK;AAC1C"}}]
+}

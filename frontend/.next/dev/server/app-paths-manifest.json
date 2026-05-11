@@ -2,5 +2,13 @@
   "/api/auth/me/route": "app/api/auth/me/route.js",
   "/api/db/route": "app/api/db/route.js",
   "/api/tmdb-stats/route": "app/api/tmdb-stats/route.js",
+  "/api/v1/download_links/for-content/route": "app/api/v1/download_links/for-content/route.js",
+  "/api/v1/download_links/media-types/route": "app/api/v1/download_links/media-types/route.js",
+  "/api/v1/download_links/recent/route": "app/api/v1/download_links/recent/route.js",
+  "/api/v1/download_links/route": "app/api/v1/download_links/route.js",
+  "/api/v1/health/route": "app/api/v1/health/route.js",
+  "/api/v1/profiles/uploaders/route": "app/api/v1/profiles/uploaders/route.js",
+  "/api/v1/stats/route": "app/api/v1/stats/route.js",
+  "/health/route": "app/health/route.js",
   "/page": "app/page.js"
 }

@@ -10,6 +10,20 @@
 
 ## Sessions delivered
 
+### Session 14 (2026-05-11) — API publique WaveWatch : 7 endpoints + auth X-API-Key
+- 🎯 Demande user : exposer 7 endpoints (`/health`, `/api/v1/download_links/{recent,/,for-content,media-types}`, `/api/v1/profiles/uploaders`, `/api/v1/stats`) consommés par WaveWatch. Protection : clé API dans `.env`.
+- ✅ **Clé API** : `WAVEWATCH_API_KEY=wwk_24db521eac4ca6f1cf4435c27ffeabee51387ba2549ee5ba547f4f6b13893d23` dans `.env`. Acceptée via 3 canaux : header `X-API-Key`, `Authorization: Bearer ...`, ou `?api_key=...` en query string.
+- ✅ **Helper partagé** : `lib/wavewatch-api.ts` — `requireApiKey()`, `BASE_FILTER` (is_active≠false, status=approved, is_valid≠false), `normalizeLink()` (shape publique exacte du spec), `fetchUploaderMap()` (résolution batch ObjectId+legacy_uuid→{username,role}), `queryDownloadLinks()`, `QUALITY_RANK` (`4k`>`1080p`>`720p` numérique).
+- ✅ **Healthcheck** : `app/health/route.ts` ET `app/api/v1/health/route.ts` — réponse `{ status: "ok" }`, sans auth.
+- ✅ **`/api/v1/download_links/recent`** : `?limit` (défaut 12, max 50), tri `created_at desc`.
+- ✅ **`/api/v1/download_links`** : 7 filtres (`quality`, `media_type`, `language`, `q` regex sur release_name|source_name|ww_id, `uploader` résolu en `submitted_by`, `limit` max 20000, `offset`), 4 sorts (`created_at.{asc,desc}`, `quality.{asc,desc}`). Validation 400 sur `media_type` et `sort` invalides. Renvoie `{ items, total, offset, limit }`.
+- ✅ **`/api/v1/download_links/for-content`** : params requis `tmdb_id` + `media_type`, optionnels `season` + `episode` (episode exige season → 400 sinon). Tri qualité desc puis `created_at` desc.
+- ✅ **`/api/v1/download_links/media-types`** : `db.distinct("media_type", BASE_FILTER)` trié.
+- ✅ **`/api/v1/profiles/uploaders`** : `distinct(submitted_by)` sur liens actifs → résolution profiles (ObjectId + legacy_uuid), tri alphabétique case-insensitive.
+- ✅ **`/api/v1/stats`** : compte global download_links + last_24h. **Seul endpoint sans filtres implicites** (conforme au spec).
+- ✅ **Tests E2E curl** validés sur DB seedée (4 liens valides + 3 liens "trash" : inactive/pending/invalid pour vérifier les filtres implicites) : tous les filtres + paginations + sorts + cas d'erreur (401 no-key, 401 wrong-key, 400 sur params invalides) passent. `/stats` retourne bien 7 (tous) vs 4 visibles dans les listes.
+
+
 ### Session 13 (2026-05-11) — Suppression flow Resend, remplacement par setup-password + code admin
 - 🎯 Demande user : retirer le flow Resend (forgot/reset password) et permettre aux comptes importés Supabase de créer leur mot de passe via une page dédiée gated par un code admin (`AdminC26C789#@`).
 - ✅ **Login API** (`app/api/auth/login/route.ts`) : quand un user existe avec `needs_password_reset=true` OU sans `password_hash`, renvoie `{ error, needs_setup: true, email }` HTTP 401 au lieu de l'ancien message Resend.
