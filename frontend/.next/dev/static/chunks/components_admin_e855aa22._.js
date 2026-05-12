@@ -7915,7 +7915,23 @@ function ImportSupabase() {
                                         lineNumber: 343,
                                         columnNumber: 17
                                     }, this),
-                                    " — ils peuvent réinitialiser via /auth/forgot-password ou se ré-inscrire avec le même email."
+                                    " — ils créent leur mot de passe via ",
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("code", {
+                                        children: "/auth/setup-password"
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/admin/import-supabase.tsx",
+                                        lineNumber: 344,
+                                        columnNumber: 27
+                                    }, this),
+                                    " (page accessible en tentant de se connecter avec leur email Supabase) avec le code admin du fichier ",
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("code", {
+                                        children: ".env"
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/admin/import-supabase.tsx",
+                                        lineNumber: 345,
+                                        columnNumber: 83
+                                    }, this),
+                                    "."
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/import-supabase.tsx",
@@ -7936,7 +7952,7 @@ function ImportSupabase() {
                                 className: "w-4 h-4 mt-0.5 shrink-0"
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/import-supabase.tsx",
-                                lineNumber: 354,
+                                lineNumber: 355,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7946,25 +7962,25 @@ function ImportSupabase() {
                                         children: job.error
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/import-supabase.tsx",
-                                        lineNumber: 356,
+                                        lineNumber: 357,
                                         columnNumber: 64
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                         fileName: "[project]/components/admin/import-supabase.tsx",
-                                        lineNumber: 357,
+                                        lineNumber: 358,
                                         columnNumber: 17
                                     }, this),
                                     "Les tables réussies sont déjà persistées — vous pouvez relancer pour réessayer celles qui ont échoué (idempotent)."
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/import-supabase.tsx",
-                                lineNumber: 355,
+                                lineNumber: 356,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/import-supabase.tsx",
-                        lineNumber: 350,
+                        lineNumber: 351,
                         columnNumber: 13
                     }, this)
                 ]

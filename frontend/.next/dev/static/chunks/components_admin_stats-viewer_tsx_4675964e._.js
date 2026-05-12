@@ -35,9 +35,11 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$chart$2f$AreaChart$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/recharts/es6/chart/AreaChart.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$Area$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/recharts/es6/cartesian/Area.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$admin$2f$external$2d$links$2d$stats$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/admin/external-links-stats.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$admin$2f$internal$2d$downloads$2d$stats$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/admin/internal-downloads-stats.tsx [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
 "use client";
+;
 ;
 ;
 ;
@@ -94,20 +96,20 @@ function StatsViewer() {
                     className: "w-8 h-8 animate-spin mx-auto mb-4 text-primary"
                 }, void 0, false, {
                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                    lineNumber: 114,
+                    lineNumber: 117,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                     children: "Chargement des statistiques..."
                 }, void 0, false, {
                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                    lineNumber: 115,
+                    lineNumber: 118,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/admin/stats-viewer.tsx",
-            lineNumber: 113,
+            lineNumber: 116,
             columnNumber: 7
         }, this);
     }
@@ -129,14 +131,14 @@ function StatsViewer() {
                                     className: "h-4 w-4"
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 130,
+                                    lineNumber: 133,
                                     columnNumber: 13
                                 }, this),
                                 "Vue d'ensemble"
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                            lineNumber: 126,
+                            lineNumber: 129,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsTrigger"], {
@@ -147,20 +149,39 @@ function StatsViewer() {
                                     className: "h-4 w-4"
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 137,
+                                    lineNumber: 140,
                                     columnNumber: 13
                                 }, this),
                                 "Liens Externes"
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                            lineNumber: 133,
+                            lineNumber: 136,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsTrigger"], {
+                            value: "internal",
+                            className: "gap-2 px-4 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20",
+                            "data-testid": "stats-tab-internal",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$download$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Download$3e$__["Download"], {
+                                    className: "h-4 w-4"
+                                }, void 0, false, {
+                                    fileName: "[project]/components/admin/stats-viewer.tsx",
+                                    lineNumber: 148,
+                                    columnNumber: 13
+                                }, this),
+                                "Téléchargements Internes"
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/components/admin/stats-viewer.tsx",
+                            lineNumber: 143,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                    lineNumber: 125,
+                    lineNumber: 128,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsContent"], {
@@ -177,7 +198,7 @@ function StatsViewer() {
                                             className: "w-6 h-6 text-primary"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                                            lineNumber: 146,
+                                            lineNumber: 157,
                                             columnNumber: 15
                                         }, this),
                                         "Statistiques détaillées",
@@ -189,20 +210,20 @@ function StatsViewer() {
                                                     className: "w-3 h-3 mr-1"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                    lineNumber: 149,
+                                                    lineNumber: 160,
                                                     columnNumber: 17
                                                 }, this),
                                                 " auto-refresh 30s"
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                                            lineNumber: 148,
+                                            lineNumber: 159,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 145,
+                                    lineNumber: 156,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -213,12 +234,12 @@ function StatsViewer() {
                                             className: "w-44 glass-subtle border-white/10",
                                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                lineNumber: 154,
+                                                lineNumber: 165,
                                                 columnNumber: 17
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                                            lineNumber: 153,
+                                            lineNumber: 164,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -228,7 +249,7 @@ function StatsViewer() {
                                                     children: "7 derniers jours"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                    lineNumber: 157,
+                                                    lineNumber: 168,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -236,7 +257,7 @@ function StatsViewer() {
                                                     children: "14 derniers jours"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                    lineNumber: 158,
+                                                    lineNumber: 169,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -244,7 +265,7 @@ function StatsViewer() {
                                                     children: "30 derniers jours"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                    lineNumber: 159,
+                                                    lineNumber: 170,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -252,7 +273,7 @@ function StatsViewer() {
                                                     children: "90 derniers jours"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                    lineNumber: 160,
+                                                    lineNumber: 171,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -260,25 +281,25 @@ function StatsViewer() {
                                                     children: "12 derniers mois"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                    lineNumber: 161,
+                                                    lineNumber: 172,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                                            lineNumber: 156,
+                                            lineNumber: 167,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 152,
+                                    lineNumber: 163,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                            lineNumber: 144,
+                            lineNumber: 155,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -291,7 +312,7 @@ function StatsViewer() {
                                     accent: "oklch(0.65 0.22 295)"
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 168,
+                                    lineNumber: 179,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Tile, {
@@ -301,7 +322,7 @@ function StatsViewer() {
                                     accent: "oklch(0.7 0.18 220)"
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 169,
+                                    lineNumber: 180,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Tile, {
@@ -311,7 +332,7 @@ function StatsViewer() {
                                     accent: "oklch(0.65 0.24 350)"
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 170,
+                                    lineNumber: 181,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Tile, {
@@ -321,7 +342,7 @@ function StatsViewer() {
                                     accent: "oklch(0.7 0.2 145)"
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 171,
+                                    lineNumber: 182,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Tile, {
@@ -331,13 +352,13 @@ function StatsViewer() {
                                     accent: "oklch(0.74 0.2 50)"
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 172,
+                                    lineNumber: 183,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                            lineNumber: 167,
+                            lineNumber: 178,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -351,19 +372,19 @@ function StatsViewer() {
                                                 className: "w-5 h-5 text-primary"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                lineNumber: 184,
+                                                lineNumber: 195,
                                                 columnNumber: 17
                                             }, this),
                                             " Répartition par type"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                        lineNumber: 183,
+                                        lineNumber: 194,
                                         columnNumber: 15
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 182,
+                                    lineNumber: 193,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -376,28 +397,28 @@ function StatsViewer() {
                                                         className: "w-7 h-7 mx-auto mb-2 text-blue-400"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 191,
+                                                        lineNumber: 202,
                                                         columnNumber: 47
                                                     }, this),
                                                     item.type === "Séries" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$tv$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Tv$3e$__["Tv"], {
                                                         className: "w-7 h-7 mx-auto mb-2 text-purple-400"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 192,
+                                                        lineNumber: 203,
                                                         columnNumber: 48
                                                     }, this),
                                                     item.type === "TV Live" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$play$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Play$3e$__["Play"], {
                                                         className: "w-7 h-7 mx-auto mb-2 text-red-400"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 193,
+                                                        lineNumber: 204,
                                                         columnNumber: 49
                                                     }, this),
                                                     item.type === "Streaming" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$play$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Play$3e$__["Play"], {
                                                         className: "w-7 h-7 mx-auto mb-2 text-amber-400"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 194,
+                                                        lineNumber: 205,
                                                         columnNumber: 51
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -405,7 +426,7 @@ function StatsViewer() {
                                                         children: item.count.toLocaleString()
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 195,
+                                                        lineNumber: 206,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -413,29 +434,29 @@ function StatsViewer() {
                                                         children: item.type
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 196,
+                                                        lineNumber: 207,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, item.type, true, {
                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                lineNumber: 190,
+                                                lineNumber: 201,
                                                 columnNumber: 19
                                             }, this))
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                        lineNumber: 188,
+                                        lineNumber: 199,
                                         columnNumber: 15
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 187,
+                                    lineNumber: 198,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                            lineNumber: 181,
+                            lineNumber: 192,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -452,14 +473,14 @@ function StatsViewer() {
                                                         className: "w-5 h-5 text-primary"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 208,
+                                                        lineNumber: 219,
                                                         columnNumber: 19
                                                     }, this),
                                                     " Activité quotidienne"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                lineNumber: 207,
+                                                lineNumber: 218,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -473,18 +494,18 @@ function StatsViewer() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                lineNumber: 210,
+                                                lineNumber: 221,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                        lineNumber: 206,
+                                        lineNumber: 217,
                                         columnNumber: 15
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 205,
+                                    lineNumber: 216,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -517,7 +538,7 @@ function StatsViewer() {
                                                                         stopOpacity: 0.55
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                        lineNumber: 221,
+                                                                        lineNumber: 232,
                                                                         columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("stop", {
@@ -526,13 +547,13 @@ function StatsViewer() {
                                                                         stopOpacity: 0.05
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                        lineNumber: 222,
+                                                                        lineNumber: 233,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                lineNumber: 220,
+                                                                lineNumber: 231,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("linearGradient", {
@@ -548,7 +569,7 @@ function StatsViewer() {
                                                                         stopOpacity: 0.45
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                        lineNumber: 225,
+                                                                        lineNumber: 236,
                                                                         columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("stop", {
@@ -557,19 +578,19 @@ function StatsViewer() {
                                                                         stopOpacity: 0.04
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                        lineNumber: 226,
+                                                                        lineNumber: 237,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                lineNumber: 224,
+                                                                lineNumber: 235,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 219,
+                                                        lineNumber: 230,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$CartesianGrid$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CartesianGrid"], {
@@ -577,7 +598,7 @@ function StatsViewer() {
                                                         stroke: "#1f2937"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 229,
+                                                        lineNumber: 240,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$XAxis$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["XAxis"], {
@@ -590,7 +611,7 @@ function StatsViewer() {
                                                         interval: data.viewsByDay.length > 14 ? Math.floor(data.viewsByDay.length / 10) : 0
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 230,
+                                                        lineNumber: 241,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$YAxis$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["YAxis"], {
@@ -602,7 +623,7 @@ function StatsViewer() {
                                                         allowDecimals: false
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 236,
+                                                        lineNumber: 247,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$component$2f$Tooltip$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Tooltip"], {
@@ -617,12 +638,12 @@ function StatsViewer() {
                                                         }
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 237,
+                                                        lineNumber: 248,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$component$2f$Legend$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Legend"], {}, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 246,
+                                                        lineNumber: 257,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$Area$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Area"], {
@@ -634,7 +655,7 @@ function StatsViewer() {
                                                         name: "Vues"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 247,
+                                                        lineNumber: 258,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$Area$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Area"], {
@@ -646,34 +667,34 @@ function StatsViewer() {
                                                         name: "Clics"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 255,
+                                                        lineNumber: 266,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                lineNumber: 218,
+                                                lineNumber: 229,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                                            lineNumber: 217,
+                                            lineNumber: 228,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                        lineNumber: 216,
+                                        lineNumber: 227,
                                         columnNumber: 15
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 215,
+                                    lineNumber: 226,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                            lineNumber: 204,
+                            lineNumber: 215,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -693,14 +714,14 @@ function StatsViewer() {
                                                                 className: "w-4 h-4 text-primary"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                lineNumber: 275,
+                                                                lineNumber: 286,
                                                                 columnNumber: 21
                                                             }, this),
                                                             " Top médias (vues)"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 274,
+                                                        lineNumber: 285,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -709,18 +730,18 @@ function StatsViewer() {
                                                         children: data.topMedia.reduce((s, x)=>s + x.views, 0).toLocaleString()
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 277,
+                                                        lineNumber: 288,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                lineNumber: 273,
+                                                lineNumber: 284,
                                                 columnNumber: 17
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                                            lineNumber: 272,
+                                            lineNumber: 283,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -731,18 +752,18 @@ function StatsViewer() {
                                                     }))
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                lineNumber: 283,
+                                                lineNumber: 294,
                                                 columnNumber: 17
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                                            lineNumber: 282,
+                                            lineNumber: 293,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 271,
+                                    lineNumber: 282,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -759,14 +780,14 @@ function StatsViewer() {
                                                                 className: "w-4 h-4 text-orange-400"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                lineNumber: 291,
+                                                                lineNumber: 302,
                                                                 columnNumber: 21
                                                             }, this),
                                                             " Top clics download"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 290,
+                                                        lineNumber: 301,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -775,18 +796,18 @@ function StatsViewer() {
                                                         children: data.topMediaDownload.reduce((s, x)=>s + x.downloads, 0).toLocaleString()
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 293,
+                                                        lineNumber: 304,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                lineNumber: 289,
+                                                lineNumber: 300,
                                                 columnNumber: 17
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                                            lineNumber: 288,
+                                            lineNumber: 299,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -798,18 +819,18 @@ function StatsViewer() {
                                                 variant: "download"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                lineNumber: 299,
+                                                lineNumber: 310,
                                                 columnNumber: 17
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                                            lineNumber: 298,
+                                            lineNumber: 309,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 287,
+                                    lineNumber: 298,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -826,14 +847,14 @@ function StatsViewer() {
                                                                 className: "w-4 h-4 text-primary"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                lineNumber: 307,
+                                                                lineNumber: 318,
                                                                 columnNumber: 21
                                                             }, this),
                                                             " Top référents"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 306,
+                                                        lineNumber: 317,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -842,18 +863,18 @@ function StatsViewer() {
                                                         children: data.topReferers.reduce((s, r)=>s + r.count, 0).toLocaleString()
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 309,
+                                                        lineNumber: 320,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                lineNumber: 305,
+                                                lineNumber: 316,
                                                 columnNumber: 17
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                                            lineNumber: 304,
+                                            lineNumber: 315,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -864,7 +885,7 @@ function StatsViewer() {
                                                     children: "Aucune donnée"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                    lineNumber: 317,
+                                                    lineNumber: 328,
                                                     columnNumber: 21
                                                 }, this) : data.topReferers.map((r, i)=>{
                                                     const max = data.topReferers[0]?.count || 1;
@@ -879,7 +900,7 @@ function StatsViewer() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                lineNumber: 323,
+                                                                lineNumber: 334,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -888,7 +909,7 @@ function StatsViewer() {
                                                                 children: r.referrer
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                lineNumber: 324,
+                                                                lineNumber: 335,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -900,12 +921,12 @@ function StatsViewer() {
                                                                     }
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                    lineNumber: 328,
+                                                                    lineNumber: 339,
                                                                     columnNumber: 29
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                lineNumber: 327,
+                                                                lineNumber: 338,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -913,42 +934,42 @@ function StatsViewer() {
                                                                 children: r.count.toLocaleString()
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                                lineNumber: 333,
+                                                                lineNumber: 344,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, r.referrer + i, true, {
                                                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                        lineNumber: 322,
+                                                        lineNumber: 333,
                                                         columnNumber: 25
                                                     }, this);
                                                 })
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                                lineNumber: 315,
+                                                lineNumber: 326,
                                                 columnNumber: 17
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                                            lineNumber: 314,
+                                            lineNumber: 325,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                                    lineNumber: 303,
+                                    lineNumber: 314,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                            lineNumber: 270,
+                            lineNumber: 281,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                    lineNumber: 142,
+                    lineNumber: 153,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsContent"], {
@@ -959,23 +980,48 @@ function StatsViewer() {
                         data: data.external
                     }, void 0, false, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 345,
+                        lineNumber: 356,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                    lineNumber: 344,
+                    lineNumber: 355,
+                    columnNumber: 9
+                }, this),
+                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsContent"], {
+                    value: "internal",
+                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$admin$2f$internal$2d$downloads$2d$stats$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["InternalDownloadsStats"], {
+                        period: period,
+                        setPeriod: setPeriod,
+                        data: data.internal || {
+                            totalClicks: 0,
+                            totalClicksAllTime: 0,
+                            byDay: [],
+                            topLinks: [],
+                            topUploaders: [],
+                            byQuality: [],
+                            byMediaType: [],
+                            byLinkType: []
+                        }
+                    }, void 0, false, {
+                        fileName: "[project]/components/admin/stats-viewer.tsx",
+                        lineNumber: 360,
+                        columnNumber: 11
+                    }, this)
+                }, void 0, false, {
+                    fileName: "[project]/components/admin/stats-viewer.tsx",
+                    lineNumber: 359,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/admin/stats-viewer.tsx",
-            lineNumber: 124,
+            lineNumber: 127,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/components/admin/stats-viewer.tsx",
-        lineNumber: 123,
+        lineNumber: 126,
         columnNumber: 5
     }, this);
 }
@@ -992,7 +1038,7 @@ function Tile({ icon: Icon, label, value, accent }) {
                 }
             }, void 0, false, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 355,
+                lineNumber: 370,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1005,7 +1051,7 @@ function Tile({ icon: Icon, label, value, accent }) {
                                 children: label
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                lineNumber: 358,
+                                lineNumber: 373,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1013,13 +1059,13 @@ function Tile({ icon: Icon, label, value, accent }) {
                                 children: (value || 0).toLocaleString()
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                lineNumber: 359,
+                                lineNumber: 374,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 357,
+                        lineNumber: 372,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1031,24 +1077,24 @@ function Tile({ icon: Icon, label, value, accent }) {
                             className: "w-5 h-5 text-white"
                         }, void 0, false, {
                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                            lineNumber: 362,
+                            lineNumber: 377,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 361,
+                        lineNumber: 376,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 356,
+                lineNumber: 371,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/admin/stats-viewer.tsx",
-        lineNumber: 354,
+        lineNumber: 369,
         columnNumber: 5
     }, this);
 }
@@ -1070,7 +1116,7 @@ function RealTimeTile({ color, Icon, label, v, sub }) {
                         className: "w-3.5 h-3.5"
                     }, void 0, false, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 379,
+                        lineNumber: 394,
                         columnNumber: 9
                     }, this),
                     " ",
@@ -1078,13 +1124,13 @@ function RealTimeTile({ color, Icon, label, v, sub }) {
                         children: label
                     }, void 0, false, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 379,
+                        lineNumber: 394,
                         columnNumber: 42
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 378,
+                lineNumber: 393,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1092,7 +1138,7 @@ function RealTimeTile({ color, Icon, label, v, sub }) {
                 children: v.toLocaleString()
             }, void 0, false, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 381,
+                lineNumber: 396,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1100,13 +1146,13 @@ function RealTimeTile({ color, Icon, label, v, sub }) {
                 children: sub
             }, void 0, false, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 382,
+                lineNumber: 397,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/admin/stats-viewer.tsx",
-        lineNumber: 377,
+        lineNumber: 392,
         columnNumber: 5
     }, this);
 }
@@ -1119,7 +1165,7 @@ function MediaList({ items, variant = "view" }) {
             children: "Aucune donnée"
         }, void 0, false, {
             fileName: "[project]/components/admin/stats-viewer.tsx",
-            lineNumber: 391,
+            lineNumber: 406,
             columnNumber: 9
         }, this) : items.map((m, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
                 href: m.ww_id ? `/embed/${m.ww_id}/stats` : "#",
@@ -1135,7 +1181,7 @@ function MediaList({ items, variant = "view" }) {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 401,
+                        lineNumber: 416,
                         columnNumber: 13
                     }, this),
                     m.poster ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
@@ -1145,7 +1191,7 @@ function MediaList({ items, variant = "view" }) {
                         loading: "lazy"
                     }, void 0, false, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 403,
+                        lineNumber: 418,
                         columnNumber: 15
                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "w-9 h-12 bg-white/5 rounded grid place-items-center ring-1 ring-white/5",
@@ -1153,24 +1199,24 @@ function MediaList({ items, variant = "view" }) {
                             className: "w-4 h-4 text-muted-foreground"
                         }, void 0, false, {
                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                            lineNumber: 407,
+                            lineNumber: 422,
                             columnNumber: 19
                         }, this) : m.media_type === "digital" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$download$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Download$3e$__["Download"], {
                             className: "w-4 h-4 text-muted-foreground"
                         }, void 0, false, {
                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                            lineNumber: 409,
+                            lineNumber: 424,
                             columnNumber: 19
                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$film$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Film$3e$__["Film"], {
                             className: "w-4 h-4 text-muted-foreground"
                         }, void 0, false, {
                             fileName: "[project]/components/admin/stats-viewer.tsx",
-                            lineNumber: 411,
+                            lineNumber: 426,
                             columnNumber: 19
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 405,
+                        lineNumber: 420,
                         columnNumber: 15
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1181,7 +1227,7 @@ function MediaList({ items, variant = "view" }) {
                                 children: m.title
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                lineNumber: 416,
+                                lineNumber: 431,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1189,13 +1235,13 @@ function MediaList({ items, variant = "view" }) {
                                 children: m.media_type === "movie" ? "Film" : m.media_type === "tv" ? "Série" : m.media_type
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                                lineNumber: 417,
+                                lineNumber: 432,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 415,
+                        lineNumber: 430,
                         columnNumber: 13
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1203,18 +1249,18 @@ function MediaList({ items, variant = "view" }) {
                         children: (m.score ?? 0).toLocaleString()
                     }, void 0, false, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 421,
+                        lineNumber: 436,
                         columnNumber: 13
                     }, this)
                 ]
             }, `${m.ww_id || m.tmdb_id}-${i}`, true, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 394,
+                lineNumber: 409,
                 columnNumber: 11
             }, this))
     }, void 0, false, {
         fileName: "[project]/components/admin/stats-viewer.tsx",
-        lineNumber: 389,
+        lineNumber: 404,
         columnNumber: 5
     }, this);
 }
@@ -1231,7 +1277,7 @@ function PageRow({ index, title, poster, type, count }) {
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 434,
+                lineNumber: 449,
                 columnNumber: 7
             }, this),
             poster ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
@@ -1241,7 +1287,7 @@ function PageRow({ index, title, poster, type, count }) {
                 loading: "lazy"
             }, void 0, false, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 436,
+                lineNumber: 451,
                 columnNumber: 9
             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "w-7 h-10 bg-white/5 rounded grid place-items-center",
@@ -1249,18 +1295,18 @@ function PageRow({ index, title, poster, type, count }) {
                     className: "w-3 h-3 text-muted-foreground"
                 }, void 0, false, {
                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                    lineNumber: 439,
+                    lineNumber: 454,
                     columnNumber: 30
                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$film$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Film$3e$__["Film"], {
                     className: "w-3 h-3 text-muted-foreground"
                 }, void 0, false, {
                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                    lineNumber: 439,
+                    lineNumber: 454,
                     columnNumber: 81
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 438,
+                lineNumber: 453,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1271,7 +1317,7 @@ function PageRow({ index, title, poster, type, count }) {
                         children: title
                     }, void 0, false, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 443,
+                        lineNumber: 458,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1279,13 +1325,13 @@ function PageRow({ index, title, poster, type, count }) {
                         children: type === "movie" ? "Film" : type === "tv" ? "Série" : type
                     }, void 0, false, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 444,
+                        lineNumber: 459,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 442,
+                lineNumber: 457,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -1294,13 +1340,13 @@ function PageRow({ index, title, poster, type, count }) {
                 children: count
             }, void 0, false, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 448,
+                lineNumber: 463,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/admin/stats-viewer.tsx",
-        lineNumber: 433,
+        lineNumber: 448,
         columnNumber: 5
     }, this);
 }
@@ -1313,7 +1359,7 @@ function VisitorRow({ title, poster, type, ip, time }) {
                 className: "w-2 h-2 bg-emerald-400 rounded-full flex-shrink-0"
             }, void 0, false, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 458,
+                lineNumber: 473,
                 columnNumber: 7
             }, this),
             poster ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
@@ -1323,7 +1369,7 @@ function VisitorRow({ title, poster, type, ip, time }) {
                 loading: "lazy"
             }, void 0, false, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 460,
+                lineNumber: 475,
                 columnNumber: 9
             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "w-7 h-10 bg-white/5 rounded grid place-items-center",
@@ -1331,18 +1377,18 @@ function VisitorRow({ title, poster, type, ip, time }) {
                     className: "w-3 h-3 text-muted-foreground"
                 }, void 0, false, {
                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                    lineNumber: 463,
+                    lineNumber: 478,
                     columnNumber: 30
                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$film$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Film$3e$__["Film"], {
                     className: "w-3 h-3 text-muted-foreground"
                 }, void 0, false, {
                     fileName: "[project]/components/admin/stats-viewer.tsx",
-                    lineNumber: 463,
+                    lineNumber: 478,
                     columnNumber: 81
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 462,
+                lineNumber: 477,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1353,7 +1399,7 @@ function VisitorRow({ title, poster, type, ip, time }) {
                         children: title
                     }, void 0, false, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 467,
+                        lineNumber: 482,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1361,13 +1407,13 @@ function VisitorRow({ title, poster, type, ip, time }) {
                         children: ip
                     }, void 0, false, {
                         fileName: "[project]/components/admin/stats-viewer.tsx",
-                        lineNumber: 468,
+                        lineNumber: 483,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 466,
+                lineNumber: 481,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1378,13 +1424,13 @@ function VisitorRow({ title, poster, type, ip, time }) {
                 })
             }, void 0, false, {
                 fileName: "[project]/components/admin/stats-viewer.tsx",
-                lineNumber: 470,
+                lineNumber: 485,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/admin/stats-viewer.tsx",
-        lineNumber: 457,
+        lineNumber: 472,
         columnNumber: 5
     }, this);
 }

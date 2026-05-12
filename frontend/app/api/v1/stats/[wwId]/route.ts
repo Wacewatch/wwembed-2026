@@ -84,15 +84,13 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: stri
       .select("viewed_at, country, referer")
       .eq("ww_id", wwId)
       .gte("viewed_at", since)
-      .order("viewed_at", { ascending: false })
-      .limit(5000),
+      .order("viewed_at", { ascending: false }),
     supabase
       .from("link_clicks")
       .select("clicked_at, country")
       .eq("ww_id", wwId)
       .gte("clicked_at", since)
-      .order("clicked_at", { ascending: false })
-      .limit(5000),
+      .order("clicked_at", { ascending: false }),
     supabase.from("embed_views").select("*", { count: "exact", head: true }).eq("ww_id", wwId),
     supabase.from("link_clicks").select("*", { count: "exact", head: true }).eq("ww_id", wwId),
   ])
@@ -118,7 +116,6 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: stri
   const countries = Object.entries(byCountry)
     .map(([country, count]) => ({ country, count }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 10)
 
   // Referer breakdown
   const byReferer: Record<string, number> = {}
@@ -136,7 +133,6 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: stri
   const referers = Object.entries(byReferer)
     .map(([host, count]) => ({ host, count }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 10)
 
   // Today / 7d / 30d totals
   const today = new Date().toISOString().slice(0, 10)

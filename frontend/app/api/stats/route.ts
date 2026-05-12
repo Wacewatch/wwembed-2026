@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     supabase.from("link_clicks").select("*", { count: "exact", head: true }).gte("clicked_at", startDate),
     supabase.from("api_usage").select("*", { count: "exact", head: true }).gte("created_at", startDate),
     supabase.from("embed_views").select("viewed_at").gte("viewed_at", startDate),
-    supabase.from("embed_views").select("tmdb_id, media_type").gte("viewed_at", startDate).limit(1000),
+    supabase.from("embed_views").select("tmdb_id, media_type").gte("viewed_at", startDate),
   ])
 
   // Process views by day
@@ -59,7 +59,6 @@ export async function GET(request: NextRequest) {
       return { media_type, tmdb_id: Number.parseInt(tmdb_id), views: count }
     })
     .sort((a, b) => b.views - a.views)
-    .slice(0, 10)
 
   return NextResponse.json({
     period: `${daysAgo} days`,

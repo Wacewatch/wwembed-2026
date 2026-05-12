@@ -2,6 +2,11 @@
  * Single fast endpoint that returns everything the Admin > Stats tab needs.
  * Uses MongoDB aggregation pipelines instead of paginated client fetches.
  * Typical response time: ~100-300ms vs 5-15s previously.
+ *
+ * NOTE: per user request, NO arbitrary limits are applied anywhere in this
+ * endpoint. Group-by aggregations are naturally bounded by the cardinality
+ * of the grouping key (ww_id, host, etc.). For raw-document fetches we use
+ * a time window filter (no $limit).
  */
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/mongo/db"
@@ -60,7 +65,7 @@ export async function GET(req: NextRequest) {
 
   const db = await getDb()
 
-  // Run main aggregations in parallel
+  // Run main aggregations in parallel — NO $limit anywhere.
   const [
     viewsByDay,
     totalViews,
@@ -86,6 +91,15 @@ export async function GET(req: NextRequest) {
     externalMediaTypeRaw,
     externalTopRaw,
     totalExternalClicks,
+    // ------- Internal downloads (clicks on user-submitted internal links) -------
+    internalClicksRaw,
+    internalByDayRaw,
+    internalTopLinksRaw,
+    internalTopUploadersRaw,
+    internalByQualityRaw,
+    internalByMediaTypeRaw,
+    internalByLinkTypeRaw,
+    totalInternalClicksAllTime,
   ] = await Promise.all([
     db
       .collection("embed_views")
@@ -114,7 +128,6 @@ export async function GET(req: NextRequest) {
       .collection("embed_views")
       .aggregate([
         { $match: { viewed_at: { $gte: startDate } } },
-        // Use ip_hash when available, fallback to user_agent (legacy data has no ip_hash)
         { $group: { _id: { $ifNull: ["$ip_hash", "$user_agent"] } } },
         { $count: "n" },
       ])
@@ -141,7 +154,6 @@ export async function GET(req: NextRequest) {
           },
         },
         { $sort: { views: -1 } },
-        { $limit: 50 },
       ])
       .toArray(),
     db
@@ -159,7 +171,6 @@ export async function GET(req: NextRequest) {
           },
         },
         { $sort: { downloads: -1 } },
-        { $limit: 50 },
       ])
       .toArray(),
     db
@@ -168,7 +179,6 @@ export async function GET(req: NextRequest) {
         { $match: { viewed_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$referrer", "Direct"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-        { $limit: 50 },
       ])
       .toArray(),
     db
@@ -216,14 +226,12 @@ export async function GET(req: NextRequest) {
           },
         },
         { $sort: { count: -1 } },
-        { $limit: 10 },
       ])
       .toArray(),
     db
       .collection("embed_views")
       .find({ viewed_at: { $gte: oneHourAgo } })
       .sort({ viewed_at: -1 })
-      .limit(40)
       .toArray(),
     // External clicks — count ALL link_clicks (every click on a download/streaming
     // external link counts; the Supabase `is_external` flag was inconsistent
@@ -244,7 +252,6 @@ export async function GET(req: NextRequest) {
         { $match: { clicked_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$provider", "Inconnu"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-        { $limit: 12 },
       ])
       .toArray(),
     db
@@ -253,7 +260,6 @@ export async function GET(req: NextRequest) {
         { $match: { clicked_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$host_name", "?"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-        { $limit: 15 },
       ])
       .toArray(),
     db
@@ -283,10 +289,103 @@ export async function GET(req: NextRequest) {
           },
         },
         { $sort: { clicks: -1 } },
-        { $limit: 20 },
       ])
       .toArray(),
     db.collection("link_clicks").countDocuments({}),
+    // -------- Internal-download stats --------
+    // Per request: "Internal" = clicks on links uploaded to this site (link_id
+    // present and matching a download_links / digital_download_links row).
+    // Group by link_id so we can show the most-clicked SPECIFIC link, then
+    // join in a second pass to get title, source, quality, uploader.
+    db
+      .collection("link_clicks")
+      .countDocuments({ clicked_at: { $gte: startDate }, link_id: { $ne: null } }),
+    db
+      .collection("link_clicks")
+      .aggregate([
+        { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
+        { $group: { _id: { $substrCP: ["$clicked_at", 0, 10] }, count: { $sum: 1 } } },
+      ])
+      .toArray(),
+    db
+      .collection("link_clicks")
+      .aggregate([
+        { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
+        { $group: { _id: "$link_id", clicks: { $sum: 1 } } },
+        { $sort: { clicks: -1 } },
+      ])
+      .toArray(),
+    // Top uploaders — done via $lookup so a single aggregation gives us the
+    // total clicks per submitted_by across both download_links and
+    // digital_download_links.
+    db
+      .collection("link_clicks")
+      .aggregate([
+        { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
+        { $group: { _id: "$link_id", clicks: { $sum: 1 } } },
+        {
+          $lookup: {
+            from: "download_links",
+            let: { lid: "$_id" },
+            pipeline: [
+              { $match: { $expr: { $eq: ["$legacy_uuid", "$$lid"] } } },
+              { $project: { submitted_by: 1, _id: 0 } },
+            ],
+            as: "dl",
+          },
+        },
+        {
+          $lookup: {
+            from: "digital_download_links",
+            let: { lid: "$_id" },
+            pipeline: [
+              { $match: { $expr: { $eq: ["$legacy_uuid", "$$lid"] } } },
+              { $project: { submitted_by: 1, _id: 0 } },
+            ],
+            as: "ddl",
+          },
+        },
+        {
+          $project: {
+            clicks: 1,
+            uploader: {
+              $ifNull: [
+                { $arrayElemAt: ["$dl.submitted_by", 0] },
+                { $arrayElemAt: ["$ddl.submitted_by", 0] },
+              ],
+            },
+          },
+        },
+        { $match: { uploader: { $ne: null } } },
+        { $group: { _id: "$uploader", clicks: { $sum: "$clicks" }, linkCount: { $sum: 1 } } },
+        { $sort: { clicks: -1 } },
+      ])
+      .toArray(),
+    db
+      .collection("link_clicks")
+      .aggregate([
+        { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
+        { $group: { _id: { $ifNull: ["$quality", "N/A"] }, count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ])
+      .toArray(),
+    db
+      .collection("link_clicks")
+      .aggregate([
+        { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
+        { $group: { _id: { $ifNull: ["$media_type", "?"] }, count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ])
+      .toArray(),
+    db
+      .collection("link_clicks")
+      .aggregate([
+        { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
+        { $group: { _id: { $ifNull: ["$link_type", "direct"] }, count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ])
+      .toArray(),
+    db.collection("link_clicks").countDocuments({ link_id: { $ne: null } }),
   ])
 
   // Build day buckets
@@ -346,11 +445,9 @@ export async function GET(req: NextRequest) {
     const legacyUuids: string[] = []
     for (const cid of channelIds) {
       stringIds.push(cid)
-      // Direct ObjectId hex (24-char hex)
       if (/^[a-f0-9]{24}$/i.test(cid)) {
         try { objectIds.push(new ObjectIdLib(cid)) } catch {}
       }
-      // UUID → ObjectId derived (post-migration mapping)
       if (/^[0-9a-f-]{36}$/i.test(cid)) {
         try { objectIds.push(new ObjectIdLib(uuidToObjectIdHex(cid))) } catch {}
         legacyUuids.push(cid)
@@ -370,13 +467,12 @@ export async function GET(req: NextRequest) {
       .toArray()
     for (const c of channels) {
       const entry = { title: c.channel_name, poster: c.channel_logo }
-      // Index by both _id (string form) and legacy_uuid so the lookup at line 384 hits.
       channelMap.set(c._id?.toString(), entry)
       if (c.legacy_uuid) channelMap.set(c.legacy_uuid, entry)
     }
   }
 
-  // Digital lookups — collect ww_ids from topMedia, topDownload, activePages, recentVisitors
+  // Digital lookups
   const digitalIds = new Set<string>()
   const collectDigitalIds = (ww: string | undefined | null) => {
     if (ww && /^ww-(ebook|music|soft|game)-/.test(ww)) digitalIds.add(ww)
@@ -436,12 +532,12 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const topMedia = await Promise.all((topMediaRaw as any[]).slice(0, 30).map((m) => enrich(m, "view")))
+  const topMedia = await Promise.all((topMediaRaw as any[]).map((m) => enrich(m, "view")))
   const topMediaDownload = await Promise.all(
-    (topDownloadRaw as any[]).slice(0, 30).map((m) => enrich(m, "download"))
+    (topDownloadRaw as any[]).map((m) => enrich(m, "download"))
   )
 
-  // Active pages enrichment (similar but flatter)
+  // Active pages enrichment
   const activePages = await Promise.all(
     (activePagesRaw as any[]).map(async (p) => {
       const wwId = p._id
@@ -476,7 +572,6 @@ export async function GET(req: NextRequest) {
         recentVisitorsSeen.add(k)
         return true
       })
-      .slice(0, 12)
       .map(async (v) => {
         let title = v.ww_id || "N/A"
         let poster: string | null = null
@@ -520,7 +615,7 @@ export async function GET(req: NextRequest) {
     return { referrer: host, count: r.count }
   })
 
-  // External top media enrichment (lightweight)
+  // External top media enrichment
   const externalTop = await Promise.all(
     (externalTopRaw as any[]).map((m) => enrich({ _id: m._id, downloads: m.clicks }, "download"))
   )
@@ -532,6 +627,177 @@ export async function GET(req: NextRequest) {
   }
   for (const row of externalByDayRaw as any[]) {
     if (externalByDayMap.has(row._id)) externalByDayMap.set(row._id, row.count)
+  }
+
+  // -------- Internal-download enrichment: resolve link_id → link details --------
+  const internalLinkIds = (internalTopLinksRaw as any[]).map((r) => r._id).filter(Boolean)
+  const internalLinks: any[] = []
+  if (internalLinkIds.length > 0) {
+    const [dlRows, ddlRows] = await Promise.all([
+      db
+        .collection("download_links")
+        .find({ legacy_uuid: { $in: internalLinkIds } })
+        .project({
+          legacy_uuid: 1,
+          ww_id: 1,
+          source_name: 1,
+          quality: 1,
+          language: 1,
+          file_size: 1,
+          link_type: 1,
+          media_type: 1,
+          tmdb_id: 1,
+          season_number: 1,
+          episode_number: 1,
+          submitted_by: 1,
+          status: 1,
+        })
+        .toArray(),
+      db
+        .collection("digital_download_links")
+        .find({ legacy_uuid: { $in: internalLinkIds } })
+        .project({
+          legacy_uuid: 1,
+          ww_id: 1,
+          source_name: 1,
+          quality: 1,
+          file_format: 1,
+          language: 1,
+          file_size: 1,
+          link_type: 1,
+          submitted_by: 1,
+          status: 1,
+          content_id: 1,
+        })
+        .toArray(),
+    ])
+    const linkMap = new Map<string, any>()
+    for (const r of dlRows) {
+      linkMap.set(r.legacy_uuid, { ...r, _kind: "download" })
+    }
+    for (const r of ddlRows) {
+      if (!linkMap.has(r.legacy_uuid)) {
+        linkMap.set(r.legacy_uuid, { ...r, _kind: "digital" })
+      }
+    }
+    for (const r of internalTopLinksRaw as any[]) {
+      const meta = linkMap.get(r._id)
+      if (meta) internalLinks.push({ ...meta, link_id: r._id, clicks: r.clicks })
+    }
+  }
+
+  // Resolve media titles for internal top links (TMDB + digital_content)
+  const internalDigitalIds = new Set<string>()
+  for (const l of internalLinks) {
+    if (l.ww_id && /^ww-(ebook|music|soft|game)-/.test(l.ww_id)) internalDigitalIds.add(l.ww_id)
+  }
+  const internalDigitalMap = new Map<string, any>()
+  if (internalDigitalIds.size > 0) {
+    const digs = await db
+      .collection("digital_content")
+      .find({ ww_id: { $in: Array.from(internalDigitalIds) } })
+      .project({ ww_id: 1, title: 1, cover_url: 1 })
+      .toArray()
+    for (const d of digs) internalDigitalMap.set(d.ww_id, { title: d.title, poster: d.cover_url })
+  }
+
+  const internalTopLinks = await Promise.all(
+    internalLinks.map(async (l) => {
+      let title = l.source_name || l.ww_id || "?"
+      let poster: string | null = null
+      if (l._kind === "digital") {
+        const dg = l.ww_id ? internalDigitalMap.get(l.ww_id) : null
+        title = dg?.title || title
+        poster = dg?.poster || null
+      } else if (l.tmdb_id && (l.media_type === "movie" || l.media_type === "tv")) {
+        const tm = await fetchTmdb(l.media_type, l.tmdb_id)
+        title = tm.title
+        poster = tm.poster
+      }
+      return {
+        link_id: l.link_id,
+        ww_id: l.ww_id,
+        kind: l._kind,
+        title,
+        poster,
+        source_name: l.source_name,
+        quality: l.quality || l.file_format || null,
+        language: l.language,
+        file_size: l.file_size,
+        link_type: l.link_type,
+        media_type: l.media_type || (l._kind === "digital" ? "digital" : null),
+        season_number: l.season_number,
+        episode_number: l.episode_number,
+        submitted_by: l.submitted_by,
+        status: l.status,
+        clicks: l.clicks,
+      }
+    })
+  )
+
+  // Resolve uploader usernames for top uploaders
+  const uploaderIds = (internalTopUploadersRaw as any[]).map((r) => r._id).filter(Boolean)
+  const uploaderMap = new Map<string, { username: string; role: string }>()
+  if (uploaderIds.length > 0) {
+    // submitted_by stored values can be either ObjectId or original UUID string;
+    // try matching via legacy_uuid (UUID) OR derived ObjectId. We also try
+    // matching the `profiles` collection (uses same ids).
+    const stringIds = uploaderIds.filter((v) => typeof v === "string")
+    const oids: any[] = []
+    for (const v of stringIds) {
+      if (/^[0-9a-f-]{36}$/i.test(v)) {
+        try { oids.push(new ObjectIdLib(uuidToObjectIdHex(v))) } catch {}
+      } else if (/^[a-f0-9]{24}$/i.test(v)) {
+        try { oids.push(new ObjectIdLib(v)) } catch {}
+      }
+    }
+    const allIds: any[] = [...stringIds, ...oids]
+    const [users, profiles] = await Promise.all([
+      db
+        .collection("users")
+        .find({ $or: [{ _id: { $in: allIds } }, { legacy_uuid: { $in: stringIds } }] })
+        .project({ username: 1, role: 1, legacy_uuid: 1 })
+        .toArray(),
+      db
+        .collection("profiles")
+        .find({ $or: [{ _id: { $in: allIds } }, { legacy_uuid: { $in: stringIds } }] })
+        .project({ username: 1, role: 1, legacy_uuid: 1 })
+        .toArray(),
+    ])
+    for (const u of users) {
+      const lookupKey =
+        u.legacy_uuid || (u._id?.toString ? u._id.toString() : String(u._id))
+      uploaderMap.set(lookupKey, { username: u.username || "?", role: u.role || "member" })
+      if (u.legacy_uuid && u._id) {
+        uploaderMap.set(u._id.toString(), { username: u.username || "?", role: u.role || "member" })
+      }
+    }
+    for (const p of profiles) {
+      const lookupKey =
+        p.legacy_uuid || (p._id?.toString ? p._id.toString() : String(p._id))
+      if (!uploaderMap.has(lookupKey))
+        uploaderMap.set(lookupKey, { username: p.username || "?", role: p.role || "member" })
+    }
+  }
+
+  const internalTopUploaders = (internalTopUploadersRaw as any[]).map((r) => {
+    const meta = uploaderMap.get(r._id)
+    return {
+      user_id: r._id,
+      username: meta?.username || "Inconnu",
+      role: meta?.role || "?",
+      clicks: r.clicks,
+      linkCount: r.linkCount,
+    }
+  })
+
+  // Internal by-day fill
+  const internalByDayMap = new Map<string, number>()
+  for (let i = period - 1; i >= 0; i--) {
+    internalByDayMap.set(new Date(now.getTime() - i * 86400000).toISOString().split("T")[0], 0)
+  }
+  for (const row of internalByDayRaw as any[]) {
+    if (internalByDayMap.has(row._id)) internalByDayMap.set(row._id, row.count)
   }
 
   return NextResponse.json({
@@ -577,6 +843,16 @@ export async function GET(req: NextRequest) {
       byQuality: (externalQualityRaw as any[]).map((r) => ({ quality: r._id, count: r.count })),
       byMediaType: (externalMediaTypeRaw as any[]).map((r) => ({ type: r._id, count: r.count })),
       topMedia: externalTop,
+    },
+    internal: {
+      totalClicks: internalClicksRaw,
+      totalClicksAllTime: totalInternalClicksAllTime,
+      byDay: Array.from(internalByDayMap.entries()).map(([date, count]) => ({ date, count })),
+      topLinks: internalTopLinks,
+      topUploaders: internalTopUploaders,
+      byQuality: (internalByQualityRaw as any[]).map((r) => ({ quality: r._id, count: r.count })),
+      byMediaType: (internalByMediaTypeRaw as any[]).map((r) => ({ type: r._id, count: r.count })),
+      byLinkType: (internalByLinkTypeRaw as any[]).map((r) => ({ link_type: r._id, count: r.count })),
     },
   })
 }

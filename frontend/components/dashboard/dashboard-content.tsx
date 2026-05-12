@@ -77,20 +77,27 @@ interface MediaInfo {
 
 interface StreamingLinkWithViews extends StreamingLink {
   view_count: number
+  click_count: number
   is_valid?: boolean | null
   last_checked?: string | null
 }
 
 interface DownloadLinkWithViews extends DownloadLink {
   view_count: number
+  click_count: number
   is_valid?: boolean | null
   last_checked?: string | null
 }
 
 interface DigitalContentWithViews extends DigitalContent {
   view_count: number
+  click_count: number
   is_valid?: boolean | null
   last_checked?: string | null
+}
+
+interface DigitalDownloadLinkWithClicks extends DigitalDownloadLink {
+  click_count: number
 }
 
 interface BugReport {
@@ -112,7 +119,7 @@ interface DashboardContentProps {
   liveTvChannels: LiveTVChannel[]
   liveTvSources: LiveTVSource[]
   digitalContents: DigitalContentWithViews[]
-  digitalLinks: DigitalDownloadLink[]
+  digitalLinks: DigitalDownloadLinkWithClicks[]
   stats: {
     totalStreaming: number
     totalDownload: number
@@ -125,6 +132,7 @@ interface DashboardContentProps {
     pendingCount: number
     rejectedCount: number
     totalViews: number
+    totalClicks: number
   }
 }
 
@@ -905,7 +913,7 @@ export function DashboardContent({
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         <StatCard icon={Play} label="Streaming" value={stats.totalStreaming} color="primary" />
         <StatCard icon={Download} label="Download" value={stats.totalDownload} color="blue" />
         <StatCard icon={Tv} label="TV Live" value={stats.totalLiveTv} color="purple" />
@@ -913,6 +921,7 @@ export function DashboardContent({
         <StatCard icon={CheckCircle} label="Approuves" value={totalApprovedLinks} color="emerald" />
         <StatCard icon={Clock} label="En attente" value={stats.pendingCount} color="orange" />
         <StatCard icon={Eye} label="Vues" value={stats.totalViews.toLocaleString()} color="cyan" />
+        <StatCard icon={Download} label="Clics DL" value={(stats.totalClicks || 0).toLocaleString()} color="orange" />
       </div>
 
       {/* Uploader Section */}
@@ -1517,6 +1526,7 @@ export function DashboardContent({
                           <th className="text-left py-3 px-4 text-muted-foreground font-medium">Langue</th>
                           <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
                           <th className="text-left py-3 px-4 text-muted-foreground font-medium">Vues</th>
+                          <th className="text-left py-3 px-4 text-muted-foreground font-medium">Clics</th>
                           <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
                           <th className="text-left py-3 px-4 text-muted-foreground font-medium">Actions</th>
                         </tr>
@@ -1569,6 +1579,12 @@ export function DashboardContent({
                                   <BarChart3 className="w-3 h-3 opacity-50" />
                                 </Link>
                               </td>
+                              <td className="py-3 px-4">
+                                <span className="flex items-center gap-1 text-orange-500 font-medium" title="Clics télécharger/lien">
+                                  <Download className="w-3 h-3" />
+                                  <span>{link.click_count || 0}</span>
+                                </span>
+                              </td>
                               <td className="py-3 px-4 text-muted-foreground">
                                 {new Date(link.created_at).toLocaleDateString("fr-FR")}
                               </td>
@@ -1604,7 +1620,7 @@ export function DashboardContent({
                         })}
                         {filteredStreamingLinks.length === 0 && (
                           <tr>
-                            <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                            <td colSpan={9} className="py-8 text-center text-muted-foreground">
                               Aucun resultat trouve
                             </td>
                           </tr>
@@ -1696,6 +1712,7 @@ export function DashboardContent({
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Validite</th>{" "}
                               {/* Added Validity Header */}
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Vues</th>
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Clics</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Actions</th>
                             </tr>
@@ -1763,6 +1780,12 @@ export function DashboardContent({
                                       <BarChart3 className="w-3 h-3 opacity-50" />
                                     </Link>
                                   </td>
+                                  <td className="py-3 px-4">
+                                    <span className="flex items-center gap-1 text-orange-500 font-medium" title="Clics télécharger">
+                                      <Download className="w-3 h-3" />
+                                      <span>{link.click_count || 0}</span>
+                                    </span>
+                                  </td>
                                   <td className="py-3 px-4 text-muted-foreground">
                                     {new Date(link.created_at).toLocaleDateString("fr-FR")}
                                   </td>
@@ -1807,7 +1830,7 @@ export function DashboardContent({
                             })}
                             {filteredDownloadLinks.length === 0 && localDownloadLinks.length > 0 && (
                               <tr>
-                                <td colSpan={9} className="py-8 text-center text-muted-foreground">
+                                <td colSpan={10} className="py-8 text-center text-muted-foreground">
                                   {" "}
                                   {/* Increased colSpan */}
                                   Aucun resultat trouve
@@ -1838,6 +1861,7 @@ export function DashboardContent({
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Statut</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Validite</th>{" "}
                               {/* Added Validity Header */}
+                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Clics</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Date</th>
                               <th className="text-left py-3 px-4 text-muted-foreground font-medium">Actions</th>
                             </tr>
@@ -1904,6 +1928,12 @@ export function DashboardContent({
                                       getValidityBadge(link)
                                     )}
                                   </td>
+                                  <td className="py-3 px-4">
+                                    <span className="flex items-center gap-1 text-orange-500 font-medium" title="Clics télécharger">
+                                      <Download className="w-3 h-3" />
+                                      <span>{link.click_count || 0}</span>
+                                    </span>
+                                  </td>
                                   <td className="py-3 px-4 text-muted-foreground">
                                     {new Date(link.created_at).toLocaleDateString("fr-FR")}
                                   </td>
@@ -1948,7 +1978,7 @@ export function DashboardContent({
                             })}
                             {localDigitalLinks.length === 0 && digitalLinks.length > 0 && (
                               <tr>
-                                <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                                <td colSpan={9} className="py-8 text-center text-muted-foreground">
                                   Aucun resultat trouve
                                 </td>
                               </tr>

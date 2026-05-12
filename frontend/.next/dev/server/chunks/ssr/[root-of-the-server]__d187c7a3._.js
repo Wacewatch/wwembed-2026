@@ -1165,6 +1165,8 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$components$2f$navigation$2e$react$2d$server$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/client/components/navigation.react-server.js [app-rsc] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$header$2e$tsx__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/header.tsx [app-rsc] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$dashboard$2f$dashboard$2d$content$2e$tsx__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/dashboard/dashboard-content.tsx [app-rsc] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/mongo/db.ts [app-rsc] (ecmascript)");
+;
 ;
 ;
 ;
@@ -1210,54 +1212,112 @@ async function DashboardPage() {
         fetchAllRows(supabase, "digital_content", user.id),
         fetchAllRows(supabase, "digital_download_links", user.id)
     ]);
-    // Then count views based on the fetched links
+    // Collect ww_ids + link_ids for native MongoDB aggregations (much faster
+    // than paginated Supabase fetches, and lets us return EVERY view/click —
+    // no 1000-row cap).
     const wwIds = [
         ...(streamingLinks || []).map((l)=>l.ww_id),
         ...(downloadLinks || []).map((l)=>l.ww_id),
         ...(digitalContents || []).map((l)=>l.ww_id)
     ].filter(Boolean);
+    const allLinkIds = [
+        ...(streamingLinks || []).map((l)=>l.id),
+        ...(downloadLinks || []).map((l)=>l.id),
+        ...(digitalLinks || []).map((l)=>l.id)
+    ].filter(Boolean);
     let viewCount = 0;
     const viewsPerLink = {};
+    const clicksPerLink = {};
+    const clicksPerWw = {};
+    const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getDb"])();
     if (wwIds.length > 0) {
-        const { count } = await supabase.from("embed_views").select("*", {
-            count: "exact",
-            head: true
-        }).in("ww_id", wwIds);
-        viewCount = count || 0;
-        const allViews = [];
-        const pageSize = 1000;
-        let page = 0;
-        let hasMore = true;
-        while(hasMore){
-            const { data: viewsData } = await supabase.from("embed_views").select("ww_id").in("ww_id", wwIds).range(page * pageSize, (page + 1) * pageSize - 1);
-            if (!viewsData || viewsData.length === 0) {
-                hasMore = false;
-            } else {
-                allViews.push(...viewsData);
-                if (viewsData.length < pageSize) {
-                    hasMore = false;
-                } else {
-                    page++;
+        const [viewsAgg, clicksByWwAgg] = await Promise.all([
+            db.collection("embed_views").aggregate([
+                {
+                    $match: {
+                        ww_id: {
+                            $in: wwIds
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: "$ww_id",
+                        n: {
+                            $sum: 1
+                        }
+                    }
                 }
+            ]).toArray(),
+            db.collection("link_clicks").aggregate([
+                {
+                    $match: {
+                        ww_id: {
+                            $in: wwIds
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: "$ww_id",
+                        n: {
+                            $sum: 1
+                        }
+                    }
+                }
+            ]).toArray()
+        ]);
+        for (const v of viewsAgg){
+            if (v._id) {
+                viewsPerLink[v._id] = v.n;
+                viewCount += v.n;
             }
         }
-        allViews.forEach((view)=>{
-            if (view.ww_id) {
-                viewsPerLink[view.ww_id] = (viewsPerLink[view.ww_id] || 0) + 1;
-            }
-        });
+        for (const c of clicksByWwAgg){
+            if (c._id) clicksPerWw[c._id] = c.n;
+        }
     }
+    if (allLinkIds.length > 0) {
+        const clicksAgg = await db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    link_id: {
+                        $in: allLinkIds
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: "$link_id",
+                    n: {
+                        $sum: 1
+                    }
+                }
+            }
+        ]).toArray();
+        for (const c of clicksAgg){
+            if (c._id) clicksPerLink[c._id] = c.n;
+        }
+    }
+    const totalClicks = Object.values(clicksPerLink).reduce((s, n)=>s + n, 0);
     const streamingLinksWithViews = (streamingLinks || []).map((link)=>({
             ...link,
-            view_count: viewsPerLink[link.ww_id] || 0
+            view_count: viewsPerLink[link.ww_id] || 0,
+            click_count: clicksPerLink[link.id] || 0
         }));
     const downloadLinksWithViews = (downloadLinks || []).map((link)=>({
             ...link,
-            view_count: viewsPerLink[link.ww_id] || 0
+            view_count: viewsPerLink[link.ww_id] || 0,
+            click_count: clicksPerLink[link.id] || 0
         }));
     const digitalContentsWithViews = (digitalContents || []).map((content)=>({
             ...content,
-            view_count: viewsPerLink[content.ww_id] || 0
+            view_count: viewsPerLink[content.ww_id] || 0,
+            click_count: clicksPerWw[content.ww_id] || 0
+        }));
+    const digitalLinksWithClicks = (digitalLinks || []).map((link)=>({
+            ...link,
+            click_count: clicksPerLink[link.id] || 0
         }));
     const totalStreaming = streamingLinks?.length || 0;
     const totalDownload = downloadLinks?.length || 0;
@@ -1274,7 +1334,7 @@ async function DashboardPage() {
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$header$2e$tsx__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["Header"], {}, void 0, false, {
                 fileName: "[project]/app/dashboard/page.tsx",
-                lineNumber: 152,
+                lineNumber: 181,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
@@ -1285,8 +1345,8 @@ async function DashboardPage() {
                     downloadLinks: downloadLinksWithViews,
                     liveTvChannels: liveTvChannels || [],
                     liveTvSources: liveTvSources || [],
-                    initialDigitalContents: digitalContentsWithViews,
-                    digitalLinks: digitalLinks || [],
+                    digitalContents: digitalContentsWithViews,
+                    digitalLinks: digitalLinksWithClicks,
                     stats: {
                         totalStreaming,
                         totalDownload,
@@ -1298,22 +1358,23 @@ async function DashboardPage() {
                         verifiedDigital,
                         pendingCount,
                         rejectedCount,
-                        totalViews: viewCount
+                        totalViews: viewCount,
+                        totalClicks
                     }
                 }, void 0, false, {
                     fileName: "[project]/app/dashboard/page.tsx",
-                    lineNumber: 154,
+                    lineNumber: 183,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/dashboard/page.tsx",
-                lineNumber: 153,
+                lineNumber: 182,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/dashboard/page.tsx",
-        lineNumber: 151,
+        lineNumber: 180,
         columnNumber: 5
     }, this);
 }

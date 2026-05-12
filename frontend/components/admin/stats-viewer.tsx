@@ -26,6 +26,7 @@ import {
 } from "lucide-react"
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, AreaChart, Area } from "recharts"
 import { ExternalLinksStats } from "./external-links-stats"
+import { InternalDownloadsStats } from "./internal-downloads-stats"
 
 type StatsResponse = {
   period: number
@@ -78,6 +79,8 @@ type StatsResponse = {
       poster: string | null
     }[]
   }
+  external?: any
+  internal?: any
 }
 
 export function StatsViewer() {
@@ -136,6 +139,14 @@ export function StatsViewer() {
           >
             <Globe className="h-4 w-4" />
             Liens Externes
+          </TabsTrigger>
+          <TabsTrigger
+            value="internal"
+            className="gap-2 px-4 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20"
+            data-testid="stats-tab-internal"
+          >
+            <Download className="h-4 w-4" />
+            Téléchargements Internes
           </TabsTrigger>
         </TabsList>
 
@@ -343,6 +354,10 @@ export function StatsViewer() {
 
         <TabsContent value="external">
           <ExternalLinksStats period={period} setPeriod={setPeriod} data={data.external} />
+        </TabsContent>
+
+        <TabsContent value="internal">
+          <InternalDownloadsStats period={period} setPeriod={setPeriod} data={(data as any).internal || { totalClicks: 0, totalClicksAllTime: 0, byDay: [], topLinks: [], topUploaders: [], byQuality: [], byMediaType: [], byLinkType: [] }} />
         </TabsContent>
       </Tabs>
     </div>

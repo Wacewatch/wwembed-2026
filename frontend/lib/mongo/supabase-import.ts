@@ -91,23 +91,47 @@ async function migrateTable(
   job.current_table = tableName
   await persistJob(job)
 
+  // Cursor-based pagination for huge tables that Supabase aborts with
+  // statement_timeout (57014) when using OFFSET. We page through ordered
+  // by the natural append-only time field instead of skipping rows.
+  // PAGE is intentionally small for these tables so each request stays
+  // well below Supabase's 8s statement timeout.
+  const CURSOR_TABLES: Record<string, { col: string; page: number }> = {
+    embed_views: { col: "viewed_at", page: 200 },
+    link_clicks: { col: "clicked_at", page: 500 },
+    ad_clicks: { col: "clicked_at", page: 500 },
+    api_usage: { col: "created_at", page: 500 },
+  }
+  const cursorCfg = CURSOR_TABLES[tableName]
+
   let from = 0
-  const PAGE = 500
+  let cursor: string | null = null
+  const PAGE = cursorCfg?.page ?? 500
   let total = 0
+  let pageSize = PAGE
 
   while (true) {
     let data: any[] | null = null
     let lastError: string | null = null
 
-    for (let attempt = 0; attempt < 4; attempt++) {
-      const r = await supabase.from(tableName).select("*").range(from, from + PAGE - 1)
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const sizeForAttempt = cursorCfg ? Math.max(50, Math.floor(pageSize / Math.pow(2, attempt))) : pageSize
+      let q: any = supabase.from(tableName).select("*")
+      if (cursorCfg) {
+        q = q.order(cursorCfg.col, { ascending: true }).limit(sizeForAttempt)
+        if (cursor) q = q.gt(cursorCfg.col, cursor)
+      } else {
+        q = q.range(from, from + pageSize - 1)
+      }
+      const r = await q
       if (r.error) {
         lastError = r.error.message
-        if (/timeout|57014|fetch failed/i.test(lastError)) {
-          await new Promise((res) => setTimeout(res, 800 * (attempt + 1)))
+        // statement_timeout / network → exponential backoff with shrinking page
+        if (/timeout|57014|fetch failed|aborted/i.test(lastError)) {
+          await new Promise((res) => setTimeout(res, 600 * (attempt + 1)))
           continue
         }
-        await new Promise((res) => setTimeout(res, 800 * (attempt + 1)))
+        await new Promise((res) => setTimeout(res, 600 * (attempt + 1)))
         continue
       }
       data = r.data || []
@@ -165,8 +189,17 @@ async function migrateTable(
     // Persist every page so UI can show live progress
     await persistJob(job)
 
-    if (data.length < PAGE) break
-    from += PAGE
+    if (cursorCfg) {
+      // Advance cursor to the last row's time value
+      const lastRow = data[data.length - 1]
+      const nextCursor = lastRow?.[cursorCfg.col]
+      if (!nextCursor || nextCursor === cursor) break
+      cursor = nextCursor
+      if (data.length < pageSize) break
+    } else {
+      if (data.length < pageSize) break
+      from += pageSize
+    }
   }
 
   tableEntry.state = "done"
@@ -226,24 +259,69 @@ async function migrateAuthUsers(job: ImportJob, supabase: ReturnType<typeof crea
         continue
       }
 
-      await usersColl.updateOne(
-        { _id },
-        {
-          $set: {
-            email: (u.email || "").toLowerCase(),
-            username:
-              profile?.username || u.user_metadata?.username || (u.email || "").split("@")[0],
-            role: profile?.role || u.user_metadata?.role || "member",
-            password_hash: null,
-            needs_password_reset: true,
-            legacy_uuid: u.id,
-            email_confirmed_at: u.email_confirmed_at,
-            created_at: u.created_at || new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+      // Resolve a non-colliding username — the `users.username_1` unique index
+      // would otherwise abort the migration on Supabase profile duplicates.
+      const baseUsername =
+        profile?.username || u.user_metadata?.username || (u.email || "").split("@")[0] || `user_${u.id.slice(0, 6)}`
+      let finalUsername = baseUsername
+      let collisionTry = 2
+      // Loop until we find a slot not taken by *another* user (case-insensitive)
+      // Cap at 50 attempts then fall back to a uuid suffix.
+      while (collisionTry < 50) {
+        const taken = await usersColl.findOne({
+          username: { $regex: `^${finalUsername.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" },
+          _id: { $ne: _id },
+        })
+        if (!taken) break
+        finalUsername = `${baseUsername}_${collisionTry}`
+        collisionTry++
+      }
+      if (collisionTry >= 50) {
+        finalUsername = `${baseUsername}_${u.id.slice(0, 8)}`
+      }
+
+      try {
+        await usersColl.updateOne(
+          { _id },
+          {
+            $set: {
+              email: (u.email || "").toLowerCase(),
+              username: finalUsername,
+              role: profile?.role || u.user_metadata?.role || "member",
+              password_hash: null,
+              needs_password_reset: true,
+              legacy_uuid: u.id,
+              email_confirmed_at: u.email_confirmed_at,
+              created_at: u.created_at || new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
           },
-        },
-        { upsert: true }
-      )
+          { upsert: true }
+        )
+      } catch (e: any) {
+        // Last-resort: if a race still produced a duplicate, suffix with the user id
+        if (/E11000|duplicate key/i.test(e?.message || "")) {
+          await usersColl.updateOne(
+            { _id },
+            {
+              $set: {
+                email: (u.email || "").toLowerCase(),
+                username: `${baseUsername}_${u.id.slice(0, 8)}`,
+                role: profile?.role || u.user_metadata?.role || "member",
+                password_hash: null,
+                needs_password_reset: true,
+                legacy_uuid: u.id,
+                email_confirmed_at: u.email_confirmed_at,
+                created_at: u.created_at || new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              },
+            },
+            { upsert: true }
+          )
+        } else {
+          throw e
+        }
+      }
       if (profile) {
         await profilesColl.updateOne({ _id: profile._id }, { $set: { user_id: _id } })
       }
