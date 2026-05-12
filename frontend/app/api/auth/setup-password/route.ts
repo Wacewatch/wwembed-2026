@@ -90,9 +90,10 @@ export async function POST(req: NextRequest) {
     { upsert: true }
   )
 
-  const id = user._id.toString()
-  const access = createAccessToken(id, user.email)
-  const refresh = createRefreshToken(id)
+  const tokenSub = user._id.toString()
+  const access = createAccessToken(tokenSub, user.email)
+  const refresh = createRefreshToken(tokenSub)
+  const id = user.legacy_uuid || tokenSub
 
   const res = NextResponse.json({
     ok: true,

@@ -30,9 +30,12 @@ export async function POST(req: NextRequest) {
   const ok = await verifyPassword(password, user.password_hash)
   if (!ok) return NextResponse.json({ error: "Identifiants invalides" }, { status: 401 })
 
-  const id = user._id.toString()
-  const access = createAccessToken(id, user.email)
-  const refresh = createRefreshToken(id)
+  const tokenSub = user._id.toString()
+  const access = createAccessToken(tokenSub, user.email)
+  const refresh = createRefreshToken(tokenSub)
+  // Prefer legacy_uuid for the public-facing id so it matches submitted_by /
+  // foreign-key fields stored from the Supabase→Mongo migration.
+  const id = user.legacy_uuid || tokenSub
 
   const res = NextResponse.json({
     id,

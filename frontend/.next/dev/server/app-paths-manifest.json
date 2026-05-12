@@ -1,4 +1,12 @@
 {
-  "/api/v1/download/[wwId]/route": "app/api/v1/download/[wwId]/route.js",
-  "/api/v1/streaming/[wwId]/route": "app/api/v1/streaming/[wwId]/route.js"
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/api/auth/me/route": "app/api/auth/me/route.js",
+  "/api/auth/setup-password/route": "app/api/auth/setup-password/route.js",
+  "/api/bug-reports/user/route": "app/api/bug-reports/user/route.js",
+  "/api/db/route": "app/api/db/route.js",
+  "/api/tmdb-stats/route": "app/api/tmdb-stats/route.js",
+  "/api/tmdb/[type]/[id]/route": "app/api/tmdb/[type]/[id]/route.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/page": "app/page.js"
 }

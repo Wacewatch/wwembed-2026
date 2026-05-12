@@ -49,11 +49,14 @@ export async function POST(req: NextRequest) {
     userId = r.insertedId
   }
 
-  const id = userId.toString()
-  const access = createAccessToken(id, email)
-  const refresh = createRefreshToken(id)
+  const tokenSub = userId.toString()
+  const access = createAccessToken(tokenSub, email)
+  const refresh = createRefreshToken(tokenSub)
 
   const userDoc = await db.collection("users").findOne({ _id: userId })
+  // Use legacy_uuid for the public id when the account was migrated from
+  // Supabase, otherwise the Mongo ObjectId hex.
+  const id = userDoc?.legacy_uuid || tokenSub
 
   // Mirror the user as a `profiles` row (same _id) so the existing
   // dashboard / admin pages that read from `profiles` keep working.

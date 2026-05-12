@@ -91,7 +91,11 @@ export async function getCurrentUser(req?: NextRequest): Promise<AuthUser | null
   if (!userDoc) return null
 
   return {
-    id: userDoc._id?.toString() || userDoc.id,
+    // Prefer legacy_uuid (original Supabase UUID) so that joins with foreign-key
+    // fields stored as the old UUID (e.g. streaming_links.submitted_by from the
+    // Supabase→Mongo migration) keep working. Fallback to the Mongo ObjectId hex
+    // for post-migration users that don't have a legacy UUID.
+    id: userDoc.legacy_uuid || userDoc._id?.toString() || userDoc.id,
     email: userDoc.email,
     username: userDoc.username || null,
     role: userDoc.role || "member",
