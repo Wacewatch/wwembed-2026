@@ -310,15 +310,24 @@ class SupabaseShimQuery<T = any> implements PromiseLike<SupaResponse<T>> {
           return { data: this.headOnly ? null : ([] as any), error: null, count } as any
         }
 
-        let cursor = coll.find(this.buildFilter())
+        // When sorting is requested we route through aggregate({ allowDiskUse: true })
+        // because find().sort() has a hard 32 MB in-memory limit and crashes on
+        // large collections without a covering index. allowDiskUse lets MongoDB
+        // spill the sort to disk if needed — slower but never fails.
+        let docs: any[]
         if (this.orders.length) {
           const sort: any = {}
           for (const o of this.orders) sort[o.column] = o.ascending ? 1 : -1
-          cursor = cursor.sort(sort)
+          const pipeline: any[] = [{ $match: this.buildFilter() }, { $sort: sort }]
+          if (this.skipN) pipeline.push({ $skip: this.skipN })
+          if (this.limitN) pipeline.push({ $limit: this.limitN })
+          docs = await coll.aggregate(pipeline, { allowDiskUse: true }).toArray()
+        } else {
+          let cursor = coll.find(this.buildFilter())
+          if (this.skipN) cursor = cursor.skip(this.skipN)
+          if (this.limitN) cursor = cursor.limit(this.limitN)
+          docs = await cursor.toArray()
         }
-        if (this.skipN) cursor = cursor.skip(this.skipN)
-        if (this.limitN) cursor = cursor.limit(this.limitN)
-        const docs = await cursor.toArray()
         const normalized = docs.map((d) => normalizeDoc(d))
 
         if (this.isSingle) {

@@ -85,17 +85,23 @@ export default async function DashboardPage() {
     const [viewsAgg, clicksByWwAgg] = await Promise.all([
       db
         .collection("embed_views")
-        .aggregate([
-          { $match: { ww_id: { $in: wwIds } } },
-          { $group: { _id: "$ww_id", n: { $sum: 1 } } },
-        ])
+        .aggregate(
+          [
+            { $match: { ww_id: { $in: wwIds } } },
+            { $group: { _id: "$ww_id", n: { $sum: 1 } } },
+          ],
+          { allowDiskUse: true }
+        )
         .toArray(),
       db
         .collection("link_clicks")
-        .aggregate([
-          { $match: { ww_id: { $in: wwIds } } },
-          { $group: { _id: "$ww_id", n: { $sum: 1 } } },
-        ])
+        .aggregate(
+          [
+            { $match: { ww_id: { $in: wwIds } } },
+            { $group: { _id: "$ww_id", n: { $sum: 1 } } },
+          ],
+          { allowDiskUse: true }
+        )
         .toArray(),
     ])
     for (const v of viewsAgg as any[]) {
@@ -112,10 +118,13 @@ export default async function DashboardPage() {
   if (allLinkIds.length > 0) {
     const clicksAgg = await db
       .collection("link_clicks")
-      .aggregate([
-        { $match: { link_id: { $in: allLinkIds } } },
-        { $group: { _id: "$link_id", n: { $sum: 1 } } },
-      ])
+      .aggregate(
+        [
+          { $match: { link_id: { $in: allLinkIds } } },
+          { $group: { _id: "$link_id", n: { $sum: 1 } } },
+        ],
+        { allowDiskUse: true }
+      )
       .toArray()
     for (const c of clicksAgg as any[]) {
       if (c._id) clicksPerLink[c._id] = c.n
