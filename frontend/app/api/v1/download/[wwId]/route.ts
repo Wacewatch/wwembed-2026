@@ -1503,19 +1503,55 @@ function _loadExternal(){
       content.innerHTML='<div class="em">Aucune source externe trouv\u00e9e</div>';
       countBadge.textContent="0";return;
     }
-    var first=results[0];
-    for(var i=0;i<results.length;i++){
-      if(results[i].tmdb_id===_tmdbId||results[i].tmdb_id===String(_tmdbId)){first=results[i];break;}
+    // Pick the BEST match:
+    // 1. tmdb_id matches exactly AND media_type matches (movies/animes for film, series/animes for TV)
+    // 2. tmdb_id matches exactly (any type)
+    // 3. first result of expected type
+    // 4. fallback to first result
+    var wantMovie=(_mediaType==="movie");
+    var movieTypes=["movie","animes","anime","film"];
+    var seriesTypes=["series","tv","serie","animes","anime"];
+    var expectedTypes=wantMovie?movieTypes:seriesTypes;
+    function _hasExpectedType(r){
+      var t=(r&&r.type?String(r.type):"").toLowerCase();
+      for(var k=0;k<expectedTypes.length;k++){if(t===expectedTypes[k])return true;}
+      return false;
     }
+    function _sameTmdb(r){
+      return r&&(r.tmdb_id===_tmdbId||r.tmdb_id===String(_tmdbId)||String(r.tmdb_id)===String(_tmdbId));
+    }
+    var first=null;
+    // Pass 1: exact tmdb + expected type
+    for(var i=0;i<results.length;i++){
+      if(_sameTmdb(results[i])&&_hasExpectedType(results[i])){first=results[i];break;}
+    }
+    // Pass 2: exact tmdb (any type)
+    if(!first){
+      for(var i2=0;i2<results.length;i2++){
+        if(_sameTmdb(results[i2])){first=results[i2];break;}
+      }
+    }
+    // Pass 3: first of expected type
+    if(!first){
+      for(var i3=0;i3<results.length;i3++){
+        if(_hasExpectedType(results[i3])){first=results[i3];break;}
+      }
+    }
+    // Pass 4: anything
+    if(!first)first=results[0];
+
     var movieId=first.id||first.movie_id||first.tmdb_id;
     _movixMovieId=movieId;
-    var isTv=(_mediaType==="tv")||first.is_series||(first.type==="series");
+    var firstType=(first.type||"").toLowerCase();
+    var isTv=(firstType==="series"||firstType==="tv"||firstType==="serie")
+      ||(!firstType&&_mediaType==="tv")
+      ||(firstType==="animes"&&_mediaType==="tv");
     var dlUrl;
     if(isTv){
       var s=_seasonNum||1;var e=_episodeNum||1;
       dlUrl=_BASE+"/darkiworld/download/tv/"+movieId+"?season="+s+"&episode="+e+"&tmdbId="+_tmdbId;
     }else{
-      dlUrl=_BASE+"/darkiworld/download/movie/"+movieId+"?tmdbdId="+_tmdbId;
+      dlUrl=_BASE+"/darkiworld/download/movie/"+movieId+"?tmdbId="+_tmdbId;
     }
     fetch(dlUrl)
     .then(function(r){return r.json();})

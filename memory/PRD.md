@@ -42,3 +42,14 @@
 ## Next Action Items
 - Relancer l'import en production (idempotent) — embed_views devrait passer cette fois, et auth.users gérera les collisions
 - Si production a déjà 0 entrées dans `auth.users` à cause de l'ancien crash, l'import reprendra le tour complet
+
+## 12/05/2026 — Fix download embed externalliens
+- **Bug 1** : Typo `tmdbdId` au lieu de `tmdbId` dans l'URL movix `/darkiworld/download/movie/{id}?tmdbdId=...` → l'API recevait pas le tmdbId et matchait par titre, retournant les mauvais liens (ex. Mario Galaxy → liens random)
+- **Bug 2** : Sélection du `first` result naïve. Pour TMDB id `1226863` (Super Mario Galaxy le film), 41 résultats movix dont 38 jeux Mario. Nouveau matching multi-passes :
+  1. tmdb_id exact + type attendu (movie/animes pour film, series/animes pour TV)
+  2. tmdb_id exact (any type)
+  3. premier résultat de type attendu
+  4. fallback : results[0]
+- Fichier modifié : `app/api/v1/download/[wwId]/route.ts` (route film/série uniquement, la digital_content section utilisait déjà la logique correcte)
+- Modal pub 2 étapes (otieu + adsterra) **conservée intacte**
+- Validé : `ww-movie-1226863` retourne 13 liens corrects (1Fichier WEB 1080p Light 2.63 GB, Ultra HDLight x265, etc.) en provenance de movix avec posters, qualités, sub, lang corrects
