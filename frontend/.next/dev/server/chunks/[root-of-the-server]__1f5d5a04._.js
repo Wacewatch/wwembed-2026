@@ -153,12 +153,7 @@ async function ensureIndexes(db) {
     await db.collection("bug_reports").createIndex({
         created_at: -1
     });
-    // sessions for password reset / login attempts
-    await db.collection("password_reset_tokens").createIndex({
-        expires_at: 1
-    }, {
-        expireAfterSeconds: 0
-    });
+    // login attempts
     await db.collection("login_attempts").createIndex({
         identifier: 1
     });
@@ -1039,7 +1034,7 @@ __turbopack_context__.s([
     "GET",
     ()=>GET
 ]);
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/server.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/next@16.0.10_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/server.js [app-route] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/supabase/admin.ts [app-route] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$tmdb$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/tmdb.ts [app-route] (ecmascript)");
 ;
@@ -1052,13 +1047,13 @@ async function GET(request, props) {
     try {
         const params = await props.params;
         const { wwId } = params;
-        if (!wwId) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+        if (!wwId) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             error: "Missing WW ID"
         }, {
             status: 400
         });
         const parsed = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$tmdb$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["parseWWId"])(wwId);
-        if (!parsed) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+        if (!parsed) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             error: "Invalid WW ID format"
         }, {
             status: 400
@@ -1103,18 +1098,20 @@ async function GET(request, props) {
                 sub: null
             };
         }).filter((link)=>link.url && link.url.length > 0);
-        // allSources preserves original order (db first, then api) — this drives _idx / playback order
+        // allSources order drives _idx and default playback.
+        // API sources first (ordered by admin priority) so the player loads the highest-priority API source by default.
+        // DB sources ("liens uploaders") come after in the array, but are rendered visually on top of the menu.
         const allSources = [
+            ...autoLinks,
             ...(userLinks || []).map((l, i)=>({
-                    name: l.source_name || "Source #" + (i + 1),
+                    name: l.source_name || "Lien uploader #" + (i + 1),
                     url: l.source_url,
                     quality: l.quality || "HD",
                     language: l.language || "VO",
                     type: "db",
                     source_type: l.source_type || null,
                     sub: l.subtitle || null
-                })),
-            ...autoLinks
+                }))
         ];
         await supabase.from("embed_views").insert({
             ww_id: wwId,
@@ -1625,8 +1622,10 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 (function(){
 /* ── Data ──
    _src  = original array (preserves server order → drives _idx / playback)
-   In the sheet UI: db sources are rendered first (top), then api sources.
-   But _idx always references the position in _src, so playback order = server order.
+   Server order: API sources first (sorted by admin priority), then DB sources (liens uploaders).
+   So _src[0] is the highest-priority API source → that is what loads by default in the player.
+   In the sheet UI: db (liens uploaders) sources are rendered first (top), then api sources.
+   But _idx always references the position in _src, so playback selection works correctly.
 ── */
 var _src=${sourcesJson};
 var _idx=0;
@@ -1707,7 +1706,7 @@ function renderGrid(){
     html+='<div class="section-wrap">';
     html+='<div class="section-label">';
     html+='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>';
-    html+='Sources directes<span class="section-count">'+dbItems.length+'</span></div>';
+    html+='Liens uploaders<span class="section-count">'+dbItems.length+'</span></div>';
     html+='<div class="src-grid">';
     dbItems.forEach(function(o){html+=renderCard(o.s,o.i);});
     html+='</div></div>';
@@ -1743,7 +1742,7 @@ function renderCard(s,idx){
   var srcTag=s.source_type?'<span class="tag tag-src">'+s.source_type+'</span>':"";
 
   var badgeHtml=s.type==="db"
-    ?'<div class="card-badge badge-db"><span class="badge-dot-db"></span>Direct</div>'
+    ?'<div class="card-badge badge-db"><span class="badge-dot-db"></span>Lien uploader</div>'
     :'<div class="card-badge badge-api"><span class="badge-dot-api"></span>Externe</div>';
 
   return '<div class="card'+(isAct?' act':'')+'" data-idx="'+idx+'">'
@@ -1877,14 +1876,14 @@ showAdModal();
 </script>
 </body>
 </html>`;
-        return new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"](html, {
+        return new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"](html, {
             headers: {
                 "Content-Type": "text/html; charset=utf-8"
             }
         });
     } catch (error) {
         console.error("Streaming error:", error);
-        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             error: "Internal server error"
         }, {
             status: 500
