@@ -6,6 +6,8 @@
   "/api/db/route": "app/api/db/route.js",
   "/api/tmdb-stats/route": "app/api/tmdb-stats/route.js",
   "/api/tmdb/[type]/[id]/route": "app/api/tmdb/[type]/[id]/route.js",
+  "/api/v1/download/[wwId]/route": "app/api/v1/download/[wwId]/route.js",
+  "/api/v1/streaming/[wwId]/route": "app/api/v1/streaming/[wwId]/route.js",
   "/auth/login/page": "app/auth/login/page.js",
   "/dashboard/page": "app/dashboard/page.js",
   "/page": "app/page.js"
