@@ -55,6 +55,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  try {
+    return await buildStatsResponse(req)
+  } catch (err: any) {
+    console.error("[admin/stats] failed:", err?.stack || err)
+    return NextResponse.json(
+      { error: "Internal error", message: err?.message || String(err) },
+      { status: 500 }
+    )
+  }
+}
+
+async function buildStatsResponse(req: NextRequest) {
+
   const period = Math.max(1, Math.min(365, parseInt(req.nextUrl.searchParams.get("period") || "7", 10)))
   const now = new Date()
   const startDate = new Date(now.getTime() - period * 86400000).toISOString()
@@ -62,6 +75,24 @@ export async function GET(req: NextRequest) {
   const fifteenMinAgo = new Date(now.getTime() - 15 * 60000).toISOString()
   const oneHourAgo = new Date(now.getTime() - 3600000).toISOString()
   const twentyFourHoursAgo = new Date(now.getTime() - 86400000).toISOString()
+
+  // Type-safe day bucket: handles both String (ISO) and Date BSON types.
+  // Migrated data from Supabase keeps ISO strings, but new inserts via some
+  // code paths might store native Date objects — $substrCP would crash on
+  // those, causing the whole admin/stats endpoint to 500.
+  const dayBucket = (field: string) => ({
+    $cond: [
+      { $eq: [{ $type: field }, "string"] },
+      { $substrCP: [field, 0, 10] },
+      {
+        $cond: [
+          { $eq: [{ $type: field }, "date"] },
+          { $dateToString: { date: field, format: "%Y-%m-%d" } },
+          null,
+        ],
+      },
+    ],
+  })
 
   const db = await getDb()
 
@@ -107,7 +138,7 @@ export async function GET(req: NextRequest) {
         { $match: { viewed_at: { $gte: startDate } } },
         {
           $group: {
-            _id: { $substrCP: ["$viewed_at", 0, 10] },
+            _id: dayBucket("$viewed_at"),
             total: { $sum: 1 },
             streaming: {
               $sum: {
@@ -243,7 +274,7 @@ export async function GET(req: NextRequest) {
       .collection("link_clicks")
       .aggregate([
         { $match: { clicked_at: { $gte: startDate } } },
-        { $group: { _id: { $substrCP: ["$clicked_at", 0, 10] }, count: { $sum: 1 } } },
+        { $group: { _id: dayBucket("$clicked_at"), count: { $sum: 1 } } },
       ])
       .toArray(),
     db
@@ -304,7 +335,7 @@ export async function GET(req: NextRequest) {
       .collection("link_clicks")
       .aggregate([
         { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
-        { $group: { _id: { $substrCP: ["$clicked_at", 0, 10] }, count: { $sum: 1 } } },
+        { $group: { _id: dayBucket("$clicked_at"), count: { $sum: 1 } } },
       ])
       .toArray(),
     db
@@ -405,7 +436,7 @@ export async function GET(req: NextRequest) {
     .collection("link_clicks")
     .aggregate([
       { $match: { clicked_at: { $gte: startDate } } },
-      { $group: { _id: { $substrCP: ["$clicked_at", 0, 10] }, count: { $sum: 1 } } },
+      { $group: { _id: dayBucket("$clicked_at"), count: { $sum: 1 } } },
     ])
     .toArray()
   for (const row of linkClicksDay as any[]) {
