@@ -357,6 +357,77 @@ const TMDB_IMG = "https://image.tmdb.org/t/p/w92";
 const tmdbCache = new Map();
 const TMDB_TTL = 6 * 60 * 60 * 1000 // 6h
 ;
+// Index bootstrap: runs once per server process. createIndex is idempotent
+// and very cheap if the index already exists. These indexes are essential
+// for the admin/stats endpoint to complete in <1s instead of timing out
+// on multi-million-row collections.
+let indexesEnsured = null;
+async function ensureStatsIndexes(db) {
+    if (indexesEnsured) return indexesEnsured;
+    indexesEnsured = (async ()=>{
+        const safe = async (fn)=>{
+            try {
+                await fn();
+            } catch (e) {
+                console.warn("[admin/stats] index create skipped:", e?.message);
+            }
+        };
+        await Promise.all([
+            safe(()=>db.collection("embed_views").createIndex({
+                    viewed_at: -1
+                })),
+            safe(()=>db.collection("embed_views").createIndex({
+                    ww_id: 1
+                })),
+            safe(()=>db.collection("embed_views").createIndex({
+                    embed_type: 1,
+                    viewed_at: -1
+                })),
+            safe(()=>db.collection("link_clicks").createIndex({
+                    clicked_at: -1
+                })),
+            safe(()=>db.collection("link_clicks").createIndex({
+                    link_id: 1,
+                    clicked_at: -1
+                })),
+            safe(()=>db.collection("link_clicks").createIndex({
+                    ww_id: 1
+                })),
+            safe(()=>db.collection("ad_clicks").createIndex({
+                    clicked_at: -1
+                })),
+            safe(()=>db.collection("streaming_links").createIndex({
+                    submitted_by: 1
+                })),
+            safe(()=>db.collection("streaming_links").createIndex({
+                    status: 1,
+                    is_active: 1
+                })),
+            safe(()=>db.collection("download_links").createIndex({
+                    submitted_by: 1
+                })),
+            safe(()=>db.collection("download_links").createIndex({
+                    status: 1,
+                    is_active: 1
+                })),
+            safe(()=>db.collection("digital_content").createIndex({
+                    submitted_by: 1
+                })),
+            safe(()=>db.collection("digital_download_links").createIndex({
+                    submitted_by: 1
+                })),
+            safe(()=>db.collection("live_tv_sources").createIndex({
+                    submitted_by: 1
+                })),
+            safe(()=>db.collection("bug_reports").createIndex({
+                    status: 1,
+                    created_at: -1
+                }))
+        ]);
+        console.log("[admin/stats] indexes ensured");
+    })();
+    return indexesEnsured;
+}
 async function fetchTmdb(type, id) {
     const key = `${type}/${id}`;
     const cached = tmdbCache.get(key);
@@ -425,10 +496,20 @@ async function buildStatsResponse(req) {
     const fifteenMinAgo = new Date(now.getTime() - 15 * 60000).toISOString();
     const oneHourAgo = new Date(now.getTime() - 3600000).toISOString();
     const twentyFourHoursAgo = new Date(now.getTime() - 86400000).toISOString();
+    const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getDb"])();
+    // Ensure critical indexes exist (idempotent: createIndex is a no-op if the
+    // index already exists). Without these the admin/stats aggregations do a
+    // COLLSCAN on millions of rows and either run out of memory or time out
+    // through the reverse-proxy (502). This block runs once and is cheap.
+    await ensureStatsIndexes(db);
+    // maxTimeMS: hard cap so a slow aggregation fails fast (proper 500 with
+    // a clear message) instead of hanging until the upstream nginx times out
+    // and returns an opaque 502.
+    const AGG_OPTS = {
+        allowDiskUse: true,
+        maxTimeMS: 25000
+    };
     // Type-safe day bucket: handles both String (ISO) and Date BSON types.
-    // Migrated data from Supabase keeps ISO strings, but new inserts via some
-    // code paths might store native Date objects — $substrCP would crash on
-    // those, causing the whole admin/stats endpoint to 500.
     const dayBucket = (field)=>({
             $cond: [
                 {
@@ -467,7 +548,6 @@ async function buildStatsResponse(req) {
                 }
             ]
         });
-    const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getDb"])();
     // Run main aggregations in parallel — NO $limit anywhere.
     const [viewsByDay, totalViews, totalStreamingViews, totalLinkClicks, totalAdClicks, uniqueIpsAgg, viewsByType, topMediaRaw, topDownloadRaw, topRefererRaw, online5, online15, online1h, online24h, activePagesRaw, recentVisitorsRaw, externalClicksRaw, externalByDayRaw, externalProvidersRaw, externalHostsRaw, externalQualityRaw, externalMediaTypeRaw, externalTopRaw, totalExternalClicks, // ------- Internal downloads (clicks on user-submitted internal links) -------
     internalClicksRaw, internalByDayRaw, internalTopLinksRaw, internalTopUploadersRaw, internalByQualityRaw, internalByMediaTypeRaw, internalByLinkTypeRaw, totalInternalClicksAllTime] = await Promise.all([

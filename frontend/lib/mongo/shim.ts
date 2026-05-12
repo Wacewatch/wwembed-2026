@@ -314,6 +314,8 @@ class SupabaseShimQuery<T = any> implements PromiseLike<SupaResponse<T>> {
         // because find().sort() has a hard 32 MB in-memory limit and crashes on
         // large collections without a covering index. allowDiskUse lets MongoDB
         // spill the sort to disk if needed — slower but never fails.
+        // maxTimeMS caps the query so it fails fast (clean 500 with a clear
+        // error) instead of hanging until the upstream reverse-proxy returns 502.
         let docs: any[]
         if (this.orders.length) {
           const sort: any = {}
@@ -321,9 +323,11 @@ class SupabaseShimQuery<T = any> implements PromiseLike<SupaResponse<T>> {
           const pipeline: any[] = [{ $match: this.buildFilter() }, { $sort: sort }]
           if (this.skipN) pipeline.push({ $skip: this.skipN })
           if (this.limitN) pipeline.push({ $limit: this.limitN })
-          docs = await coll.aggregate(pipeline, { allowDiskUse: true }).toArray()
+          docs = await coll
+            .aggregate(pipeline, { allowDiskUse: true, maxTimeMS: 25000 })
+            .toArray()
         } else {
-          let cursor = coll.find(this.buildFilter())
+          let cursor = coll.find(this.buildFilter()).maxTimeMS(25000)
           if (this.skipN) cursor = cursor.skip(this.skipN)
           if (this.limitN) cursor = cursor.limit(this.limitN)
           docs = await cursor.toArray()
