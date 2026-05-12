@@ -11,8 +11,8 @@
 - Rôle: `member`
 
 ## URLs
-- Frontend: https://deployment-preview-15.preview.emergentagent.com/
-- Backend proxy (FastAPI): https://deployment-preview-15.preview.emergentagent.com/api/health
+- Frontend: https://link-tracking-system.preview.emergentagent.com/
+- Backend proxy (FastAPI): https://link-tracking-system.preview.emergentagent.com/api/health
 - Login: /auth/login
 - Sign up: /auth/sign-up
 - Mot de passe oublié: /auth/forgot-password
