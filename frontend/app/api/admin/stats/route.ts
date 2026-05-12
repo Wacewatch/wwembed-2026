@@ -676,18 +676,25 @@ async function buildStatsResponse(req: NextRequest) {
       })
   )
 
-  // Format top referers
-  const topReferers = (topRefererRaw as any[]).map((r) => {
+  // Format top referers — dedup by origin (host).
+  // The upstream $group keys by the raw referrer URL, so the same site can
+  // appear several times (different paths/query strings). We re-aggregate
+  // by origin here so each host appears once with summed counts.
+  const refererMerge = new Map<string, number>()
+  for (const r of topRefererRaw as any[]) {
     let host = "Direct"
     if (r._id && r._id !== "Direct") {
       try {
         host = new URL(r._id).origin
       } catch {
-        host = r._id
+        host = String(r._id)
       }
     }
-    return { referrer: host, count: r.count }
-  })
+    refererMerge.set(host, (refererMerge.get(host) || 0) + (r.count || 0))
+  }
+  const topReferers = Array.from(refererMerge.entries())
+    .map(([referrer, count]) => ({ referrer, count }))
+    .sort((a, b) => b.count - a.count)
 
   // External top media enrichment
   const externalTop = await Promise.all(

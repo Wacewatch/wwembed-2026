@@ -547,6 +547,8 @@ class SupabaseShimQuery {
                 // because find().sort() has a hard 32 MB in-memory limit and crashes on
                 // large collections without a covering index. allowDiskUse lets MongoDB
                 // spill the sort to disk if needed — slower but never fails.
+                // maxTimeMS caps the query so it fails fast (clean 500 with a clear
+                // error) instead of hanging until the upstream reverse-proxy returns 502.
                 let docs;
                 if (this.orders.length) {
                     const sort = {};
@@ -566,10 +568,11 @@ class SupabaseShimQuery {
                         $limit: this.limitN
                     });
                     docs = await coll.aggregate(pipeline, {
-                        allowDiskUse: true
+                        allowDiskUse: true,
+                        maxTimeMS: 25000
                     }).toArray();
                 } else {
-                    let cursor = coll.find(this.buildFilter());
+                    let cursor = coll.find(this.buildFilter()).maxTimeMS(25000);
                     if (this.skipN) cursor = cursor.skip(this.skipN);
                     if (this.limitN) cursor = cursor.limit(this.limitN);
                     docs = await cursor.toArray();

@@ -470,7 +470,8 @@ function _renderLink(l){
   meta+='</div>';
   var btnText=url?'T\u00e9l\u00e9charger':'Lien indisponible';
   var btnDisabled=!url?' disabled style="opacity:0.5;cursor:not-allowed"':'';
-  return '<div class="li"><div class="li-top"><div class="li-header"><div class="li-nm">'+release+'</div></div>'+meta+'</div><div class="li-bottom"><button class="li-btn"'+btnDisabled+' data-url="'+encodeURIComponent(url)+'">'+btnText+'</button></div></div>';
+  var lid=(l.id||l.legacy_uuid||"").toString().replace(/"/g,"");
+  return '<div class="li"><div class="li-top"><div class="li-header"><div class="li-nm">'+release+'</div></div>'+meta+'</div><div class="li-bottom"><button class="li-btn"'+btnDisabled+' data-link-id="'+lid+'" data-url="'+encodeURIComponent(url)+'">'+btnText+'</button></div></div>';
 }
 
 function _renderLinks(){
@@ -489,10 +490,11 @@ function _bindBtns(){
       btn.onclick=function(e){
         e.preventDefault();
         var url=btn.getAttribute("data-url");
+        var linkId=btn.getAttribute("data-link-id")||null;
         if(!url||url==="undefined"){alert("Lien non disponible");return;}
-        if(_h){_showAdModal(decodeURIComponent(url));}
+        if(_h){_showAdModal(decodeURIComponent(url),linkId);}
         else{
-          fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"digital",wwId:_wwId})});
+          fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"digital",linkId:linkId,wwId:_wwId})});
           _displayLink(decodeURIComponent(url));
         }
       };
@@ -507,12 +509,12 @@ function _displayLink(url){
   area.scrollIntoView({behavior:"smooth"});
 }
 
-function _showAdModal(downloadUrl){
+function _showAdModal(downloadUrl,linkId){
   // Unified 2-step ad modal — see /app/frontend/lib/embed-ad-modal.ts
   if(window._wwAdModal){
     window._wwAdModal.show(downloadUrl, function(u){
       if(u){
-        fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"digital",wwId:_wwId})}).catch(function(){});
+        fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"digital",linkId:linkId||null,wwId:_wwId})}).catch(function(){});
         fetch("/api/ads/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({adId:_i})}).catch(function(){});
         _displayLink(u);
       }
@@ -1405,7 +1407,8 @@ function _renderLink(l){
   meta+='</div>';
   var btnText=url?'T\u00e9l\u00e9charger':'Lien indisponible';
   var btnDisabled=!url?' disabled style="opacity:0.5;cursor:not-allowed"':'';
-  return '<div class="li"><div class="li-top"><div class="li-header">'+ep+'<div class="li-nm">'+release+'</div>'+up+'</div>'+meta+'</div><div class="li-bottom"><button class="li-btn"'+btnDisabled+' data-url="'+encodeURIComponent(url)+'">'+btnText+'</button></div></div>';
+  var lid=(l.id||l.legacy_uuid||"").toString().replace(/"/g,"");
+  return '<div class="li"><div class="li-top"><div class="li-header">'+ep+'<div class="li-nm">'+release+'</div>'+up+'</div>'+meta+'</div><div class="li-bottom"><button class="li-btn"'+btnDisabled+' data-link-id="'+lid+'" data-url="'+encodeURIComponent(url)+'">'+btnText+'</button></div></div>';
 }
 
 function _renderLinks(){
@@ -1424,10 +1427,11 @@ function _bindBtns(){
       btn.onclick=function(e){
         e.preventDefault();
         var url=btn.getAttribute("data-url");
+        var linkId=btn.getAttribute("data-link-id")||null;
         if(!url||url==="undefined"){alert("Lien non disponible");return;}
-        if(_h&&_u){_sa(decodeURIComponent(url));}
+        if(_h&&_u){window._wwPendingLinkId=linkId;_sa(decodeURIComponent(url));}
         else{
-          fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
+          fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",linkId:linkId,wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})});
           _displayLink(decodeURIComponent(url));
         }
       };
@@ -1505,7 +1509,8 @@ function _sa(url){
     setTimeout(function(){
       o.classList.remove("sh");
       if(_p){
-        fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})}).catch(function(){});
+        var _pid=(window._wwPendingLinkId||null);window._wwPendingLinkId=null;
+        fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linkType:"download",linkId:_pid,wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType})}).catch(function(){});
         _displayLink(_p);_p=null;
       }
     },350);

@@ -81,7 +81,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: stri
   ] = await Promise.all([
     supabase
       .from("embed_views")
-      .select("viewed_at, country, referer")
+      .select("viewed_at, country, referrer")
       .eq("ww_id", wwId)
       .gte("viewed_at", since)
       .order("viewed_at", { ascending: false }),
@@ -120,12 +120,14 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: stri
   // Referer breakdown
   const byReferer: Record<string, number> = {}
   ;(viewsRecent || []).forEach((v: any) => {
+    // accept legacy "referer" key just in case some old rows still use the typo
+    const raw = v.referrer || v.referer
     let host = "direct"
-    if (v.referer) {
+    if (raw) {
       try {
-        host = new URL(v.referer).host
+        host = new URL(raw).host
       } catch {
-        host = v.referer.slice(0, 60)
+        host = String(raw).slice(0, 60)
       }
     }
     byReferer[host] = (byReferer[host] || 0) + 1
