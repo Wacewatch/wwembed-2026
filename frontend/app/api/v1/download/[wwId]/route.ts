@@ -748,15 +748,35 @@ function _openExtAdModal(finalUrl,extLink){
   }
 }
 
+function _hostFromUrl(u){
+  try{
+    var h=new URL(u).hostname.toLowerCase().replace(/^www\./,"");
+    return h;
+  }catch(e){return"";}
+}
+
+function _prettyHost(h){
+  if(!h)return"";
+  var parts=h.split(".");
+  if(parts.length>=2)return parts[parts.length-2];
+  return h;
+}
+
 function _showExtDetails(extLink){
   if(!extLink)return;
-  if(extLink.lien){_openExtAdModal(extLink.lien,extLink);return;}
+  if(extLink.lien){
+    var rh0=_hostFromUrl(extLink.lien);
+    if(rh0){extLink.host_name=_prettyHost(rh0);extLink._real_host=rh0;}
+    if(typeof _renderExtLinks==="function"&&Array.isArray(_currentExtLinks))_renderExtLinks(_currentExtLinks);
+    _openExtAdModal(extLink.lien,extLink);
+    return;
+  }
   if(!extLink.id){alert("Lien non disponible pour ce fichier");return;}
   var tmpLoader=document.createElement("div");
   tmpLoader.className="decode-loading";tmpLoader.id="decodeLoader";
   tmpLoader.innerHTML='<div class="decode-loading-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p>D\u00e9codage du lien...</p></div>';
   document.body.appendChild(tmpLoader);
-  var decodeUrl = _BASE + "/darkiworld/decode/" + extLink.id + "?title_id=" + _movixMovieId;
+  var decodeUrl = _BASE + "/darkiworld/decode/" + extLink.id + "?title_id=" + _movixContentId;
 fetch(decodeUrl).then(function(r){return r.json();})
   .then(function(data){
     var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
@@ -765,6 +785,13 @@ fetch(decodeUrl).then(function(r){return r.json();})
     if(data&&data.lien)finalUrl=data.lien;
     else if(data&&data.embed_url&&data.embed_url.lien)finalUrl=data.embed_url.lien;
     if(!finalUrl){alert("Lien non disponible pour ce fichier");return;}
+    // Override displayed host_name with the real host derived from the decoded URL
+    var realHost=_hostFromUrl(finalUrl);
+    if(realHost){
+      extLink._real_host=realHost;
+      extLink.host_name=_prettyHost(realHost);
+    }
+    if(typeof _renderExtLinks==="function"&&Array.isArray(_currentExtLinks))_renderExtLinks(_currentExtLinks);
     _openExtAdModal(finalUrl,extLink);
   }).catch(function(){
     var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
@@ -1639,6 +1666,10 @@ function _openExtAdModal(finalUrl,extLink){
   var box=document.createElement("div");
   box.style.cssText="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;text-align:center";
   var t=document.createElement("h2");t.style.cssText="color:#1a1a2e;margin-bottom:6px;font-size:18px";t.textContent="Votre lien est pr\u00eat";
+  var hostName=(extLink&&extLink.host_name)||(extLink&&extLink._real_host)||_hostFromUrl(finalUrl)||"";
+  var hostBadge=document.createElement("div");
+  hostBadge.style.cssText="display:inline-block;margin:0 auto 10px;padding:6px 12px;border-radius:20px;background:#eef2ff;border:1px solid #c7d2fe;color:#4338ca;font-size:12px;font-weight:600";
+  hostBadge.innerHTML='<span style="opacity:0.7;font-weight:500">H\u00f4te :</span> '+(hostName?String(hostName).replace(/[<>"]/g,""):"inconnu");
   var sub=document.createElement("p");sub.style.cssText="color:#666;font-size:12px;margin-bottom:14px";sub.textContent="Deux \u00e9tapes pour acc\u00e9der au t\u00e9l\u00e9chargement";
   var warn=document.createElement("div");
   warn.style.cssText="border-radius:8px;padding:10px;margin:6px 0;text-align:left;display:flex;align-items:flex-start;gap:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e";
@@ -1661,13 +1692,38 @@ function _openExtAdModal(finalUrl,extLink){
   };
   var footer=document.createElement("p");footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
   footer.innerHTML='Propuls\u00e9 par <a href="https://wavewatch.top" target="_blank" style="color:#667eea">WaveWatch</a>';
-  box.appendChild(t);box.appendChild(sub);box.appendChild(warn);box.appendChild(sup);box.appendChild(ad1Btn);box.appendChild(ad2Btn);box.appendChild(footer);
+  box.appendChild(t);box.appendChild(hostBadge);box.appendChild(sub);box.appendChild(warn);box.appendChild(sup);box.appendChild(ad1Btn);box.appendChild(ad2Btn);box.appendChild(footer);
   modal.appendChild(box);document.body.appendChild(modal);
+}
+
+function _hostFromUrl(u){
+  try{
+    var h=new URL(u).hostname.toLowerCase().replace(/^www\./,"");
+    return h;
+  }catch(e){return"";}
+}
+
+function _prettyHost(h){
+  if(!h)return"";
+  // strip TLD (.com/.net/...) for nicer display, keep main label
+  var parts=h.split(".");
+  if(parts.length>=2){
+    // common: "darkibox.com" -> "darkibox"; "1fichier.com" -> "1fichier"
+    return parts[parts.length-2];
+  }
+  return h;
 }
 
 function _showExtDetails(extLink){
   if(!extLink)return;
-  if(extLink.lien){_openExtAdModal(extLink.lien,extLink);return;}
+  if(extLink.lien){
+    // Sync host_name with the actual URL host before opening the modal
+    var rh0=_hostFromUrl(extLink.lien);
+    if(rh0){extLink.host_name=_prettyHost(rh0);extLink._real_host=rh0;}
+    if(typeof _renderExtLinks==="function"&&Array.isArray(_currentExtLinks))_renderExtLinks(_currentExtLinks);
+    _openExtAdModal(extLink.lien,extLink);
+    return;
+  }
   if(!extLink.id){alert("Lien non disponible pour ce fichier");return;}
   var tmpLoader=document.createElement("div");
   tmpLoader.className="decode-loading";tmpLoader.id="decodeLoader";
@@ -1682,6 +1738,15 @@ fetch(decodeUrl).then(function(r){return r.json();})
     if(data&&data.lien)finalUrl=data.lien;
     else if(data&&data.embed_url&&data.embed_url.lien)finalUrl=data.embed_url.lien;
     if(!finalUrl){alert("Lien non disponible pour ce fichier");return;}
+    // Override displayed host_name with the real host derived from the decoded URL.
+    // The upstream darkiworld API sometimes mislabels host_name (e.g. "1fichier" but URL points to darkibox).
+    var realHost=_hostFromUrl(finalUrl);
+    if(realHost){
+      extLink._real_host=realHost;
+      extLink.host_name=_prettyHost(realHost);
+    }
+    // Re-render the list so the card now shows the correct host
+    if(typeof _renderExtLinks==="function"&&Array.isArray(_currentExtLinks))_renderExtLinks(_currentExtLinks);
     _openExtAdModal(finalUrl,extLink);
   }).catch(function(){
     var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
