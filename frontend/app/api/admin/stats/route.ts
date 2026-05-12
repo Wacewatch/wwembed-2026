@@ -147,7 +147,7 @@ async function buildStatsResponse(req: NextRequest) {
             },
           },
         },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db.collection("embed_views").countDocuments({ viewed_at: { $gte: startDate } }),
     db
@@ -161,14 +161,14 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { viewed_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$ip_hash", "$user_agent"] } } },
         { $count: "n" },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("embed_views")
       .aggregate([
         { $match: { viewed_at: { $gte: startDate } } },
         { $group: { _id: "$media_type", count: { $sum: 1 } } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("embed_views")
@@ -185,7 +185,7 @@ async function buildStatsResponse(req: NextRequest) {
           },
         },
         { $sort: { views: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("link_clicks")
@@ -202,7 +202,7 @@ async function buildStatsResponse(req: NextRequest) {
           },
         },
         { $sort: { downloads: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("embed_views")
@@ -210,7 +210,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { viewed_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$referrer", "Direct"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("embed_views")
@@ -218,7 +218,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { viewed_at: { $gte: fiveMinAgo } } },
         { $group: { _id: { $ifNull: ["$ip_hash", "$user_agent"] } } },
         { $count: "n" },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("embed_views")
@@ -226,7 +226,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { viewed_at: { $gte: fifteenMinAgo } } },
         { $group: { _id: { $ifNull: ["$ip_hash", "$user_agent"] } } },
         { $count: "n" },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("embed_views")
@@ -234,7 +234,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { viewed_at: { $gte: oneHourAgo } } },
         { $group: { _id: { $ifNull: ["$ip_hash", "$user_agent"] } } },
         { $count: "n" },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("embed_views")
@@ -242,7 +242,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { viewed_at: { $gte: twentyFourHoursAgo } } },
         { $group: { _id: { $ifNull: ["$ip_hash", "$user_agent"] } } },
         { $count: "n" },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("embed_views")
@@ -257,12 +257,14 @@ async function buildStatsResponse(req: NextRequest) {
           },
         },
         { $sort: { count: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("embed_views")
-      .find({ viewed_at: { $gte: oneHourAgo } })
-      .sort({ viewed_at: -1 })
+      .aggregate(
+        [{ $match: { viewed_at: { $gte: oneHourAgo } } }, { $sort: { viewed_at: -1 } }],
+        { allowDiskUse: true }
+      )
       .toArray(),
     // External clicks — count ALL link_clicks (every click on a download/streaming
     // external link counts; the Supabase `is_external` flag was inconsistent
@@ -275,7 +277,7 @@ async function buildStatsResponse(req: NextRequest) {
       .aggregate([
         { $match: { clicked_at: { $gte: startDate } } },
         { $group: { _id: dayBucket("$clicked_at"), count: { $sum: 1 } } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("link_clicks")
@@ -283,7 +285,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { clicked_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$provider", "Inconnu"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("link_clicks")
@@ -291,7 +293,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { clicked_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$host_name", "?"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("link_clicks")
@@ -299,7 +301,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { clicked_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$quality", "N/A"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("link_clicks")
@@ -307,7 +309,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { clicked_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$media_type", "?"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("link_clicks")
@@ -320,7 +322,7 @@ async function buildStatsResponse(req: NextRequest) {
           },
         },
         { $sort: { clicks: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db.collection("link_clicks").countDocuments({}),
     // -------- Internal-download stats --------
@@ -336,7 +338,7 @@ async function buildStatsResponse(req: NextRequest) {
       .aggregate([
         { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
         { $group: { _id: dayBucket("$clicked_at"), count: { $sum: 1 } } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("link_clicks")
@@ -344,7 +346,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
         { $group: { _id: "$link_id", clicks: { $sum: 1 } } },
         { $sort: { clicks: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     // Top uploaders — done via $lookup so a single aggregation gives us the
     // total clicks per submitted_by across both download_links and
@@ -390,7 +392,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { uploader: { $ne: null } } },
         { $group: { _id: "$uploader", clicks: { $sum: "$clicks" }, linkCount: { $sum: 1 } } },
         { $sort: { clicks: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("link_clicks")
@@ -398,7 +400,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
         { $group: { _id: { $ifNull: ["$quality", "N/A"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("link_clicks")
@@ -406,7 +408,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
         { $group: { _id: { $ifNull: ["$media_type", "?"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db
       .collection("link_clicks")
@@ -414,7 +416,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
         { $group: { _id: { $ifNull: ["$link_type", "direct"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-      ])
+      ], { allowDiskUse: true })
       .toArray(),
     db.collection("link_clicks").countDocuments({ link_id: { $ne: null } }),
   ])
@@ -437,7 +439,7 @@ async function buildStatsResponse(req: NextRequest) {
     .aggregate([
       { $match: { clicked_at: { $gte: startDate } } },
       { $group: { _id: dayBucket("$clicked_at"), count: { $sum: 1 } } },
-    ])
+    ], { allowDiskUse: true })
     .toArray()
   for (const row of linkClicksDay as any[]) {
     if (byDayMap.has(row._id)) byDayMap.get(row._id)!.download = row.count

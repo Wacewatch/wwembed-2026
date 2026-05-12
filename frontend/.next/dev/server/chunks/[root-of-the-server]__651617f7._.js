@@ -505,7 +505,9 @@ async function buildStatsResponse(req) {
                     }
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("embed_views").countDocuments({
             viewed_at: {
                 $gte: startDate
@@ -548,7 +550,9 @@ async function buildStatsResponse(req) {
             {
                 $count: "n"
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("embed_views").aggregate([
             {
                 $match: {
@@ -565,7 +569,9 @@ async function buildStatsResponse(req) {
                     }
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("embed_views").aggregate([
             {
                 $match: {
@@ -591,7 +597,9 @@ async function buildStatsResponse(req) {
                     views: -1
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("link_clicks").aggregate([
             {
                 $match: {
@@ -617,7 +625,9 @@ async function buildStatsResponse(req) {
                     downloads: -1
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("embed_views").aggregate([
             {
                 $match: {
@@ -644,7 +654,9 @@ async function buildStatsResponse(req) {
                     count: -1
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("embed_views").aggregate([
             {
                 $match: {
@@ -666,7 +678,9 @@ async function buildStatsResponse(req) {
             {
                 $count: "n"
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("embed_views").aggregate([
             {
                 $match: {
@@ -688,7 +702,9 @@ async function buildStatsResponse(req) {
             {
                 $count: "n"
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("embed_views").aggregate([
             {
                 $match: {
@@ -710,7 +726,9 @@ async function buildStatsResponse(req) {
             {
                 $count: "n"
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("embed_views").aggregate([
             {
                 $match: {
@@ -732,7 +750,9 @@ async function buildStatsResponse(req) {
             {
                 $count: "n"
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("embed_views").aggregate([
             {
                 $match: {
@@ -760,13 +780,24 @@ async function buildStatsResponse(req) {
                     count: -1
                 }
             }
-        ]).toArray(),
-        db.collection("embed_views").find({
-            viewed_at: {
-                $gte: oneHourAgo
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("embed_views").aggregate([
+            {
+                $match: {
+                    viewed_at: {
+                        $gte: oneHourAgo
+                    }
+                }
+            },
+            {
+                $sort: {
+                    viewed_at: -1
+                }
             }
-        }).sort({
-            viewed_at: -1
+        ], {
+            allowDiskUse: true
         }).toArray(),
         // External clicks — count ALL link_clicks (every click on a download/streaming
         // external link counts; the Supabase `is_external` flag was inconsistent
@@ -792,7 +823,9 @@ async function buildStatsResponse(req) {
                     }
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("link_clicks").aggregate([
             {
                 $match: {
@@ -819,7 +852,9 @@ async function buildStatsResponse(req) {
                     count: -1
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("link_clicks").aggregate([
             {
                 $match: {
@@ -846,7 +881,9 @@ async function buildStatsResponse(req) {
                     count: -1
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("link_clicks").aggregate([
             {
                 $match: {
@@ -873,7 +910,9 @@ async function buildStatsResponse(req) {
                     count: -1
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("link_clicks").aggregate([
             {
                 $match: {
@@ -900,7 +939,9 @@ async function buildStatsResponse(req) {
                     count: -1
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("link_clicks").aggregate([
             {
                 $match: {
@@ -926,7 +967,9 @@ async function buildStatsResponse(req) {
                     clicks: -1
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("link_clicks").countDocuments({}),
         // -------- Internal-download stats --------
         // Per request: "Internal" = clicks on links uploaded to this site (link_id
@@ -960,7 +1003,9 @@ async function buildStatsResponse(req) {
                     }
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("link_clicks").aggregate([
             {
                 $match: {
@@ -985,7 +1030,9 @@ async function buildStatsResponse(req) {
                     clicks: -1
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         // Top uploaders — done via $lookup so a single aggregation gives us the
         // total clicks per submitted_by across both download_links and
         // digital_download_links.
@@ -1106,7 +1153,9 @@ async function buildStatsResponse(req) {
                     clicks: -1
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("link_clicks").aggregate([
             {
                 $match: {
@@ -1136,7 +1185,9 @@ async function buildStatsResponse(req) {
                     count: -1
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("link_clicks").aggregate([
             {
                 $match: {
@@ -1166,7 +1217,9 @@ async function buildStatsResponse(req) {
                     count: -1
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("link_clicks").aggregate([
             {
                 $match: {
@@ -1196,7 +1249,9 @@ async function buildStatsResponse(req) {
                     count: -1
                 }
             }
-        ]).toArray(),
+        ], {
+            allowDiskUse: true
+        }).toArray(),
         db.collection("link_clicks").countDocuments({
             link_id: {
                 $ne: null
@@ -1236,7 +1291,9 @@ async function buildStatsResponse(req) {
                 }
             }
         }
-    ]).toArray();
+    ], {
+        allowDiskUse: true
+    }).toArray();
     for (const row of linkClicksDay){
         if (byDayMap.has(row._id)) byDayMap.get(row._id).download = row.count;
     }
