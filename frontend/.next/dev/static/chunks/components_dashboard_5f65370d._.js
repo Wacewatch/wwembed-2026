@@ -1924,6 +1924,8 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
     const [loadingBugReports, setLoadingBugReports] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [deletingId, setDeletingId] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [checkingLinkId, setCheckingLinkId] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [isTestingAll, setIsTestingAll] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [testProgress, setTestProgress] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [editingStreamingLink, setEditingStreamingLink] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [editingDownloadLink, setEditingDownloadLink] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [editingDigitalLink, setEditingDigitalLink] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
@@ -2103,6 +2105,21 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                         } : link));
             }
             setIsEditModalOpen(false);
+            // Capture the edited link's identity BEFORE clearing the editing state,
+            // so we can auto-revalidate the new URL once the modal is closed.
+            const justEdited = editingDownloadLink ? {
+                id: editingDownloadLink.id,
+                url: editForm.source_url,
+                type: "download"
+            } : editingDigitalLink ? {
+                id: editingDigitalLink.id,
+                url: editForm.source_url,
+                type: "digital"
+            } : editingStreamingLink ? {
+                id: editingStreamingLink.id,
+                url: editForm.source_url,
+                type: "streaming"
+            } : null;
             setEditingStreamingLink(null);
             setEditingDownloadLink(null);
             setEditingDigitalLink(null);
@@ -2113,6 +2130,11 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                 language: "",
                 link_type: ""
             });
+            // Fire-and-forget revalidation so the row leaves the "Liens Invalides"
+            // bucket immediately if the new URL actually works.
+            if (justEdited && justEdited.url) {
+                checkLinkValidity(justEdited.id, justEdited.url, justEdited.type).catch(()=>{});
+            }
         } catch (error) {
             console.error("Error updating link:", error);
             alert("Erreur lors de la modification du lien");
@@ -2156,6 +2178,86 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
             setCheckingLinkId(null);
         }
     };
+    /**
+   * Bulk-revalidate every download + digital link owned by the current user.
+   * Calls /api/check-link sequentially (one URL at a time) to avoid hammering
+   * remote hosts and to keep the per-link progress feedback meaningful.
+   */ const handleTestAllLinks = async ()=>{
+        if (isTestingAll) return;
+        const targets = [];
+        for (const l of localDownloadLinks){
+            if (l.source_url) targets.push({
+                id: l.id,
+                url: l.source_url,
+                linkType: "download"
+            });
+        }
+        for (const l of localDigitalLinks){
+            if (l.source_url) targets.push({
+                id: l.id,
+                url: l.source_url,
+                linkType: "digital"
+            });
+        }
+        if (targets.length === 0) {
+            alert("Aucun lien à tester pour le moment.");
+            return;
+        }
+        setIsTestingAll(true);
+        let valid = 0;
+        let invalid = 0;
+        setTestProgress({
+            checked: 0,
+            total: targets.length,
+            valid: 0,
+            invalid: 0
+        });
+        for(let i = 0; i < targets.length; i++){
+            const t = targets[i];
+            try {
+                const response = await fetch("/api/check-link", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        linkId: t.id,
+                        linkType: t.linkType,
+                        url: t.url
+                    })
+                });
+                const result = await response.json();
+                const isValid = !!result.isValid;
+                if (isValid) valid++;
+                else invalid++;
+                if (t.linkType === "download") {
+                    setLocalDownloadLinks((prev)=>prev.map((l)=>l.id === t.id ? {
+                                ...l,
+                                is_valid: isValid,
+                                last_checked: new Date().toISOString()
+                            } : l));
+                } else {
+                    setLocalDigitalLinks((prev)=>prev.map((l)=>l.id === t.id ? {
+                                ...l,
+                                is_valid: isValid,
+                                last_checked: new Date().toISOString()
+                            } : l));
+                }
+            } catch (e) {
+                invalid++;
+            }
+            setTestProgress({
+                checked: i + 1,
+                total: targets.length,
+                valid,
+                invalid
+            });
+        }
+        setIsTestingAll(false);
+        // Keep the final summary on screen until the user clicks elsewhere; auto-clear
+        // after 8s so it doesn't stay forever.
+        setTimeout(()=>setTestProgress(null), 8000);
+    };
     const getValidityBadge = (link)=>{
         if (link.is_valid === null || link.is_valid === undefined) {
             return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -2166,14 +2268,14 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                         className: "w-3 h-3 mr-1"
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 583,
+                        lineNumber: 665,
                         columnNumber: 11
                     }, this),
                     "Non vérifié"
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                lineNumber: 582,
+                lineNumber: 664,
                 columnNumber: 9
             }, this);
         }
@@ -2186,14 +2288,14 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                         className: "w-3 h-3 mr-1"
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 591,
+                        lineNumber: 673,
                         columnNumber: 11
                     }, this),
                     "Valide"
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                lineNumber: 590,
+                lineNumber: 672,
                 columnNumber: 9
             }, this);
         }
@@ -2205,14 +2307,14 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                     className: "w-3 h-3 mr-1"
                 }, void 0, false, {
                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                    lineNumber: 598,
+                    lineNumber: 680,
                     columnNumber: 9
                 }, this),
                 "Invalide"
             ]
         }, void 0, true, {
             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-            lineNumber: 597,
+            lineNumber: 679,
             columnNumber: 7
         }, this);
     };
@@ -2348,7 +2450,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                     children: "Administrateur"
                 }, void 0, false, {
                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                    lineNumber: 717,
+                    lineNumber: 799,
                     columnNumber: 16
                 }, this);
             case "uploader":
@@ -2357,7 +2459,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                     children: "Uploader"
                 }, void 0, false, {
                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                    lineNumber: 719,
+                    lineNumber: 801,
                     columnNumber: 16
                 }, this);
             default:
@@ -2366,7 +2468,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                     children: "Membre"
                 }, void 0, false, {
                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                    lineNumber: 721,
+                    lineNumber: 803,
                     columnNumber: 16
                 }, this);
         }
@@ -2434,7 +2536,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                         className: "absolute inset-0 bg-grid-white/5"
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 783,
+                        lineNumber: 865,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2451,7 +2553,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                 children: (profile.username || profile.email)[0].toUpperCase()
                                             }, void 0, false, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 787,
+                                                lineNumber: 869,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2460,18 +2562,18 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "w-3 h-3 text-white"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 791,
+                                                    lineNumber: 873,
                                                     columnNumber: 17
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 790,
+                                                lineNumber: 872,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 786,
+                                        lineNumber: 868,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2481,7 +2583,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                 children: profile.username || profile.email.split("@")[0]
                                             }, void 0, false, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 795,
+                                                lineNumber: 877,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2496,25 +2598,25 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 800,
+                                                        lineNumber: 882,
                                                         columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 798,
+                                                lineNumber: 880,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 794,
+                                        lineNumber: 876,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                lineNumber: 785,
+                                lineNumber: 867,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2527,13 +2629,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                             className: "w-4 h-4 mr-2"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 810,
+                                            lineNumber: 892,
                                             columnNumber: 27
                                         }, void 0),
                                         buttonText: "Ajouter un lien"
                                     }, void 0, false, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 807,
+                                        lineNumber: 889,
                                         columnNumber: 13
                                     }, this),
                                     profile.username && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -2547,37 +2649,37 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "w-4 h-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 816,
+                                                    lineNumber: 898,
                                                     columnNumber: 19
                                                 }, this),
                                                 "Mon profil public"
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 815,
+                                            lineNumber: 897,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 814,
+                                        lineNumber: 896,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                lineNumber: 806,
+                                lineNumber: 888,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 784,
+                        lineNumber: 866,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                lineNumber: 782,
+                lineNumber: 864,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2590,7 +2692,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                         color: "primary"
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 827,
+                        lineNumber: 909,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatCard, {
@@ -2600,7 +2702,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                         color: "blue"
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 828,
+                        lineNumber: 910,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatCard, {
@@ -2610,7 +2712,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                         color: "purple"
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 829,
+                        lineNumber: 911,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatCard, {
@@ -2620,7 +2722,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                         color: "amber"
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 830,
+                        lineNumber: 912,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatCard, {
@@ -2630,7 +2732,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                         color: "emerald"
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 831,
+                        lineNumber: 913,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatCard, {
@@ -2640,7 +2742,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                         color: "orange"
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 832,
+                        lineNumber: 914,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatCard, {
@@ -2650,13 +2752,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                         color: "cyan"
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 833,
+                        lineNumber: 915,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                lineNumber: 826,
+                lineNumber: 908,
                 columnNumber: 7
             }, this),
             showUploaderSection && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -2673,12 +2775,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                         className: `w-6 h-6 ${canRequestUploader ? "text-amber-500" : "text-muted-foreground"}`
                                     }, void 0, false, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 844,
+                                        lineNumber: 926,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                    lineNumber: 843,
+                                    lineNumber: 925,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2688,31 +2790,31 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                             children: "Devenir Uploader"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 847,
+                                            lineNumber: 929,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardDescription"], {
                                             children: "Debloquez des fonctionnalites ancees"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 848,
+                                            lineNumber: 930,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                    lineNumber: 846,
+                                    lineNumber: 928,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                            lineNumber: 842,
+                            lineNumber: 924,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 841,
+                        lineNumber: 923,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -2734,7 +2836,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                 className: "w-4 h-4 text-muted-foreground"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 859,
+                                                                lineNumber: 941,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2742,20 +2844,20 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                 children: "Liens valides"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 860,
+                                                                lineNumber: 942,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 858,
+                                                        lineNumber: 940,
                                                         columnNumber: 19
                                                     }, this),
                                                     totalApprovedLinks >= 500 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$check$2d$big$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__CheckCircle$3e$__["CheckCircle"], {
                                                         className: "w-5 h-5 text-emerald-500"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 863,
+                                                        lineNumber: 945,
                                                         columnNumber: 21
                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                         className: "text-xs text-muted-foreground",
@@ -2765,13 +2867,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 865,
+                                                        lineNumber: 947,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 857,
+                                                lineNumber: 939,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2782,7 +2884,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 870,
+                                                lineNumber: 952,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2794,18 +2896,18 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     }
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 872,
+                                                    lineNumber: 954,
                                                     columnNumber: 19
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 871,
+                                                lineNumber: 953,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 854,
+                                        lineNumber: 936,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2821,7 +2923,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                 className: "w-4 h-4 text-muted-foreground"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 883,
+                                                                lineNumber: 965,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2829,20 +2931,20 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                 children: "Anciennete"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 884,
+                                                                lineNumber: 966,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 882,
+                                                        lineNumber: 964,
                                                         columnNumber: 19
                                                     }, this),
                                                     accountAge >= 30 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$check$2d$big$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__CheckCircle$3e$__["CheckCircle"], {
                                                         className: "w-5 h-5 text-emerald-500"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 887,
+                                                        lineNumber: 969,
                                                         columnNumber: 21
                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                         className: "text-xs text-muted-foreground",
@@ -2852,13 +2954,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 889,
+                                                        lineNumber: 971,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 881,
+                                                lineNumber: 963,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2869,7 +2971,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 892,
+                                                lineNumber: 974,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2881,24 +2983,24 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     }
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 894,
+                                                    lineNumber: 976,
                                                     columnNumber: 19
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 893,
+                                                lineNumber: 975,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 878,
+                                        lineNumber: 960,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                lineNumber: 853,
+                                lineNumber: 935,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -2911,7 +3013,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                             className: "w-4 h-4 mr-2 animate-spin"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 908,
+                                            lineNumber: 990,
                                             columnNumber: 19
                                         }, this),
                                         "Verification..."
@@ -2922,7 +3024,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                             className: "w-4 h-4 mr-2"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 913,
+                                            lineNumber: 995,
                                             columnNumber: 19
                                         }, this),
                                         "Demander le grade Uploader"
@@ -2930,7 +3032,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                 }, void 0, true)
                             }, void 0, false, {
                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                lineNumber: 901,
+                                lineNumber: 983,
                                 columnNumber: 13
                             }, this),
                             uploaderRequestResult && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2938,19 +3040,19 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                 children: uploaderRequestResult.message
                             }, void 0, false, {
                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                lineNumber: 919,
+                                lineNumber: 1001,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 852,
+                        lineNumber: 934,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                lineNumber: 838,
+                lineNumber: 920,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -2974,7 +3076,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "h-4 w-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 936,
+                                                    lineNumber: 1018,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2982,13 +3084,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Apercu"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 937,
+                                                    lineNumber: 1019,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 932,
+                                            lineNumber: 1014,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsTrigger"], {
@@ -2999,7 +3101,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "h-4 w-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 943,
+                                                    lineNumber: 1025,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3007,7 +3109,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Streaming"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 944,
+                                                    lineNumber: 1026,
                                                     columnNumber: 17
                                                 }, this),
                                                 stats.totalStreaming > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -3016,13 +3118,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: stats.totalStreaming
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 946,
+                                                    lineNumber: 1028,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 939,
+                                            lineNumber: 1021,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsTrigger"], {
@@ -3033,7 +3135,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "h-4 w-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 955,
+                                                    lineNumber: 1037,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3041,7 +3143,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Download"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 956,
+                                                    lineNumber: 1038,
                                                     columnNumber: 17
                                                 }, this),
                                                 stats.totalDownload > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -3050,13 +3152,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: stats.totalDownload
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 958,
+                                                    lineNumber: 1040,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 951,
+                                            lineNumber: 1033,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsTrigger"], {
@@ -3067,7 +3169,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "h-4 w-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 967,
+                                                    lineNumber: 1049,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3075,13 +3177,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "TV"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 968,
+                                                    lineNumber: 1050,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 963,
+                                            lineNumber: 1045,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsTrigger"], {
@@ -3092,7 +3194,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "h-4 w-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 974,
+                                                    lineNumber: 1056,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3100,13 +3202,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Digital"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 975,
+                                                    lineNumber: 1057,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 970,
+                                            lineNumber: 1052,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsTrigger"], {
@@ -3117,7 +3219,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "h-4 w-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 981,
+                                                    lineNumber: 1063,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3125,7 +3227,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Rapports"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 982,
+                                                    lineNumber: 1064,
                                                     columnNumber: 17
                                                 }, this),
                                                 bugReports.filter((r)=>r.status === "pending").length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -3134,13 +3236,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: bugReports.filter((r)=>r.status === "pending").length
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 984,
+                                                    lineNumber: 1066,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 977,
+                                            lineNumber: 1059,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsTrigger"], {
@@ -3151,7 +3253,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "h-4 w-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 993,
+                                                    lineNumber: 1075,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3159,13 +3261,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Ajouter"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 994,
+                                                    lineNumber: 1076,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 989,
+                                            lineNumber: 1071,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsTrigger"], {
@@ -3176,7 +3278,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "h-4 w-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1000,
+                                                    lineNumber: 1082,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3184,24 +3286,24 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Profil"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1001,
+                                                    lineNumber: 1083,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 996,
+                                            lineNumber: 1078,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                    lineNumber: 931,
+                                    lineNumber: 1013,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                lineNumber: 930,
+                                lineNumber: 1012,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3215,319 +3317,539 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                 const invalidDownloadLinks = localDownloadLinks.filter((l)=>l.is_valid === false);
                                                 const invalidDigitalLinks = localDigitalLinks.filter((l)=>l.is_valid === false);
                                                 const totalInvalidLinks = invalidDownloadLinks.length + invalidDigitalLinks.length;
-                                                if (totalInvalidLinks === 0) return null;
+                                                const totalUserLinks = localDownloadLinks.length + localDigitalLinks.length;
+                                                const testAllButton = totalUserLinks > 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                                    variant: "outline",
+                                                    size: "sm",
+                                                    onClick: handleTestAllLinks,
+                                                    disabled: isTestingAll,
+                                                    "data-testid": "test-all-links-btn",
+                                                    className: "text-primary border-primary/40 hover:bg-primary/10 bg-transparent gap-2",
+                                                    children: isTestingAll ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
+                                                                className: "w-3.5 h-3.5 animate-spin"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                lineNumber: 1108,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            "Test en cours… ",
+                                                            testProgress ? `${testProgress.checked}/${testProgress.total}` : ""
+                                                        ]
+                                                    }, void 0, true) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$refresh$2d$cw$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__RefreshCw$3e$__["RefreshCw"], {
+                                                                className: "w-3.5 h-3.5"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                lineNumber: 1113,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            "Tester mes liens"
+                                                        ]
+                                                    }, void 0, true)
+                                                }, void 0, false, {
+                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                    lineNumber: 1098,
+                                                    columnNumber: 19
+                                                }, this) : null;
+                                                const progressBanner = testProgress && !isTestingAll ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    "data-testid": "test-progress-summary",
+                                                    className: "rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-primary flex items-center gap-2",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$shield$2d$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ShieldCheck$3e$__["ShieldCheck"], {
+                                                            className: "w-3.5 h-3.5"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                            lineNumber: 1126,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        "Test terminé : ",
+                                                        testProgress.checked,
+                                                        " vérifiés —",
+                                                        " ",
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-emerald-400",
+                                                            children: [
+                                                                testProgress.valid,
+                                                                " valides"
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                            lineNumber: 1128,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        " ·",
+                                                        " ",
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-red-400",
+                                                            children: [
+                                                                testProgress.invalid,
+                                                                " invalides"
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                            lineNumber: 1129,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        "."
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                    lineNumber: 1122,
+                                                    columnNumber: 21
+                                                }, this) : null;
+                                                if (totalInvalidLinks === 0) {
+                                                    if (!testAllButton && !progressBanner) return null;
+                                                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
+                                                        className: "border-zinc-800 bg-zinc-900/50",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardHeader"], {
+                                                                className: "pb-3 flex flex-row items-center justify-between gap-3 space-y-0",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardTitle"], {
+                                                                                className: "text-base flex items-center gap-2",
+                                                                                children: [
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$shield$2d$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ShieldCheck$3e$__["ShieldCheck"], {
+                                                                                        className: "w-4 h-4 text-emerald-500"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                        lineNumber: 1140,
+                                                                                        columnNumber: 29
+                                                                                    }, this),
+                                                                                    "Tous tes liens semblent OK"
+                                                                                ]
+                                                                            }, void 0, true, {
+                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                lineNumber: 1139,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                                className: "text-xs text-muted-foreground mt-1",
+                                                                                children: "Tu peux relancer une vérification complète à tout moment."
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                lineNumber: 1143,
+                                                                                columnNumber: 27
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                        lineNumber: 1138,
+                                                                        columnNumber: 25
+                                                                    }, this),
+                                                                    testAllButton
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                lineNumber: 1137,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            progressBanner && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
+                                                                className: "pt-0",
+                                                                children: progressBanner
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                lineNumber: 1149,
+                                                                columnNumber: 42
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                        lineNumber: 1136,
+                                                        columnNumber: 21
+                                                    }, this);
+                                                }
                                                 return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
                                                     className: "border-red-800/50 bg-red-950/20",
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardHeader"], {
-                                                            className: "pb-3",
+                                                            className: "pb-3 flex flex-row items-start justify-between gap-3 space-y-0",
                                                             children: [
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardTitle"], {
-                                                                    className: "text-base flex items-center gap-2 text-red-400",
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                     children: [
-                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$shield$2d$x$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ShieldX$3e$__["ShieldX"], {
-                                                                            className: "w-4 h-4"
-                                                                        }, void 0, false, {
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardTitle"], {
+                                                                            className: "text-base flex items-center gap-2 text-red-400",
+                                                                            children: [
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$shield$2d$x$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ShieldX$3e$__["ShieldX"], {
+                                                                                    className: "w-4 h-4"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                    lineNumber: 1159,
+                                                                                    columnNumber: 27
+                                                                                }, this),
+                                                                                "Liens Invalides (",
+                                                                                totalInvalidLinks,
+                                                                                ")"
+                                                                            ]
+                                                                        }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1020,
+                                                                            lineNumber: 1158,
                                                                             columnNumber: 25
                                                                         }, this),
-                                                                        "Liens Invalides (",
-                                                                        totalInvalidLinks,
-                                                                        ")"
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                            className: "text-xs text-red-400/70 mt-1",
+                                                                            children: "Ces liens ne fonctionnent plus. Mets-les à jour, supprime-les ou retente une validation."
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                            lineNumber: 1162,
+                                                                            columnNumber: 25
+                                                                        }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1019,
+                                                                    lineNumber: 1157,
                                                                     columnNumber: 23
                                                                 }, this),
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                    className: "text-xs text-red-400/70",
-                                                                    children: "Ces liens ne fonctionnent plus. Veuillez les mettre à jour ou les supprimer."
+                                                                testAllButton
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                            lineNumber: 1156,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
+                                                            children: [
+                                                                progressBanner && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "mb-3",
+                                                                    children: progressBanner
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1023,
+                                                                    lineNumber: 1169,
+                                                                    columnNumber: 42
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "space-y-3 max-h-[300px] overflow-y-auto",
+                                                                    children: [
+                                                                        invalidDownloadLinks.map((link)=>{
+                                                                            const mediaInfo = getMediaInfo(link);
+                                                                            const episodeInfo = formatEpisodeInfo(link);
+                                                                            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                className: "flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-red-800/30",
+                                                                                children: [
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                        className: "flex items-center gap-3",
+                                                                                        children: [
+                                                                                            mediaInfo.poster ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                                                                src: mediaInfo.poster || "/placeholder.svg",
+                                                                                                alt: mediaInfo.title,
+                                                                                                className: "w-12 h-16 object-cover rounded"
+                                                                                            }, void 0, false, {
+                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                lineNumber: 1181,
+                                                                                                columnNumber: 35
+                                                                                            }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                                className: "w-12 h-16 bg-zinc-800 rounded flex items-center justify-center",
+                                                                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$film$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Film$3e$__["Film"], {
+                                                                                                    className: "w-5 h-5 text-zinc-600"
+                                                                                                }, void 0, false, {
+                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                    lineNumber: 1188,
+                                                                                                    columnNumber: 37
+                                                                                                }, this)
+                                                                                            }, void 0, false, {
+                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                lineNumber: 1187,
+                                                                                                columnNumber: 35
+                                                                                            }, this),
+                                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                                children: [
+                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                                                        className: "text-sm font-medium",
+                                                                                                        children: [
+                                                                                                            mediaInfo.title,
+                                                                                                            " ",
+                                                                                                            episodeInfo
+                                                                                                        ]
+                                                                                                    }, void 0, true, {
+                                                                                                        fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                        lineNumber: 1192,
+                                                                                                        columnNumber: 35
+                                                                                                    }, this),
+                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                                                        className: "text-xs text-muted-foreground",
+                                                                                                        children: link.source_name
+                                                                                                    }, void 0, false, {
+                                                                                                        fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                        lineNumber: 1195,
+                                                                                                        columnNumber: 35
+                                                                                                    }, this),
+                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
+                                                                                                        variant: "outline",
+                                                                                                        className: "text-xs mt-1 text-blue-400 border-blue-600",
+                                                                                                        children: "Download"
+                                                                                                    }, void 0, false, {
+                                                                                                        fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                        lineNumber: 1196,
+                                                                                                        columnNumber: 35
+                                                                                                    }, this)
+                                                                                                ]
+                                                                                            }, void 0, true, {
+                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                lineNumber: 1191,
+                                                                                                columnNumber: 33
+                                                                                            }, this)
+                                                                                        ]
+                                                                                    }, void 0, true, {
+                                                                                        fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                        lineNumber: 1179,
+                                                                                        columnNumber: 31
+                                                                                    }, this),
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                        className: "flex items-center gap-2",
+                                                                                        children: [
+                                                                                            (profile.role === "uploader" || profile.role === "admin") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                                                                                variant: "outline",
+                                                                                                size: "sm",
+                                                                                                className: "text-blue-400 border-blue-600 hover:bg-blue-600/20 bg-transparent",
+                                                                                                onClick: ()=>handleEditDownloadLink(link),
+                                                                                                "data-testid": `invalid-download-edit-${link.id}`,
+                                                                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$pencil$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Pencil$3e$__["Pencil"], {
+                                                                                                    className: "w-3 h-3"
+                                                                                                }, void 0, false, {
+                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                    lineNumber: 1210,
+                                                                                                    columnNumber: 37
+                                                                                                }, this)
+                                                                                            }, void 0, false, {
+                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                lineNumber: 1203,
+                                                                                                columnNumber: 35
+                                                                                            }, this),
+                                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                                                                                variant: "outline",
+                                                                                                size: "sm",
+                                                                                                className: "text-emerald-400 border-emerald-600 hover:bg-emerald-600/20 bg-transparent",
+                                                                                                onClick: ()=>checkLinkValidity(link.id, link.source_url, "download"),
+                                                                                                disabled: checkingLinkId === link.id || isTestingAll,
+                                                                                                "data-testid": `invalid-download-revalidate-${link.id}`,
+                                                                                                title: "Revalider ce lien",
+                                                                                                children: checkingLinkId === link.id ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
+                                                                                                    className: "w-3 h-3 animate-spin"
+                                                                                                }, void 0, false, {
+                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                    lineNumber: 1223,
+                                                                                                    columnNumber: 37
+                                                                                                }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$refresh$2d$cw$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__RefreshCw$3e$__["RefreshCw"], {
+                                                                                                    className: "w-3 h-3"
+                                                                                                }, void 0, false, {
+                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                    lineNumber: 1225,
+                                                                                                    columnNumber: 37
+                                                                                                }, this)
+                                                                                            }, void 0, false, {
+                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                lineNumber: 1213,
+                                                                                                columnNumber: 33
+                                                                                            }, this),
+                                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                                                                                variant: "outline",
+                                                                                                size: "sm",
+                                                                                                className: "text-red-400 border-red-600 hover:bg-red-600/20 bg-transparent",
+                                                                                                onClick: ()=>handleDeleteDownloadLink(link.id),
+                                                                                                disabled: deletingId === link.id,
+                                                                                                "data-testid": `invalid-download-delete-${link.id}`,
+                                                                                                children: deletingId === link.id ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
+                                                                                                    className: "w-3 h-3 animate-spin"
+                                                                                                }, void 0, false, {
+                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                    lineNumber: 1237,
+                                                                                                    columnNumber: 37
+                                                                                                }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
+                                                                                                    className: "w-3 h-3"
+                                                                                                }, void 0, false, {
+                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                    lineNumber: 1239,
+                                                                                                    columnNumber: 37
+                                                                                                }, this)
+                                                                                            }, void 0, false, {
+                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                lineNumber: 1228,
+                                                                                                columnNumber: 33
+                                                                                            }, this)
+                                                                                        ]
+                                                                                    }, void 0, true, {
+                                                                                        fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                        lineNumber: 1201,
+                                                                                        columnNumber: 31
+                                                                                    }, this)
+                                                                                ]
+                                                                            }, link.id, true, {
+                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                lineNumber: 1175,
+                                                                                columnNumber: 29
+                                                                            }, this);
+                                                                        }),
+                                                                        invalidDigitalLinks.map((link)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                className: "flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-red-800/30",
+                                                                                children: [
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                        className: "flex items-center gap-3",
+                                                                                        children: [
+                                                                                            link.digital_content?.cover_url ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                                                                src: link.digital_content.cover_url || "/placeholder.svg",
+                                                                                                alt: link.digital_content?.title || "Digital",
+                                                                                                className: "w-12 h-16 object-cover rounded"
+                                                                                            }, void 0, false, {
+                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                lineNumber: 1253,
+                                                                                                columnNumber: 33
+                                                                                            }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                                className: "w-12 h-16 bg-zinc-800 rounded flex items-center justify-center",
+                                                                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$file$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__FileDown$3e$__["FileDown"], {
+                                                                                                    className: "w-5 h-5 text-zinc-600"
+                                                                                                }, void 0, false, {
+                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                    lineNumber: 1260,
+                                                                                                    columnNumber: 35
+                                                                                                }, this)
+                                                                                            }, void 0, false, {
+                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                lineNumber: 1259,
+                                                                                                columnNumber: 33
+                                                                                            }, this),
+                                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                                children: [
+                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                                                        className: "text-sm font-medium",
+                                                                                                        children: link.digital_content?.title || "Contenu digital"
+                                                                                                    }, void 0, false, {
+                                                                                                        fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                        lineNumber: 1264,
+                                                                                                        columnNumber: 33
+                                                                                                    }, this),
+                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                                                        className: "text-xs text-muted-foreground",
+                                                                                                        children: link.source_name
+                                                                                                    }, void 0, false, {
+                                                                                                        fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                        lineNumber: 1267,
+                                                                                                        columnNumber: 33
+                                                                                                    }, this),
+                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
+                                                                                                        variant: "outline",
+                                                                                                        className: "text-xs mt-1 text-amber-400 border-amber-600",
+                                                                                                        children: "Digital"
+                                                                                                    }, void 0, false, {
+                                                                                                        fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                        lineNumber: 1268,
+                                                                                                        columnNumber: 33
+                                                                                                    }, this)
+                                                                                                ]
+                                                                                            }, void 0, true, {
+                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                lineNumber: 1263,
+                                                                                                columnNumber: 31
+                                                                                            }, this)
+                                                                                        ]
+                                                                                    }, void 0, true, {
+                                                                                        fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                        lineNumber: 1251,
+                                                                                        columnNumber: 29
+                                                                                    }, this),
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                        className: "flex items-center gap-2",
+                                                                                        children: [
+                                                                                            (profile.role === "uploader" || profile.role === "admin") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                                                                                variant: "outline",
+                                                                                                size: "sm",
+                                                                                                className: "text-blue-400 border-blue-600 hover:bg-blue-600/20 bg-transparent",
+                                                                                                onClick: ()=>handleEditDigitalLink(link),
+                                                                                                "data-testid": `invalid-digital-edit-${link.id}`,
+                                                                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$pencil$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Pencil$3e$__["Pencil"], {
+                                                                                                    className: "w-3 h-3"
+                                                                                                }, void 0, false, {
+                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                    lineNumber: 1282,
+                                                                                                    columnNumber: 35
+                                                                                                }, this)
+                                                                                            }, void 0, false, {
+                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                lineNumber: 1275,
+                                                                                                columnNumber: 33
+                                                                                            }, this),
+                                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                                                                                variant: "outline",
+                                                                                                size: "sm",
+                                                                                                className: "text-emerald-400 border-emerald-600 hover:bg-emerald-600/20 bg-transparent",
+                                                                                                onClick: ()=>checkLinkValidity(link.id, link.source_url, "digital"),
+                                                                                                disabled: checkingLinkId === link.id || isTestingAll,
+                                                                                                "data-testid": `invalid-digital-revalidate-${link.id}`,
+                                                                                                title: "Revalider ce lien",
+                                                                                                children: checkingLinkId === link.id ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
+                                                                                                    className: "w-3 h-3 animate-spin"
+                                                                                                }, void 0, false, {
+                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                    lineNumber: 1295,
+                                                                                                    columnNumber: 35
+                                                                                                }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$refresh$2d$cw$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__RefreshCw$3e$__["RefreshCw"], {
+                                                                                                    className: "w-3 h-3"
+                                                                                                }, void 0, false, {
+                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                    lineNumber: 1297,
+                                                                                                    columnNumber: 35
+                                                                                                }, this)
+                                                                                            }, void 0, false, {
+                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                lineNumber: 1285,
+                                                                                                columnNumber: 31
+                                                                                            }, this),
+                                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                                                                                variant: "outline",
+                                                                                                size: "sm",
+                                                                                                className: "text-red-400 border-red-600 hover:bg-red-600/20 bg-transparent",
+                                                                                                onClick: ()=>handleDeleteDigitalLink(link.id),
+                                                                                                disabled: deletingId === link.id,
+                                                                                                "data-testid": `invalid-digital-delete-${link.id}`,
+                                                                                                children: deletingId === link.id ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
+                                                                                                    className: "w-3 h-3 animate-spin"
+                                                                                                }, void 0, false, {
+                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                    lineNumber: 1309,
+                                                                                                    columnNumber: 35
+                                                                                                }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
+                                                                                                    className: "w-3 h-3"
+                                                                                                }, void 0, false, {
+                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                    lineNumber: 1311,
+                                                                                                    columnNumber: 35
+                                                                                                }, this)
+                                                                                            }, void 0, false, {
+                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                                lineNumber: 1300,
+                                                                                                columnNumber: 31
+                                                                                            }, this)
+                                                                                        ]
+                                                                                    }, void 0, true, {
+                                                                                        fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                        lineNumber: 1273,
+                                                                                        columnNumber: 29
+                                                                                    }, this)
+                                                                                ]
+                                                                            }, link.id, true, {
+                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                                lineNumber: 1247,
+                                                                                columnNumber: 27
+                                                                            }, this))
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
+                                                                    lineNumber: 1170,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1018,
-                                                            columnNumber: 21
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
-                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                className: "space-y-3 max-h-[300px] overflow-y-auto",
-                                                                children: [
-                                                                    invalidDownloadLinks.map((link)=>{
-                                                                        const mediaInfo = getMediaInfo(link);
-                                                                        const episodeInfo = formatEpisodeInfo(link);
-                                                                        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                            className: "flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-red-800/30",
-                                                                            children: [
-                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                                    className: "flex items-center gap-3",
-                                                                                    children: [
-                                                                                        mediaInfo.poster ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                                                                            src: mediaInfo.poster || "/placeholder.svg",
-                                                                                            alt: mediaInfo.title,
-                                                                                            className: "w-12 h-16 object-cover rounded"
-                                                                                        }, void 0, false, {
-                                                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1039,
-                                                                                            columnNumber: 35
-                                                                                        }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                                            className: "w-12 h-16 bg-zinc-800 rounded flex items-center justify-center",
-                                                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$film$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Film$3e$__["Film"], {
-                                                                                                className: "w-5 h-5 text-zinc-600"
-                                                                                            }, void 0, false, {
-                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1046,
-                                                                                                columnNumber: 37
-                                                                                            }, this)
-                                                                                        }, void 0, false, {
-                                                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1045,
-                                                                                            columnNumber: 35
-                                                                                        }, this),
-                                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                                            children: [
-                                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                                                    className: "text-sm font-medium",
-                                                                                                    children: [
-                                                                                                        mediaInfo.title,
-                                                                                                        " ",
-                                                                                                        episodeInfo
-                                                                                                    ]
-                                                                                                }, void 0, true, {
-                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                    lineNumber: 1050,
-                                                                                                    columnNumber: 35
-                                                                                                }, this),
-                                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                                                    className: "text-xs text-muted-foreground",
-                                                                                                    children: link.source_name
-                                                                                                }, void 0, false, {
-                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                    lineNumber: 1053,
-                                                                                                    columnNumber: 35
-                                                                                                }, this),
-                                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
-                                                                                                    variant: "outline",
-                                                                                                    className: "text-xs mt-1 text-blue-400 border-blue-600",
-                                                                                                    children: "Download"
-                                                                                                }, void 0, false, {
-                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                    lineNumber: 1054,
-                                                                                                    columnNumber: 35
-                                                                                                }, this)
-                                                                                            ]
-                                                                                        }, void 0, true, {
-                                                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1049,
-                                                                                            columnNumber: 33
-                                                                                        }, this)
-                                                                                    ]
-                                                                                }, void 0, true, {
-                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1037,
-                                                                                    columnNumber: 31
-                                                                                }, this),
-                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                                    className: "flex items-center gap-2",
-                                                                                    children: [
-                                                                                        (profile.role === "uploader" || profile.role === "admin") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
-                                                                                            variant: "outline",
-                                                                                            size: "sm",
-                                                                                            className: "text-blue-400 border-blue-600 hover:bg-blue-600/20 bg-transparent",
-                                                                                            onClick: ()=>handleEditDownloadLink(link),
-                                                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$pencil$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Pencil$3e$__["Pencil"], {
-                                                                                                className: "w-3 h-3"
-                                                                                            }, void 0, false, {
-                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1067,
-                                                                                                columnNumber: 37
-                                                                                            }, this)
-                                                                                        }, void 0, false, {
-                                                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1061,
-                                                                                            columnNumber: 35
-                                                                                        }, this),
-                                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
-                                                                                            variant: "outline",
-                                                                                            size: "sm",
-                                                                                            className: "text-red-400 border-red-600 hover:bg-red-600/20 bg-transparent",
-                                                                                            onClick: ()=>handleDeleteDownloadLink(link.id),
-                                                                                            disabled: deletingId === link.id,
-                                                                                            children: deletingId === link.id ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
-                                                                                                className: "w-3 h-3 animate-spin"
-                                                                                            }, void 0, false, {
-                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1078,
-                                                                                                columnNumber: 37
-                                                                                            }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
-                                                                                                className: "w-3 h-3"
-                                                                                            }, void 0, false, {
-                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1080,
-                                                                                                columnNumber: 37
-                                                                                            }, this)
-                                                                                        }, void 0, false, {
-                                                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1070,
-                                                                                            columnNumber: 33
-                                                                                        }, this)
-                                                                                    ]
-                                                                                }, void 0, true, {
-                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1059,
-                                                                                    columnNumber: 31
-                                                                                }, this)
-                                                                            ]
-                                                                        }, link.id, true, {
-                                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1033,
-                                                                            columnNumber: 29
-                                                                        }, this);
-                                                                    }),
-                                                                    invalidDigitalLinks.map((link)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                            className: "flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-red-800/30",
-                                                                            children: [
-                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                                    className: "flex items-center gap-3",
-                                                                                    children: [
-                                                                                        link.digital_content?.cover_url ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                                                                            src: link.digital_content.cover_url || "/placeholder.svg",
-                                                                                            alt: link.digital_content?.title || "Digital",
-                                                                                            className: "w-12 h-16 object-cover rounded"
-                                                                                        }, void 0, false, {
-                                                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1094,
-                                                                                            columnNumber: 33
-                                                                                        }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                                            className: "w-12 h-16 bg-zinc-800 rounded flex items-center justify-center",
-                                                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$file$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__FileDown$3e$__["FileDown"], {
-                                                                                                className: "w-5 h-5 text-zinc-600"
-                                                                                            }, void 0, false, {
-                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1101,
-                                                                                                columnNumber: 35
-                                                                                            }, this)
-                                                                                        }, void 0, false, {
-                                                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1100,
-                                                                                            columnNumber: 33
-                                                                                        }, this),
-                                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                                            children: [
-                                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                                                    className: "text-sm font-medium",
-                                                                                                    children: link.digital_content?.title || "Contenu digital"
-                                                                                                }, void 0, false, {
-                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                    lineNumber: 1105,
-                                                                                                    columnNumber: 33
-                                                                                                }, this),
-                                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                                                    className: "text-xs text-muted-foreground",
-                                                                                                    children: link.source_name
-                                                                                                }, void 0, false, {
-                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                    lineNumber: 1108,
-                                                                                                    columnNumber: 33
-                                                                                                }, this),
-                                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
-                                                                                                    variant: "outline",
-                                                                                                    className: "text-xs mt-1 text-amber-400 border-amber-600",
-                                                                                                    children: "Digital"
-                                                                                                }, void 0, false, {
-                                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                    lineNumber: 1109,
-                                                                                                    columnNumber: 33
-                                                                                                }, this)
-                                                                                            ]
-                                                                                        }, void 0, true, {
-                                                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1104,
-                                                                                            columnNumber: 31
-                                                                                        }, this)
-                                                                                    ]
-                                                                                }, void 0, true, {
-                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1092,
-                                                                                    columnNumber: 29
-                                                                                }, this),
-                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                                    className: "flex items-center gap-2",
-                                                                                    children: [
-                                                                                        (profile.role === "uploader" || profile.role === "admin") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
-                                                                                            variant: "outline",
-                                                                                            size: "sm",
-                                                                                            className: "text-blue-400 border-blue-600 hover:bg-blue-600/20 bg-transparent",
-                                                                                            onClick: ()=>handleEditDigitalLink(link),
-                                                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$pencil$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Pencil$3e$__["Pencil"], {
-                                                                                                className: "w-3 h-3"
-                                                                                            }, void 0, false, {
-                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1122,
-                                                                                                columnNumber: 35
-                                                                                            }, this)
-                                                                                        }, void 0, false, {
-                                                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1116,
-                                                                                            columnNumber: 33
-                                                                                        }, this),
-                                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
-                                                                                            variant: "outline",
-                                                                                            size: "sm",
-                                                                                            className: "text-red-400 border-red-600 hover:bg-red-600/20 bg-transparent",
-                                                                                            onClick: ()=>handleDeleteDigitalLink(link.id),
-                                                                                            disabled: deletingId === link.id,
-                                                                                            children: deletingId === link.id ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
-                                                                                                className: "w-3 h-3 animate-spin"
-                                                                                            }, void 0, false, {
-                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1133,
-                                                                                                columnNumber: 35
-                                                                                            }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
-                                                                                                className: "w-3 h-3"
-                                                                                            }, void 0, false, {
-                                                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1135,
-                                                                                                columnNumber: 35
-                                                                                            }, this)
-                                                                                        }, void 0, false, {
-                                                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1125,
-                                                                                            columnNumber: 31
-                                                                                        }, this)
-                                                                                    ]
-                                                                                }, void 0, true, {
-                                                                                    fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1114,
-                                                                                    columnNumber: 29
-                                                                                }, this)
-                                                                            ]
-                                                                        }, link.id, true, {
-                                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1088,
-                                                                            columnNumber: 27
-                                                                        }, this))
-                                                                ]
-                                                            }, void 0, true, {
-                                                                fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 1028,
-                                                                columnNumber: 23
-                                                            }, this)
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1027,
+                                                            lineNumber: 1168,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1017,
+                                                    lineNumber: 1155,
                                                     columnNumber: 19
                                                 }, this);
                                             })(),
@@ -3546,19 +3868,19 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             className: "w-4 h-4 text-primary"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1153,
+                                                                            lineNumber: 1329,
                                                                             columnNumber: 23
                                                                         }, this),
                                                                         "Activite recente"
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1152,
+                                                                    lineNumber: 1328,
                                                                     columnNumber: 21
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 1151,
+                                                                lineNumber: 1327,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -3589,7 +3911,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                 className: "w-10 h-12 object-cover rounded"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1175,
+                                                                                                lineNumber: 1351,
                                                                                                 columnNumber: 35
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3603,7 +3925,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                         ]
                                                                                                     }, void 0, true, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1182,
+                                                                                                        lineNumber: 1358,
                                                                                                         columnNumber: 35
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3614,7 +3936,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                                 children: new Date(link.created_at).toLocaleDateString("fr-FR")
                                                                                                             }, void 0, false, {
                                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                                lineNumber: 1186,
+                                                                                                                lineNumber: 1362,
                                                                                                                 columnNumber: 37
                                                                                                             }, this),
                                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Badge"], {
@@ -3623,32 +3945,32 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                                 children: link.linkType === "streaming" ? "Streaming" : "Téléchargement"
                                                                                                             }, void 0, false, {
                                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                                lineNumber: 1189,
+                                                                                                                lineNumber: 1365,
                                                                                                                 columnNumber: 37
                                                                                                             }, this)
                                                                                                         ]
                                                                                                     }, void 0, true, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1185,
+                                                                                                        lineNumber: 1361,
                                                                                                         columnNumber: 35
                                                                                                     }, this)
                                                                                                 ]
                                                                                             }, void 0, true, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1181,
+                                                                                                lineNumber: 1357,
                                                                                                 columnNumber: 33
                                                                                             }, this)
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1173,
+                                                                                        lineNumber: 1349,
                                                                                         columnNumber: 31
                                                                                     }, this),
                                                                                     getStatusBadge(link.status)
                                                                                 ]
                                                                             }, link.id, true, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 1169,
+                                                                                lineNumber: 1345,
                                                                                 columnNumber: 29
                                                                             }, this);
                                                                         }),
@@ -3657,24 +3979,24 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Aucune activite recente"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1207,
+                                                                            lineNumber: 1383,
                                                                             columnNumber: 25
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1158,
+                                                                    lineNumber: 1334,
                                                                     columnNumber: 21
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 1157,
+                                                                lineNumber: 1333,
                                                                 columnNumber: 19
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 1150,
+                                                        lineNumber: 1326,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -3689,19 +4011,19 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             className: "w-4 h-4 text-primary"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1217,
+                                                                            lineNumber: 1393,
                                                                             columnNumber: 23
                                                                         }, this),
                                                                         "Statistiques"
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1216,
+                                                                    lineNumber: 1392,
                                                                     columnNumber: 21
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 1215,
+                                                                lineNumber: 1391,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -3716,7 +4038,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Taux d'approbation"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1224,
+                                                                                    lineNumber: 1400,
                                                                                     columnNumber: 25
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3727,13 +4049,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1225,
+                                                                                    lineNumber: 1401,
                                                                                     columnNumber: 25
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1223,
+                                                                            lineNumber: 1399,
                                                                             columnNumber: 23
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3745,19 +4067,19 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                 }
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 1237,
+                                                                                lineNumber: 1413,
                                                                                 columnNumber: 25
                                                                             }, this)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1236,
+                                                                            lineNumber: 1412,
                                                                             columnNumber: 23
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$separator$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Separator"], {
                                                                             className: "bg-zinc-800"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1251,
+                                                                            lineNumber: 1427,
                                                                             columnNumber: 23
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3771,7 +4093,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                             children: stats.totalViews
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1254,
+                                                                                            lineNumber: 1430,
                                                                                             columnNumber: 27
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3779,13 +4101,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                             children: "Vues totales"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1255,
+                                                                                            lineNumber: 1431,
                                                                                             columnNumber: 27
                                                                                         }, this)
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1253,
+                                                                                    lineNumber: 1429,
                                                                                     columnNumber: 25
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3796,7 +4118,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                             children: stats.pendingCount
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1258,
+                                                                                            lineNumber: 1434,
                                                                                             columnNumber: 27
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3804,48 +4126,48 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                             children: "En attente"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1259,
+                                                                                            lineNumber: 1435,
                                                                                             columnNumber: 27
                                                                                         }, this)
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1257,
+                                                                                    lineNumber: 1433,
                                                                                     columnNumber: 25
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1252,
+                                                                            lineNumber: 1428,
                                                                             columnNumber: 23
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1222,
+                                                                    lineNumber: 1398,
                                                                     columnNumber: 21
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 1221,
+                                                                lineNumber: 1397,
                                                                 columnNumber: 19
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 1214,
+                                                        lineNumber: 1390,
                                                         columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 1148,
+                                                lineNumber: 1324,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 1008,
+                                        lineNumber: 1090,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsContent"], {
@@ -3858,7 +4180,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "w-12 h-12 text-muted-foreground mx-auto mb-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1272,
+                                                    lineNumber: 1448,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3866,7 +4188,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Aucun lien streaming soumis"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1273,
+                                                    lineNumber: 1449,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$add$2d$link$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AddLinkModal"], {
@@ -3875,13 +4197,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     mode: "streaming"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1274,
+                                                    lineNumber: 1450,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 1271,
+                                            lineNumber: 1447,
                                             columnNumber: 17
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "space-y-4",
@@ -3896,7 +4218,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     className: "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1284,
+                                                                    lineNumber: 1460,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -3906,13 +4228,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     className: "pl-9"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1285,
+                                                                    lineNumber: 1461,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1283,
+                                                            lineNumber: 1459,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3928,12 +4250,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                 placeholder: "Statut"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 1295,
+                                                                                lineNumber: 1471,
                                                                                 columnNumber: 27
                                                                             }, this)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1294,
+                                                                            lineNumber: 1470,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -3943,7 +4265,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Tous statuts"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1298,
+                                                                                    lineNumber: 1474,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -3951,7 +4273,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Approuve"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1299,
+                                                                                    lineNumber: 1475,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -3959,7 +4281,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "En attente"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1300,
+                                                                                    lineNumber: 1476,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -3967,19 +4289,19 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Rejete"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1301,
+                                                                                    lineNumber: 1477,
                                                                                     columnNumber: 27
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1297,
+                                                                            lineNumber: 1473,
                                                                             columnNumber: 25
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1293,
+                                                                    lineNumber: 1469,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -3992,12 +4314,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                 placeholder: "Type"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 1306,
+                                                                                lineNumber: 1482,
                                                                                 columnNumber: 27
                                                                             }, this)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1305,
+                                                                            lineNumber: 1481,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -4007,7 +4329,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Tous types"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1309,
+                                                                                    lineNumber: 1485,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4015,7 +4337,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Film"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1310,
+                                                                                    lineNumber: 1486,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4023,19 +4345,19 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Serie"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1311,
+                                                                                    lineNumber: 1487,
                                                                                     columnNumber: 27
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1308,
+                                                                            lineNumber: 1484,
                                                                             columnNumber: 25
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1304,
+                                                                    lineNumber: 1480,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -4048,12 +4370,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                 placeholder: "Qualite"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 1316,
+                                                                                lineNumber: 1492,
                                                                                 columnNumber: 27
                                                                             }, this)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1315,
+                                                                            lineNumber: 1491,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -4063,7 +4385,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Toutes qualites"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1319,
+                                                                                    lineNumber: 1495,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 streamingQualities.map((q)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4071,31 +4393,31 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                         children: q
                                                                                     }, q, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1321,
+                                                                                        lineNumber: 1497,
                                                                                         columnNumber: 29
                                                                                     }, this))
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1318,
+                                                                            lineNumber: 1494,
                                                                             columnNumber: 25
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1314,
+                                                                    lineNumber: 1490,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1292,
+                                                            lineNumber: 1468,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1282,
+                                                    lineNumber: 1458,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4107,7 +4429,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1330,
+                                                    lineNumber: 1506,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4124,7 +4446,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Media"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1338,
+                                                                            lineNumber: 1514,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4132,7 +4454,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Source"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1339,
+                                                                            lineNumber: 1515,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4140,7 +4462,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Qualite"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1340,
+                                                                            lineNumber: 1516,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4148,7 +4470,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Langue"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1341,
+                                                                            lineNumber: 1517,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4156,7 +4478,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Statut"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1342,
+                                                                            lineNumber: 1518,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4164,7 +4486,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Vues"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1343,
+                                                                            lineNumber: 1519,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4172,7 +4494,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Date"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1344,
+                                                                            lineNumber: 1520,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4180,18 +4502,18 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Actions"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1345,
+                                                                            lineNumber: 1521,
                                                                             columnNumber: 27
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1337,
+                                                                    lineNumber: 1513,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 1336,
+                                                                lineNumber: 1512,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -4213,7 +4535,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                 className: "w-10 h-14 object-cover rounded"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1357,
+                                                                                                lineNumber: 1533,
                                                                                                 columnNumber: 37
                                                                                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                                                 className: "w-10 h-14 bg-muted rounded flex items-center justify-center",
@@ -4221,12 +4543,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                     className: "w-4 h-4 text-muted-foreground"
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                    lineNumber: 1364,
+                                                                                                    lineNumber: 1540,
                                                                                                     columnNumber: 39
                                                                                                 }, this)
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1363,
+                                                                                                lineNumber: 1539,
                                                                                                 columnNumber: 37
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4236,7 +4558,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                         children: mediaInfo.title
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1368,
+                                                                                                        lineNumber: 1544,
                                                                                                         columnNumber: 37
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4248,7 +4570,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                                 children: link.media_type === "movie" ? "Film" : "Serie"
                                                                                                             }, void 0, false, {
                                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                                lineNumber: 1370,
+                                                                                                                lineNumber: 1546,
                                                                                                                 columnNumber: 39
                                                                                                             }, this),
                                                                                                             episodeInfo && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -4256,30 +4578,30 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                                 children: episodeInfo
                                                                                                             }, void 0, false, {
                                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                                lineNumber: 1373,
+                                                                                                                lineNumber: 1549,
                                                                                                                 columnNumber: 55
                                                                                                             }, this)
                                                                                                         ]
                                                                                                     }, void 0, true, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1369,
+                                                                                                        lineNumber: 1545,
                                                                                                         columnNumber: 37
                                                                                                     }, this)
                                                                                                 ]
                                                                                             }, void 0, true, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1367,
+                                                                                                lineNumber: 1543,
                                                                                                 columnNumber: 35
                                                                                             }, this)
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1355,
+                                                                                        lineNumber: 1531,
                                                                                         columnNumber: 33
                                                                                     }, this)
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1354,
+                                                                                    lineNumber: 1530,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -4287,7 +4609,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: link.source_name
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1378,
+                                                                                    lineNumber: 1554,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -4297,12 +4619,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                         children: link.quality
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1380,
+                                                                                        lineNumber: 1556,
                                                                                         columnNumber: 33
                                                                                     }, this)
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1379,
+                                                                                    lineNumber: 1555,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -4310,7 +4632,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: link.language
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1382,
+                                                                                    lineNumber: 1558,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -4318,7 +4640,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: getStatusBadge(link.status)
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1383,
+                                                                                    lineNumber: 1559,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -4333,32 +4655,32 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                 className: "w-3 h-3"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1391,
+                                                                                                lineNumber: 1567,
                                                                                                 columnNumber: 35
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                                                                 children: link.view_count
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1392,
+                                                                                                lineNumber: 1568,
                                                                                                 columnNumber: 35
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chart$2d$column$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__BarChart3$3e$__["BarChart3"], {
                                                                                                 className: "w-3 h-3 opacity-50"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1393,
+                                                                                                lineNumber: 1569,
                                                                                                 columnNumber: 35
                                                                                             }, this)
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1385,
+                                                                                        lineNumber: 1561,
                                                                                         columnNumber: 33
                                                                                     }, this)
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1384,
+                                                                                    lineNumber: 1560,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -4366,7 +4688,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: new Date(link.created_at).toLocaleDateString("fr-FR")
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1396,
+                                                                                    lineNumber: 1572,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -4383,12 +4705,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                     className: "h-4 w-4"
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                    lineNumber: 1408,
+                                                                                                    lineNumber: 1584,
                                                                                                     columnNumber: 39
                                                                                                 }, this)
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1402,
+                                                                                                lineNumber: 1578,
                                                                                                 columnNumber: 37
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -4401,35 +4723,35 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                     className: "h-4 w-4 animate-spin"
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                    lineNumber: 1419,
+                                                                                                    lineNumber: 1595,
                                                                                                     columnNumber: 39
                                                                                                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
                                                                                                     className: "h-4 w-4"
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                    lineNumber: 1421,
+                                                                                                    lineNumber: 1597,
                                                                                                     columnNumber: 39
                                                                                                 }, this)
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1411,
+                                                                                                lineNumber: 1587,
                                                                                                 columnNumber: 35
                                                                                             }, this)
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1400,
+                                                                                        lineNumber: 1576,
                                                                                         columnNumber: 33
                                                                                     }, this)
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1399,
+                                                                                    lineNumber: 1575,
                                                                                     columnNumber: 31
                                                                                 }, this)
                                                                             ]
                                                                         }, link.id, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1353,
+                                                                            lineNumber: 1529,
                                                                             columnNumber: 29
                                                                         }, this);
                                                                     }),
@@ -4440,40 +4762,40 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Aucun resultat trouve"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1431,
+                                                                            lineNumber: 1607,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1430,
+                                                                        lineNumber: 1606,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 1348,
+                                                                lineNumber: 1524,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 1335,
+                                                        lineNumber: 1511,
                                                         columnNumber: 21
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1334,
+                                                    lineNumber: 1510,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 1281,
+                                            lineNumber: 1457,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 1269,
+                                        lineNumber: 1445,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsContent"], {
@@ -4486,7 +4808,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "w-12 h-12 text-muted-foreground mx-auto mb-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1447,
+                                                    lineNumber: 1623,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4494,7 +4816,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Aucun lien telechargement soumis"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1448,
+                                                    lineNumber: 1624,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$add$2d$link$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AddLinkModal"], {
@@ -4503,13 +4825,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     mode: "download"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1449,
+                                                    lineNumber: 1625,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 1446,
+                                            lineNumber: 1622,
                                             columnNumber: 17
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "space-y-6",
@@ -4524,7 +4846,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     className: "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1459,
+                                                                    lineNumber: 1635,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -4534,13 +4856,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     className: "pl-9"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1460,
+                                                                    lineNumber: 1636,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1458,
+                                                            lineNumber: 1634,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4556,12 +4878,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                 placeholder: "Statut"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 1470,
+                                                                                lineNumber: 1646,
                                                                                 columnNumber: 27
                                                                             }, this)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1469,
+                                                                            lineNumber: 1645,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -4571,7 +4893,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Tous statuts"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1473,
+                                                                                    lineNumber: 1649,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4579,7 +4901,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Approuve"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1474,
+                                                                                    lineNumber: 1650,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4587,7 +4909,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "En attente"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1475,
+                                                                                    lineNumber: 1651,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4595,19 +4917,19 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Rejete"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1476,
+                                                                                    lineNumber: 1652,
                                                                                     columnNumber: 27
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1472,
+                                                                            lineNumber: 1648,
                                                                             columnNumber: 25
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1468,
+                                                                    lineNumber: 1644,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -4620,12 +4942,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                 placeholder: "Type"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 1481,
+                                                                                lineNumber: 1657,
                                                                                 columnNumber: 27
                                                                             }, this)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1480,
+                                                                            lineNumber: 1656,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -4635,7 +4957,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Tous types"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1484,
+                                                                                    lineNumber: 1660,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4643,7 +4965,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Film"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1485,
+                                                                                    lineNumber: 1661,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4651,19 +4973,19 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Serie"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1486,
+                                                                                    lineNumber: 1662,
                                                                                     columnNumber: 27
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1483,
+                                                                            lineNumber: 1659,
                                                                             columnNumber: 25
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1479,
+                                                                    lineNumber: 1655,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -4676,12 +4998,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                 placeholder: "Qualite"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 1491,
+                                                                                lineNumber: 1667,
                                                                                 columnNumber: 27
                                                                             }, this)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1490,
+                                                                            lineNumber: 1666,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -4691,7 +5013,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Toutes qualites"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1494,
+                                                                                    lineNumber: 1670,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 downloadQualities.map((q)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4699,31 +5021,31 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                         children: q
                                                                                     }, q, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1496,
+                                                                                        lineNumber: 1672,
                                                                                         columnNumber: 29
                                                                                     }, this))
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1493,
+                                                                            lineNumber: 1669,
                                                                             columnNumber: 25
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1489,
+                                                                    lineNumber: 1665,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1467,
+                                                            lineNumber: 1643,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1457,
+                                                    lineNumber: 1633,
                                                     columnNumber: 19
                                                 }, this),
                                                 filteredDownloadLinks.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4735,7 +5057,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     className: "w-4 h-4 text-blue-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1508,
+                                                                    lineNumber: 1684,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 "Films & Series (",
@@ -4746,7 +5068,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1507,
+                                                            lineNumber: 1683,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4763,7 +5085,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Media"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1515,
+                                                                                    lineNumber: 1691,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4771,7 +5093,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Source"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1516,
+                                                                                    lineNumber: 1692,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4779,7 +5101,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Type"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1517,
+                                                                                    lineNumber: 1693,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4787,7 +5109,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Qualite"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1518,
+                                                                                    lineNumber: 1694,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4795,7 +5117,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Statut"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1519,
+                                                                                    lineNumber: 1695,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4803,7 +5125,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Validite"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1520,
+                                                                                    lineNumber: 1696,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 " ",
@@ -4812,7 +5134,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Vues"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1522,
+                                                                                    lineNumber: 1698,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4820,7 +5142,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Date"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1523,
+                                                                                    lineNumber: 1699,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -4828,18 +5150,18 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Actions"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1524,
+                                                                                    lineNumber: 1700,
                                                                                     columnNumber: 31
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1514,
+                                                                            lineNumber: 1690,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1513,
+                                                                        lineNumber: 1689,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -4861,7 +5183,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                         className: "w-10 h-14 object-cover rounded"
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1539,
+                                                                                                        lineNumber: 1715,
                                                                                                         columnNumber: 41
                                                                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                                                         className: "w-10 h-14 bg-muted rounded flex items-center justify-center",
@@ -4869,12 +5191,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                             className: "w-4 h-4 text-muted-foreground"
                                                                                                         }, void 0, false, {
                                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                            lineNumber: 1546,
+                                                                                                            lineNumber: 1722,
                                                                                                             columnNumber: 43
                                                                                                         }, this)
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1545,
+                                                                                                        lineNumber: 1721,
                                                                                                         columnNumber: 41
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4884,7 +5206,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                                 children: mediaInfo.title
                                                                                                             }, void 0, false, {
                                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                                lineNumber: 1550,
+                                                                                                                lineNumber: 1726,
                                                                                                                 columnNumber: 41
                                                                                                             }, this),
                                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4896,7 +5218,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                                         children: link.media_type === "movie" ? "Film" : "Serie"
                                                                                                                     }, void 0, false, {
                                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                                        lineNumber: 1552,
+                                                                                                                        lineNumber: 1728,
                                                                                                                         columnNumber: 43
                                                                                                                     }, this),
                                                                                                                     episodeInfo && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -4904,30 +5226,30 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                                         children: episodeInfo
                                                                                                                     }, void 0, false, {
                                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                                        lineNumber: 1555,
+                                                                                                                        lineNumber: 1731,
                                                                                                                         columnNumber: 59
                                                                                                                     }, this)
                                                                                                                 ]
                                                                                                             }, void 0, true, {
                                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                                lineNumber: 1551,
+                                                                                                                lineNumber: 1727,
                                                                                                                 columnNumber: 41
                                                                                                             }, this)
                                                                                                         ]
                                                                                                     }, void 0, true, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1549,
+                                                                                                        lineNumber: 1725,
                                                                                                         columnNumber: 39
                                                                                                     }, this)
                                                                                                 ]
                                                                                             }, void 0, true, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1537,
+                                                                                                lineNumber: 1713,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1536,
+                                                                                            lineNumber: 1712,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -4935,7 +5257,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                             children: link.source_name
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1560,
+                                                                                            lineNumber: 1736,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -4945,12 +5267,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                 children: link.link_type
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1562,
+                                                                                                lineNumber: 1738,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1561,
+                                                                                            lineNumber: 1737,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -4960,12 +5282,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                 children: link.quality
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1565,
+                                                                                                lineNumber: 1741,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1564,
+                                                                                            lineNumber: 1740,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -4973,7 +5295,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                             children: getStatusBadge(link.status)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1567,
+                                                                                            lineNumber: 1743,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -4985,19 +5307,19 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                         className: "w-3 h-3 animate-spin"
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1572,
+                                                                                                        lineNumber: 1748,
                                                                                                         columnNumber: 41
                                                                                                     }, this),
                                                                                                     " Checking..."
                                                                                                 ]
                                                                                             }, void 0, true, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1571,
+                                                                                                lineNumber: 1747,
                                                                                                 columnNumber: 39
                                                                                             }, this) : getValidityBadge(link)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1568,
+                                                                                            lineNumber: 1744,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5012,32 +5334,32 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                         className: "w-3 h-3"
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1585,
+                                                                                                        lineNumber: 1761,
                                                                                                         columnNumber: 39
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                                                                         children: link.view_count
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1586,
+                                                                                                        lineNumber: 1762,
                                                                                                         columnNumber: 39
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chart$2d$column$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__BarChart3$3e$__["BarChart3"], {
                                                                                                         className: "w-3 h-3 opacity-50"
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1587,
+                                                                                                        lineNumber: 1763,
                                                                                                         columnNumber: 39
                                                                                                     }, this)
                                                                                                 ]
                                                                                             }, void 0, true, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1579,
+                                                                                                lineNumber: 1755,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1578,
+                                                                                            lineNumber: 1754,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5045,7 +5367,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                             children: new Date(link.created_at).toLocaleDateString("fr-FR")
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1590,
+                                                                                            lineNumber: 1766,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5062,12 +5384,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                             className: "h-4 w-4"
                                                                                                         }, void 0, false, {
                                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                            lineNumber: 1602,
+                                                                                                            lineNumber: 1778,
                                                                                                             columnNumber: 43
                                                                                                         }, this)
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1596,
+                                                                                                        lineNumber: 1772,
                                                                                                         columnNumber: 41
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -5080,12 +5402,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                             className: "h-4 w-4"
                                                                                                         }, void 0, false, {
                                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                            lineNumber: 1612,
+                                                                                                            lineNumber: 1788,
                                                                                                             columnNumber: 41
                                                                                                         }, this)
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1605,
+                                                                                                        lineNumber: 1781,
                                                                                                         columnNumber: 39
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -5098,35 +5420,35 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                             className: "h-4 w-4 animate-spin"
                                                                                                         }, void 0, false, {
                                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                            lineNumber: 1622,
+                                                                                                            lineNumber: 1798,
                                                                                                             columnNumber: 43
                                                                                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
                                                                                                             className: "h-4 w-4"
                                                                                                         }, void 0, false, {
                                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                            lineNumber: 1624,
+                                                                                                            lineNumber: 1800,
                                                                                                             columnNumber: 43
                                                                                                         }, this)
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1614,
+                                                                                                        lineNumber: 1790,
                                                                                                         columnNumber: 39
                                                                                                     }, this)
                                                                                                 ]
                                                                                             }, void 0, true, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1594,
+                                                                                                lineNumber: 1770,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1593,
+                                                                                            lineNumber: 1769,
                                                                                             columnNumber: 35
                                                                                         }, this)
                                                                                     ]
                                                                                 }, link.id, true, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1532,
+                                                                                    lineNumber: 1708,
                                                                                     columnNumber: 33
                                                                                 }, this);
                                                                             }),
@@ -5140,35 +5462,35 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1634,
+                                                                                    lineNumber: 1810,
                                                                                     columnNumber: 33
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 1633,
+                                                                                lineNumber: 1809,
                                                                                 columnNumber: 31
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1527,
+                                                                        lineNumber: 1703,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 1512,
+                                                                lineNumber: 1688,
                                                                 columnNumber: 25
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1511,
+                                                            lineNumber: 1687,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1506,
+                                                    lineNumber: 1682,
                                                     columnNumber: 21
                                                 }, this),
                                                 localDigitalLinks.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5180,7 +5502,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     className: "w-4 h-4 text-amber-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1650,
+                                                                    lineNumber: 1826,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 "Contenu Digital (",
@@ -5192,7 +5514,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1649,
+                                                            lineNumber: 1825,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5209,7 +5531,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Contenu"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1658,
+                                                                                    lineNumber: 1834,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5217,7 +5539,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Type"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1659,
+                                                                                    lineNumber: 1835,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5225,7 +5547,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Source"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1660,
+                                                                                    lineNumber: 1836,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5233,7 +5555,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Qualite"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1661,
+                                                                                    lineNumber: 1837,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5241,7 +5563,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Statut"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1662,
+                                                                                    lineNumber: 1838,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5249,7 +5571,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Validite"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1663,
+                                                                                    lineNumber: 1839,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 " ",
@@ -5258,7 +5580,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Date"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1665,
+                                                                                    lineNumber: 1841,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5266,18 +5588,18 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Actions"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1666,
+                                                                                    lineNumber: 1842,
                                                                                     columnNumber: 31
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1657,
+                                                                            lineNumber: 1833,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1656,
+                                                                        lineNumber: 1832,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -5292,7 +5614,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                 className: "w-4 h-4"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1676,
+                                                                                                lineNumber: 1852,
                                                                                                 columnNumber: 44
                                                                                             }, this);
                                                                                         case "music":
@@ -5300,7 +5622,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                 className: "w-4 h-4"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1678,
+                                                                                                lineNumber: 1854,
                                                                                                 columnNumber: 44
                                                                                             }, this);
                                                                                         case "software":
@@ -5308,7 +5630,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                 className: "w-4 h-4"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1680,
+                                                                                                lineNumber: 1856,
                                                                                                 columnNumber: 44
                                                                                             }, this);
                                                                                         case "game":
@@ -5316,7 +5638,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                 className: "w-4 h-4"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1682,
+                                                                                                lineNumber: 1858,
                                                                                                 columnNumber: 44
                                                                                             }, this);
                                                                                         default:
@@ -5324,7 +5646,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                 className: "w-4 h-4"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1684,
+                                                                                                lineNumber: 1860,
                                                                                                 columnNumber: 44
                                                                                             }, this);
                                                                                     }
@@ -5343,14 +5665,14 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                         className: "w-10 h-14 object-cover rounded"
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1695,
+                                                                                                        lineNumber: 1871,
                                                                                                         columnNumber: 41
                                                                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                                                         className: "w-10 h-14 bg-muted rounded flex items-center justify-center",
                                                                                                         children: getContentTypeIcon(content?.content_type || "")
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1701,
+                                                                                                        lineNumber: 1877,
                                                                                                         columnNumber: 41
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5360,7 +5682,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                                 children: content?.title || "Inconnu"
                                                                                                             }, void 0, false, {
                                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                                lineNumber: 1706,
+                                                                                                                lineNumber: 1882,
                                                                                                                 columnNumber: 41
                                                                                                             }, this),
                                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -5368,24 +5690,24 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                                 children: content?.creator
                                                                                                             }, void 0, false, {
                                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                                lineNumber: 1707,
+                                                                                                                lineNumber: 1883,
                                                                                                                 columnNumber: 41
                                                                                                             }, this)
                                                                                                         ]
                                                                                                     }, void 0, true, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1705,
+                                                                                                        lineNumber: 1881,
                                                                                                         columnNumber: 39
                                                                                                     }, this)
                                                                                                 ]
                                                                                             }, void 0, true, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1693,
+                                                                                                lineNumber: 1869,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1692,
+                                                                                            lineNumber: 1868,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5396,12 +5718,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                 children: content?.content_type || "digital"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1712,
+                                                                                                lineNumber: 1888,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1711,
+                                                                                            lineNumber: 1887,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5409,7 +5731,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                             children: link.source_name
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1716,
+                                                                                            lineNumber: 1892,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5419,12 +5741,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                 children: link.quality
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1718,
+                                                                                                lineNumber: 1894,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1717,
+                                                                                            lineNumber: 1893,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5432,7 +5754,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                             children: getStatusBadge(link.status)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1720,
+                                                                                            lineNumber: 1896,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5444,19 +5766,19 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                         className: "w-3 h-3 animate-spin"
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1725,
+                                                                                                        lineNumber: 1901,
                                                                                                         columnNumber: 41
                                                                                                     }, this),
                                                                                                     " Checking..."
                                                                                                 ]
                                                                                             }, void 0, true, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1724,
+                                                                                                lineNumber: 1900,
                                                                                                 columnNumber: 39
                                                                                             }, this) : getValidityBadge(link)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1721,
+                                                                                            lineNumber: 1897,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5464,7 +5786,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                             children: new Date(link.created_at).toLocaleDateString("fr-FR")
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1731,
+                                                                                            lineNumber: 1907,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5481,12 +5803,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                             className: "h-4 w-4"
                                                                                                         }, void 0, false, {
                                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                            lineNumber: 1743,
+                                                                                                            lineNumber: 1919,
                                                                                                             columnNumber: 43
                                                                                                         }, this)
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1737,
+                                                                                                        lineNumber: 1913,
                                                                                                         columnNumber: 41
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -5499,12 +5821,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                             className: "h-4 w-4"
                                                                                                         }, void 0, false, {
                                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                            lineNumber: 1753,
+                                                                                                            lineNumber: 1929,
                                                                                                             columnNumber: 41
                                                                                                         }, this)
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1746,
+                                                                                                        lineNumber: 1922,
                                                                                                         columnNumber: 39
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -5517,35 +5839,35 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                             className: "h-4 w-4 animate-spin"
                                                                                                         }, void 0, false, {
                                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                            lineNumber: 1763,
+                                                                                                            lineNumber: 1939,
                                                                                                             columnNumber: 43
                                                                                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
                                                                                                             className: "h-4 w-4"
                                                                                                         }, void 0, false, {
                                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                            lineNumber: 1765,
+                                                                                                            lineNumber: 1941,
                                                                                                             columnNumber: 43
                                                                                                         }, this)
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                        lineNumber: 1755,
+                                                                                                        lineNumber: 1931,
                                                                                                         columnNumber: 39
                                                                                                     }, this)
                                                                                                 ]
                                                                                             }, void 0, true, {
                                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                lineNumber: 1735,
+                                                                                                lineNumber: 1911,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1734,
+                                                                                            lineNumber: 1910,
                                                                                             columnNumber: 35
                                                                                         }, this)
                                                                                     ]
                                                                                 }, link.id, true, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1688,
+                                                                                    lineNumber: 1864,
                                                                                     columnNumber: 33
                                                                                 }, this);
                                                                             }),
@@ -5556,46 +5878,46 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Aucun resultat trouve"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1775,
+                                                                                    lineNumber: 1951,
                                                                                     columnNumber: 33
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 1774,
+                                                                                lineNumber: 1950,
                                                                                 columnNumber: 31
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1669,
+                                                                        lineNumber: 1845,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 1655,
+                                                                lineNumber: 1831,
                                                                 columnNumber: 25
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1654,
+                                                            lineNumber: 1830,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1648,
+                                                    lineNumber: 1824,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 1456,
+                                            lineNumber: 1632,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 1444,
+                                        lineNumber: 1620,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsContent"], {
@@ -5608,7 +5930,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "w-12 h-12 text-muted-foreground mx-auto mb-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1793,
+                                                    lineNumber: 1969,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -5616,7 +5938,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Aucune chaine ou source TV soumise"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1794,
+                                                    lineNumber: 1970,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$add$2d$link$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AddLinkModal"], {
@@ -5625,13 +5947,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     mode: "livetv"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1795,
+                                                    lineNumber: 1971,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 1792,
+                                            lineNumber: 1968,
                                             columnNumber: 17
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "space-y-6",
@@ -5645,7 +5967,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     className: "w-4 h-4 text-purple-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1806,
+                                                                    lineNumber: 1982,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 "Chaines creees (",
@@ -5654,7 +5976,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1805,
+                                                            lineNumber: 1981,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5671,7 +5993,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Chaine"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1813,
+                                                                                    lineNumber: 1989,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5679,7 +6001,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Categorie"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1814,
+                                                                                    lineNumber: 1990,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5687,7 +6009,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Pays"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1815,
+                                                                                    lineNumber: 1991,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5695,7 +6017,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Qualite"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1816,
+                                                                                    lineNumber: 1992,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5703,7 +6025,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Statut"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1817,
+                                                                                    lineNumber: 1993,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5711,18 +6033,18 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Date"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1818,
+                                                                                    lineNumber: 1994,
                                                                                     columnNumber: 31
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1812,
+                                                                            lineNumber: 1988,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1811,
+                                                                        lineNumber: 1987,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -5740,7 +6062,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                     className: "w-8 h-8 object-contain rounded"
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                    lineNumber: 1830,
+                                                                                                    lineNumber: 2006,
                                                                                                     columnNumber: 39
                                                                                                 }, this),
                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -5748,18 +6070,18 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                                     children: channel.channel_name
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                                    lineNumber: 1836,
+                                                                                                    lineNumber: 2012,
                                                                                                     columnNumber: 37
                                                                                                 }, this)
                                                                                             ]
                                                                                         }, void 0, true, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1828,
+                                                                                            lineNumber: 2004,
                                                                                             columnNumber: 35
                                                                                         }, this)
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1827,
+                                                                                        lineNumber: 2003,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5767,7 +6089,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                         children: channel.category
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1839,
+                                                                                        lineNumber: 2015,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5775,7 +6097,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                         children: channel.country
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1840,
+                                                                                        lineNumber: 2016,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5785,12 +6107,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                             children: channel.quality
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1842,
+                                                                                            lineNumber: 2018,
                                                                                             columnNumber: 35
                                                                                         }, this)
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1841,
+                                                                                        lineNumber: 2017,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5798,7 +6120,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                         children: getStatusBadge(channel.status)
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1844,
+                                                                                        lineNumber: 2020,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5806,35 +6128,35 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                         children: new Date(channel.created_at).toLocaleDateString("fr-FR")
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1845,
+                                                                                        lineNumber: 2021,
                                                                                         columnNumber: 33
                                                                                     }, this)
                                                                                 ]
                                                                             }, channel.id, true, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 1823,
+                                                                                lineNumber: 1999,
                                                                                 columnNumber: 31
                                                                             }, this))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1821,
+                                                                        lineNumber: 1997,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 1810,
+                                                                lineNumber: 1986,
                                                                 columnNumber: 25
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1809,
+                                                            lineNumber: 1985,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1804,
+                                                    lineNumber: 1980,
                                                     columnNumber: 21
                                                 }, this),
                                                 liveTvSources.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5846,7 +6168,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     className: "w-4 h-4 text-purple-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1859,
+                                                                    lineNumber: 2035,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 "Sources ajoutees (",
@@ -5855,7 +6177,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1858,
+                                                            lineNumber: 2034,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5872,7 +6194,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Source"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1866,
+                                                                                    lineNumber: 2042,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5880,7 +6202,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Qualite"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1867,
+                                                                                    lineNumber: 2043,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5888,7 +6210,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Statut"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1868,
+                                                                                    lineNumber: 2044,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -5896,18 +6218,18 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: "Date"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1869,
+                                                                                    lineNumber: 2045,
                                                                                     columnNumber: 31
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1865,
+                                                                            lineNumber: 2041,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1864,
+                                                                        lineNumber: 2040,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -5919,7 +6241,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                         children: source.source_name
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1878,
+                                                                                        lineNumber: 2054,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5929,12 +6251,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                             children: source.quality
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                            lineNumber: 1880,
+                                                                                            lineNumber: 2056,
                                                                                             columnNumber: 35
                                                                                         }, this)
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1879,
+                                                                                        lineNumber: 2055,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5942,7 +6264,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                         children: getStatusBadge(source.status)
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1882,
+                                                                                        lineNumber: 2058,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -5950,46 +6272,46 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                         children: new Date(source.created_at).toLocaleDateString("fr-FR")
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1883,
+                                                                                        lineNumber: 2059,
                                                                                         columnNumber: 33
                                                                                     }, this)
                                                                                 ]
                                                                             }, source.id, true, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 1874,
+                                                                                lineNumber: 2050,
                                                                                 columnNumber: 31
                                                                             }, this))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1872,
+                                                                        lineNumber: 2048,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 1863,
+                                                                lineNumber: 2039,
                                                                 columnNumber: 25
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1862,
+                                                            lineNumber: 2038,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1857,
+                                                    lineNumber: 2033,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 1802,
+                                            lineNumber: 1978,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 1790,
+                                        lineNumber: 1966,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsContent"], {
@@ -6002,7 +6324,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "w-12 h-12 text-muted-foreground mx-auto mb-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1901,
+                                                    lineNumber: 2077,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6010,7 +6332,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Aucun contenu digital soumis"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1902,
+                                                    lineNumber: 2078,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$add$2d$link$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AddLinkModal"], {
@@ -6019,13 +6341,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     mode: "digital"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 1903,
+                                                    lineNumber: 2079,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 1900,
+                                            lineNumber: 2076,
                                             columnNumber: 17
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "overflow-x-auto rounded-lg border border-border",
@@ -6041,7 +6363,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Titre"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1914,
+                                                                    lineNumber: 2090,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -6049,7 +6371,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Type"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1915,
+                                                                    lineNumber: 2091,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -6057,7 +6379,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "WW ID"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1916,
+                                                                    lineNumber: 2092,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -6065,7 +6387,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Statut"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1917,
+                                                                    lineNumber: 2093,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -6073,7 +6395,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Vues"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1918,
+                                                                    lineNumber: 2094,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -6081,7 +6403,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Date"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1919,
+                                                                    lineNumber: 2095,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -6089,18 +6411,18 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Actions"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 1920,
+                                                                    lineNumber: 2096,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 1913,
+                                                            lineNumber: 2089,
                                                             columnNumber: 23
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 1912,
+                                                        lineNumber: 2088,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -6118,7 +6440,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     className: "w-8 h-10 object-cover rounded"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1929,
+                                                                                    lineNumber: 2105,
                                                                                     columnNumber: 33
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -6126,18 +6448,18 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     children: content.title
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1935,
+                                                                                    lineNumber: 2111,
                                                                                     columnNumber: 31
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1927,
+                                                                            lineNumber: 2103,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1926,
+                                                                        lineNumber: 2102,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -6151,12 +6473,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1939,
+                                                                            lineNumber: 2115,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1938,
+                                                                        lineNumber: 2114,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -6164,7 +6486,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                         children: content.ww_id
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1944,
+                                                                        lineNumber: 2120,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -6172,7 +6494,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                         children: getStatusBadge(content.status)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1945,
+                                                                        lineNumber: 2121,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -6187,32 +6509,32 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                     className: "w-3 h-3"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1953,
+                                                                                    lineNumber: 2129,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                                                     children: content.view_count
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1954,
+                                                                                    lineNumber: 2130,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chart$2d$column$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__BarChart3$3e$__["BarChart3"], {
                                                                                     className: "w-3 h-3 opacity-50"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1955,
+                                                                                    lineNumber: 2131,
                                                                                     columnNumber: 31
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1947,
+                                                                            lineNumber: 2123,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1946,
+                                                                        lineNumber: 2122,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -6220,7 +6542,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                         children: new Date(content.created_at).toLocaleDateString("fr-FR")
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1958,
+                                                                        lineNumber: 2134,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -6237,12 +6559,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                         className: "h-4 w-4"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1970,
+                                                                                        lineNumber: 2146,
                                                                                         columnNumber: 35
                                                                                     }, this)
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1964,
+                                                                                    lineNumber: 2140,
                                                                                     columnNumber: 33
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -6256,18 +6578,18 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                         className: "h-4 w-4 animate-spin"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1982,
+                                                                                        lineNumber: 2158,
                                                                                         columnNumber: 35
                                                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
                                                                                         className: "h-4 w-4"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 1984,
+                                                                                        lineNumber: 2160,
                                                                                         columnNumber: 35
                                                                                     }, this)
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1973,
+                                                                                    lineNumber: 2149,
                                                                                     columnNumber: 31
                                                                                 }, this),
                                                                                 canEdit && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -6281,56 +6603,56 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                         className: "h-4 w-4 animate-spin"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 2002,
+                                                                                        lineNumber: 2178,
                                                                                         columnNumber: 37
                                                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$package$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Package$3e$__["Package"], {
                                                                                         className: "h-4 w-4"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                        lineNumber: 2004,
+                                                                                        lineNumber: 2180,
                                                                                         columnNumber: 37
                                                                                     }, this)
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                    lineNumber: 1988,
+                                                                                    lineNumber: 2164,
                                                                                     columnNumber: 33
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 1962,
+                                                                            lineNumber: 2138,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 1961,
+                                                                        lineNumber: 2137,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, content.id, true, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 1925,
+                                                                lineNumber: 2101,
                                                                 columnNumber: 25
                                                             }, this))
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 1923,
+                                                        lineNumber: 2099,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 1911,
+                                                lineNumber: 2087,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 1910,
+                                            lineNumber: 2086,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 1898,
+                                        lineNumber: 2074,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsContent"], {
@@ -6342,12 +6664,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                 className: "w-8 h-8 animate-spin text-muted-foreground"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 2022,
+                                                lineNumber: 2198,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2021,
+                                            lineNumber: 2197,
                                             columnNumber: 17
                                         }, this) : bugReports.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "text-center py-12",
@@ -6356,7 +6678,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     className: "w-12 h-12 text-muted-foreground mx-auto mb-4"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2026,
+                                                    lineNumber: 2202,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6364,7 +6686,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Aucun rapport de bug soumis"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2027,
+                                                    lineNumber: 2203,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6372,13 +6694,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Utilisez le bouton rouge dans les lecteurs pour signaler un probleme"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2028,
+                                                    lineNumber: 2204,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2025,
+                                            lineNumber: 2201,
                                             columnNumber: 17
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "overflow-x-auto rounded-lg border border-border",
@@ -6394,7 +6716,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "WW ID"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2037,
+                                                                    lineNumber: 2213,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -6402,7 +6724,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Titre"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2038,
+                                                                    lineNumber: 2214,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -6410,7 +6732,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Source"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2039,
+                                                                    lineNumber: 2215,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -6418,7 +6740,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Type"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2040,
+                                                                    lineNumber: 2216,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -6426,7 +6748,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Message"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2041,
+                                                                    lineNumber: 2217,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -6434,7 +6756,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Statut"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2042,
+                                                                    lineNumber: 2218,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -6442,18 +6764,18 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Date"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2043,
+                                                                    lineNumber: 2219,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 2036,
+                                                            lineNumber: 2212,
                                                             columnNumber: 23
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 2035,
+                                                        lineNumber: 2211,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -6465,7 +6787,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                         children: report.ww_id
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 2049,
+                                                                        lineNumber: 2225,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -6473,7 +6795,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                         children: report.title || "-"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 2050,
+                                                                        lineNumber: 2226,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -6481,7 +6803,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                         children: report.source_name || "-"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 2051,
+                                                                        lineNumber: 2227,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -6491,12 +6813,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: report.embed_type
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 2053,
+                                                                            lineNumber: 2229,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 2052,
+                                                                        lineNumber: 2228,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -6508,7 +6830,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                 children: report.message
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 2056,
+                                                                                lineNumber: 2232,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             report.admin_note && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6520,13 +6842,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 2060,
+                                                                                lineNumber: 2236,
                                                                                 columnNumber: 31
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 2055,
+                                                                        lineNumber: 2231,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -6534,7 +6856,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                         children: getBugStatusBadge(report.status)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 2065,
+                                                                        lineNumber: 2241,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -6542,34 +6864,34 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                         children: new Date(report.created_at).toLocaleDateString("fr-FR")
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                        lineNumber: 2066,
+                                                                        lineNumber: 2242,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, report.id, true, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 2048,
+                                                                lineNumber: 2224,
                                                                 columnNumber: 25
                                                             }, this))
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 2046,
+                                                        lineNumber: 2222,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                lineNumber: 2034,
+                                                lineNumber: 2210,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2033,
+                                            lineNumber: 2209,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 2019,
+                                        lineNumber: 2195,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsContent"], {
@@ -6587,12 +6909,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                 className: "w-8 h-8 text-white"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 2082,
+                                                                lineNumber: 2258,
                                                                 columnNumber: 21
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 2081,
+                                                            lineNumber: 2257,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -6600,7 +6922,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                             children: "Ajouter un nouveau lien"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 2084,
+                                                            lineNumber: 2260,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6608,13 +6930,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                             children: "Choisissez le type de contenu que vous souhaitez ajouter"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 2085,
+                                                            lineNumber: 2261,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2080,
+                                                    lineNumber: 2256,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6633,12 +6955,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                 className: "w-7 h-7 text-primary"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 2095,
+                                                                                lineNumber: 2271,
                                                                                 columnNumber: 29
                                                                             }, void 0)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 2094,
+                                                                            lineNumber: 2270,
                                                                             columnNumber: 27
                                                                         }, void 0),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -6646,7 +6968,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Streaming"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 2097,
+                                                                            lineNumber: 2273,
                                                                             columnNumber: 27
                                                                         }, void 0),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6654,24 +6976,24 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Film ou Serie"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 2098,
+                                                                            lineNumber: 2274,
                                                                             columnNumber: 27
                                                                         }, void 0)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2093,
+                                                                    lineNumber: 2269,
                                                                     columnNumber: 25
                                                                 }, void 0)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 2092,
+                                                                lineNumber: 2268,
                                                                 columnNumber: 23
                                                             }, void 0),
                                                             mode: "streaming"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 2089,
+                                                            lineNumber: 2265,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$add$2d$link$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AddLinkModal"], {
@@ -6687,12 +7009,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                 className: "w-7 h-7 text-purple-500"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 2111,
+                                                                                lineNumber: 2287,
                                                                                 columnNumber: 29
                                                                             }, void 0)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 2110,
+                                                                            lineNumber: 2286,
                                                                             columnNumber: 27
                                                                         }, void 0),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -6700,7 +7022,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "TV Live"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 2113,
+                                                                            lineNumber: 2289,
                                                                             columnNumber: 27
                                                                         }, void 0),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6708,24 +7030,24 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Chaine en direct"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 2114,
+                                                                            lineNumber: 2290,
                                                                             columnNumber: 27
                                                                         }, void 0)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2109,
+                                                                    lineNumber: 2285,
                                                                     columnNumber: 25
                                                                 }, void 0)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 2108,
+                                                                lineNumber: 2284,
                                                                 columnNumber: 23
                                                             }, void 0),
                                                             mode: "livetv"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 2105,
+                                                            lineNumber: 2281,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$add$2d$link$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AddLinkModal"], {
@@ -6741,12 +7063,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                                 className: "w-7 h-7 text-amber-500"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                                lineNumber: 2127,
+                                                                                lineNumber: 2303,
                                                                                 columnNumber: 29
                                                                             }, void 0)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 2126,
+                                                                            lineNumber: 2302,
                                                                             columnNumber: 27
                                                                         }, void 0),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -6754,7 +7076,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Digital"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 2129,
+                                                                            lineNumber: 2305,
                                                                             columnNumber: 27
                                                                         }, void 0),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6762,41 +7084,41 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                             children: "Ebook, Musique..."
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                            lineNumber: 2130,
+                                                                            lineNumber: 2306,
                                                                             columnNumber: 27
                                                                         }, void 0)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2125,
+                                                                    lineNumber: 2301,
                                                                     columnNumber: 25
                                                                 }, void 0)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 2124,
+                                                                lineNumber: 2300,
                                                                 columnNumber: 23
                                                             }, void 0),
                                                             mode: "digital"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 2121,
+                                                            lineNumber: 2297,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2088,
+                                                    lineNumber: 2264,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2079,
+                                            lineNumber: 2255,
                                             columnNumber: 15
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 2078,
+                                        lineNumber: 2254,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$tabs$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TabsContent"], {
@@ -6807,24 +7129,24 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                             username: profile.username || ""
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2142,
+                                            lineNumber: 2318,
                                             columnNumber: 15
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                        lineNumber: 2141,
+                                        lineNumber: 2317,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                lineNumber: 1006,
+                                lineNumber: 1088,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 929,
+                        lineNumber: 1011,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Dialog"], {
@@ -6839,20 +7161,20 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                             children: "Modifier le lien"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2150,
+                                            lineNumber: 2326,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DialogDescription"], {
                                             children: "Modifiez les informations du lien. Les champs marques * sont obligatoires."
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2151,
+                                            lineNumber: 2327,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                    lineNumber: 2149,
+                                    lineNumber: 2325,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6866,7 +7188,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Nom de la source *"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2157,
+                                                    lineNumber: 2333,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -6879,13 +7201,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     placeholder: "Ex: Uptobox, 1Fichier..."
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2158,
+                                                    lineNumber: 2334,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2156,
+                                            lineNumber: 2332,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6896,7 +7218,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "URL du lien *"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2166,
+                                                    lineNumber: 2342,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -6909,13 +7231,13 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     placeholder: "https://..."
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2167,
+                                                    lineNumber: 2343,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2165,
+                                            lineNumber: 2341,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6926,7 +7248,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Qualite *"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2175,
+                                                    lineNumber: 2351,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -6942,12 +7264,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                 placeholder: "Selectionnez une qualite"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 2181,
+                                                                lineNumber: 2357,
                                                                 columnNumber: 21
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 2180,
+                                                            lineNumber: 2356,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -6957,7 +7279,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "CAM"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2184,
+                                                                    lineNumber: 2360,
                                                                     columnNumber: 21
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6965,7 +7287,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "TS"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2185,
+                                                                    lineNumber: 2361,
                                                                     columnNumber: 21
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6973,7 +7295,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "DVDSCR"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2186,
+                                                                    lineNumber: 2362,
                                                                     columnNumber: 21
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6981,7 +7303,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "HDTS"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2187,
+                                                                    lineNumber: 2363,
                                                                     columnNumber: 21
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6989,7 +7311,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "WEBRip"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2188,
+                                                                    lineNumber: 2364,
                                                                     columnNumber: 21
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6997,7 +7319,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "HDRip"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2189,
+                                                                    lineNumber: 2365,
                                                                     columnNumber: 21
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7005,7 +7327,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "720p"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2190,
+                                                                    lineNumber: 2366,
                                                                     columnNumber: 21
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7013,7 +7335,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "1080p"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2191,
+                                                                    lineNumber: 2367,
                                                                     columnNumber: 21
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7021,7 +7343,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "2160p (4K)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2192,
+                                                                    lineNumber: 2368,
                                                                     columnNumber: 21
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7029,25 +7351,25 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "REMUX"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2193,
+                                                                    lineNumber: 2369,
                                                                     columnNumber: 21
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 2183,
+                                                            lineNumber: 2359,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2176,
+                                                    lineNumber: 2352,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2174,
+                                            lineNumber: 2350,
                                             columnNumber: 15
                                         }, this),
                                         (editingStreamingLink || editingDownloadLink) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7058,7 +7380,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Langue"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2199,
+                                                    lineNumber: 2375,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -7074,12 +7396,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                 placeholder: "Selectionnez une langue"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 2205,
+                                                                lineNumber: 2381,
                                                                 columnNumber: 23
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 2204,
+                                                            lineNumber: 2380,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -7089,7 +7411,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "VF (Francais)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2208,
+                                                                    lineNumber: 2384,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7097,7 +7419,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "VOSTFR"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2209,
+                                                                    lineNumber: 2385,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7105,7 +7427,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "VO"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2210,
+                                                                    lineNumber: 2386,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7113,7 +7435,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "MULTI"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2211,
+                                                                    lineNumber: 2387,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7121,25 +7443,25 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "TRUEFRENCH"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2212,
+                                                                    lineNumber: 2388,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 2207,
+                                                            lineNumber: 2383,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2200,
+                                                    lineNumber: 2376,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2198,
+                                            lineNumber: 2374,
                                             columnNumber: 17
                                         }, this),
                                         editingDownloadLink && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7150,7 +7472,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                     children: "Type de lien"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2219,
+                                                    lineNumber: 2395,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -7166,12 +7488,12 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                 placeholder: "Selectionnez un type"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                lineNumber: 2225,
+                                                                lineNumber: 2401,
                                                                 columnNumber: 23
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 2224,
+                                                            lineNumber: 2400,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -7181,7 +7503,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Direct"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2228,
+                                                                    lineNumber: 2404,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7189,7 +7511,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Torrent"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2229,
+                                                                    lineNumber: 2405,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7197,7 +7519,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "Magnet"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2230,
+                                                                    lineNumber: 2406,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7205,31 +7527,31 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                                     children: "DDL"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                                    lineNumber: 2231,
+                                                                    lineNumber: 2407,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                            lineNumber: 2227,
+                                                            lineNumber: 2403,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                    lineNumber: 2220,
+                                                    lineNumber: 2396,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2218,
+                                            lineNumber: 2394,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                    lineNumber: 2155,
+                                    lineNumber: 2331,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DialogFooter"], {
@@ -7240,7 +7562,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                             children: "Annuler"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2238,
+                                            lineNumber: 2414,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -7252,7 +7574,7 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                                         className: "mr-2 h-4 w-4 animate-spin"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                                        lineNumber: 2244,
+                                                        lineNumber: 2420,
                                                         columnNumber: 21
                                                     }, this),
                                                     "Enregistrement..."
@@ -7260,40 +7582,40 @@ function DashboardContent({ profile, streamingLinks: initialStreamingLinks, down
                                             }, void 0, true) : "Enregistrer"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                            lineNumber: 2241,
+                                            lineNumber: 2417,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                                    lineNumber: 2237,
+                                    lineNumber: 2413,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                            lineNumber: 2148,
+                            lineNumber: 2324,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                        lineNumber: 2147,
+                        lineNumber: 2323,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/dashboard/dashboard-content.tsx",
-                lineNumber: 928,
+                lineNumber: 1010,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/dashboard/dashboard-content.tsx",
-        lineNumber: 780,
+        lineNumber: 862,
         columnNumber: 5
     }, this);
 }
-_s(DashboardContent, "6EDgNTxsfZemwl2oWKhqsd+46QQ=");
+_s(DashboardContent, "4L6wW1SMvHn7nUv8LC8NXLuk6Sk=");
 _c2 = DashboardContent;
 var _c, _c1, _c2;
 __turbopack_context__.k.register(_c, "StatCard");

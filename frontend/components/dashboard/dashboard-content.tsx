@@ -304,6 +304,8 @@ export function DashboardContent({
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const [checkingLinkId, setCheckingLinkId] = useState<string | null>(null)
+  const [isTestingAll, setIsTestingAll] = useState(false)
+  const [testProgress, setTestProgress] = useState<{ checked: number; total: number; valid: number; invalid: number } | null>(null)
 
   const [editingStreamingLink, setEditingStreamingLink] = useState<StreamingLinkWithViews | null>(null)
   const [editingDownloadLink, setEditingDownloadLink] = useState<DownloadLinkWithViews | null>(null)
@@ -531,10 +533,26 @@ export function DashboardContent({
       }
 
       setIsEditModalOpen(false)
+      // Capture the edited link's identity BEFORE clearing the editing state,
+      // so we can auto-revalidate the new URL once the modal is closed.
+      const justEdited: { id: string; url: string; type: "download" | "digital" | "streaming" } | null =
+        editingDownloadLink
+          ? { id: editingDownloadLink.id, url: editForm.source_url, type: "download" }
+          : editingDigitalLink
+          ? { id: editingDigitalLink.id, url: editForm.source_url, type: "digital" }
+          : editingStreamingLink
+          ? { id: editingStreamingLink.id, url: editForm.source_url, type: "streaming" }
+          : null
       setEditingStreamingLink(null)
       setEditingDownloadLink(null)
       setEditingDigitalLink(null)
       setEditForm({ source_name: "", source_url: "", quality: "", language: "", link_type: "" })
+
+      // Fire-and-forget revalidation so the row leaves the "Liens Invalides"
+      // bucket immediately if the new URL actually works.
+      if (justEdited && justEdited.url) {
+        checkLinkValidity(justEdited.id, justEdited.url, justEdited.type).catch(() => {})
+      }
     } catch (error) {
       console.error("Error updating link:", error)
       alert("Erreur lors de la modification du lien")
@@ -574,6 +592,70 @@ export function DashboardContent({
     } finally {
       setCheckingLinkId(null)
     }
+  }
+
+  /**
+   * Bulk-revalidate every download + digital link owned by the current user.
+   * Calls /api/check-link sequentially (one URL at a time) to avoid hammering
+   * remote hosts and to keep the per-link progress feedback meaningful.
+   */
+  const handleTestAllLinks = async () => {
+    if (isTestingAll) return
+
+    const targets: Array<{ id: string; url: string; linkType: "download" | "digital" }> = []
+    for (const l of localDownloadLinks) {
+      if (l.source_url) targets.push({ id: l.id, url: l.source_url, linkType: "download" })
+    }
+    for (const l of localDigitalLinks) {
+      if (l.source_url) targets.push({ id: l.id, url: l.source_url, linkType: "digital" })
+    }
+
+    if (targets.length === 0) {
+      alert("Aucun lien à tester pour le moment.")
+      return
+    }
+
+    setIsTestingAll(true)
+    let valid = 0
+    let invalid = 0
+    setTestProgress({ checked: 0, total: targets.length, valid: 0, invalid: 0 })
+
+    for (let i = 0; i < targets.length; i++) {
+      const t = targets[i]
+      try {
+        const response = await fetch("/api/check-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ linkId: t.id, linkType: t.linkType, url: t.url }),
+        })
+        const result = await response.json()
+        const isValid = !!result.isValid
+        if (isValid) valid++
+        else invalid++
+
+        if (t.linkType === "download") {
+          setLocalDownloadLinks((prev) =>
+            prev.map((l) =>
+              l.id === t.id ? { ...l, is_valid: isValid, last_checked: new Date().toISOString() } : l,
+            ),
+          )
+        } else {
+          setLocalDigitalLinks((prev) =>
+            prev.map((l) =>
+              l.id === t.id ? { ...l, is_valid: isValid, last_checked: new Date().toISOString() } : l,
+            ),
+          )
+        }
+      } catch (e) {
+        invalid++
+      }
+      setTestProgress({ checked: i + 1, total: targets.length, valid, invalid })
+    }
+
+    setIsTestingAll(false)
+    // Keep the final summary on screen until the user clicks elsewhere; auto-clear
+    // after 8s so it doesn't stay forever.
+    setTimeout(() => setTestProgress(null), 8000)
   }
 
   const getValidityBadge = (link: { is_valid?: boolean | null; last_checked?: string | null }) => {
@@ -1010,21 +1092,81 @@ export function DashboardContent({
                 const invalidDownloadLinks = localDownloadLinks.filter((l) => l.is_valid === false)
                 const invalidDigitalLinks = localDigitalLinks.filter((l) => l.is_valid === false)
                 const totalInvalidLinks = invalidDownloadLinks.length + invalidDigitalLinks.length
+                const totalUserLinks = localDownloadLinks.length + localDigitalLinks.length
 
-                if (totalInvalidLinks === 0) return null
+                const testAllButton = totalUserLinks > 0 ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTestAllLinks}
+                    disabled={isTestingAll}
+                    data-testid="test-all-links-btn"
+                    className="text-primary border-primary/40 hover:bg-primary/10 bg-transparent gap-2"
+                  >
+                    {isTestingAll ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Test en cours… {testProgress ? `${testProgress.checked}/${testProgress.total}` : ""}
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        Tester mes liens
+                      </>
+                    )}
+                  </Button>
+                ) : null
+
+                const progressBanner =
+                  testProgress && !isTestingAll ? (
+                    <div
+                      data-testid="test-progress-summary"
+                      className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-primary flex items-center gap-2"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      Test terminé&nbsp;: {testProgress.checked} vérifiés —{" "}
+                      <span className="text-emerald-400">{testProgress.valid} valides</span> ·{" "}
+                      <span className="text-red-400">{testProgress.invalid} invalides</span>.
+                    </div>
+                  ) : null
+
+                if (totalInvalidLinks === 0) {
+                  if (!testAllButton && !progressBanner) return null
+                  return (
+                    <Card className="border-zinc-800 bg-zinc-900/50">
+                      <CardHeader className="pb-3 flex flex-row items-center justify-between gap-3 space-y-0">
+                        <div>
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                            Tous tes liens semblent OK
+                          </CardTitle>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Tu peux relancer une vérification complète à tout moment.
+                          </p>
+                        </div>
+                        {testAllButton}
+                      </CardHeader>
+                      {progressBanner && <CardContent className="pt-0">{progressBanner}</CardContent>}
+                    </Card>
+                  )
+                }
 
                 return (
                   <Card className="border-red-800/50 bg-red-950/20">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base flex items-center gap-2 text-red-400">
-                        <ShieldX className="w-4 h-4" />
-                        Liens Invalides ({totalInvalidLinks})
-                      </CardTitle>
-                      <p className="text-xs text-red-400/70">
-                        Ces liens ne fonctionnent plus. Veuillez les mettre à jour ou les supprimer.
-                      </p>
+                    <CardHeader className="pb-3 flex flex-row items-start justify-between gap-3 space-y-0">
+                      <div>
+                        <CardTitle className="text-base flex items-center gap-2 text-red-400">
+                          <ShieldX className="w-4 h-4" />
+                          Liens Invalides ({totalInvalidLinks})
+                        </CardTitle>
+                        <p className="text-xs text-red-400/70 mt-1">
+                          Ces liens ne fonctionnent plus. Mets-les à jour, supprime-les ou retente une validation.
+                        </p>
+                      </div>
+                      {testAllButton}
                     </CardHeader>
                     <CardContent>
+                      {progressBanner && <div className="mb-3">{progressBanner}</div>}
                       <div className="space-y-3 max-h-[300px] overflow-y-auto">
                         {invalidDownloadLinks.map((link) => {
                           const mediaInfo = getMediaInfo(link)
@@ -1063,6 +1205,7 @@ export function DashboardContent({
                                     size="sm"
                                     className="text-blue-400 border-blue-600 hover:bg-blue-600/20 bg-transparent"
                                     onClick={() => handleEditDownloadLink(link)}
+                                    data-testid={`invalid-download-edit-${link.id}`}
                                   >
                                     <Pencil className="w-3 h-3" />
                                   </Button>
@@ -1070,9 +1213,25 @@ export function DashboardContent({
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  className="text-emerald-400 border-emerald-600 hover:bg-emerald-600/20 bg-transparent"
+                                  onClick={() => checkLinkValidity(link.id, link.source_url, "download")}
+                                  disabled={checkingLinkId === link.id || isTestingAll}
+                                  data-testid={`invalid-download-revalidate-${link.id}`}
+                                  title="Revalider ce lien"
+                                >
+                                  {checkingLinkId === link.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <RefreshCw className="w-3 h-3" />
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
                                   className="text-red-400 border-red-600 hover:bg-red-600/20 bg-transparent"
                                   onClick={() => handleDeleteDownloadLink(link.id)}
                                   disabled={deletingId === link.id}
+                                  data-testid={`invalid-download-delete-${link.id}`}
                                 >
                                   {deletingId === link.id ? (
                                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -1118,6 +1277,7 @@ export function DashboardContent({
                                   size="sm"
                                   className="text-blue-400 border-blue-600 hover:bg-blue-600/20 bg-transparent"
                                   onClick={() => handleEditDigitalLink(link)}
+                                  data-testid={`invalid-digital-edit-${link.id}`}
                                 >
                                   <Pencil className="w-3 h-3" />
                                 </Button>
@@ -1125,9 +1285,25 @@ export function DashboardContent({
                               <Button
                                 variant="outline"
                                 size="sm"
+                                className="text-emerald-400 border-emerald-600 hover:bg-emerald-600/20 bg-transparent"
+                                onClick={() => checkLinkValidity(link.id, link.source_url, "digital")}
+                                disabled={checkingLinkId === link.id || isTestingAll}
+                                data-testid={`invalid-digital-revalidate-${link.id}`}
+                                title="Revalider ce lien"
+                              >
+                                {checkingLinkId === link.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="w-3 h-3" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 className="text-red-400 border-red-600 hover:bg-red-600/20 bg-transparent"
                                 onClick={() => handleDeleteDigitalLink(link.id)}
                                 disabled={deletingId === link.id}
+                                data-testid={`invalid-digital-delete-${link.id}`}
                               >
                                 {deletingId === link.id ? (
                                   <Loader2 className="w-3 h-3 animate-spin" />

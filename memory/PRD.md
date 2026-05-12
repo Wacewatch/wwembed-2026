@@ -10,6 +10,15 @@
 
 ## Sessions delivered
 
+### Session 15 (2026-05-12) — Dashboard "Liens Invalides" : revalider + Tester mes liens
+- 🎯 Demande user (capture d'écran "Liens Invalides (3)") : permettre de revalider un lien après l'avoir modifié au crayon, et ajouter un bouton "Tester mes liens" pour vérifier tous les liens en lot.
+- ✅ **Bouton "Revalider" par ligne** : icône `RefreshCw` (emerald) ajoutée entre Pencil (edit) et Trash (delete) sur chaque entrée de la carte "Liens Invalides", pour download_links ET digital_download_links. Click → POST `/api/check-link` → si maintenant valide, le lien disparaît automatiquement de la liste invalide (filter sur `is_valid === false`). Spinner pendant la requête, désactivé pendant un test bulk. Data-testids `invalid-{download,digital}-revalidate-{id}`.
+- ✅ **Bouton "Tester mes liens"** (`data-testid="test-all-links-btn"`) : ajouté dans l'en-tête de la carte "Liens Invalides". Itère séquentiellement sur tous les download_links + digital_download_links du user, appelle `/api/check-link` un par un (évite de marteler les hôtes), affiche un compteur en temps réel (`X/Y` puis résumé `valides/invalides`). Le bouton s'affiche aussi quand il n'y a aucun lien invalide (sous forme d'une carte "Tous tes liens semblent OK" verte, pour pouvoir relancer une vérif proactive).
+- ✅ **Auto-revalidation après édition** : `handleSaveEdit()` capture l'identité du lien avant de fermer la modal, puis lance `checkLinkValidity()` en fire-and-forget sur la nouvelle URL — pas besoin pour le user de cliquer manuellement sur Revalider après avoir corrigé. Marche pour download, digital et streaming.
+- ✅ **Banner de résumé** : une fois le test bulk terminé, un bandeau "Test terminé : X vérifiés — Y valides · Z invalides" s'affiche pendant 8s avant disparition auto.
+- ✅ **Validation Playwright** : login admin → dashboard charge → `test-all-links-btn` détecté (1) + `invalid-download-revalidate-*` détectés (2) → screenshot OK montrant les 3 boutons par ligne. POST `/api/check-link` validé en curl : update bien `is_valid` + `last_checked` en DB.
+
+
 ### Session 14 (2026-05-11) — API publique WaveWatch : 7 endpoints + auth X-API-Key
 - 🎯 Demande user : exposer 7 endpoints (`/health`, `/api/v1/download_links/{recent,/,for-content,media-types}`, `/api/v1/profiles/uploaders`, `/api/v1/stats`) consommés par WaveWatch. Protection : clé API dans `.env`.
 - ✅ **Clé API** : `WAVEWATCH_API_KEY=wwk_24db521eac4ca6f1cf4435c27ffeabee51387ba2549ee5ba547f4f6b13893d23` dans `.env`. Acceptée via 3 canaux : header `X-API-Key`, `Authorization: Bearer ...`, ou `?api_key=...` en query string.

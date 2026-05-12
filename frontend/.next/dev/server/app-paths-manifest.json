@@ -1,14 +1,12 @@
 {
+  "/api/auth/login/route": "app/api/auth/login/route.js",
   "/api/auth/me/route": "app/api/auth/me/route.js",
+  "/api/bug-reports/user/route": "app/api/bug-reports/user/route.js",
+  "/api/check-link/route": "app/api/check-link/route.js",
   "/api/db/route": "app/api/db/route.js",
   "/api/tmdb-stats/route": "app/api/tmdb-stats/route.js",
-  "/api/v1/download_links/for-content/route": "app/api/v1/download_links/for-content/route.js",
-  "/api/v1/download_links/media-types/route": "app/api/v1/download_links/media-types/route.js",
-  "/api/v1/download_links/recent/route": "app/api/v1/download_links/recent/route.js",
-  "/api/v1/download_links/route": "app/api/v1/download_links/route.js",
-  "/api/v1/health/route": "app/api/v1/health/route.js",
-  "/api/v1/profiles/uploaders/route": "app/api/v1/profiles/uploaders/route.js",
-  "/api/v1/stats/route": "app/api/v1/stats/route.js",
-  "/health/route": "app/health/route.js",
+  "/api/tmdb/[type]/[id]/route": "app/api/tmdb/[type]/[id]/route.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
   "/page": "app/page.js"
 }
