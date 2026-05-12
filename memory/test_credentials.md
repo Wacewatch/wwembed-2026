@@ -11,8 +11,8 @@
 - Rôle: `member`
 
 ## URLs
-- Frontend: https://link-tracking-system.preview.emergentagent.com/
-- Backend proxy (FastAPI): https://link-tracking-system.preview.emergentagent.com/api/health
+- Frontend: https://upload-link-sort.preview.emergentagent.com/
+- Backend proxy (FastAPI): https://upload-link-sort.preview.emergentagent.com/api/health
 - Login: /auth/login
 - Sign up: /auth/sign-up
 - Mot de passe oublié: /auth/forgot-password
