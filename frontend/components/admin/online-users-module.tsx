@@ -32,9 +32,45 @@ export function OnlineUsersModule() {
   const [onlineStats, setOnlineStats] = useState<OnlineStats | null>(null)
 
   useEffect(() => {
+    // Initial full load (with TMDB-enriched lists).
     loadOnlineStats()
-    const interval = setInterval(loadOnlineStats, 30000)
-    return () => clearInterval(interval)
+    // Slower poll for the heavier enriched payload (titles, posters).
+    const poll = setInterval(loadOnlineStats, 60_000)
+
+    // SSE stream: live counters every 10 s. Falls back gracefully to the
+    // polled values if the stream errors out.
+    let es: EventSource | null = null
+    try {
+      es = new EventSource("/api/admin/online-stream", { withCredentials: true })
+      es.addEventListener("online", (evt) => {
+        try {
+          const data = JSON.parse((evt as MessageEvent).data)
+          setOnlineStats((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  usersOnline5min: data.online5min ?? prev.usersOnline5min,
+                  usersOnline15min: data.online15min ?? prev.usersOnline15min,
+                  usersOnline1hour: data.online1hour ?? prev.usersOnline1hour,
+                  usersOnline24h: data.online24h ?? prev.usersOnline24h,
+                }
+              : prev
+          )
+        } catch {
+          /* ignore malformed event */
+        }
+      })
+      es.onerror = () => {
+        // Browser auto-reconnects with exponential backoff. Nothing to do.
+      }
+    } catch {
+      // EventSource not available (very old browser) — falls back to poll.
+    }
+
+    return () => {
+      clearInterval(poll)
+      es?.close()
+    }
   }, [])
 
   const loadOnlineStats = async () => {

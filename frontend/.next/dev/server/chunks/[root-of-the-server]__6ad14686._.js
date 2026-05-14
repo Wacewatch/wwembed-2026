@@ -99,12 +99,18 @@ async function ensureIndexes(db) {
     await db.collection("streaming_links").createIndex({
         ww_id: 1
     });
+    await db.collection("streaming_links").createIndex({
+        legacy_uuid: 1
+    });
     await db.collection("download_links").createIndex({
         tmdb_id: 1,
         media_type: 1
     });
     await db.collection("download_links").createIndex({
         ww_id: 1
+    });
+    await db.collection("download_links").createIndex({
+        legacy_uuid: 1
     });
     // digital
     await db.collection("digital_content").createIndex({
@@ -121,6 +127,9 @@ async function ensureIndexes(db) {
     await db.collection("digital_download_links").createIndex({
         ww_id: 1
     });
+    await db.collection("digital_download_links").createIndex({
+        legacy_uuid: 1
+    });
     // live tv
     await db.collection("live_tv_channels").createIndex({
         status: 1,
@@ -129,19 +138,34 @@ async function ensureIndexes(db) {
     await db.collection("live_tv_sources").createIndex({
         channel_id: 1
     });
-    // stats
+    // stats — primary lookup indexes
     await db.collection("embed_views").createIndex({
         ww_id: 1
     });
     await db.collection("embed_views").createIndex({
         viewed_at: -1
     });
+    await db.collection("embed_views").createIndex({
+        embed_type: 1,
+        viewed_at: -1
+    });
     await db.collection("link_clicks").createIndex({
+        clicked_at: -1
+    });
+    await db.collection("link_clicks").createIndex({
+        link_id: 1,
         clicked_at: -1
     });
     await db.collection("api_usage").createIndex({
         created_at: -1
     });
+    // stats — TTL (auto-purge raw events older than 180 days). We use the
+    // dedicated `_ttl` Date field populated at insert (see shim.ts) because
+    // Mongo TTL indexes only work on Date BSON, not on ISO strings.
+    await safeTtl(db, "embed_views", 180);
+    await safeTtl(db, "link_clicks", 180);
+    await safeTtl(db, "ad_clicks", 180);
+    // login_attempts has its own short TTL (24h) created on first rate-limit hit.
     // ads
     await db.collection("ads").createIndex({
         slot_number: 1
@@ -157,6 +181,31 @@ async function ensureIndexes(db) {
     await db.collection("login_attempts").createIndex({
         identifier: 1
     });
+    // tmdb cache (used by lib/tmdb-cache.ts)
+    await db.collection("tmdb_cache").createIndex({
+        key: 1
+    }, {
+        unique: true
+    });
+    await safeTtl(db, "tmdb_cache", 7 * 86400); // 7 days
+    // pre-aggregated stats (see lib/stats-rollup.ts)
+    await db.collection("stats_daily_rollup").createIndex({
+        date: -1
+    }, {
+        unique: true
+    });
+}
+async function safeTtl(db, coll, seconds) {
+    try {
+        await db.collection(coll).createIndex({
+            _ttl: 1
+        }, {
+            expireAfterSeconds: seconds,
+            name: "_ttl_auto_purge"
+        });
+    } catch (e) {
+    // Index may exist with different opts — fine.
+    }
 }
 async function getCollection(name) {
     const db = await getDb();
@@ -615,12 +664,19 @@ class SupabaseShimQuery {
                     ad_clicks: "clicked_at"
                 };
                 const timeField = tableTimeField[this.collectionName];
+                const needsTtl = !!timeField // every stats collection gets a Date _ttl for purging
+                ;
+                const nowIso = new Date().toISOString();
+                const nowDate = new Date();
                 const docs = this.payload.map((d)=>{
                     const out = {
                         ...d,
-                        created_at: d.created_at || new Date().toISOString()
+                        created_at: d.created_at || nowIso
                     };
                     if (timeField && !out[timeField]) out[timeField] = out.created_at;
+                    // _ttl is a real Date BSON value so a Mongo TTL index can purge it.
+                    // We can't TTL on the ISO string `viewed_at` directly.
+                    if (needsTtl && !out._ttl) out._ttl = nowDate;
                     return out;
                 });
                 const res = await coll.insertMany(docs);
@@ -628,56 +684,66 @@ class SupabaseShimQuery {
                         ...d,
                         _id: res.insertedIds[i]
                     }));
-                // Side-effect: when recording an embed view or link click, also bump
-                // the parent record's view_count / download_count for fast dashboard reads.
-                if (this.collectionName === "embed_views") {
-                    for (const doc of docs){
-                        if (!doc.ww_id) continue;
-                        await Promise.all([
-                            db.collection("streaming_links").updateMany({
-                                ww_id: doc.ww_id
-                            }, {
-                                $inc: {
-                                    view_count: 1
+                // Side-effect: bump parent counters. These are NOT awaited — they happen
+                // in the background so the user-facing insert returns immediately.
+                // This used to add 50-150 ms to every embed_views insert on the hot path.
+                if (this.collectionName === "embed_views" || this.collectionName === "link_clicks") {
+                    const tableName = this.collectionName;
+                    (async ()=>{
+                        try {
+                            if (tableName === "embed_views") {
+                                for (const doc of docs){
+                                    if (!doc.ww_id) continue;
+                                    await Promise.all([
+                                        db.collection("streaming_links").updateMany({
+                                            ww_id: doc.ww_id
+                                        }, {
+                                            $inc: {
+                                                view_count: 1
+                                            }
+                                        }),
+                                        db.collection("digital_content").updateMany({
+                                            ww_id: doc.ww_id
+                                        }, {
+                                            $inc: {
+                                                view_count: 1
+                                            }
+                                        })
+                                    ]);
+                                    if (typeof doc.ww_id === "string" && doc.ww_id.startsWith("ww-live-")) {
+                                        const cid = doc.ww_id.slice("ww-live-".length);
+                                        await db.collection("live_tv_channels").updateMany(idFilter(cid), {
+                                            $inc: {
+                                                view_count: 1
+                                            }
+                                        });
+                                    }
                                 }
-                            }),
-                            db.collection("digital_content").updateMany({
-                                ww_id: doc.ww_id
-                            }, {
-                                $inc: {
-                                    view_count: 1
+                            } else {
+                                for (const doc of docs){
+                                    if (!doc.ww_id) continue;
+                                    await Promise.all([
+                                        db.collection("download_links").updateMany({
+                                            ww_id: doc.ww_id
+                                        }, {
+                                            $inc: {
+                                                click_count: 1
+                                            }
+                                        }),
+                                        db.collection("digital_download_links").updateMany({
+                                            ww_id: doc.ww_id
+                                        }, {
+                                            $inc: {
+                                                click_count: 1
+                                            }
+                                        })
+                                    ]);
                                 }
-                            })
-                        ]);
-                        if (doc.ww_id.startsWith("ww-live-")) {
-                            const cid = doc.ww_id.slice("ww-live-".length);
-                            await db.collection("live_tv_channels").updateMany(idFilter(cid), {
-                                $inc: {
-                                    view_count: 1
-                                }
-                            });
+                            }
+                        } catch (err) {
+                            console.error(`[mongo-shim] async counter bump failed for ${tableName}:`, err);
                         }
-                    }
-                } else if (this.collectionName === "link_clicks") {
-                    for (const doc of docs){
-                        if (!doc.ww_id) continue;
-                        await Promise.all([
-                            db.collection("download_links").updateMany({
-                                ww_id: doc.ww_id
-                            }, {
-                                $inc: {
-                                    click_count: 1
-                                }
-                            }),
-                            db.collection("digital_download_links").updateMany({
-                                ww_id: doc.ww_id
-                            }, {
-                                $inc: {
-                                    click_count: 1
-                                }
-                            })
-                        ]);
-                    }
+                    })();
                 }
                 return {
                     data: this.isSingle ? inserted[0] : inserted,
@@ -912,7 +978,7 @@ __turbopack_context__.s([
     "GET",
     ()=>GET
 ]);
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/next@16.0.10_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/server.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/server.js [app-route] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/supabase/admin.ts [app-route] (ecmascript)");
 ;
 ;
@@ -945,7 +1011,7 @@ async function GET() {
         const tvApiCount = apis.filter((api)=>api.url_pattern_tv && api.url_pattern_tv.trim() !== "").length;
         const totalStreamingLinks = totalMovies * movieApiCount + estimatedEpisodes * tvApiCount;
         const totalDownloadLinks = (downloadLinks.count || 0) + (digitalDownloadLinks.count || 0);
-        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             movies: totalMovies,
             tvShows: totalTvShows,
             episodes: estimatedEpisodes,
@@ -956,7 +1022,7 @@ async function GET() {
         });
     } catch (error) {
         console.error("Error fetching TMDB stats:", error);
-        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             movies: 0,
             tvShows: 0,
             episodes: 0,

@@ -354,41 +354,58 @@ class SupabaseShimQuery<T = any> implements PromiseLike<SupaResponse<T>> {
           ad_clicks: "clicked_at",
         }
         const timeField = tableTimeField[this.collectionName]
+        const needsTtl = !!timeField // every stats collection gets a Date _ttl for purging
+        const nowIso = new Date().toISOString()
+        const nowDate = new Date()
         const docs: any[] = (this.payload as any[]).map((d) => {
           const out: any = {
             ...d,
-            created_at: d.created_at || new Date().toISOString(),
+            created_at: d.created_at || nowIso,
           }
           if (timeField && !out[timeField]) out[timeField] = out.created_at
+          // _ttl is a real Date BSON value so a Mongo TTL index can purge it.
+          // We can't TTL on the ISO string `viewed_at` directly.
+          if (needsTtl && !out._ttl) out._ttl = nowDate
           return out
         })
         const res = await coll.insertMany(docs)
         const inserted = docs.map((d, i) => normalizeDoc({ ...d, _id: res.insertedIds[i] }))
 
-        // Side-effect: when recording an embed view or link click, also bump
-        // the parent record's view_count / download_count for fast dashboard reads.
-        if (this.collectionName === "embed_views") {
-          for (const doc of docs) {
-            if (!doc.ww_id) continue
-            await Promise.all([
-              db.collection("streaming_links").updateMany({ ww_id: doc.ww_id }, { $inc: { view_count: 1 } }),
-              db.collection("digital_content").updateMany({ ww_id: doc.ww_id }, { $inc: { view_count: 1 } }),
-            ])
-            if (doc.ww_id.startsWith("ww-live-")) {
-              const cid = doc.ww_id.slice("ww-live-".length)
-              await db
-                .collection("live_tv_channels")
-                .updateMany(idFilter(cid), { $inc: { view_count: 1 } })
+        // Side-effect: bump parent counters. These are NOT awaited — they happen
+        // in the background so the user-facing insert returns immediately.
+        // This used to add 50-150 ms to every embed_views insert on the hot path.
+        if (this.collectionName === "embed_views" || this.collectionName === "link_clicks") {
+          const tableName = this.collectionName
+          // Fire-and-forget. We still log failures so they're visible.
+          ;(async () => {
+            try {
+              if (tableName === "embed_views") {
+                for (const doc of docs) {
+                  if (!doc.ww_id) continue
+                  await Promise.all([
+                    db.collection("streaming_links").updateMany({ ww_id: doc.ww_id }, { $inc: { view_count: 1 } }),
+                    db.collection("digital_content").updateMany({ ww_id: doc.ww_id }, { $inc: { view_count: 1 } }),
+                  ])
+                  if (typeof doc.ww_id === "string" && doc.ww_id.startsWith("ww-live-")) {
+                    const cid = doc.ww_id.slice("ww-live-".length)
+                    await db
+                      .collection("live_tv_channels")
+                      .updateMany(idFilter(cid), { $inc: { view_count: 1 } })
+                  }
+                }
+              } else {
+                for (const doc of docs) {
+                  if (!doc.ww_id) continue
+                  await Promise.all([
+                    db.collection("download_links").updateMany({ ww_id: doc.ww_id }, { $inc: { click_count: 1 } }),
+                    db.collection("digital_download_links").updateMany({ ww_id: doc.ww_id }, { $inc: { click_count: 1 } }),
+                  ])
+                }
+              }
+            } catch (err) {
+              console.error(`[mongo-shim] async counter bump failed for ${tableName}:`, err)
             }
-          }
-        } else if (this.collectionName === "link_clicks") {
-          for (const doc of docs) {
-            if (!doc.ww_id) continue
-            await Promise.all([
-              db.collection("download_links").updateMany({ ww_id: doc.ww_id }, { $inc: { click_count: 1 } }),
-              db.collection("digital_download_links").updateMany({ ww_id: doc.ww_id }, { $inc: { click_count: 1 } }),
-            ])
-          }
+          })()
         }
 
         return { data: this.isSingle ? inserted[0] : inserted, error: null }

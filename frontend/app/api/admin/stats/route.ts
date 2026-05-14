@@ -11,13 +11,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/mongo/db"
 import { requireAdmin } from "@/lib/mongo/auth"
+import { fetchTmdbCached } from "@/lib/tmdb-cache"
 
-const TMDB_KEY = process.env.TMDB_API_KEY || ""
-const TMDB_IMG = "https://image.tmdb.org/t/p/w92"
-
-// In-memory TMDB cache (per server instance)
-const tmdbCache = new Map<string, { title: string; poster: string | null; t: number }>()
-const TMDB_TTL = 6 * 60 * 60 * 1000 // 6h
+// In-memory TMDB cache REMOVED — use Mongo-backed `fetchTmdbCached` from
+// lib/tmdb-cache.ts. On serverless / multi-instance hosting the per-process
+// Map cache had a near-zero hit rate after every cold start.
 
 // Index bootstrap: runs once per server process. createIndex is idempotent
 // and very cheap if the index already exists. These indexes are essential
@@ -53,32 +51,8 @@ async function ensureStatsIndexes(db: any): Promise<void> {
 }
 
 async function fetchTmdb(type: string, id: number) {
-  const key = `${type}/${id}`
-  const cached = tmdbCache.get(key)
-  if (cached && Date.now() - cached.t < TMDB_TTL) return cached
-  if (type !== "movie" && type !== "tv") {
-    const v = { title: `#${id}`, poster: null, t: Date.now() }
-    tmdbCache.set(key, v)
-    return v
-  }
-  try {
-    const r = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_KEY}&language=fr-FR`, {
-      next: { revalidate: 21600 },
-    })
-    if (!r.ok) throw new Error("tmdb")
-    const j: any = await r.json()
-    const v = {
-      title: j.title || j.name || `#${id}`,
-      poster: j.poster_path ? `${TMDB_IMG}${j.poster_path}` : null,
-      t: Date.now(),
-    }
-    tmdbCache.set(key, v)
-    return v
-  } catch {
-    const v = { title: `#${id}`, poster: null, t: Date.now() }
-    tmdbCache.set(key, v)
-    return v
-  }
+  if (type !== "movie" && type !== "tv") return { title: `#${id}`, poster: null }
+  return fetchTmdbCached(type as "movie" | "tv", id)
 }
 
 export async function GET(req: NextRequest) {

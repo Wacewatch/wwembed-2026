@@ -4,33 +4,23 @@ import { Header } from "@/components/header"
 import { DashboardContent } from "@/components/dashboard/dashboard-content"
 import { getDb } from "@/lib/mongo/db"
 
-async function fetchAllRows(supabase: any, table: string, userId: string, orderBy = "created_at") {
-  const allRows: any[] = []
-  const pageSize = 1000
-  let page = 0
-  let hasMore = true
-
-  while (hasMore) {
-    const { data, error } = await supabase
-      .from(table)
-      .select("*")
-      .eq("submitted_by", userId)
-      .order(orderBy, { ascending: false })
-      .range(page * pageSize, (page + 1) * pageSize - 1)
-
-    if (error || !data || data.length === 0) {
-      hasMore = false
-    } else {
-      allRows.push(...data)
-      if (data.length < pageSize) {
-        hasMore = false
-      } else {
-        page++
-      }
-    }
-  }
-
-  return allRows
+/**
+ * Fetch every row for one user from one collection — using a single Mongo
+ * query (no pagination, no client-side loop). Replaces the previous
+ * paginated `.select().eq().range(0..1000)` walker which made up to 50
+ * round-trips for prolific uploaders.
+ */
+async function fetchUserRows(table: string, userId: string) {
+  const db = await getDb()
+  const rows = await db
+    .collection(table)
+    .find({ submitted_by: userId })
+    .sort({ created_at: -1 })
+    .toArray()
+  return rows.map((r: any) => {
+    const id = r.legacy_uuid || (r._id?.toString ? r._id.toString() : r._id)
+    return { ...r, id, _id: undefined }
+  })
 }
 
 export default async function DashboardPage() {
@@ -51,12 +41,12 @@ export default async function DashboardPage() {
 
   const [streamingLinks, downloadLinks, liveTvChannels, liveTvSources, digitalContents, digitalLinks] =
     await Promise.all([
-      fetchAllRows(supabase, "streaming_links", user.id),
-      fetchAllRows(supabase, "download_links", user.id),
-      fetchAllRows(supabase, "live_tv_channels", user.id),
-      fetchAllRows(supabase, "live_tv_sources", user.id),
-      fetchAllRows(supabase, "digital_content", user.id),
-      fetchAllRows(supabase, "digital_download_links", user.id),
+      fetchUserRows("streaming_links", user.id),
+      fetchUserRows("download_links", user.id),
+      fetchUserRows("live_tv_channels", user.id),
+      fetchUserRows("live_tv_sources", user.id),
+      fetchUserRows("digital_content", user.id),
+      fetchUserRows("digital_download_links", user.id),
     ])
 
   // Collect ww_ids + link_ids for native MongoDB aggregations (much faster

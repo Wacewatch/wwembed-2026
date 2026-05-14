@@ -99,12 +99,18 @@ async function ensureIndexes(db) {
     await db.collection("streaming_links").createIndex({
         ww_id: 1
     });
+    await db.collection("streaming_links").createIndex({
+        legacy_uuid: 1
+    });
     await db.collection("download_links").createIndex({
         tmdb_id: 1,
         media_type: 1
     });
     await db.collection("download_links").createIndex({
         ww_id: 1
+    });
+    await db.collection("download_links").createIndex({
+        legacy_uuid: 1
     });
     // digital
     await db.collection("digital_content").createIndex({
@@ -121,6 +127,9 @@ async function ensureIndexes(db) {
     await db.collection("digital_download_links").createIndex({
         ww_id: 1
     });
+    await db.collection("digital_download_links").createIndex({
+        legacy_uuid: 1
+    });
     // live tv
     await db.collection("live_tv_channels").createIndex({
         status: 1,
@@ -129,19 +138,34 @@ async function ensureIndexes(db) {
     await db.collection("live_tv_sources").createIndex({
         channel_id: 1
     });
-    // stats
+    // stats — primary lookup indexes
     await db.collection("embed_views").createIndex({
         ww_id: 1
     });
     await db.collection("embed_views").createIndex({
         viewed_at: -1
     });
+    await db.collection("embed_views").createIndex({
+        embed_type: 1,
+        viewed_at: -1
+    });
     await db.collection("link_clicks").createIndex({
+        clicked_at: -1
+    });
+    await db.collection("link_clicks").createIndex({
+        link_id: 1,
         clicked_at: -1
     });
     await db.collection("api_usage").createIndex({
         created_at: -1
     });
+    // stats — TTL (auto-purge raw events older than 180 days). We use the
+    // dedicated `_ttl` Date field populated at insert (see shim.ts) because
+    // Mongo TTL indexes only work on Date BSON, not on ISO strings.
+    await safeTtl(db, "embed_views", 180);
+    await safeTtl(db, "link_clicks", 180);
+    await safeTtl(db, "ad_clicks", 180);
+    // login_attempts has its own short TTL (24h) created on first rate-limit hit.
     // ads
     await db.collection("ads").createIndex({
         slot_number: 1
@@ -157,6 +181,31 @@ async function ensureIndexes(db) {
     await db.collection("login_attempts").createIndex({
         identifier: 1
     });
+    // tmdb cache (used by lib/tmdb-cache.ts)
+    await db.collection("tmdb_cache").createIndex({
+        key: 1
+    }, {
+        unique: true
+    });
+    await safeTtl(db, "tmdb_cache", 7 * 86400); // 7 days
+    // pre-aggregated stats (see lib/stats-rollup.ts)
+    await db.collection("stats_daily_rollup").createIndex({
+        date: -1
+    }, {
+        unique: true
+    });
+}
+async function safeTtl(db, coll, seconds) {
+    try {
+        await db.collection(coll).createIndex({
+            _ttl: 1
+        }, {
+            expireAfterSeconds: seconds,
+            name: "_ttl_auto_purge"
+        });
+    } catch (e) {
+    // Index may exist with different opts — fine.
+    }
 }
 async function getCollection(name) {
     const db = await getDb();
@@ -615,12 +664,19 @@ class SupabaseShimQuery {
                     ad_clicks: "clicked_at"
                 };
                 const timeField = tableTimeField[this.collectionName];
+                const needsTtl = !!timeField // every stats collection gets a Date _ttl for purging
+                ;
+                const nowIso = new Date().toISOString();
+                const nowDate = new Date();
                 const docs = this.payload.map((d)=>{
                     const out = {
                         ...d,
-                        created_at: d.created_at || new Date().toISOString()
+                        created_at: d.created_at || nowIso
                     };
                     if (timeField && !out[timeField]) out[timeField] = out.created_at;
+                    // _ttl is a real Date BSON value so a Mongo TTL index can purge it.
+                    // We can't TTL on the ISO string `viewed_at` directly.
+                    if (needsTtl && !out._ttl) out._ttl = nowDate;
                     return out;
                 });
                 const res = await coll.insertMany(docs);
@@ -628,56 +684,66 @@ class SupabaseShimQuery {
                         ...d,
                         _id: res.insertedIds[i]
                     }));
-                // Side-effect: when recording an embed view or link click, also bump
-                // the parent record's view_count / download_count for fast dashboard reads.
-                if (this.collectionName === "embed_views") {
-                    for (const doc of docs){
-                        if (!doc.ww_id) continue;
-                        await Promise.all([
-                            db.collection("streaming_links").updateMany({
-                                ww_id: doc.ww_id
-                            }, {
-                                $inc: {
-                                    view_count: 1
+                // Side-effect: bump parent counters. These are NOT awaited — they happen
+                // in the background so the user-facing insert returns immediately.
+                // This used to add 50-150 ms to every embed_views insert on the hot path.
+                if (this.collectionName === "embed_views" || this.collectionName === "link_clicks") {
+                    const tableName = this.collectionName;
+                    (async ()=>{
+                        try {
+                            if (tableName === "embed_views") {
+                                for (const doc of docs){
+                                    if (!doc.ww_id) continue;
+                                    await Promise.all([
+                                        db.collection("streaming_links").updateMany({
+                                            ww_id: doc.ww_id
+                                        }, {
+                                            $inc: {
+                                                view_count: 1
+                                            }
+                                        }),
+                                        db.collection("digital_content").updateMany({
+                                            ww_id: doc.ww_id
+                                        }, {
+                                            $inc: {
+                                                view_count: 1
+                                            }
+                                        })
+                                    ]);
+                                    if (typeof doc.ww_id === "string" && doc.ww_id.startsWith("ww-live-")) {
+                                        const cid = doc.ww_id.slice("ww-live-".length);
+                                        await db.collection("live_tv_channels").updateMany(idFilter(cid), {
+                                            $inc: {
+                                                view_count: 1
+                                            }
+                                        });
+                                    }
                                 }
-                            }),
-                            db.collection("digital_content").updateMany({
-                                ww_id: doc.ww_id
-                            }, {
-                                $inc: {
-                                    view_count: 1
+                            } else {
+                                for (const doc of docs){
+                                    if (!doc.ww_id) continue;
+                                    await Promise.all([
+                                        db.collection("download_links").updateMany({
+                                            ww_id: doc.ww_id
+                                        }, {
+                                            $inc: {
+                                                click_count: 1
+                                            }
+                                        }),
+                                        db.collection("digital_download_links").updateMany({
+                                            ww_id: doc.ww_id
+                                        }, {
+                                            $inc: {
+                                                click_count: 1
+                                            }
+                                        })
+                                    ]);
                                 }
-                            })
-                        ]);
-                        if (doc.ww_id.startsWith("ww-live-")) {
-                            const cid = doc.ww_id.slice("ww-live-".length);
-                            await db.collection("live_tv_channels").updateMany(idFilter(cid), {
-                                $inc: {
-                                    view_count: 1
-                                }
-                            });
+                            }
+                        } catch (err) {
+                            console.error(`[mongo-shim] async counter bump failed for ${tableName}:`, err);
                         }
-                    }
-                } else if (this.collectionName === "link_clicks") {
-                    for (const doc of docs){
-                        if (!doc.ww_id) continue;
-                        await Promise.all([
-                            db.collection("download_links").updateMany({
-                                ww_id: doc.ww_id
-                            }, {
-                                $inc: {
-                                    click_count: 1
-                                }
-                            }),
-                            db.collection("digital_download_links").updateMany({
-                                ww_id: doc.ww_id
-                            }, {
-                                $inc: {
-                                    click_count: 1
-                                }
-                            })
-                        ]);
-                    }
+                    })();
                 }
                 return {
                     data: this.isSingle ? inserted[0] : inserted,
@@ -1061,9 +1127,11 @@ __turbopack_context__.s([
     "OPTIONS",
     ()=>OPTIONS
 ]);
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/next@16.0.10_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/server.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/server.js [app-route] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/supabase/admin.ts [app-route] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$tmdb$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/tmdb.ts [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/mongo/db.ts [app-route] (ecmascript)");
+;
 ;
 ;
 ;
@@ -1073,13 +1141,61 @@ const CORS = {
     "Access-Control-Allow-Headers": "Content-Type"
 };
 async function OPTIONS() {
-    return new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"](null, {
+    return new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"](null, {
         headers: CORS
     });
 }
+/**
+ * Day bucket expression that handles BOTH ISO-string and Date BSON values
+ * for `viewed_at`. Legacy migrated rows from Supabase were Date objects;
+ * new rows inserted via the shim are ISO strings. The previous JS-side
+ * `(v.viewed_at||"").slice(0,10)` silently failed on Date objects, which
+ * is why the 30-day chart appeared flat (only "today" had any non-zero
+ * bucket) — every Date row's slice produced `"Thu May 14"` and never
+ * matched a `"2026-05-14"` key.
+ */ function dayBucket(field) {
+    return {
+        $cond: [
+            {
+                $eq: [
+                    {
+                        $type: field
+                    },
+                    "string"
+                ]
+            },
+            {
+                $substrCP: [
+                    field,
+                    0,
+                    10
+                ]
+            },
+            {
+                $cond: [
+                    {
+                        $eq: [
+                            {
+                                $type: field
+                            },
+                            "date"
+                        ]
+                    },
+                    {
+                        $dateToString: {
+                            date: field,
+                            format: "%Y-%m-%d"
+                        }
+                    },
+                    null
+                ]
+            }
+        ]
+    };
+}
 async function GET(_req, ctx) {
     const { wwId } = await ctx.params;
-    if (!wwId) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+    if (!wwId) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
         error: "Missing wwId"
     }, {
         status: 400,
@@ -1099,7 +1215,6 @@ async function GET(_req, ctx) {
         liveChannel = data;
     }
     const target = streaming || download || digital || liveChannel || null;
-    // Resolve title / poster — fallback to TMDB lookup for ww-movie-{id} / ww-tv-{id}
     let title = target?.title || target?.channel_name || digital?.title || "";
     let poster = target?.poster_url || target?.cover_url || target?.channel_logo || null;
     let type = streaming ? "streaming" : download ? "download" : digital ? `digital:${digital.content_type}` : liveChannel ? "live" : "unknown";
@@ -1121,76 +1236,162 @@ async function GET(_req, ctx) {
         }
     }
     if (!title) title = `Contenu ${wwId}`;
-    // Range = 30 jours par défaut
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const [{ data: viewsRecent }, { data: clicksRecent }, { count: totalViews }, { count: totalClicks }] = await Promise.all([
-        supabase.from("embed_views").select("viewed_at, country, referrer").eq("ww_id", wwId).gte("viewed_at", since).order("viewed_at", {
-            ascending: false
-        }),
-        supabase.from("link_clicks").select("clicked_at, country").eq("ww_id", wwId).gte("clicked_at", since).order("clicked_at", {
-            ascending: false
-        }),
-        supabase.from("embed_views").select("*", {
-            count: "exact",
-            head: true
-        }).eq("ww_id", wwId),
-        supabase.from("link_clicks").select("*", {
-            count: "exact",
-            head: true
-        }).eq("ww_id", wwId)
-    ]);
-    // Aggregate by day
-    const byDay = {};
-    for(let i = 29; i >= 0; i--){
-        const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-        byDay[d] = 0;
-    }
-    ;
-    (viewsRecent || []).forEach((v)=>{
-        const d = (v.viewed_at || "").slice(0, 10);
-        if (d in byDay) byDay[d] += 1;
-    });
-    const series = Object.entries(byDay).map(([date, count])=>({
-            date,
-            count
-        }));
-    // Country breakdown
-    const byCountry = {};
-    (viewsRecent || []).forEach((v)=>{
-        const c = v.country || "??";
-        byCountry[c] = (byCountry[c] || 0) + 1;
-    });
-    const countries = Object.entries(byCountry).map(([country, count])=>({
-            country,
-            count
-        })).sort((a, b)=>b.count - a.count);
-    // Referer breakdown
-    const byReferer = {};
-    (viewsRecent || []).forEach((v)=>{
-        // accept legacy "referer" key just in case some old rows still use the typo
-        const raw = v.referrer || v.referer;
-        let host = "direct";
-        if (raw) {
-            try {
-                host = new URL(raw).host;
-            } catch  {
-                host = String(raw).slice(0, 60);
+    // Date range = last 30 days (UTC).
+    const since = new Date(Date.now() - 30 * 86400000).toISOString();
+    const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getDb"])();
+    // Everything below runs as native Mongo aggregations so the day bucket is
+    // computed server-side, correctly handling both ISO-string and Date BSON
+    // values for `viewed_at` / `clicked_at`.
+    const aggOpts = {
+        allowDiskUse: true,
+        maxTimeMS: 15000
+    };
+    const [viewsByDayAgg, refererAgg, countryAgg, totalViews, totalClicks, todayCount, last7Count, last30Count, clicks30Count] = await Promise.all([
+        db.collection("embed_views").aggregate([
+            {
+                $match: {
+                    ww_id: wwId,
+                    viewed_at: {
+                        $gte: since
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: dayBucket("$viewed_at"),
+                    n: {
+                        $sum: 1
+                    }
+                }
             }
+        ], aggOpts).toArray(),
+        db.collection("embed_views").aggregate([
+            {
+                $match: {
+                    ww_id: wwId,
+                    viewed_at: {
+                        $gte: since
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $ifNull: [
+                            "$referrer",
+                            null
+                        ]
+                    },
+                    n: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    n: -1
+                }
+            }
+        ], aggOpts).toArray(),
+        db.collection("embed_views").aggregate([
+            {
+                $match: {
+                    ww_id: wwId,
+                    viewed_at: {
+                        $gte: since
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $ifNull: [
+                            "$country",
+                            "??"
+                        ]
+                    },
+                    n: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    n: -1
+                }
+            }
+        ], aggOpts).toArray(),
+        db.collection("embed_views").countDocuments({
+            ww_id: wwId
+        }),
+        db.collection("link_clicks").countDocuments({
+            ww_id: wwId
+        }),
+        db.collection("embed_views").countDocuments({
+            ww_id: wwId,
+            viewed_at: {
+                $gte: new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z").toISOString()
+            }
+        }),
+        db.collection("embed_views").countDocuments({
+            ww_id: wwId,
+            viewed_at: {
+                $gte: new Date(Date.now() - 7 * 86400000).toISOString()
+            }
+        }),
+        db.collection("embed_views").countDocuments({
+            ww_id: wwId,
+            viewed_at: {
+                $gte: since
+            }
+        }),
+        db.collection("link_clicks").countDocuments({
+            ww_id: wwId,
+            clicked_at: {
+                $gte: since
+            }
+        })
+    ]);
+    // Build a dense 30-day series so the chart never has gaps.
+    const series = [];
+    const map = new Map();
+    for (const row of viewsByDayAgg){
+        if (row._id) map.set(row._id, row.n);
+    }
+    for(let i = 29; i >= 0; i--){
+        const d = new Date(Date.now() - i * 86400000).toISOString().split("T")[0];
+        series.push({
+            date: d,
+            count: map.get(d) || 0
+        });
+    }
+    // Normalise referer to bare hostname so the panel doesn't show 5 lines for
+    // the same site (different paths/protocols/www/trailing dots).
+    const normaliseHost = (raw)=>{
+        if (!raw) return "direct";
+        let host;
+        try {
+            host = new URL(String(raw)).hostname;
+        } catch  {
+            host = String(raw).replace(/^[a-z][a-z0-9+.\-]*:\/\//i, "").split(/[\/\?#]/)[0];
         }
-        byReferer[host] = (byReferer[host] || 0) + 1;
-    });
-    const referers = Object.entries(byReferer).map(([host, count])=>({
+        host = host.toLowerCase().replace(/:(80|443)$/, "").replace(/\.+$/, "").replace(/^www\./, "");
+        return host || "direct";
+    };
+    const refererMerge = new Map();
+    for (const r of refererAgg){
+        const host = normaliseHost(r._id);
+        refererMerge.set(host, (refererMerge.get(host) || 0) + r.n);
+    }
+    const referers = Array.from(refererMerge.entries()).map(([host, count])=>({
             host,
             count
         })).sort((a, b)=>b.count - a.count);
-    // Today / 7d / 30d totals
-    const today = new Date().toISOString().slice(0, 10);
-    const last7 = Object.entries(byDay).filter(([d])=>{
-        const diff = (new Date(today).getTime() - new Date(d).getTime()) / (1000 * 60 * 60 * 24);
-        return diff < 7;
-    }).reduce((s, [, n])=>s + n, 0);
-    const todayCount = byDay[today] || 0;
-    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+    const countries = countryAgg.map((r)=>({
+            country: r._id || "??",
+            count: r.n
+        })).sort((a, b)=>b.count - a.count);
+    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
         ww_id: wwId,
         type,
         title,
@@ -1199,9 +1400,9 @@ async function GET(_req, ctx) {
             views_all_time: totalViews || 0,
             clicks_all_time: totalClicks || 0,
             views_today: todayCount,
-            views_7d: last7,
-            views_30d: viewsRecent?.length || 0,
-            clicks_30d: clicksRecent?.length || 0
+            views_7d: last7Count,
+            views_30d: last30Count,
+            clicks_30d: clicks30Count
         },
         series_30d: series,
         top_countries: countries,

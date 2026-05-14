@@ -43,27 +43,55 @@ async function ensureIndexes(db: Db) {
   // streaming/download links
   await db.collection("streaming_links").createIndex({ tmdb_id: 1, media_type: 1 })
   await db.collection("streaming_links").createIndex({ ww_id: 1 })
+  await db.collection("streaming_links").createIndex({ legacy_uuid: 1 })
   await db.collection("download_links").createIndex({ tmdb_id: 1, media_type: 1 })
   await db.collection("download_links").createIndex({ ww_id: 1 })
+  await db.collection("download_links").createIndex({ legacy_uuid: 1 })
   // digital
   await db.collection("digital_content").createIndex({ ww_id: 1 }, { unique: true })
   await db.collection("digital_content").createIndex({ content_type: 1 })
   await db.collection("digital_download_links").createIndex({ content_id: 1 })
   await db.collection("digital_download_links").createIndex({ ww_id: 1 })
+  await db.collection("digital_download_links").createIndex({ legacy_uuid: 1 })
   // live tv
   await db.collection("live_tv_channels").createIndex({ status: 1, is_active: 1 })
   await db.collection("live_tv_sources").createIndex({ channel_id: 1 })
-  // stats
+  // stats — primary lookup indexes
   await db.collection("embed_views").createIndex({ ww_id: 1 })
   await db.collection("embed_views").createIndex({ viewed_at: -1 })
+  await db.collection("embed_views").createIndex({ embed_type: 1, viewed_at: -1 })
   await db.collection("link_clicks").createIndex({ clicked_at: -1 })
+  await db.collection("link_clicks").createIndex({ link_id: 1, clicked_at: -1 })
   await db.collection("api_usage").createIndex({ created_at: -1 })
+  // stats — TTL (auto-purge raw events older than 180 days). We use the
+  // dedicated `_ttl` Date field populated at insert (see shim.ts) because
+  // Mongo TTL indexes only work on Date BSON, not on ISO strings.
+  await safeTtl(db, "embed_views", 180)
+  await safeTtl(db, "link_clicks", 180)
+  await safeTtl(db, "ad_clicks", 180)
+  // login_attempts has its own short TTL (24h) created on first rate-limit hit.
   // ads
   await db.collection("ads").createIndex({ slot_number: 1 }, { unique: true, sparse: true })
   // bug reports
   await db.collection("bug_reports").createIndex({ created_at: -1 })
   // login attempts
   await db.collection("login_attempts").createIndex({ identifier: 1 })
+  // tmdb cache (used by lib/tmdb-cache.ts)
+  await db.collection("tmdb_cache").createIndex({ key: 1 }, { unique: true })
+  await safeTtl(db, "tmdb_cache", 7 * 86400) // 7 days
+  // pre-aggregated stats (see lib/stats-rollup.ts)
+  await db.collection("stats_daily_rollup").createIndex({ date: -1 }, { unique: true })
+}
+
+async function safeTtl(db: Db, coll: string, seconds: number) {
+  try {
+    await db.collection(coll).createIndex(
+      { _ttl: 1 },
+      { expireAfterSeconds: seconds, name: "_ttl_auto_purge" }
+    )
+  } catch (e) {
+    // Index may exist with different opts — fine.
+  }
 }
 
 export async function getCollection(name: string) {

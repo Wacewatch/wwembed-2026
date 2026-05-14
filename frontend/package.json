@@ -6,8 +6,8 @@
     "dev": "next dev -H 0.0.0.0 -p 3000",
     "build": "next build",
     "start": "next dev -H 0.0.0.0 -p 3000",
-    "lint": "eslint .",
-    "migrate": "tsx ../migration/migrate.ts"
+    "start:prod": "next start -H 0.0.0.0 -p 3000",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -38,8 +38,6 @@
     "@radix-ui/react-toggle": "latest",
     "@radix-ui/react-toggle-group": "latest",
     "@radix-ui/react-tooltip": "latest",
-    "@supabase/ssr": "latest",
-    "@supabase/supabase-js": "latest",
     "@vercel/analytics": "latest",
     "autoprefixer": "^10.4.20",
     "bcryptjs": "^3.0.3",
@@ -63,7 +61,6 @@
     "react-is": "^19.2.6",
     "react-resizable-panels": "latest",
     "recharts": "latest",
-    "resend": "^6.12.3",
     "sonner": "latest",
     "swagger-ui-react": "5.11.10",
     "tailwind-merge": "^2.5.5",

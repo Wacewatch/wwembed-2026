@@ -155,8 +155,14 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const secret = searchParams.get("secret")
 
-  // Simple protection for cron endpoint
-  if (secret !== process.env.CRON_SECRET && secret !== "check-links") {
+  // Cron endpoint: NO insecure default. CRON_SECRET MUST be set explicitly.
+  // (Was previously accepting the literal "check-links" which is publicly known.)
+  const expected = process.env.CRON_SECRET
+  if (!expected || expected.length < 16) {
+    console.error("[check-link cron] CRON_SECRET is missing or too short — endpoint disabled")
+    return NextResponse.json({ error: "Cron endpoint disabled" }, { status: 503 })
+  }
+  if (secret !== expected) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getMovieDetails, getTVDetails, getPosterUrl } from "@/lib/tmdb"
+import { getDb } from "@/lib/mongo/db"
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +11,31 @@ const CORS = {
 
 export async function OPTIONS() {
   return new NextResponse(null, { headers: CORS })
+}
+
+/**
+ * Day bucket expression that handles BOTH ISO-string and Date BSON values
+ * for `viewed_at`. Legacy migrated rows from Supabase were Date objects;
+ * new rows inserted via the shim are ISO strings. The previous JS-side
+ * `(v.viewed_at||"").slice(0,10)` silently failed on Date objects, which
+ * is why the 30-day chart appeared flat (only "today" had any non-zero
+ * bucket) — every Date row's slice produced `"Thu May 14"` and never
+ * matched a `"2026-05-14"` key.
+ */
+function dayBucket(field: string) {
+  return {
+    $cond: [
+      { $eq: [{ $type: field }, "string"] },
+      { $substrCP: [field, 0, 10] },
+      {
+        $cond: [
+          { $eq: [{ $type: field }, "date"] },
+          { $dateToString: { date: field, format: "%Y-%m-%d" } },
+          null,
+        ],
+      },
+    ],
+  }
 }
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: string }> }) {
@@ -35,7 +61,6 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: stri
   const target =
     (streaming as any) || (download as any) || (digital as any) || (liveChannel as any) || null
 
-  // Resolve title / poster — fallback to TMDB lookup for ww-movie-{id} / ww-tv-{id}
   let title: string =
     target?.title || target?.channel_name || (digital as any)?.title || ""
   let poster: string | null =
@@ -70,81 +95,110 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: stri
 
   if (!title) title = `Contenu ${wwId}`
 
-  // Range = 30 jours par défaut
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  // Date range = last 30 days (UTC).
+  const since = new Date(Date.now() - 30 * 86400000).toISOString()
+  const db = await getDb()
+
+  // Everything below runs as native Mongo aggregations so the day bucket is
+  // computed server-side, correctly handling both ISO-string and Date BSON
+  // values for `viewed_at` / `clicked_at`.
+  const aggOpts = { allowDiskUse: true, maxTimeMS: 15000 }
 
   const [
-    { data: viewsRecent },
-    { data: clicksRecent },
-    { count: totalViews },
-    { count: totalClicks },
+    viewsByDayAgg,
+    refererAgg,
+    countryAgg,
+    totalViews,
+    totalClicks,
+    todayCount,
+    last7Count,
+    last30Count,
+    clicks30Count,
   ] = await Promise.all([
-    supabase
-      .from("embed_views")
-      .select("viewed_at, country, referrer")
-      .eq("ww_id", wwId)
-      .gte("viewed_at", since)
-      .order("viewed_at", { ascending: false }),
-    supabase
-      .from("link_clicks")
-      .select("clicked_at, country")
-      .eq("ww_id", wwId)
-      .gte("clicked_at", since)
-      .order("clicked_at", { ascending: false }),
-    supabase.from("embed_views").select("*", { count: "exact", head: true }).eq("ww_id", wwId),
-    supabase.from("link_clicks").select("*", { count: "exact", head: true }).eq("ww_id", wwId),
+    db
+      .collection("embed_views")
+      .aggregate(
+        [
+          { $match: { ww_id: wwId, viewed_at: { $gte: since } } },
+          { $group: { _id: dayBucket("$viewed_at"), n: { $sum: 1 } } },
+        ],
+        aggOpts
+      )
+      .toArray(),
+    db
+      .collection("embed_views")
+      .aggregate(
+        [
+          { $match: { ww_id: wwId, viewed_at: { $gte: since } } },
+          { $group: { _id: { $ifNull: ["$referrer", null] }, n: { $sum: 1 } } },
+          { $sort: { n: -1 } },
+        ],
+        aggOpts
+      )
+      .toArray(),
+    db
+      .collection("embed_views")
+      .aggregate(
+        [
+          { $match: { ww_id: wwId, viewed_at: { $gte: since } } },
+          { $group: { _id: { $ifNull: ["$country", "??"] }, n: { $sum: 1 } } },
+          { $sort: { n: -1 } },
+        ],
+        aggOpts
+      )
+      .toArray(),
+    db.collection("embed_views").countDocuments({ ww_id: wwId }),
+    db.collection("link_clicks").countDocuments({ ww_id: wwId }),
+    db.collection("embed_views").countDocuments({
+      ww_id: wwId,
+      viewed_at: { $gte: new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z").toISOString() },
+    }),
+    db.collection("embed_views").countDocuments({
+      ww_id: wwId,
+      viewed_at: { $gte: new Date(Date.now() - 7 * 86400000).toISOString() },
+    }),
+    db.collection("embed_views").countDocuments({ ww_id: wwId, viewed_at: { $gte: since } }),
+    db.collection("link_clicks").countDocuments({ ww_id: wwId, clicked_at: { $gte: since } }),
   ])
 
-  // Aggregate by day
-  const byDay: Record<string, number> = {}
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-    byDay[d] = 0
+  // Build a dense 30-day series so the chart never has gaps.
+  const series: { date: string; count: number }[] = []
+  const map = new Map<string, number>()
+  for (const row of viewsByDayAgg as any[]) {
+    if (row._id) map.set(row._id, row.n)
   }
-  ;(viewsRecent || []).forEach((v: any) => {
-    const d = (v.viewed_at || "").slice(0, 10)
-    if (d in byDay) byDay[d] += 1
-  })
-  const series = Object.entries(byDay).map(([date, count]) => ({ date, count }))
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().split("T")[0]
+    series.push({ date: d, count: map.get(d) || 0 })
+  }
 
-  // Country breakdown
-  const byCountry: Record<string, number> = {}
-  ;(viewsRecent || []).forEach((v: any) => {
-    const c = v.country || "??"
-    byCountry[c] = (byCountry[c] || 0) + 1
-  })
-  const countries = Object.entries(byCountry)
-    .map(([country, count]) => ({ country, count }))
-    .sort((a, b) => b.count - a.count)
-
-  // Referer breakdown
-  const byReferer: Record<string, number> = {}
-  ;(viewsRecent || []).forEach((v: any) => {
-    // accept legacy "referer" key just in case some old rows still use the typo
-    const raw = v.referrer || v.referer
-    let host = "direct"
-    if (raw) {
-      try {
-        host = new URL(raw).host
-      } catch {
-        host = String(raw).slice(0, 60)
-      }
+  // Normalise referer to bare hostname so the panel doesn't show 5 lines for
+  // the same site (different paths/protocols/www/trailing dots).
+  const normaliseHost = (raw: any): string => {
+    if (!raw) return "direct"
+    let host: string
+    try {
+      host = new URL(String(raw)).hostname
+    } catch {
+      host = String(raw)
+        .replace(/^[a-z][a-z0-9+.\-]*:\/\//i, "")
+        .split(/[\/\?#]/)[0]
     }
-    byReferer[host] = (byReferer[host] || 0) + 1
-  })
-  const referers = Object.entries(byReferer)
+    host = host.toLowerCase().replace(/:(80|443)$/, "").replace(/\.+$/, "").replace(/^www\./, "")
+    return host || "direct"
+  }
+  const refererMerge = new Map<string, number>()
+  for (const r of refererAgg as any[]) {
+    const host = normaliseHost(r._id)
+    refererMerge.set(host, (refererMerge.get(host) || 0) + r.n)
+  }
+  const referers = Array.from(refererMerge.entries())
     .map(([host, count]) => ({ host, count }))
     .sort((a, b) => b.count - a.count)
 
-  // Today / 7d / 30d totals
-  const today = new Date().toISOString().slice(0, 10)
-  const last7 = Object.entries(byDay)
-    .filter(([d]) => {
-      const diff = (new Date(today).getTime() - new Date(d).getTime()) / (1000 * 60 * 60 * 24)
-      return diff < 7
-    })
-    .reduce((s, [, n]) => s + n, 0)
-  const todayCount = byDay[today] || 0
+  const countries = (countryAgg as any[])
+    .map((r) => ({ country: r._id || "??", count: r.n }))
+    .sort((a, b) => b.count - a.count)
 
   return NextResponse.json(
     {
@@ -156,9 +210,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: stri
         views_all_time: totalViews || 0,
         clicks_all_time: totalClicks || 0,
         views_today: todayCount,
-        views_7d: last7,
-        views_30d: viewsRecent?.length || 0,
-        clicks_30d: clicksRecent?.length || 0,
+        views_7d: last7Count,
+        views_30d: last30Count,
+        clicks_30d: clicks30Count,
       },
       series_30d: series,
       top_countries: countries,

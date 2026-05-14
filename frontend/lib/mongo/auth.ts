@@ -9,7 +9,27 @@ import type { NextRequest } from "next/server"
 import { cookies } from "next/headers"
 import { getDb } from "./db"
 
-const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-prod"
+const JWT_SECRET = (() => {
+  const v = process.env.JWT_SECRET
+  if (!v || v === "change-me-in-prod") {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "JWT_SECRET environment variable is missing or set to its insecure default. " +
+        "Generate a strong random value (>= 32 chars) and set it before starting the server."
+      )
+    }
+    // Dev fallback — never reachable in prod thanks to the guard above.
+    console.warn("[auth] JWT_SECRET not set, using dev-only fallback. DO NOT deploy without setting it.")
+    return "dev-only-insecure-secret-do-not-use-in-prod"
+  }
+  if (v.length < 32) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("JWT_SECRET is too short (< 32 chars). Use a strong random value.")
+    }
+    console.warn("[auth] JWT_SECRET is shorter than 32 chars — unsafe in prod.")
+  }
+  return v
+})()
 const ACCESS_COOKIE = "ww_access"
 const REFRESH_COOKIE = "ww_refresh"
 

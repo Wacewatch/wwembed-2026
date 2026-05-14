@@ -1,55 +1,47 @@
-# WWEmbed — PRD
+# WWEmbed — Product Requirements Document
 
-## Original problem statement (this session, FR)
-- Erreurs lors de l'import Supabase (E11000 username collision + statement_timeout sur embed_views)
-- Stats clics téléchargement doivent fonctionner sur le Dashboard
-- Onglet admin "Téléchargements internes" avec top liens + classement uploaders
-- Supprimer TOUTES les limites (1000, 50, etc.) dans les stats
+## Original problem statement
+Plateforme d'embed (streaming / téléchargement / TV live / contenu digital) pour des sites tiers, avec admin dashboard, gestion des liens uploaders, APIs externes, pubs, et statistiques temps réel.
 
-## Architecture (existant)
-- Next.js 14 (App Router) + MongoDB native driver
-- `lib/mongo/shim.ts` : fluent Supabase-compatible shim backed by MongoDB
-- Auth JWT custom (cookies httpOnly)
-- Migration Supabase→MongoDB en cours via `/api/admin/import-supabase`
+## Tech stack
+Next.js 16 (App Router) · React 19 · MongoDB · TMDB API · JWT auth (bcrypt) · Tailwind v4
 
-## Implémenté cette session (12/05/2026)
-1. **Fix import Supabase** (`lib/mongo/supabase-import.ts`)
-   - Pagination CURSOR (par `viewed_at`/`clicked_at`/`created_at` ASC) au lieu de `range(offset)` pour `embed_views`, `link_clicks`, `ad_clicks`, `api_usage` → évite `statement_timeout 57014`
-   - PAGE=200 pour embed_views (vs 500), backoff exponentiel avec page-size shrink à chaque retry (jusqu'à 6 tentatives)
-   - Suffixe automatique `_2`, `_3`... sur collision username dans `auth.users` (LadyFM → LadyFM_2), fallback `_${uuid[:8]}` après 50 essais
-2. **Stats clics par lien — Dashboard** (`app/dashboard/page.tsx` + `components/dashboard/dashboard-content.tsx`)
-   - Agrégation MongoDB native par `link_id` et `ww_id` pour calculer `click_count` par lien
-   - Nouvelle colonne **Clics** dans les tableaux streaming/download/digital
-   - Nouvelle tuile **CLICS DL** en haut du dashboard avec total
-   - Aucune limite : on agrège l'intégralité des clics (groupBy naturellement borné)
-3. **Onglet "Téléchargements Internes"** (`/api/admin/stats` + `components/admin/internal-downloads-stats.tsx`)
-   - Bloc `internal` dans la réponse JSON : `totalClicks`, `totalClicksAllTime`, `byDay`, `topLinks`, `topUploaders`, `byQuality`, `byMediaType`, `byLinkType`
-   - Top liens : join via `$lookup` avec `download_links`/`digital_download_links` → titre TMDB enrichi, source, qualité, langue, link_type, statut, uploader
-   - Classement uploaders avec médailles 🥇🥈🥉, % d'impact, count liens
-   - Nouvel onglet visible dans Admin > Stats
-4. **Suppression de TOUTES les limites stats**
-   - `/api/admin/stats` : retrait de tous les `$limit` + `.slice()` (topMedia, topDownload, topReferer, externalTop, activePages, recentVisitors)
-   - `/api/stats` : retrait `.limit(1000)` sur top_media + `.slice(0, 10)` sur tri
-   - `/api/v1/stats/[wwId]` : retrait `.limit(5000)` viewsRecent/clicksRecent + `.slice(0, 10)` countries/referers
-   - Pagination du dashboard `fetchAllRows` conservée (boucle 1000 jusqu'à épuisement → récupère tout)
+## Current architecture (after Jan 2026 cleanup)
+- 27 routes API (v1 publiques + internes)
+- Players embed: streaming / download / live / ebook / music / digital
+- Admin dashboard avec 11 tabs (Pending, APIs, Streaming, Download, Digital, TV Live, Bugs, Pubs, Users, Stats, Paramètres)
+- Auth maison JWT (httpOnly cookies) + bcrypt
+- Shim Mongo (`lib/mongo/shim.ts`) qui expose une API compatible Supabase pour limiter les changements dans 28 routes legacy
 
-## Test
-- Backend validé via curl/seed local (admin@wwembed.test / admin1234) : `/api/admin/stats?period=7` retourne `internal.{topLinks, topUploaders, totalClicks}` correctement enrichis (titre TMDB, posters)
-- Frontend validé via screenshots :
-  - Dashboard download tab → colonne Clics 25/25 ✅
-  - Admin Stats > Téléchargements Internes → graphique + top liens + classement uploader ✅
+## What's been implemented
+### 2026-05-14 — Stats fix + hardening + perf overhaul
+- Fix compteurs "Utilisateurs en ligne" sous-évalués → ip_hash propagé sur les 7 endpoints embed_views + clé composite (ip_hash, user_agent)
+- Fix doublons Top référents → normalisation hostname (lowercase, sans protocole/port/www/path/trailing-dot)
+- Fix graphique plat sur `/embed/[wwId]/stats` → aggregation Mongo native avec dayBucket gérant ISO-string ET Date BSON
+- Suppression code import Supabase + dépendances `@supabase/ssr`, `@supabase/supabase-js`, `resend`, dossier `migration/`, dossier `scripts/`
+- Sécurité: JWT_SECRET requis en prod (>= 32 chars), CRON_SECRET requis (>=16 chars), rate-limit login (8/10min) + bug-report (5/10min) + link-click (60/min) via `login_attempts` collection
+- Sécurité: link-click revalide les métadonnées depuis la DB (anti-gonflement stats par 3rd party)
+- Sécurité: typescript ignoreBuildErrors → false ; CSP headers sur toutes routes hors `/api/v1`
+- Perf: TTL 180j sur embed_views/link_clicks/ad_clicks via `_ttl: Date` ; TTL 7j sur tmdb_cache ; TTL 24h sur login_attempts
+- Perf: TMDB cache déplacé du process en mémoire vers MongoDB (`tmdb_cache` collection, partagé multi-instance)
+- Perf: compteurs view_count/click_count rendus asynchrones (fire-and-forget background) → -50/150 ms sur chaque embed view
+- Perf: dashboard utilisateur refactoré pour utiliser un seul `find` Mongo au lieu de pagination 1000-rows × N
+- Nouveau: `lib/stats-rollup.ts` + endpoint cron `/api/admin/stats-rollup?secret=$CRON_SECRET` → collection `stats_daily_rollup` (1 doc/jour) prête pour réduire l'admin/stats de 3-10s → <100ms
+- Nouveau: SSE `/api/admin/online-stream` (events 'online' toutes les 10s + heartbeat 25s) consommé par `OnlineUsersModule` → counters live, poll réduit à 60s pour les listes enrichies
 
-## Next Action Items
-- Relancer l'import en production (idempotent) — embed_views devrait passer cette fois, et auth.users gérera les collisions
-- Si production a déjà 0 entrées dans `auth.users` à cause de l'ancien crash, l'import reprendra le tour complet
+## Backlog / prioritised
+- P1: Refactoriser admin/stats pour lire `stats_daily_rollup` au lieu de scanner embed_views (gain x100 sur historique 7j/30j)
+- P1: Configurer le cron externe (Vercel/GitHub Actions/UptimeRobot) pour hit `/api/admin/stats-rollup` toutes les 30 min
+- P1: Extraire le HTML inline (>800 lignes par route) de `app/api/v1/{streaming,download,live,ebook,music,digital}/[wwId]/route.ts` vers `lib/embed-templates/`
+- P2: Migrer entièrement legacy_uuid → ObjectId puis virer le dual-id du shim et de `lib/mongo/auth.ts`
+- P2: Tier API payant Stripe (free 10k vues/mois → $9 100k → $49 unlimited) avec `api_keys` collection + middleware quota
+- P2: A/B testing des pubs depuis `AdsManager` + fréquence cap cookie 30min
+- P3: Affiliate-rewriting des URLs 1fichier/Uptobox/Rapidgator
+- P3: Notifications uploaders (lien approuvé/rejeté/bug) → besoin d'un fournisseur email (Resend a été retiré sur demande)
+- P3: Export CSV stats admin, recherche/filtres dans les managers, page status publique, sitemap SEO uploaders, PWA
+- P3: Tests automatisés (Jest/Vitest + smoke curl)
 
-## 12/05/2026 — Fix download embed externalliens
-- **Bug 1** : Typo `tmdbdId` au lieu de `tmdbId` dans l'URL movix `/darkiworld/download/movie/{id}?tmdbdId=...` → l'API recevait pas le tmdbId et matchait par titre, retournant les mauvais liens (ex. Mario Galaxy → liens random)
-- **Bug 2** : Sélection du `first` result naïve. Pour TMDB id `1226863` (Super Mario Galaxy le film), 41 résultats movix dont 38 jeux Mario. Nouveau matching multi-passes :
-  1. tmdb_id exact + type attendu (movie/animes pour film, series/animes pour TV)
-  2. tmdb_id exact (any type)
-  3. premier résultat de type attendu
-  4. fallback : results[0]
-- Fichier modifié : `app/api/v1/download/[wwId]/route.ts` (route film/série uniquement, la digital_content section utilisait déjà la logique correcte)
-- Modal pub 2 étapes (otieu + adsterra) **conservée intacte**
-- Validé : `ww-movie-1226863` retourne 13 liens corrects (1Fichier WEB 1080p Light 2.63 GB, Ultra HDLight x265, etc.) en provenance de movix avec posters, qualités, sub, lang corrects
+## Operational notes
+- TTL purge automatique au-delà de 180 jours sur les events bruts (rollup conserve l'historique long terme)
+- `JWT_SECRET` et `CRON_SECRET` sont obligatoires en NODE_ENV=production (le serveur refuse de démarrer ou de servir les endpoints sensibles sinon)
+- Aucune migration DB requise pour cette release: les indexes et collections nouveaux sont créés lazily au premier `getDb()`
