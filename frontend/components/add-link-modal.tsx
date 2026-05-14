@@ -27,6 +27,7 @@ import {
 } from "lucide-react"
 import type { LiveTVChannel } from "@/lib/types"
 import { generateWWId } from "@/lib/tmdb"
+import { UrlProbeButton } from "@/components/url-probe-button"
 
 const LIVE_TV_CATEGORIES = [
   { value: "general", label: "Generaliste" },
@@ -1565,14 +1566,34 @@ export function AddLinkModal({
                               </div>
                               <div className="space-y-2">
                                 <Label>URL du lecteur (iframe)</Label>
-                                <Input
-                                  placeholder="https://..."
-                                  value={streamingData.source_url}
-                                  onChange={(e) => setStreamingData({ ...streamingData, source_url: e.target.value })}
-                                  type="url"
-                                  required
-                                  className="bg-zinc-900 border-zinc-700 focus:border-primary"
-                                />
+                                <div className="flex items-start gap-2">
+                                  <Input
+                                    placeholder="https://..."
+                                    value={streamingData.source_url}
+                                    onChange={(e) => setStreamingData({ ...streamingData, source_url: e.target.value })}
+                                    type="url"
+                                    required
+                                    className="bg-zinc-900 border-zinc-700 focus:border-primary flex-1"
+                                  />
+                                  <UrlProbeButton
+                                    url={streamingData.source_url}
+                                    testId="probe-streaming-url"
+                                    onResult={(p) => {
+                                      setStreamingData((d) => ({
+                                        ...d,
+                                        source_name: d.source_name || p.provider || d.source_name,
+                                        quality: p.quality || d.quality,
+                                        language: p.language?.toLowerCase().includes("vf")
+                                          ? "vf"
+                                          : p.language?.toLowerCase().includes("vostfr")
+                                            ? "vostfr"
+                                            : p.language?.toLowerCase().includes("multi")
+                                              ? "multi"
+                                              : d.language,
+                                      }))
+                                    }}
+                                  />
+                                </div>
                               </div>
                               <div className="space-y-2">
                                 <Label>Langue</Label>

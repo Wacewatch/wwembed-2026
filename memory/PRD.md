@@ -45,3 +45,36 @@ Next.js 16 (App Router) · React 19 · MongoDB · TMDB API · JWT auth (bcrypt) 
 - TTL purge automatique au-delà de 180 jours sur les events bruts (rollup conserve l'historique long terme)
 - `JWT_SECRET` et `CRON_SECRET` sont obligatoires en NODE_ENV=production (le serveur refuse de démarrer ou de servir les endpoints sensibles sinon)
 - Aucune migration DB requise pour cette release: les indexes et collections nouveaux sont créés lazily au premier `getDb()`
+
+## 2026-05-14 (suite) — Admin + Uploader + Embed feature pack
+### Link health checker
+- `lib/link-checker.ts` : HEAD-first / GET-Range fallback, browser-like UA, 12s timeout, scan body for dead-link patterns. Hesteresis 3 failures avant flag DEAD (anti faux-négatif). Throttle 3 parallel par host.
+- `lib/link-checker-runner.ts` : background scanner avec process mutex + Mongo lock TTL 5min, throttle min interval 5min. Pickup LRU 60 liens / 12h cooldown. Auto-déclenché par les hits sur `/api/admin/stats/advanced` — pas besoin de cron externe.
+- `POST /api/admin/check-link/run` (admin) : trigger background ou `?wait=1` synchrone. `?link_id=&link_type=` pour recheck unique.
+- `GET /api/admin/check-link/run` (admin) : breakdown alive/dead/unknown × {download,digital,streaming} + dernière scan report + dead list paginated.
+- Stockage : collection `link_status` { link_id, status, consecutive_failures, last_checked_at, dead_since, last_http_status, response_ms, last_alive_at }. Mirror sur parent `is_valid` + `link_status`.
+- UI : nouveau tab admin "Santé liens" → tiles overview + tableau breakdown + dead list avec bouton recheck par lien.
+
+### Stats avancées admin
+- `GET /api/admin/stats/advanced?period=1|7|30` (admin) : comparatif period vs prev (delta %) sur views/clicks/ad_clicks/unique. Heatmap 7×24 (dayOfWeek × hour UTC). Top countries via geo lookup ip_prefix → ip-api.com (cache Mongo 180j). Funnel impressions→sessions→source clicks→ad clicks. Top bandwidth (views × avg file_size).
+- UI : nouveau tab admin "Avancé" → 4 KPI tiles comparatif, heatmap colorée 7×24, funnel waterfall, top pays avec drapeaux, top bandwidth.
+
+### Geo capture
+- Tous les inserts `embed_views` capturent maintenant `ip_prefix` (IPv4 /24, IPv6 /48) — GDPR friendly. Permet le geo lookup sans stocker l'IP brute.
+- `lib/geo.ts` : `countryForIp()` avec cache Mongo `geo_ip_cache` + concurrency 5.
+
+### Uploader features
+- `GET /api/dashboard/my-stats` : KPIs perso (vues 30j / clicks 30j / total / avg), série dense 30j, top contenus, best day, link health, content count, delta_pct vs 30j précédents.
+- `GET /api/leaderboard?period=7d|30d|all&limit=N` : ranking par vues générées. Public.
+- UI : nouveau composant `DashboardStatsOverview` injecté en haut du dashboard uploader → 4 KPI tiles, graphique 30j (recharts Area+Line), santé liens, top contenus, leaderboard avec position de l'user en surbrillance.
+
+### Auto-fill URL
+- `lib/url-probe.ts` : provider detection (regex hostname, 26 hosters supportés), quality/language extraction (4K/1080p/.../VF/VOSTFR/MULTI/TRUEFRENCH), file_size + filename via HEAD/GET-Range + Content-Disposition, media type guess.
+- `POST /api/upload/probe` (auth user) : rate-limited 20/min/user.
+- `<UrlProbeButton>` composant réutilisable. Branché sur le champ URL streaming d'AddLinkModal en pilot (les autres URL fields à brancher iteration future).
+
+### Pages publiques + OG
+- `/movie/[tmdbId]` + `/tv/[tmdbId]` : SSR fiche complète avec poster, backdrop, genres, rating, sources WW disponibles, CTA Lecture + Stats. generateMetadata complet (OG image, Twitter Card large_image, canonical). JSON-LD Movie / TVSeries pour SEO.
+
+### Files créés (cette session)
+lib/link-checker.ts, lib/link-checker-runner.ts, lib/url-probe.ts, lib/url-utils.ts, lib/geo.ts, app/api/admin/check-link/run/route.ts, app/api/admin/stats/advanced/route.ts, app/api/dashboard/my-stats/route.ts, app/api/leaderboard/route.ts, app/api/upload/probe/route.ts, app/movie/[tmdbId]/page.tsx, app/tv/[tmdbId]/page.tsx, components/admin/link-health-module.tsx, components/admin/admin-stats-advanced.tsx, components/dashboard/dashboard-stats-overview.tsx, components/url-probe-button.tsx

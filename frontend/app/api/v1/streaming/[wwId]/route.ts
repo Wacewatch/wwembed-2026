@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { parseWWId, getMovieDetails, getTVDetails, getEpisodeDetails } from "@/lib/tmdb"
-import { getClientIpHash } from "@/lib/client-meta"
+import { getClientIpHash, getClientIpPrefix } from "@/lib/client-meta"
 
 function generateRandomId(prefix = "x"): string {
   return prefix + Math.random().toString(36).substring(2, 10)
@@ -114,6 +114,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
       referrer: request.headers.get("referer"),
       user_agent: request.headers.get("user-agent"),
       ip_hash: getClientIpHash(request),
+      ip_prefix: getClientIpPrefix(request),
     })
 
     const sourcesJson = JSON.stringify(allSources).replace(/</g, "\\u003c")

@@ -13,7 +13,9 @@ import { LiveTVManager } from "./live-tv-manager"
 import { DigitalContentManager } from "./digital-content-manager"
 import { BugReportsManager } from "./bug-reports-manager"
 import { SettingsManager } from "./settings-manager"
-import { Clock, Globe, Play, Download, Book, Tv, Bug, Megaphone, Users, BarChart3, Settings } from "lucide-react"
+import { LinkHealthModule } from "./link-health-module"
+import { AdminStatsAdvanced } from "./admin-stats-advanced"
+import { Clock, Globe, Play, Download, Book, Tv, Bug, Megaphone, Users, BarChart3, Settings, Activity, ShieldCheck } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 export function AdminTabs() {
@@ -112,6 +114,22 @@ export function AdminTabs() {
             <span>Stats</span>
           </TabsTrigger>
           <TabsTrigger
+            value="advanced"
+            className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 whitespace-nowrap transition-all"
+            data-testid="admin-tab-advanced"
+          >
+            <Activity className="w-4 h-4" />
+            <span>Avancé</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="health"
+            className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-emerald-500 data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/30 whitespace-nowrap transition-all"
+            data-testid="admin-tab-health"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Santé liens</span>
+          </TabsTrigger>
+          <TabsTrigger
             value="settings"
             className="gap-2 px-4 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 whitespace-nowrap transition-all"
           >
@@ -159,6 +177,14 @@ export function AdminTabs() {
 
       <TabsContent value="stats" className="mt-0">
         <StatsViewer />
+      </TabsContent>
+
+      <TabsContent value="advanced" className="mt-0">
+        <AdminStatsAdvanced />
+      </TabsContent>
+
+      <TabsContent value="health" className="mt-0">
+        <LinkHealthModule />
       </TabsContent>
 
       <TabsContent value="settings" className="mt-0">

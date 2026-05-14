@@ -4546,17 +4546,42 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                     lineNumber: 1567,
                                                                                     columnNumber: 33
                                                                                 }, this),
-                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
-                                                                                    placeholder: "https://...",
-                                                                                    value: streamingData.source_url,
-                                                                                    onChange: (e)=>setStreamingData({
-                                                                                            ...streamingData,
-                                                                                            source_url: e.target.value
-                                                                                        }),
-                                                                                    type: "url",
-                                                                                    required: true,
-                                                                                    className: "bg-zinc-900 border-zinc-700 focus:border-primary"
-                                                                                }, void 0, false, {
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                    className: "flex items-start gap-2",
+                                                                                    children: [
+                                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
+                                                                                            placeholder: "https://...",
+                                                                                            value: streamingData.source_url,
+                                                                                            onChange: (e)=>setStreamingData({
+                                                                                                    ...streamingData,
+                                                                                                    source_url: e.target.value
+                                                                                                }),
+                                                                                            type: "url",
+                                                                                            required: true,
+                                                                                            className: "bg-zinc-900 border-zinc-700 focus:border-primary flex-1"
+                                                                                        }, void 0, false, {
+                                                                                            fileName: "[project]/components/add-link-modal.tsx",
+                                                                                            lineNumber: 1569,
+                                                                                            columnNumber: 35
+                                                                                        }, this),
+                                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(UrlProbeButton, {
+                                                                                            url: streamingData.source_url,
+                                                                                            testId: "probe-streaming-url",
+                                                                                            onResult: (p)=>{
+                                                                                                setStreamingData((d)=>({
+                                                                                                        ...d,
+                                                                                                        source_name: d.source_name || p.provider || d.source_name,
+                                                                                                        quality: p.quality || d.quality,
+                                                                                                        language: p.language?.toLowerCase().includes("vf") ? "vf" : p.language?.toLowerCase().includes("vostfr") ? "vostfr" : p.language?.toLowerCase().includes("multi") ? "multi" : d.language
+                                                                                                    }));
+                                                                                            }
+                                                                                        }, void 0, false, {
+                                                                                            fileName: "[project]/components/add-link-modal.tsx",
+                                                                                            lineNumber: 1577,
+                                                                                            columnNumber: 35
+                                                                                        }, this)
+                                                                                    ]
+                                                                                }, void 0, true, {
                                                                                     fileName: "[project]/components/add-link-modal.tsx",
                                                                                     lineNumber: 1568,
                                                                                     columnNumber: 33
@@ -4574,7 +4599,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                     children: "Langue"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                    lineNumber: 1578,
+                                                                                    lineNumber: 1598,
                                                                                     columnNumber: 33
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -4588,12 +4613,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                             className: "bg-zinc-900 border-zinc-700",
                                                                                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1584,
+                                                                                                lineNumber: 1604,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                            lineNumber: 1583,
+                                                                                            lineNumber: 1603,
                                                                                             columnNumber: 35
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -4604,7 +4629,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                     children: "VF (Francais)"
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                    lineNumber: 1587,
+                                                                                                    lineNumber: 1607,
                                                                                                     columnNumber: 37
                                                                                                 }, this),
                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4612,7 +4637,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                     children: "VOSTFR"
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                    lineNumber: 1588,
+                                                                                                    lineNumber: 1608,
                                                                                                     columnNumber: 37
                                                                                                 }, this),
                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4620,7 +4645,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                     children: "VO"
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                    lineNumber: 1589,
+                                                                                                    lineNumber: 1609,
                                                                                                     columnNumber: 37
                                                                                                 }, this),
                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4628,25 +4653,25 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                     children: "Multi"
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                    lineNumber: 1590,
+                                                                                                    lineNumber: 1610,
                                                                                                     columnNumber: 37
                                                                                                 }, this)
                                                                                             ]
                                                                                         }, void 0, true, {
                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                            lineNumber: 1586,
+                                                                                            lineNumber: 1606,
                                                                                             columnNumber: 35
                                                                                         }, this)
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                    lineNumber: 1579,
+                                                                                    lineNumber: 1599,
                                                                                     columnNumber: 33
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                            lineNumber: 1577,
+                                                                            lineNumber: 1597,
                                                                             columnNumber: 31
                                                                         }, this),
                                                                         success && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4654,7 +4679,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                             children: success
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                            lineNumber: 1594,
+                                                                            lineNumber: 1614,
                                                                             columnNumber: 43
                                                                         }, this),
                                                                         error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4662,7 +4687,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                             children: error
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                            lineNumber: 1595,
+                                                                            lineNumber: 1615,
                                                                             columnNumber: 41
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -4672,7 +4697,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                             children: loading ? "Ajout en cours..." : "Ajouter le lien streaming"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                            lineNumber: 1596,
+                                                                            lineNumber: 1616,
                                                                             columnNumber: 31
                                                                         }, this)
                                                                     ]
@@ -4703,7 +4728,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 children: "Saison"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1611,
+                                                                                                lineNumber: 1631,
                                                                                                 columnNumber: 37
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -4715,13 +4740,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 className: "w-20 bg-zinc-900 border-zinc-700 focus:border-primary"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1612,
+                                                                                                lineNumber: 1632,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 1610,
+                                                                                        lineNumber: 1630,
                                                                                         columnNumber: 35
                                                                                     }, this),
                                                                                     !fullSeasonMode && !bulkMode && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4731,7 +4756,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 children: "Episode"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1623,
+                                                                                                lineNumber: 1643,
                                                                                                 columnNumber: 39
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -4744,19 +4769,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 disabled: !seasonNumber
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1624,
+                                                                                                lineNumber: 1644,
                                                                                                 columnNumber: 39
                                                                                             }, this)
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 1622,
+                                                                                        lineNumber: 1642,
                                                                                         columnNumber: 37
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 1609,
+                                                                                lineNumber: 1629,
                                                                                 columnNumber: 33
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4778,7 +4803,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 disabled: !seasonNumber
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1639,
+                                                                                                lineNumber: 1659,
                                                                                                 columnNumber: 37
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -4787,13 +4812,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 children: "Saison complète"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1651,
+                                                                                                lineNumber: 1671,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 1638,
+                                                                                        lineNumber: 1658,
                                                                                         columnNumber: 35
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4812,7 +4837,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 disabled: !seasonNumber
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1656,
+                                                                                                lineNumber: 1676,
                                                                                                 columnNumber: 37
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -4821,19 +4846,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 children: "Mode multi-épisodes (1 URL par ligne)"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1668,
+                                                                                                lineNumber: 1688,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 1655,
+                                                                                        lineNumber: 1675,
                                                                                         columnNumber: 35
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 1637,
+                                                                                lineNumber: 1657,
                                                                                 columnNumber: 33
                                                                             }, this),
                                                                             bulkMode && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4843,7 +4868,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "Épisode de départ"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 1676,
+                                                                                        lineNumber: 1696,
                                                                                         columnNumber: 37
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -4854,7 +4879,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         className: "w-24 bg-zinc-900 border-zinc-700 focus:border-primary"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 1677,
+                                                                                        lineNumber: 1697,
                                                                                         columnNumber: 37
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4868,19 +4893,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 1684,
+                                                                                        lineNumber: 1704,
                                                                                         columnNumber: 37
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 1675,
+                                                                                lineNumber: 1695,
                                                                                 columnNumber: 35
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 1608,
+                                                                        lineNumber: 1628,
                                                                         columnNumber: 31
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -4897,7 +4922,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 children: "Nom de la source"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1700,
+                                                                                                lineNumber: 1720,
                                                                                                 columnNumber: 35
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -4908,13 +4933,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 className: "bg-zinc-900 border-zinc-700 focus:border-primary"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1701,
+                                                                                                lineNumber: 1721,
                                                                                                 columnNumber: 35
                                                                                             }, this)
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 1699,
+                                                                                        lineNumber: 1719,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4924,7 +4949,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 children: "Type de lien"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1710,
+                                                                                                lineNumber: 1730,
                                                                                                 columnNumber: 35
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -4935,12 +4960,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                         className: "bg-zinc-900 border-zinc-700",
                                                                                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1716,
+                                                                                                            lineNumber: 1736,
                                                                                                             columnNumber: 39
                                                                                                         }, this)
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                        lineNumber: 1715,
+                                                                                                        lineNumber: 1735,
                                                                                                         columnNumber: 37
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -4951,7 +4976,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                 children: "Direct"
                                                                                                             }, void 0, false, {
                                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                lineNumber: 1719,
+                                                                                                                lineNumber: 1739,
                                                                                                                 columnNumber: 39
                                                                                                             }, this),
                                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4959,7 +4984,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                 children: "Torrent"
                                                                                                             }, void 0, false, {
                                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                lineNumber: 1720,
+                                                                                                                lineNumber: 1740,
                                                                                                                 columnNumber: 39
                                                                                                             }, this),
                                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -4967,31 +4992,31 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                 children: "Magnet"
                                                                                                             }, void 0, false, {
                                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                lineNumber: 1721,
+                                                                                                                lineNumber: 1741,
                                                                                                                 columnNumber: 39
                                                                                                             }, this)
                                                                                                         ]
                                                                                                     }, void 0, true, {
                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                        lineNumber: 1718,
+                                                                                                        lineNumber: 1738,
                                                                                                         columnNumber: 37
                                                                                                     }, this)
                                                                                                 ]
                                                                                             }, void 0, true, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1711,
+                                                                                                lineNumber: 1731,
                                                                                                 columnNumber: 35
                                                                                             }, this)
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 1709,
+                                                                                        lineNumber: 1729,
                                                                                         columnNumber: 33
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 1698,
+                                                                                lineNumber: 1718,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             bulkMode ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5004,7 +5029,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 children: "URLs (une par ligne)"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1730,
+                                                                                                lineNumber: 1750,
                                                                                                 columnNumber: 37
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$textarea$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Textarea"], {
@@ -5016,7 +5041,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 className: "bg-zinc-900 border-zinc-700 focus:border-primary"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1731,
+                                                                                                lineNumber: 1751,
                                                                                                 columnNumber: 37
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -5027,13 +5052,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 ]
                                                                                             }, void 0, true, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1741,
+                                                                                                lineNumber: 1761,
                                                                                                 columnNumber: 37
                                                                                             }, this)
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 1729,
+                                                                                        lineNumber: 1749,
                                                                                         columnNumber: 35
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5046,7 +5071,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                         children: "Qualité"
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                        lineNumber: 1748,
+                                                                                                        lineNumber: 1768,
                                                                                                         columnNumber: 39
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -5057,12 +5082,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                 className: "bg-zinc-900 border-zinc-700",
                                                                                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1754,
+                                                                                                                    lineNumber: 1774,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this)
                                                                                                             }, void 0, false, {
                                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                lineNumber: 1753,
+                                                                                                                lineNumber: 1773,
                                                                                                                 columnNumber: 41
                                                                                                             }, this),
                                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -5073,7 +5098,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                         children: "SD"
                                                                                                                     }, void 0, false, {
                                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                        lineNumber: 1757,
+                                                                                                                        lineNumber: 1777,
                                                                                                                         columnNumber: 43
                                                                                                                     }, this),
                                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -5081,7 +5106,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                         children: "HD"
                                                                                                                     }, void 0, false, {
                                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                        lineNumber: 1758,
+                                                                                                                        lineNumber: 1778,
                                                                                                                         columnNumber: 43
                                                                                                                     }, this),
                                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -5089,7 +5114,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                         children: "FHD"
                                                                                                                     }, void 0, false, {
                                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                        lineNumber: 1759,
+                                                                                                                        lineNumber: 1779,
                                                                                                                         columnNumber: 43
                                                                                                                     }, this),
                                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -5097,25 +5122,25 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                         children: "4K"
                                                                                                                     }, void 0, false, {
                                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                        lineNumber: 1760,
+                                                                                                                        lineNumber: 1780,
                                                                                                                         columnNumber: 43
                                                                                                                     }, this)
                                                                                                                 ]
                                                                                                             }, void 0, true, {
                                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                lineNumber: 1756,
+                                                                                                                lineNumber: 1776,
                                                                                                                 columnNumber: 41
                                                                                                             }, this)
                                                                                                         ]
                                                                                                     }, void 0, true, {
                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                        lineNumber: 1749,
+                                                                                                        lineNumber: 1769,
                                                                                                         columnNumber: 39
                                                                                                     }, this)
                                                                                                 ]
                                                                                             }, void 0, true, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1747,
+                                                                                                lineNumber: 1767,
                                                                                                 columnNumber: 37
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5125,7 +5150,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                         children: "Langue"
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                        lineNumber: 1765,
+                                                                                                        lineNumber: 1785,
                                                                                                         columnNumber: 39
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -5136,12 +5161,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                 className: "bg-zinc-900 border-zinc-700",
                                                                                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1771,
+                                                                                                                    lineNumber: 1791,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this)
                                                                                                             }, void 0, false, {
                                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                lineNumber: 1770,
+                                                                                                                lineNumber: 1790,
                                                                                                                 columnNumber: 41
                                                                                                             }, this),
                                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -5152,7 +5177,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                         children: "VF"
                                                                                                                     }, void 0, false, {
                                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                        lineNumber: 1774,
+                                                                                                                        lineNumber: 1794,
                                                                                                                         columnNumber: 43
                                                                                                                     }, this),
                                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -5160,7 +5185,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                         children: "VOSTFR"
                                                                                                                     }, void 0, false, {
                                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                        lineNumber: 1775,
+                                                                                                                        lineNumber: 1795,
                                                                                                                         columnNumber: 43
                                                                                                                     }, this),
                                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -5168,7 +5193,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                         children: "VO"
                                                                                                                     }, void 0, false, {
                                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                        lineNumber: 1776,
+                                                                                                                        lineNumber: 1796,
                                                                                                                         columnNumber: 43
                                                                                                                     }, this),
                                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -5176,25 +5201,25 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                         children: "Multi"
                                                                                                                     }, void 0, false, {
                                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                        lineNumber: 1777,
+                                                                                                                        lineNumber: 1797,
                                                                                                                         columnNumber: 43
                                                                                                                     }, this)
                                                                                                                 ]
                                                                                                             }, void 0, true, {
                                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                lineNumber: 1773,
+                                                                                                                lineNumber: 1793,
                                                                                                                 columnNumber: 41
                                                                                                             }, this)
                                                                                                         ]
                                                                                                     }, void 0, true, {
                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                        lineNumber: 1766,
+                                                                                                        lineNumber: 1786,
                                                                                                         columnNumber: 39
                                                                                                     }, this)
                                                                                                 ]
                                                                                             }, void 0, true, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1764,
+                                                                                                lineNumber: 1784,
                                                                                                 columnNumber: 37
                                                                                             }, this),
                                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5204,74 +5229,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                         children: "Resolution"
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                        lineNumber: 1782,
+                                                                                                        lineNumber: 1802,
                                                                                                         columnNumber: 39
                                                                                                     }, this),
                                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
                                                                                                         placeholder: "Ex: 1080p",
                                                                                                         value: downloadLinks[0].resolution,
                                                                                                         onChange: (e)=>updateDownloadLink(0, "resolution", e.target.value),
-                                                                                                        className: "bg-zinc-900 border-zinc-700 focus:border-primary"
-                                                                                                    }, void 0, false, {
-                                                                                                        fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                        lineNumber: 1783,
-                                                                                                        columnNumber: 39
-                                                                                                    }, this)
-                                                                                                ]
-                                                                                            }, void 0, true, {
-                                                                                                fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1781,
-                                                                                                columnNumber: 37
-                                                                                            }, this)
-                                                                                        ]
-                                                                                    }, void 0, true, {
-                                                                                        fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 1746,
-                                                                                        columnNumber: 35
-                                                                                    }, this),
-                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                                        className: "grid grid-cols-2 gap-4",
-                                                                                        children: [
-                                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                                                className: "space-y-2",
-                                                                                                children: [
-                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$label$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Label"], {
-                                                                                                        children: "Codec Video"
-                                                                                                    }, void 0, false, {
-                                                                                                        fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                        lineNumber: 1793,
-                                                                                                        columnNumber: 39
-                                                                                                    }, this),
-                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
-                                                                                                        placeholder: "Ex: x264, x265",
-                                                                                                        value: downloadLinks[0].codec_video,
-                                                                                                        onChange: (e)=>updateDownloadLink(0, "codec_video", e.target.value),
-                                                                                                        className: "bg-zinc-900 border-zinc-700 focus:border-primary"
-                                                                                                    }, void 0, false, {
-                                                                                                        fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                        lineNumber: 1794,
-                                                                                                        columnNumber: 39
-                                                                                                    }, this)
-                                                                                                ]
-                                                                                            }, void 0, true, {
-                                                                                                fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1792,
-                                                                                                columnNumber: 37
-                                                                                            }, this),
-                                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                                                className: "space-y-2",
-                                                                                                children: [
-                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$label$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Label"], {
-                                                                                                        children: "Codec Audio"
-                                                                                                    }, void 0, false, {
-                                                                                                        fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                        lineNumber: 1802,
-                                                                                                        columnNumber: 39
-                                                                                                    }, this),
-                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
-                                                                                                        placeholder: "Ex: DTS, AC3",
-                                                                                                        value: downloadLinks[0].codec_audio,
-                                                                                                        onChange: (e)=>updateDownloadLink(0, "codec_audio", e.target.value),
                                                                                                         className: "bg-zinc-900 border-zinc-700 focus:border-primary"
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
@@ -5287,13 +5251,74 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 1791,
+                                                                                        lineNumber: 1766,
+                                                                                        columnNumber: 35
+                                                                                    }, this),
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                        className: "grid grid-cols-2 gap-4",
+                                                                                        children: [
+                                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                                className: "space-y-2",
+                                                                                                children: [
+                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$label$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Label"], {
+                                                                                                        children: "Codec Video"
+                                                                                                    }, void 0, false, {
+                                                                                                        fileName: "[project]/components/add-link-modal.tsx",
+                                                                                                        lineNumber: 1813,
+                                                                                                        columnNumber: 39
+                                                                                                    }, this),
+                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
+                                                                                                        placeholder: "Ex: x264, x265",
+                                                                                                        value: downloadLinks[0].codec_video,
+                                                                                                        onChange: (e)=>updateDownloadLink(0, "codec_video", e.target.value),
+                                                                                                        className: "bg-zinc-900 border-zinc-700 focus:border-primary"
+                                                                                                    }, void 0, false, {
+                                                                                                        fileName: "[project]/components/add-link-modal.tsx",
+                                                                                                        lineNumber: 1814,
+                                                                                                        columnNumber: 39
+                                                                                                    }, this)
+                                                                                                ]
+                                                                                            }, void 0, true, {
+                                                                                                fileName: "[project]/components/add-link-modal.tsx",
+                                                                                                lineNumber: 1812,
+                                                                                                columnNumber: 37
+                                                                                            }, this),
+                                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                                className: "space-y-2",
+                                                                                                children: [
+                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$label$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Label"], {
+                                                                                                        children: "Codec Audio"
+                                                                                                    }, void 0, false, {
+                                                                                                        fileName: "[project]/components/add-link-modal.tsx",
+                                                                                                        lineNumber: 1822,
+                                                                                                        columnNumber: 39
+                                                                                                    }, this),
+                                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
+                                                                                                        placeholder: "Ex: DTS, AC3",
+                                                                                                        value: downloadLinks[0].codec_audio,
+                                                                                                        onChange: (e)=>updateDownloadLink(0, "codec_audio", e.target.value),
+                                                                                                        className: "bg-zinc-900 border-zinc-700 focus:border-primary"
+                                                                                                    }, void 0, false, {
+                                                                                                        fileName: "[project]/components/add-link-modal.tsx",
+                                                                                                        lineNumber: 1823,
+                                                                                                        columnNumber: 39
+                                                                                                    }, this)
+                                                                                                ]
+                                                                                            }, void 0, true, {
+                                                                                                fileName: "[project]/components/add-link-modal.tsx",
+                                                                                                lineNumber: 1821,
+                                                                                                columnNumber: 37
+                                                                                            }, this)
+                                                                                        ]
+                                                                                    }, void 0, true, {
+                                                                                        fileName: "[project]/components/add-link-modal.tsx",
+                                                                                        lineNumber: 1811,
                                                                                         columnNumber: 35
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 1728,
+                                                                                lineNumber: 1748,
                                                                                 columnNumber: 33
                                                                             }, this) : /* Mode normal: liste de liens avec bouton ajouter */ /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                                 className: "space-y-4",
@@ -5311,12 +5336,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                         className: "h-4 w-4"
                                                                                                     }, void 0, false, {
                                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                        lineNumber: 1825,
+                                                                                                        lineNumber: 1845,
                                                                                                         columnNumber: 43
                                                                                                     }, this)
                                                                                                 }, void 0, false, {
                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                    lineNumber: 1818,
+                                                                                                    lineNumber: 1838,
                                                                                                     columnNumber: 41
                                                                                                 }, this),
                                                                                                 downloadLinks.length > 1 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -5327,7 +5352,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                     ]
                                                                                                 }, void 0, true, {
                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                    lineNumber: 1830,
+                                                                                                    lineNumber: 1850,
                                                                                                     columnNumber: 41
                                                                                                 }, this),
                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5337,7 +5362,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                             children: "URL du téléchargement"
                                                                                                         }, void 0, false, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1834,
+                                                                                                            lineNumber: 1854,
                                                                                                             columnNumber: 41
                                                                                                         }, this),
                                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -5348,13 +5373,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                             className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                                                         }, void 0, false, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1835,
+                                                                                                            lineNumber: 1855,
                                                                                                             columnNumber: 41
                                                                                                         }, this)
                                                                                                     ]
                                                                                                 }, void 0, true, {
                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                    lineNumber: 1833,
+                                                                                                    lineNumber: 1853,
                                                                                                     columnNumber: 39
                                                                                                 }, this),
                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5367,7 +5392,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     children: "Qualité"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1846,
+                                                                                                                    lineNumber: 1866,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this),
                                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -5378,12 +5403,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                             className: "bg-zinc-950 border-zinc-800",
                                                                                                                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                                lineNumber: 1852,
+                                                                                                                                lineNumber: 1872,
                                                                                                                                 columnNumber: 47
                                                                                                                             }, this)
                                                                                                                         }, void 0, false, {
                                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                            lineNumber: 1851,
+                                                                                                                            lineNumber: 1871,
                                                                                                                             columnNumber: 45
                                                                                                                         }, this),
                                                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -5394,7 +5419,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                                     children: "SD"
                                                                                                                                 }, void 0, false, {
                                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                                    lineNumber: 1855,
+                                                                                                                                    lineNumber: 1875,
                                                                                                                                     columnNumber: 47
                                                                                                                                 }, this),
                                                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -5402,7 +5427,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                                     children: "HD"
                                                                                                                                 }, void 0, false, {
                                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                                    lineNumber: 1856,
+                                                                                                                                    lineNumber: 1876,
                                                                                                                                     columnNumber: 47
                                                                                                                                 }, this),
                                                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -5410,7 +5435,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                                     children: "FHD"
                                                                                                                                 }, void 0, false, {
                                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                                    lineNumber: 1857,
+                                                                                                                                    lineNumber: 1877,
                                                                                                                                     columnNumber: 47
                                                                                                                                 }, this),
                                                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -5418,25 +5443,25 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                                     children: "4K"
                                                                                                                                 }, void 0, false, {
                                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                                    lineNumber: 1858,
+                                                                                                                                    lineNumber: 1878,
                                                                                                                                     columnNumber: 47
                                                                                                                                 }, this)
                                                                                                                             ]
                                                                                                                         }, void 0, true, {
                                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                            lineNumber: 1854,
+                                                                                                                            lineNumber: 1874,
                                                                                                                             columnNumber: 45
                                                                                                                         }, this)
                                                                                                                     ]
                                                                                                                 }, void 0, true, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1847,
+                                                                                                                    lineNumber: 1867,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this)
                                                                                                             ]
                                                                                                         }, void 0, true, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1845,
+                                                                                                            lineNumber: 1865,
                                                                                                             columnNumber: 41
                                                                                                         }, this),
                                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5446,7 +5471,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     children: "Taille"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1863,
+                                                                                                                    lineNumber: 1883,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this),
                                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -5456,13 +5481,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1864,
+                                                                                                                    lineNumber: 1884,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this)
                                                                                                             ]
                                                                                                         }, void 0, true, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1862,
+                                                                                                            lineNumber: 1882,
                                                                                                             columnNumber: 41
                                                                                                         }, this),
                                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5472,7 +5497,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     children: "Langue"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1872,
+                                                                                                                    lineNumber: 1892,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this),
                                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -5482,19 +5507,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1873,
+                                                                                                                    lineNumber: 1893,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this)
                                                                                                             ]
                                                                                                         }, void 0, true, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1871,
+                                                                                                            lineNumber: 1891,
                                                                                                             columnNumber: 41
                                                                                                         }, this)
                                                                                                     ]
                                                                                                 }, void 0, true, {
                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                    lineNumber: 1844,
+                                                                                                    lineNumber: 1864,
                                                                                                     columnNumber: 39
                                                                                                 }, this),
                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5507,7 +5532,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     children: "Nom de la release"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1884,
+                                                                                                                    lineNumber: 1904,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this),
                                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -5517,13 +5542,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1885,
+                                                                                                                    lineNumber: 1905,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this)
                                                                                                             ]
                                                                                                         }, void 0, true, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1883,
+                                                                                                            lineNumber: 1903,
                                                                                                             columnNumber: 41
                                                                                                         }, this),
                                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5533,7 +5558,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     children: "Codec Video"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1893,
+                                                                                                                    lineNumber: 1913,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this),
                                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -5543,19 +5568,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1894,
+                                                                                                                    lineNumber: 1914,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this)
                                                                                                             ]
                                                                                                         }, void 0, true, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1892,
+                                                                                                            lineNumber: 1912,
                                                                                                             columnNumber: 41
                                                                                                         }, this)
                                                                                                     ]
                                                                                                 }, void 0, true, {
                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                    lineNumber: 1882,
+                                                                                                    lineNumber: 1902,
                                                                                                     columnNumber: 39
                                                                                                 }, this),
                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5568,7 +5593,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     children: "Codec Audio"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1905,
+                                                                                                                    lineNumber: 1925,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this),
                                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -5578,13 +5603,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1906,
+                                                                                                                    lineNumber: 1926,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this)
                                                                                                             ]
                                                                                                         }, void 0, true, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1904,
+                                                                                                            lineNumber: 1924,
                                                                                                             columnNumber: 41
                                                                                                         }, this),
                                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5594,7 +5619,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     children: "Resolution"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1914,
+                                                                                                                    lineNumber: 1934,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this),
                                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -5604,19 +5629,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1915,
+                                                                                                                    lineNumber: 1935,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this)
                                                                                                             ]
                                                                                                         }, void 0, true, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1913,
+                                                                                                            lineNumber: 1933,
                                                                                                             columnNumber: 41
                                                                                                         }, this)
                                                                                                     ]
                                                                                                 }, void 0, true, {
                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                    lineNumber: 1903,
+                                                                                                    lineNumber: 1923,
                                                                                                     columnNumber: 39
                                                                                                 }, this),
                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5629,7 +5654,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     children: "Sous-titres"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1926,
+                                                                                                                    lineNumber: 1946,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this),
                                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -5639,13 +5664,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1927,
+                                                                                                                    lineNumber: 1947,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this)
                                                                                                             ]
                                                                                                         }, void 0, true, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1925,
+                                                                                                            lineNumber: 1945,
                                                                                                             columnNumber: 41
                                                                                                         }, this),
                                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5657,7 +5682,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     onCheckedChange: (checked)=>updateDownloadLink(index, "has_audio_description", !!checked)
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1935,
+                                                                                                                    lineNumber: 1955,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this),
                                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -5666,19 +5691,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                                     children: "Audio Description (AD)"
                                                                                                                 }, void 0, false, {
                                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                                    lineNumber: 1942,
+                                                                                                                    lineNumber: 1962,
                                                                                                                     columnNumber: 43
                                                                                                                 }, this)
                                                                                                             ]
                                                                                                         }, void 0, true, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1934,
+                                                                                                            lineNumber: 1954,
                                                                                                             columnNumber: 41
                                                                                                         }, this)
                                                                                                     ]
                                                                                                 }, void 0, true, {
                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                    lineNumber: 1924,
+                                                                                                    lineNumber: 1944,
                                                                                                     columnNumber: 39
                                                                                                 }, this),
                                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5688,7 +5713,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                             children: "NFO (optionnel)"
                                                                                                         }, void 0, false, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1949,
+                                                                                                            lineNumber: 1969,
                                                                                                             columnNumber: 41
                                                                                                         }, this),
                                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$textarea$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Textarea"], {
@@ -5699,19 +5724,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                             className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                                                         }, void 0, false, {
                                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                            lineNumber: 1950,
+                                                                                                            lineNumber: 1970,
                                                                                                             columnNumber: 41
                                                                                                         }, this)
                                                                                                     ]
                                                                                                 }, void 0, true, {
                                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                    lineNumber: 1948,
+                                                                                                    lineNumber: 1968,
                                                                                                     columnNumber: 39
                                                                                                 }, this)
                                                                                             ]
                                                                                         }, index, true, {
                                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                                            lineNumber: 1816,
+                                                                                            lineNumber: 1836,
                                                                                             columnNumber: 37
                                                                                         }, this)),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -5724,20 +5749,20 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                                 className: "h-4 w-4 mr-2"
                                                                                             }, void 0, false, {
                                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                                lineNumber: 1967,
+                                                                                                lineNumber: 1987,
                                                                                                 columnNumber: 37
                                                                                             }, this),
                                                                                             "Ajouter un autre lien"
                                                                                         ]
                                                                                     }, void 0, true, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 1961,
+                                                                                        lineNumber: 1981,
                                                                                         columnNumber: 35
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 1814,
+                                                                                lineNumber: 1834,
                                                                                 columnNumber: 33
                                                                             }, this),
                                                                             success && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -5745,7 +5770,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: success
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 1973,
+                                                                                lineNumber: 1993,
                                                                                 columnNumber: 43
                                                                             }, this),
                                                                             error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -5753,7 +5778,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: error
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 1974,
+                                                                                lineNumber: 1994,
                                                                                 columnNumber: 41
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -5763,19 +5788,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: loading ? "Ajout en cours..." : bulkMode ? `Ajouter ${bulkUrls.split("\n").filter((u)=>u.trim()).length} liens` : `Ajouter ${downloadLinks.length} lien(s)`
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 1976,
+                                                                                lineNumber: 1996,
                                                                                 columnNumber: 31
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 1693,
+                                                                        lineNumber: 1713,
                                                                         columnNumber: 29
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 1606,
+                                                                lineNumber: 1626,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
@@ -5812,7 +5837,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                 children: "Nouvelle chaine"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2001,
+                                                lineNumber: 2021,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -5823,13 +5848,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                 children: "Ajouter une source"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2009,
+                                                lineNumber: 2029,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/add-link-modal.tsx",
-                                        lineNumber: 2000,
+                                        lineNumber: 2020,
                                         columnNumber: 19
                                     }, this),
                                     liveTvMode === "new" && !isChannelPrefilled ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -5846,7 +5871,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: "Nom de la chaine"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2024,
+                                                                lineNumber: 2044,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -5860,13 +5885,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2025,
+                                                                lineNumber: 2045,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2023,
+                                                        lineNumber: 2043,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5876,7 +5901,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: "Categorie"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2034,
+                                                                lineNumber: 2054,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -5890,12 +5915,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800",
                                                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                            lineNumber: 2040,
+                                                                            lineNumber: 2060,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2039,
+                                                                        lineNumber: 2059,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -5905,30 +5930,30 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: cat.label
                                                                             }, cat.value, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2044,
+                                                                                lineNumber: 2064,
                                                                                 columnNumber: 31
                                                                             }, this))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2042,
+                                                                        lineNumber: 2062,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2035,
+                                                                lineNumber: 2055,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2033,
+                                                        lineNumber: 2053,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2022,
+                                                lineNumber: 2042,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5938,7 +5963,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         children: "URL du logo (optionnel)"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2053,
+                                                        lineNumber: 2073,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -5952,13 +5977,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2054,
+                                                        lineNumber: 2074,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2052,
+                                                lineNumber: 2072,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5968,7 +5993,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         children: "URL du flux"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2063,
+                                                        lineNumber: 2083,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -5982,13 +6007,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2064,
+                                                        lineNumber: 2084,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2062,
+                                                lineNumber: 2082,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6001,7 +6026,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: "Pays"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2074,
+                                                                lineNumber: 2094,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -6009,112 +6034,6 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 onValueChange: (v)=>setLiveTvData({
                                                                         ...liveTvData,
                                                                         country: v
-                                                                    }),
-                                                                children: [
-                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectTrigger"], {
-                                                                        className: "bg-zinc-950 border-zinc-800",
-                                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
-                                                                            fileName: "[project]/components/add-link-modal.tsx",
-                                                                            lineNumber: 2080,
-                                                                            columnNumber: 29
-                                                                        }, this)
-                                                                    }, void 0, false, {
-                                                                        fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2079,
-                                                                        columnNumber: 27
-                                                                    }, this),
-                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
-                                                                        className: "bg-zinc-950 border-zinc-800",
-                                                                        children: [
-                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
-                                                                                value: "fr",
-                                                                                children: "France"
-                                                                            }, void 0, false, {
-                                                                                fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2083,
-                                                                                columnNumber: 29
-                                                                            }, this),
-                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
-                                                                                value: "be",
-                                                                                children: "Belgique"
-                                                                            }, void 0, false, {
-                                                                                fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2084,
-                                                                                columnNumber: 29
-                                                                            }, this),
-                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
-                                                                                value: "ch",
-                                                                                children: "Suisse"
-                                                                            }, void 0, false, {
-                                                                                fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2085,
-                                                                                columnNumber: 29
-                                                                            }, this),
-                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
-                                                                                value: "ca",
-                                                                                children: "Canada"
-                                                                            }, void 0, false, {
-                                                                                fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2086,
-                                                                                columnNumber: 29
-                                                                            }, this),
-                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
-                                                                                value: "us",
-                                                                                children: "USA"
-                                                                            }, void 0, false, {
-                                                                                fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2087,
-                                                                                columnNumber: 29
-                                                                            }, this),
-                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
-                                                                                value: "uk",
-                                                                                children: "UK"
-                                                                            }, void 0, false, {
-                                                                                fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2088,
-                                                                                columnNumber: 29
-                                                                            }, this),
-                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
-                                                                                value: "other",
-                                                                                children: "Autre"
-                                                                            }, void 0, false, {
-                                                                                fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2089,
-                                                                                columnNumber: 29
-                                                                            }, this)
-                                                                        ]
-                                                                    }, void 0, true, {
-                                                                        fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2082,
-                                                                        columnNumber: 27
-                                                                    }, this)
-                                                                ]
-                                                            }, void 0, true, {
-                                                                fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2075,
-                                                                columnNumber: 25
-                                                            }, this)
-                                                        ]
-                                                    }, void 0, true, {
-                                                        fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2073,
-                                                        columnNumber: 23
-                                                    }, this),
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                        className: "space-y-2",
-                                                        children: [
-                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$label$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Label"], {
-                                                                children: "Langue"
-                                                            }, void 0, false, {
-                                                                fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2094,
-                                                                columnNumber: 25
-                                                            }, this),
-                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
-                                                                value: liveTvData.language,
-                                                                onValueChange: (v)=>setLiveTvData({
-                                                                        ...liveTvData,
-                                                                        language: v
                                                                     }),
                                                                 children: [
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectTrigger"], {
@@ -6134,26 +6053,58 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: [
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
                                                                                 value: "fr",
-                                                                                children: "Francais"
+                                                                                children: "France"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
                                                                                 lineNumber: 2103,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
-                                                                                value: "en",
-                                                                                children: "Anglais"
+                                                                                value: "be",
+                                                                                children: "Belgique"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
                                                                                 lineNumber: 2104,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
-                                                                                value: "multi",
-                                                                                children: "Multi"
+                                                                                value: "ch",
+                                                                                children: "Suisse"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
                                                                                 lineNumber: 2105,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
+                                                                                value: "ca",
+                                                                                children: "Canada"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/components/add-link-modal.tsx",
+                                                                                lineNumber: 2106,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
+                                                                                value: "us",
+                                                                                children: "USA"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/components/add-link-modal.tsx",
+                                                                                lineNumber: 2107,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
+                                                                                value: "uk",
+                                                                                children: "UK"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/components/add-link-modal.tsx",
+                                                                                lineNumber: 2108,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
+                                                                                value: "other",
+                                                                                children: "Autre"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/components/add-link-modal.tsx",
+                                                                                lineNumber: 2109,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
@@ -6178,10 +6129,84 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         className: "space-y-2",
                                                         children: [
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$label$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Label"], {
+                                                                children: "Langue"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/components/add-link-modal.tsx",
+                                                                lineNumber: 2114,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
+                                                                value: liveTvData.language,
+                                                                onValueChange: (v)=>setLiveTvData({
+                                                                        ...liveTvData,
+                                                                        language: v
+                                                                    }),
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectTrigger"], {
+                                                                        className: "bg-zinc-950 border-zinc-800",
+                                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
+                                                                            fileName: "[project]/components/add-link-modal.tsx",
+                                                                            lineNumber: 2120,
+                                                                            columnNumber: 29
+                                                                        }, this)
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/components/add-link-modal.tsx",
+                                                                        lineNumber: 2119,
+                                                                        columnNumber: 27
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
+                                                                        className: "bg-zinc-950 border-zinc-800",
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
+                                                                                value: "fr",
+                                                                                children: "Francais"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/components/add-link-modal.tsx",
+                                                                                lineNumber: 2123,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
+                                                                                value: "en",
+                                                                                children: "Anglais"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/components/add-link-modal.tsx",
+                                                                                lineNumber: 2124,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
+                                                                                value: "multi",
+                                                                                children: "Multi"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/components/add-link-modal.tsx",
+                                                                                lineNumber: 2125,
+                                                                                columnNumber: 29
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "[project]/components/add-link-modal.tsx",
+                                                                        lineNumber: 2122,
+                                                                        columnNumber: 27
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/components/add-link-modal.tsx",
+                                                                lineNumber: 2115,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/components/add-link-modal.tsx",
+                                                        lineNumber: 2113,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "space-y-2",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$label$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Label"], {
                                                                 children: "Qualite"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2110,
+                                                                lineNumber: 2130,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -6195,12 +6220,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800",
                                                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                            lineNumber: 2116,
+                                                                            lineNumber: 2136,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2115,
+                                                                        lineNumber: 2135,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -6211,7 +6236,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: "SD"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2119,
+                                                                                lineNumber: 2139,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6219,7 +6244,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: "HD"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2120,
+                                                                                lineNumber: 2140,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6227,7 +6252,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: "FHD"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2121,
+                                                                                lineNumber: 2141,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6235,31 +6260,31 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: "4K"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2122,
+                                                                                lineNumber: 2142,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2118,
+                                                                        lineNumber: 2138,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2111,
+                                                                lineNumber: 2131,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2109,
+                                                        lineNumber: 2129,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2072,
+                                                lineNumber: 2092,
                                                 columnNumber: 21
                                             }, this),
                                             success && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6267,7 +6292,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                 children: success
                                             }, void 0, false, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2127,
+                                                lineNumber: 2147,
                                                 columnNumber: 33
                                             }, this),
                                             error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6275,7 +6300,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                 children: error
                                             }, void 0, false, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2128,
+                                                lineNumber: 2148,
                                                 columnNumber: 31
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -6285,13 +6310,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                 children: loading ? "Ajout en cours..." : "Ajouter la chaine TV"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2129,
+                                                lineNumber: 2149,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/add-link-modal.tsx",
-                                        lineNumber: 2021,
+                                        lineNumber: 2041,
                                         columnNumber: 19
                                     }, this) : liveTvMode === "existing" && !isChannelPrefilled ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "space-y-4",
@@ -6303,7 +6328,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         children: "Rechercher une chaine"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2136,
+                                                        lineNumber: 2156,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -6313,13 +6338,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2137,
+                                                        lineNumber: 2157,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2135,
+                                                lineNumber: 2155,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6336,20 +6361,20 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                     className: "w-8 h-8 object-contain"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                    lineNumber: 2157,
+                                                                    lineNumber: 2177,
                                                                     columnNumber: 29
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                                     children: channel.channel_name
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                    lineNumber: 2163,
+                                                                    lineNumber: 2183,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             ]
                                                         }, channel.id, true, {
                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                            lineNumber: 2146,
+                                                            lineNumber: 2166,
                                                             columnNumber: 25
                                                         }, this)),
                                                     filteredChannels.length === 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6357,13 +6382,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         children: "Aucune chaine trouvee"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2167,
+                                                        lineNumber: 2187,
                                                         columnNumber: 25
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2144,
+                                                lineNumber: 2164,
                                                 columnNumber: 21
                                             }, this),
                                             selectedChannelId && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -6378,14 +6403,14 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: "3"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2177,
+                                                                lineNumber: 2197,
                                                                 columnNumber: 27
                                                             }, this),
                                                             "URL du flux"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2176,
+                                                        lineNumber: 2196,
                                                         columnNumber: 25
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -6399,7 +6424,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2182,
+                                                        lineNumber: 2202,
                                                         columnNumber: 25
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6412,7 +6437,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Qualite"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2191,
+                                                                        lineNumber: 2211,
                                                                         columnNumber: 29
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -6426,12 +6451,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 className: "bg-zinc-950 border-zinc-800",
                                                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                    lineNumber: 2197,
+                                                                                    lineNumber: 2217,
                                                                                     columnNumber: 33
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2196,
+                                                                                lineNumber: 2216,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -6442,7 +6467,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "SD"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2200,
+                                                                                        lineNumber: 2220,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6450,7 +6475,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "HD"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2201,
+                                                                                        lineNumber: 2221,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6458,7 +6483,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "FHD"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2202,
+                                                                                        lineNumber: 2222,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6466,25 +6491,25 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "4K"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2203,
+                                                                                        lineNumber: 2223,
                                                                                         columnNumber: 33
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2199,
+                                                                                lineNumber: 2219,
                                                                                 columnNumber: 31
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2192,
+                                                                        lineNumber: 2212,
                                                                         columnNumber: 29
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2190,
+                                                                lineNumber: 2210,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6494,7 +6519,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Langue"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2208,
+                                                                        lineNumber: 2228,
                                                                         columnNumber: 29
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -6508,12 +6533,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 className: "bg-zinc-950 border-zinc-800",
                                                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                    lineNumber: 2214,
+                                                                                    lineNumber: 2234,
                                                                                     columnNumber: 33
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2213,
+                                                                                lineNumber: 2233,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -6524,7 +6549,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "Francais"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2217,
+                                                                                        lineNumber: 2237,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6532,7 +6557,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "Anglais"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2218,
+                                                                                        lineNumber: 2238,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6540,31 +6565,31 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "Multi"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2219,
+                                                                                        lineNumber: 2239,
                                                                                         columnNumber: 33
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2216,
+                                                                                lineNumber: 2236,
                                                                                 columnNumber: 31
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2209,
+                                                                        lineNumber: 2229,
                                                                         columnNumber: 29
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2207,
+                                                                lineNumber: 2227,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2189,
+                                                        lineNumber: 2209,
                                                         columnNumber: 25
                                                     }, this),
                                                     success && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6572,7 +6597,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         children: success
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2224,
+                                                        lineNumber: 2244,
                                                         columnNumber: 37
                                                     }, this),
                                                     error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6580,7 +6605,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         children: error
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2225,
+                                                        lineNumber: 2245,
                                                         columnNumber: 35
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -6590,19 +6615,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         children: loading ? "Ajout en cours..." : "Ajouter la source"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2226,
+                                                        lineNumber: 2246,
                                                         columnNumber: 25
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2172,
+                                                lineNumber: 2192,
                                                 columnNumber: 23
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/add-link-modal.tsx",
-                                        lineNumber: 2134,
+                                        lineNumber: 2154,
                                         columnNumber: 19
                                     }, this) : isChannelPrefilled ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
                                         onSubmit: handleLiveTvSourceSubmit,
@@ -6615,7 +6640,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         children: "URL du flux"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2235,
+                                                        lineNumber: 2255,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -6629,13 +6654,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2236,
+                                                        lineNumber: 2256,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2234,
+                                                lineNumber: 2254,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6648,7 +6673,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: "Qualite"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2246,
+                                                                lineNumber: 2266,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -6662,12 +6687,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800",
                                                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                            lineNumber: 2252,
+                                                                            lineNumber: 2272,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2251,
+                                                                        lineNumber: 2271,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -6678,7 +6703,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: "SD"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2255,
+                                                                                lineNumber: 2275,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6686,7 +6711,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: "HD"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2256,
+                                                                                lineNumber: 2276,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6694,7 +6719,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: "FHD"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2257,
+                                                                                lineNumber: 2277,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6702,25 +6727,25 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: "4K"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2258,
+                                                                                lineNumber: 2278,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2254,
+                                                                        lineNumber: 2274,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2247,
+                                                                lineNumber: 2267,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2245,
+                                                        lineNumber: 2265,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6730,7 +6755,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: "Langue"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2263,
+                                                                lineNumber: 2283,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -6744,12 +6769,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800",
                                                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                             fileName: "[project]/components/add-link-modal.tsx",
-                                                                            lineNumber: 2269,
+                                                                            lineNumber: 2289,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2268,
+                                                                        lineNumber: 2288,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -6760,7 +6785,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: "Francais"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2272,
+                                                                                lineNumber: 2292,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6768,7 +6793,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: "Anglais"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2273,
+                                                                                lineNumber: 2293,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -6776,31 +6801,31 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 children: "Multi"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2274,
+                                                                                lineNumber: 2294,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2271,
+                                                                        lineNumber: 2291,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2264,
+                                                                lineNumber: 2284,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2262,
+                                                        lineNumber: 2282,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2244,
+                                                lineNumber: 2264,
                                                 columnNumber: 21
                                             }, this),
                                             success && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6808,7 +6833,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                 children: success
                                             }, void 0, false, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2279,
+                                                lineNumber: 2299,
                                                 columnNumber: 33
                                             }, this),
                                             error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6816,7 +6841,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                 children: error
                                             }, void 0, false, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2280,
+                                                lineNumber: 2300,
                                                 columnNumber: 31
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -6826,13 +6851,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                 children: loading ? "Ajout en cours..." : "Ajouter la source"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2281,
+                                                lineNumber: 2301,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/add-link-modal.tsx",
-                                        lineNumber: 2233,
+                                        lineNumber: 2253,
                                         columnNumber: 19
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "text-center py-10",
@@ -6841,18 +6866,18 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                             children: "Veuillez selectionner une chaine ou creer une nouvelle."
                                         }, void 0, false, {
                                             fileName: "[project]/components/add-link-modal.tsx",
-                                            lineNumber: 2287,
+                                            lineNumber: 2307,
                                             columnNumber: 21
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/add-link-modal.tsx",
-                                        lineNumber: 2286,
+                                        lineNumber: 2306,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/add-link-modal.tsx",
-                                lineNumber: 1998,
+                                lineNumber: 2018,
                                 columnNumber: 15
                             }, this),
                             (mainTab === "digital" || mode === "digital") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6871,14 +6896,14 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         className: "h-4 w-4 mr-2"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2306,
+                                                        lineNumber: 2326,
                                                         columnNumber: 21
                                                     }, this),
                                                     "Nouveau contenu"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2296,
+                                                lineNumber: 2316,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -6891,20 +6916,20 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         className: "h-4 w-4 mr-2"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2319,
+                                                        lineNumber: 2339,
                                                         columnNumber: 21
                                                     }, this),
                                                     "Ajouter un lien"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2309,
+                                                lineNumber: 2329,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/add-link-modal.tsx",
-                                        lineNumber: 2295,
+                                        lineNumber: 2315,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6918,14 +6943,14 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         children: "1"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2326,
+                                                        lineNumber: 2346,
                                                         columnNumber: 21
                                                     }, this),
                                                     "Type de contenu"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2325,
+                                                lineNumber: 2345,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6945,7 +6970,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 className: "w-5 h-5"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2349,
+                                                                lineNumber: 2369,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -6953,25 +6978,25 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: type.label
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2350,
+                                                                lineNumber: 2370,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, type.value, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2335,
+                                                        lineNumber: 2355,
                                                         columnNumber: 25
                                                     }, this);
                                                 })
                                             }, void 0, false, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2331,
+                                                lineNumber: 2351,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/add-link-modal.tsx",
-                                        lineNumber: 2324,
+                                        lineNumber: 2344,
                                         columnNumber: 17
                                     }, this),
                                     digitalMode === "existing" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6988,14 +7013,14 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: "2"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2361,
+                                                                lineNumber: 2381,
                                                                 columnNumber: 25
                                                             }, this),
                                                             "Selectionner un contenu existant"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2360,
+                                                        lineNumber: 2380,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7005,13 +7030,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         className: "bg-zinc-950 border-zinc-800 focus:border-purple-500"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2366,
+                                                        lineNumber: 2386,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2359,
+                                                lineNumber: 2379,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7027,7 +7052,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 className: "w-10 h-14 object-cover rounded"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2388,
+                                                                lineNumber: 2408,
                                                                 columnNumber: 31
                                                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                 className: "w-10 h-14 bg-zinc-800 rounded flex items-center justify-center",
@@ -7036,34 +7061,34 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "w-5 h-5 text-zinc-500"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2395,
+                                                                        lineNumber: 2415,
                                                                         columnNumber: 68
                                                                     }, this),
                                                                     digitalContentType === "music" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$music$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Music$3e$__["Music"], {
                                                                         className: "w-5 h-5 text-zinc-500"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2396,
+                                                                        lineNumber: 2416,
                                                                         columnNumber: 68
                                                                     }, this),
                                                                     digitalContentType === "software" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$package$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Package$3e$__["Package"], {
                                                                         className: "w-5 h-5 text-zinc-500"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2397,
+                                                                        lineNumber: 2417,
                                                                         columnNumber: 71
                                                                     }, this),
                                                                     digitalContentType === "game" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$gamepad$2d$2$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Gamepad2$3e$__["Gamepad2"], {
                                                                         className: "w-5 h-5 text-zinc-500"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2398,
+                                                                        lineNumber: 2418,
                                                                         columnNumber: 67
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2394,
+                                                                lineNumber: 2414,
                                                                 columnNumber: 31
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7074,7 +7099,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: content.title
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2402,
+                                                                        lineNumber: 2422,
                                                                         columnNumber: 31
                                                                     }, this),
                                                                     content.author && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7082,26 +7107,26 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: content.author
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2403,
+                                                                        lineNumber: 2423,
                                                                         columnNumber: 50
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2401,
+                                                                lineNumber: 2421,
                                                                 columnNumber: 29
                                                             }, this),
                                                             selectedDigitalContentId === content.id && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                 className: "w-2 h-2 rounded-full bg-purple-500"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2406,
+                                                                lineNumber: 2426,
                                                                 columnNumber: 31
                                                             }, this)
                                                         ]
                                                     }, content.id, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2377,
+                                                        lineNumber: 2397,
                                                         columnNumber: 27
                                                     }, this)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                     className: "text-center py-6 text-zinc-500",
@@ -7112,12 +7137,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                    lineNumber: 2411,
+                                                    lineNumber: 2431,
                                                     columnNumber: 25
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2374,
+                                                lineNumber: 2394,
                                                 columnNumber: 21
                                             }, this),
                                             selectedDigitalContentId && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -7132,14 +7157,14 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: "3"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2421,
+                                                                lineNumber: 2441,
                                                                 columnNumber: 27
                                                             }, this),
                                                             "Informations du lien"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2420,
+                                                        lineNumber: 2440,
                                                         columnNumber: 25
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7152,7 +7177,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Nom de la source *"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2429,
+                                                                        lineNumber: 2449,
                                                                         columnNumber: 29
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7166,13 +7191,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800 focus:border-blue-500"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2430,
+                                                                        lineNumber: 2450,
                                                                         columnNumber: 29
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2428,
+                                                                lineNumber: 2448,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7182,7 +7207,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Format"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2439,
+                                                                        lineNumber: 2459,
                                                                         columnNumber: 29
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7195,19 +7220,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800 focus:border-blue-500"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2440,
+                                                                        lineNumber: 2460,
                                                                         columnNumber: 29
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2438,
+                                                                lineNumber: 2458,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2427,
+                                                        lineNumber: 2447,
                                                         columnNumber: 25
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7217,7 +7242,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: "URL de telechargement *"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2450,
+                                                                lineNumber: 2470,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7232,13 +7257,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 className: "bg-zinc-950 border-zinc-800 focus:border-blue-500"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2451,
+                                                                lineNumber: 2471,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2449,
+                                                        lineNumber: 2469,
                                                         columnNumber: 25
                                                     }, this),
                                                     (digitalContentType === "ebook" || digitalContentType === "music") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7251,7 +7276,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2463,
+                                                                lineNumber: 2483,
                                                                 columnNumber: 29
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7265,7 +7290,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 className: "bg-zinc-950 border-zinc-800 focus:border-blue-500"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2466,
+                                                                lineNumber: 2486,
                                                                 columnNumber: 29
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7273,13 +7298,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: digitalContentType === "ebook" ? "URL pour lire le PDF en ligne" : "URL du fichier audio pour l'ecoute en ligne"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2473,
+                                                                lineNumber: 2493,
                                                                 columnNumber: 29
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2462,
+                                                        lineNumber: 2482,
                                                         columnNumber: 27
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7292,7 +7317,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Taille"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2483,
+                                                                        lineNumber: 2503,
                                                                         columnNumber: 29
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7305,13 +7330,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800 focus:border-blue-500"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2484,
+                                                                        lineNumber: 2504,
                                                                         columnNumber: 29
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2482,
+                                                                lineNumber: 2502,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7321,7 +7346,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Qualite"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2492,
+                                                                        lineNumber: 2512,
                                                                         columnNumber: 29
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7334,13 +7359,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800 focus:border-blue-500"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2493,
+                                                                        lineNumber: 2513,
                                                                         columnNumber: 29
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2491,
+                                                                lineNumber: 2511,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7350,7 +7375,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Langue"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2501,
+                                                                        lineNumber: 2521,
                                                                         columnNumber: 29
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -7364,12 +7389,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 className: "bg-zinc-950 border-zinc-800",
                                                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                    lineNumber: 2507,
+                                                                                    lineNumber: 2527,
                                                                                     columnNumber: 33
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2506,
+                                                                                lineNumber: 2526,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -7380,7 +7405,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "Francais"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2510,
+                                                                                        lineNumber: 2530,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7388,7 +7413,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "Anglais"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2511,
+                                                                                        lineNumber: 2531,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7396,7 +7421,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "Multi"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2512,
+                                                                                        lineNumber: 2532,
                                                                                         columnNumber: 33
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7404,31 +7429,31 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "Autre"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2513,
+                                                                                        lineNumber: 2533,
                                                                                         columnNumber: 33
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2509,
+                                                                                lineNumber: 2529,
                                                                                 columnNumber: 31
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2502,
+                                                                        lineNumber: 2522,
                                                                         columnNumber: 29
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2500,
+                                                                lineNumber: 2520,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2481,
+                                                        lineNumber: 2501,
                                                         columnNumber: 25
                                                     }, this),
                                                     success && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7436,7 +7461,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         children: success
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2519,
+                                                        lineNumber: 2539,
                                                         columnNumber: 37
                                                     }, this),
                                                     error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7444,7 +7469,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         children: error
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2520,
+                                                        lineNumber: 2540,
                                                         columnNumber: 35
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -7454,19 +7479,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                         children: loading ? "Ajout en cours..." : "Ajouter le lien"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2522,
+                                                        lineNumber: 2542,
                                                         columnNumber: 25
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2419,
+                                                lineNumber: 2439,
                                                 columnNumber: 23
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/add-link-modal.tsx",
-                                        lineNumber: 2358,
+                                        lineNumber: 2378,
                                         columnNumber: 19
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
                                         children: [
@@ -7481,14 +7506,14 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: "2"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2533,
+                                                                lineNumber: 2553,
                                                                 columnNumber: 25
                                                             }, this),
                                                             "Informations du contenu"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2532,
+                                                        lineNumber: 2552,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7501,7 +7526,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Titre *"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2540,
+                                                                        lineNumber: 2560,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7515,13 +7540,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2541,
+                                                                        lineNumber: 2561,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2539,
+                                                                lineNumber: 2559,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7531,7 +7556,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: getAuthorLabel()
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2550,
+                                                                        lineNumber: 2570,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7544,19 +7569,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2551,
+                                                                        lineNumber: 2571,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2549,
+                                                                lineNumber: 2569,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2538,
+                                                        lineNumber: 2558,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7566,7 +7591,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: "Description"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2560,
+                                                                lineNumber: 2580,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$textarea$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Textarea"], {
@@ -7580,13 +7605,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2561,
+                                                                lineNumber: 2581,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2559,
+                                                        lineNumber: 2579,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7599,7 +7624,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "URL de la couverture"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2573,
+                                                                        lineNumber: 2593,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7613,13 +7638,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2574,
+                                                                        lineNumber: 2594,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2572,
+                                                                lineNumber: 2592,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7629,7 +7654,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Version"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2585,
+                                                                        lineNumber: 2605,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7642,25 +7667,25 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2586,
+                                                                        lineNumber: 2606,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2584,
+                                                                lineNumber: 2604,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2571,
+                                                        lineNumber: 2591,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2531,
+                                                lineNumber: 2551,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7674,14 +7699,14 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: "3"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2599,
+                                                                lineNumber: 2619,
                                                                 columnNumber: 25
                                                             }, this),
                                                             "Lien de telechargement"
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2598,
+                                                        lineNumber: 2618,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7694,7 +7719,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Nom de la source *"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2606,
+                                                                        lineNumber: 2626,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7708,13 +7733,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2607,
+                                                                        lineNumber: 2627,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2605,
+                                                                lineNumber: 2625,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7724,7 +7749,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Format"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2616,
+                                                                        lineNumber: 2636,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7737,19 +7762,19 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2617,
+                                                                        lineNumber: 2637,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2615,
+                                                                lineNumber: 2635,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2604,
+                                                        lineNumber: 2624,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7759,7 +7784,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: "URL de telechargement *"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2626,
+                                                                lineNumber: 2646,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7774,13 +7799,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2627,
+                                                                lineNumber: 2647,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2625,
+                                                        lineNumber: 2645,
                                                         columnNumber: 23
                                                     }, this),
                                                     (digitalContentType === "ebook" || digitalContentType === "music") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7793,7 +7818,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2638,
+                                                                lineNumber: 2658,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7807,7 +7832,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2641,
+                                                                lineNumber: 2661,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7815,13 +7840,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                 children: digitalContentType === "ebook" ? "URL pour lire le PDF en ligne" : "URL du fichier audio pour l'ecoute en ligne"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2648,
+                                                                lineNumber: 2668,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2637,
+                                                        lineNumber: 2657,
                                                         columnNumber: 25
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7834,7 +7859,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Taille"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2657,
+                                                                        lineNumber: 2677,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7847,13 +7872,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2658,
+                                                                        lineNumber: 2678,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2656,
+                                                                lineNumber: 2676,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7863,7 +7888,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Qualite"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2666,
+                                                                        lineNumber: 2686,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7876,13 +7901,13 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         className: "bg-zinc-950 border-zinc-800 focus:border-primary"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2667,
+                                                                        lineNumber: 2687,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2665,
+                                                                lineNumber: 2685,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7892,7 +7917,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                         children: "Langue"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2675,
+                                                                        lineNumber: 2695,
                                                                         columnNumber: 27
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -7906,12 +7931,12 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                 className: "bg-zinc-950 border-zinc-800",
                                                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                                                                     fileName: "[project]/components/add-link-modal.tsx",
-                                                                                    lineNumber: 2681,
+                                                                                    lineNumber: 2701,
                                                                                     columnNumber: 31
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2680,
+                                                                                lineNumber: 2700,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -7922,7 +7947,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "Francais"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2684,
+                                                                                        lineNumber: 2704,
                                                                                         columnNumber: 31
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7930,7 +7955,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "Anglais"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2685,
+                                                                                        lineNumber: 2705,
                                                                                         columnNumber: 31
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7938,7 +7963,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "Multi"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2686,
+                                                                                        lineNumber: 2706,
                                                                                         columnNumber: 31
                                                                                     }, this),
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -7946,37 +7971,37 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                                                         children: "Autre"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                                        lineNumber: 2687,
+                                                                                        lineNumber: 2707,
                                                                                         columnNumber: 31
                                                                                     }, this)
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                                lineNumber: 2683,
+                                                                                lineNumber: 2703,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                                        lineNumber: 2676,
+                                                                        lineNumber: 2696,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                                lineNumber: 2674,
+                                                                lineNumber: 2694,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/add-link-modal.tsx",
-                                                        lineNumber: 2655,
+                                                        lineNumber: 2675,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2597,
+                                                lineNumber: 2617,
                                                 columnNumber: 21
                                             }, this),
                                             success && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7984,7 +8009,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                 children: success
                                             }, void 0, false, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2694,
+                                                lineNumber: 2714,
                                                 columnNumber: 33
                                             }, this),
                                             error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7992,7 +8017,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                 children: error
                                             }, void 0, false, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2695,
+                                                lineNumber: 2715,
                                                 columnNumber: 31
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -8003,7 +8028,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                                 children: loading ? "Ajout en cours..." : `Ajouter le ${digitalContentType === "ebook" ? "ebook" : digitalContentType === "music" ? "morceau" : digitalContentType === "software" ? "logiciel" : "jeu"}`
                                             }, void 0, false, {
                                                 fileName: "[project]/components/add-link-modal.tsx",
-                                                lineNumber: 2696,
+                                                lineNumber: 2716,
                                                 columnNumber: 21
                                             }, this)
                                         ]
@@ -8011,7 +8036,7 @@ function AddLinkModal({ prefilledTmdbId, prefilledMediaType, prefilledTitle, pre
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/add-link-modal.tsx",
-                                lineNumber: 2294,
+                                lineNumber: 2314,
                                 columnNumber: 15
                             }, this)
                         ]

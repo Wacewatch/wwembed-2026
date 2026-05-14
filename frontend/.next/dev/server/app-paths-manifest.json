@@ -1,7 +1,12 @@
 {
+  "/admin/page": "app/admin/page.js",
   "/api/auth/me/route": "app/api/auth/me/route.js",
   "/api/db/route": "app/api/db/route.js",
+  "/api/leaderboard/route": "app/api/leaderboard/route.js",
   "/api/tmdb-stats/route": "app/api/tmdb-stats/route.js",
-  "/api/v1/stats/[wwId]/route": "app/api/v1/stats/[wwId]/route.js",
-  "/page": "app/page.js"
+  "/api/upload/probe/route": "app/api/upload/probe/route.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/movie/[tmdbId]/page": "app/movie/[tmdbId]/page.js",
+  "/page": "app/page.js",
+  "/tv/[tmdbId]/page": "app/tv/[tmdbId]/page.js"
 }

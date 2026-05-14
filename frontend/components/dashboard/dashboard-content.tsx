@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AddLinkModal } from "@/components/add-link-modal"
 import { ProfileSettings } from "@/components/dashboard/profile-settings"
+import { DashboardStatsOverview } from "@/components/dashboard/dashboard-stats-overview"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -1014,6 +1015,9 @@ export function DashboardContent({
           </CardContent>
         </Card>
       )}
+
+      {/* Per-uploader stats overview (KPIs + 30d chart + link health + leaderboard) */}
+      <DashboardStatsOverview currentUserId={profile?.id} />
 
       {/* Main Content with Tabs */}
       <Card className="border-border overflow-hidden">

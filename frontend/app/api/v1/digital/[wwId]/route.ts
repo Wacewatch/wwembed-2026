@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { getClientIpHash } from "@/lib/client-meta"
+import { getClientIpHash, getClientIpPrefix } from "@/lib/client-meta"
 
 // Anti-adblock: Generate random class names
 function generateRandomId(prefix = "x"): string {
@@ -68,6 +68,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     referrer: request.headers.get("referer"),
     user_agent: request.headers.get("user-agent"),
     ip_hash: getClientIpHash(request),
+    ip_prefix: getClientIpPrefix(request),
   })
 
   const downloadLinks = links || []
