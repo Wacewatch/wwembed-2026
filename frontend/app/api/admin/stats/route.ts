@@ -122,6 +122,16 @@ async function buildStatsResponse(req: NextRequest) {
   // and returns an opaque 502.
   const AGG_OPTS = { allowDiskUse: true, maxTimeMS: 25000 }
 
+  // Composite unique-visitor key. Historical records (pre-fix) did not store
+  // `ip_hash`, so the previous `$ifNull: [ip_hash, user_agent]` collapsed
+  // every distinct user with a common Chrome/Edge UA into a single bucket
+  // — drastically under-counting unique visitors (e.g. 927 unique vs 42k
+  // views in 24h). We now key by the (ip_hash, user_agent) tuple so:
+  //   • new records (ip_hash present) → one group per IP×UA
+  //   • old records (ip_hash null)    → fall back to one group per UA
+  // This is the standard "unique visitor" semantic used by analytics tools.
+  const uniqueKey = { i: "$ip_hash", u: "$user_agent" }
+
   // Type-safe day bucket: handles both String (ISO) and Date BSON types.
   const dayBucket = (field: string) => ({
     $cond: [
@@ -200,7 +210,7 @@ async function buildStatsResponse(req: NextRequest) {
       .collection("embed_views")
       .aggregate([
         { $match: { viewed_at: { $gte: startDate } } },
-        { $group: { _id: { $ifNull: ["$ip_hash", "$user_agent"] } } },
+        { $group: { _id: uniqueKey } },
         { $count: "n" },
       ], { allowDiskUse: true })
       .toArray(),
@@ -257,7 +267,7 @@ async function buildStatsResponse(req: NextRequest) {
       .collection("embed_views")
       .aggregate([
         { $match: { viewed_at: { $gte: fiveMinAgo } } },
-        { $group: { _id: { $ifNull: ["$ip_hash", "$user_agent"] } } },
+        { $group: { _id: uniqueKey } },
         { $count: "n" },
       ], { allowDiskUse: true })
       .toArray(),
@@ -265,7 +275,7 @@ async function buildStatsResponse(req: NextRequest) {
       .collection("embed_views")
       .aggregate([
         { $match: { viewed_at: { $gte: fifteenMinAgo } } },
-        { $group: { _id: { $ifNull: ["$ip_hash", "$user_agent"] } } },
+        { $group: { _id: uniqueKey } },
         { $count: "n" },
       ], { allowDiskUse: true })
       .toArray(),
@@ -273,7 +283,7 @@ async function buildStatsResponse(req: NextRequest) {
       .collection("embed_views")
       .aggregate([
         { $match: { viewed_at: { $gte: oneHourAgo } } },
-        { $group: { _id: { $ifNull: ["$ip_hash", "$user_agent"] } } },
+        { $group: { _id: uniqueKey } },
         { $count: "n" },
       ], { allowDiskUse: true })
       .toArray(),
@@ -281,7 +291,7 @@ async function buildStatsResponse(req: NextRequest) {
       .collection("embed_views")
       .aggregate([
         { $match: { viewed_at: { $gte: twentyFourHoursAgo } } },
-        { $group: { _id: { $ifNull: ["$ip_hash", "$user_agent"] } } },
+        { $group: { _id: uniqueKey } },
         { $count: "n" },
       ], { allowDiskUse: true })
       .toArray(),
@@ -676,20 +686,36 @@ async function buildStatsResponse(req: NextRequest) {
       })
   )
 
-  // Format top referers — dedup by origin (host).
+  // Format top referers — dedup by normalised hostname.
   // The upstream $group keys by the raw referrer URL, so the same site can
-  // appear several times (different paths/query strings). We re-aggregate
-  // by origin here so each host appears once with summed counts.
+  // appear several times (different paths, protocols, ports, www. prefix,
+  // FQDN trailing dot, mixed case, etc.). We collapse to bare hostname
+  // (no protocol/path/port/www/trailing-dot) so each origin appears once.
+  const normaliseReferer = (raw: any): string => {
+    if (raw === null || raw === undefined) return "Direct"
+    const s = String(raw).trim()
+    if (!s || s.toLowerCase() === "direct" || s === "null" || s === "undefined") return "Direct"
+    let host: string | null = null
+    try {
+      host = new URL(s).hostname
+    } catch {
+      // Fallback parser for malformed URLs (e.g. missing scheme, accidental
+      // spaces). Strip everything to the first path/query character.
+      host = s.replace(/^[a-z][a-z0-9+.\-]*:\/\//i, "").split(/[\/\?#]/)[0]
+    }
+    if (!host) return "Direct"
+    host = host.toLowerCase()
+    // Strip default ports
+    host = host.replace(/:(80|443)$/, "")
+    // Strip trailing dot (FQDN form: "example.com.")
+    host = host.replace(/\.+$/, "")
+    // Strip leading "www." so www.example.com and example.com merge
+    host = host.replace(/^www\./, "")
+    return host || "Direct"
+  }
   const refererMerge = new Map<string, number>()
   for (const r of topRefererRaw as any[]) {
-    let host = "Direct"
-    if (r._id && r._id !== "Direct") {
-      try {
-        host = new URL(r._id).origin
-      } catch {
-        host = String(r._id)
-      }
-    }
+    const host = normaliseReferer(r._id)
     refererMerge.set(host, (refererMerge.get(host) || 0) + (r.count || 0))
   }
   const topReferers = Array.from(refererMerge.entries())

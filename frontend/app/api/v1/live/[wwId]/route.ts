@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { buildAdModal2Step } from "@/lib/embed-ad-modal"
+import { getClientIpHash } from "@/lib/client-meta"
 
 export async function GET(request: NextRequest, props: { params: Promise<{ wwId: string }> }) {
   try {
@@ -79,6 +80,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ wwId:
       tmdb_id: null,
       referrer: referer,
       user_agent: request.headers.get("user-agent"),
+      ip_hash: getClientIpHash(request),
     })
 
     const sourcesJson = JSON.stringify(allSources).replace(/</g, "\\u003c")
