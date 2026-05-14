@@ -79,8 +79,6 @@ async function ensureIndexes(db: Db) {
   // tmdb cache (used by lib/tmdb-cache.ts)
   await db.collection("tmdb_cache").createIndex({ key: 1 }, { unique: true })
   await safeTtl(db, "tmdb_cache", 7 * 86400) // 7 days
-  // pre-aggregated stats (see lib/stats-rollup.ts)
-  await db.collection("stats_daily_rollup").createIndex({ date: -1 }, { unique: true })
 }
 
 async function safeTtl(db: Db, coll: string, seconds: number) {
