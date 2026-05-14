@@ -212,12 +212,6 @@ async function ensureIndexes(db) {
         unique: true
     });
     await safeTtl(db, "tmdb_cache", 7 * 86400); // 7 days
-    // pre-aggregated stats (see lib/stats-rollup.ts)
-    await db.collection("stats_daily_rollup").createIndex({
-        date: -1
-    }, {
-        unique: true
-    });
 }
 async function safeTtl(db, coll, seconds) {
     try {
