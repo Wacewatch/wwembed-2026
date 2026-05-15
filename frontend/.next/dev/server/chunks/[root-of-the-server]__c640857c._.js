@@ -188,12 +188,6 @@ async function ensureIndexes(db) {
         unique: true
     });
     await safeTtl(db, "tmdb_cache", 7 * 86400); // 7 days
-    // pre-aggregated stats (see lib/stats-rollup.ts)
-    await db.collection("stats_daily_rollup").createIndex({
-        date: -1
-    }, {
-        unique: true
-    });
 }
 async function safeTtl(db, coll, seconds) {
     try {
@@ -1128,22 +1122,43 @@ module.exports = mod;
 "use strict";
 
 __turbopack_context__.s([
+    "getClientIp",
+    ()=>getClientIp,
     "getClientIpHash",
-    ()=>getClientIpHash
+    ()=>getClientIpHash,
+    "getClientIpPrefix",
+    ()=>getClientIpPrefix
 ]);
 var __TURBOPACK__imported__module__$5b$externals$5d2f$crypto__$5b$external$5d$__$28$crypto$2c$__cjs$29$__ = __turbopack_context__.i("[externals]/crypto [external] (crypto, cjs)");
 ;
-function getClientIpHash(request) {
+function getClientIp(request) {
     try {
         const fwd = request.headers.get("x-forwarded-for");
         const real = request.headers.get("x-real-ip");
         const cf = request.headers.get("cf-connecting-ip");
         const ip = (fwd?.split(",")[0] || real || cf || "").trim();
-        if (!ip) return null;
-        return __TURBOPACK__imported__module__$5b$externals$5d2f$crypto__$5b$external$5d$__$28$crypto$2c$__cjs$29$__["default"].createHash("sha256").update(ip).digest("hex").substring(0, 16);
+        return ip || null;
     } catch  {
         return null;
     }
+}
+function getClientIpHash(request) {
+    const ip = getClientIp(request);
+    if (!ip) return null;
+    return __TURBOPACK__imported__module__$5b$externals$5d2f$crypto__$5b$external$5d$__$28$crypto$2c$__cjs$29$__["default"].createHash("sha256").update(ip).digest("hex").substring(0, 16);
+}
+function getClientIpPrefix(request) {
+    const ip = getClientIp(request);
+    if (!ip) return null;
+    if (ip.includes(":")) {
+        // IPv6 — keep first 3 groups
+        const groups = ip.split(":");
+        return groups.slice(0, 3).join(":") + "::";
+    }
+    // IPv4
+    const parts = ip.split(".");
+    if (parts.length !== 4) return null;
+    return `${parts[0]}.${parts[1]}.${parts[2]}.0`;
 }
 }),
 "[project]/app/api/v1/streaming/[wwId]/route.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
@@ -1243,7 +1258,8 @@ async function GET(request, props) {
             embed_type: "streaming",
             referrer: request.headers.get("referer"),
             user_agent: request.headers.get("user-agent"),
-            ip_hash: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$client$2d$meta$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClientIpHash"])(request)
+            ip_hash: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$client$2d$meta$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClientIpHash"])(request),
+            ip_prefix: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$client$2d$meta$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getClientIpPrefix"])(request)
         });
         const sourcesJson = JSON.stringify(allSources).replace(/</g, "\\u003c");
         const ids = {

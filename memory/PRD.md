@@ -78,3 +78,12 @@ Next.js 16 (App Router) · React 19 · MongoDB · TMDB API · JWT auth (bcrypt) 
 
 ### Files créés (cette session)
 lib/link-checker.ts, lib/link-checker-runner.ts, lib/url-probe.ts, lib/url-utils.ts, lib/geo.ts, app/api/admin/check-link/run/route.ts, app/api/admin/stats/advanced/route.ts, app/api/dashboard/my-stats/route.ts, app/api/leaderboard/route.ts, app/api/upload/probe/route.ts, app/movie/[tmdbId]/page.tsx, app/tv/[tmdbId]/page.tsx, components/admin/link-health-module.tsx, components/admin/admin-stats-advanced.tsx, components/dashboard/dashboard-stats-overview.tsx, components/url-probe-button.tsx
+
+## 2026-05-15 — Onglet ZT dans embed Téléchargement
+- Ajout d'un 3ème onglet « Sources ZT » dans `/api/v1/download/[wwId]` (sections films/séries ET digital), avec badge compteur + filtres Qualité/Host.
+- Source : API `https://apis.wavewatch.top/zt.php?_route=api` — types `movie|tv` avec `id={tmdb_id}` (+ `&s=&e=` pour séries) et fallback `q={title}` pour digital (categories `jeux|musique|ebook|logiciel`).
+- Lazy-load on tab click pour économiser le coût API (TV ZT prend ~15s upstream).
+- Modal pub 2-step réutilisée (`_openExtAdModal` / `_wwAdModal`) → même UX que liens direct/externe/alt.
+- Champs API utilisés : `host`, `filename`, `size`, `url`, `qualities[].quality`, `qualities[].lang`. Champ `protection: "zoneurs"` ignoré conformément à la demande utilisateur.
+- Amélioration collatérale : `_parseFilename` utilise désormais des word-boundaries (regex) pour la détection langue afin d'éviter les faux positifs (ex: « GER » dans « Telecharger » qui matchait à tort comme DE).
+- `_normaliseAltLinks` / `_extractAndFilterAltLinks` propagent maintenant `lang` et `size` du parent `qualities[]` vers chaque downloadLink → onglets Alt + ZT affichent désormais correctement la langue réelle.

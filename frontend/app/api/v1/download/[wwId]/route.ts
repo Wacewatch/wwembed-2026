@@ -107,6 +107,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       altContent: generateRandomId("exa"),
       altLoading: generateRandomId("exal"),
       altCount: generateRandomId("exac"),
+      ztContent: generateRandomId("exz"),
+      ztLoading: generateRandomId("exzl"),
+      ztCount: generateRandomId("exzn"),
     }
 
     const ids = {
@@ -200,6 +203,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .alt-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:800;letter-spacing:0.5px;vertical-align:middle}
 .alt-filename{font-size:11px;color:#94a3b8;word-break:break-word;margin-top:6px;line-height:1.4;max-height:3.2em;overflow:hidden}
 .ext-btn.alt-btn{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.ext-card.zt-card{border-color:rgba(20,184,166,0.3)}
+.ext-card.zt-card:hover{border-color:rgba(20,184,166,0.6)}
+.zt-badge{display:inline-block;background:linear-gradient(135deg,#14B8A6,#0d9488);color:#fff;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:800;letter-spacing:0.5px;vertical-align:middle}
+.ext-btn.zt-btn{background:linear-gradient(135deg,#14B8A6,#0d9488);color:#0c1520}
+.zt-filename{font-size:11px;color:#94a3b8;word-break:break-word;margin-top:6px;line-height:1.4;max-height:3.2em;overflow:hidden}
 .mo{position:fixed;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.95) 0%,rgba(118,75,162,0.95) 50%,rgba(240,147,251,0.95) 100%);display:none;align-items:center;justify-content:center;z-index:9999;padding:8px;backdrop-filter:blur(8px);overflow-y:auto}
 .mo.sh{display:flex}
 .mc{background:rgba(255,255,255,0.98);border-radius:16px;padding:14px 16px;max-width:380px;width:100%;max-height:calc(100vh - 16px);display:flex;flex-direction:column;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.4);margin:auto}
@@ -268,6 +276,11 @@ Sources externes
   Sources Alt
   <span class="ext-tab-badge" id="${externalIds.altCount}">...</span>
 </button>
+<button class="ext-tab" id="tabZt" onclick="switchTab('zt')">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M6 12h12M9 17h6"/></svg>
+  Sources ZT
+  <span class="ext-tab-badge" id="${externalIds.ztCount}">...</span>
+</button>
 </div>
 
 <div id="${externalIds.container}">
@@ -289,6 +302,18 @@ Recherche de sources externes...
 Recherche de sources alternatives...
 </div>
 <div id="${externalIds.altContent}" class="ext-grid"></div>
+</div>
+
+<div id="${externalIds.ztContent}_wrap" style="display:none">
+<div class="ext-loading" id="${externalIds.ztLoading}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+Recherche de sources ZT...
+</div>
+<div id="${externalIds.ztContent}_ztfilters" class="ext-filters" style="display:none">
+<select id="ztQualityFilter" class="ext-select"><option value="">Qualit\u00e9</option></select>
+<select id="ztHostFilter" class="ext-select"><option value="">Host</option></select>
+</div>
+<div id="${externalIds.ztContent}" class="ext-grid"></div>
 </div>
 
 <div class="link-display-area" id="linkDisplayArea"></div>
@@ -313,8 +338,11 @@ var _allExtLinks=[];
 var _currentExtLinks=[];
 var _allAltLinks=[];
 var _altLoaded=false;
+var _allZtLinks=[];
+var _ztLoaded=false;
 var _movixContentId=null;
 var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
+var ZT_BASE="https://apis.wavewatch.top/zt.php";
 // AD_URL_EXT removed in session 9 — all ad clicks now use the unified 2-step modal (otieu + adsterra)
 
 // ── Rate limit modal ──────────────────────────────────────────────────────
@@ -422,15 +450,20 @@ function _showRateLimitModal(retryAt){
 window.switchTab=function(tab){
   var movixWrap=document.getElementById(_extIds.container);
   var altWrap=document.getElementById(_extIds.altContent+"_wrap");
+  var ztWrap=document.getElementById(_extIds.ztContent+"_wrap");
   var tabMovix=document.getElementById("tabMovix");
   var tabAlt=document.getElementById("tabAlt");
+  var tabZt=document.getElementById("tabZt");
+  movixWrap.style.display="none";altWrap.style.display="none";ztWrap.style.display="none";
+  tabMovix.classList.remove("active");tabAlt.classList.remove("active");tabZt.classList.remove("active");
   if(tab==="movix"){
-    movixWrap.style.display="block";altWrap.style.display="none";
-    tabMovix.classList.add("active");tabAlt.classList.remove("active");
-  }else{
-    movixWrap.style.display="none";altWrap.style.display="block";
-    tabAlt.classList.add("active");tabMovix.classList.remove("active");
+    movixWrap.style.display="block";tabMovix.classList.add("active");
+  }else if(tab==="alt"){
+    altWrap.style.display="block";tabAlt.classList.add("active");
     if(!_altLoaded){_altLoaded=true;_loadAltExternal();}
+  }else if(tab==="zt"){
+    ztWrap.style.display="block";tabZt.classList.add("active");
+    if(!_ztLoaded){_ztLoaded=true;_loadZtExternal();}
   }
 };
 
@@ -610,7 +643,11 @@ function _parseFilename(fname){
   var qualities=["2160P","4K","1080P","720P","480P","576P","1080I","720I","BDRIP","BLURAY","BLU-RAY","BDREMUX","REMUX","WEBDL","WEB-DL","WEBRIP","WEB-RIP","HDRIP","HDTV","DVDSCR","DVDRIP","DVD","TVRIP","VHSRIP","HDCAM","CAM","TS","R5","SCR","VODRIP"];
   for(var i=0;i<qualities.length;i++){if(up.indexOf(qualities[i])!==-1){quality=qualities[i].replace("-","");break;}}
   var langs=[["MULTI","MULTI"],["TRUEFRENCH","TRUEFRENCH"],["FRENCH","FR"],["VOSTFR","VOSTFR"],["VOSTSUB","VOSTSUB"],["VOST","VOST"],["VFF","VFF"],["VFQ","VFQ"],["VF","VF"],["FANSUB","FANSUB"],["ENGLISH","EN"],["ENG","EN"],["SPANISH","ES"],["SPA","ES"],["GERMAN","DE"],["GER","DE"],["DEUTSCH","DE"],["ITALIAN","IT"],["ITA","IT"],["PORTUGUESE","PT"],["POR","PT"],["ARABIC","AR"],["ARA","AR"],["RUSSIAN","RU"],["RUS","RU"],["JAPANESE","JA"],["JPN","JA"],["KOREAN","KO"],["KOR","KO"],["CHINESE","ZH"],["CHI","ZH"]];
-  for(var j=0;j<langs.length;j++){if(up.indexOf(langs[j][0])!==-1){lang=langs[j][1];break;}}
+  for(var j=0;j<langs.length;j++){
+    // word-boundary match to avoid false positives like "GER" inside "TELECHARGER"
+    var re=new RegExp("(^|[^A-Z0-9])"+langs[j][0]+"([^A-Z0-9]|$)");
+    if(re.test(up)){lang=langs[j][1];break;}
+  }
   return{quality:quality,lang:lang};
 }
 
@@ -624,7 +661,7 @@ function _extractAndFilterAltLinks(data){
   else if(data&&Array.isArray(data.qualities)){
     data.qualities.forEach(function(q){
       if(Array.isArray(q.downloadLinks)){
-        q.downloadLinks.forEach(function(l){raw.push(Object.assign({},l,{quality:l.protection||q.quality||"",_qualityGroup:q.quality||""}));});
+        q.downloadLinks.forEach(function(l){raw.push(Object.assign({},l,{quality:l.protection||q.quality||"",_qualityGroup:q.quality||"",language:l.language||q.lang||"",size:l.size||q.size||""}));});
       }
     });
   }
@@ -804,6 +841,72 @@ fetch(decodeUrl).then(function(r){return r.json();})
   });
 }
 
+function _ztCategoryFromContentType(){
+  if(_contentType==="game")return"jeux";
+  if(_contentType==="music")return"musique";
+  if(_contentType==="ebook")return"ebook";
+  if(_contentType==="software")return"logiciel";
+  return"movie";
+}
+
+function _loadZtExternal(){
+  var loading=document.getElementById(_extIds.ztLoading);
+  var content=document.getElementById(_extIds.ztContent);
+  var countBadge=document.getElementById(_extIds.ztCount);
+  var cat=_ztCategoryFromContentType();
+  var url=ZT_BASE+"?_route=api&type="+encodeURIComponent(cat)+"&q="+encodeURIComponent(_title);
+  fetch(url)
+  .then(function(r){return r.json();})
+  .then(function(data){
+    loading.style.display="none";
+    var links=_extractAndFilterAltLinks(data);
+    _allZtLinks=links;countBadge.textContent=links.length;
+    if(links.length===0){content.innerHTML='<div class="em">Aucune source ZT disponible</div>';return;}
+    _renderZtLinks(links,content);
+  }).catch(function(){
+    loading.style.display="none";
+    content.innerHTML='<div class="em">Erreur de chargement</div>';
+    countBadge.textContent="0";
+  });
+}
+
+function _renderZtLinks(links,container){
+  if(!links||links.length===0){container.innerHTML='<div class="em">Aucun r\u00e9sultat</div>';return;}
+  var html="";
+  links.forEach(function(l,idx){
+    var u=l.url||l.lien||l.link||"";
+    var host=l.host||l.provider||"";
+    var fname=l.filename||l.name||"";
+    var size=l.size||"";
+    var parsed=_parseFilename(fname);
+    var dispQuality=l._qualityGroup||parsed.quality||"";
+    var dispLang=l.language||parsed.lang||"";
+    html+='<div class="ext-card zt-card" data-zt-idx="'+idx+'"><div class="ext-card-body">';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">';
+    if(dispQuality)html+='<span class="ext-quality">'+dispQuality+'</span>';
+    if(dispLang)html+='<span style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700">'+dispLang+'</span>';
+    html+='<span class="zt-badge">ZT</span></div>';
+    if(host)html+='<div class="ext-provider">'+host+'</div>';
+    if(fname)html+='<div class="zt-filename">'+fname+'</div>';
+    if(size)html+='<div class="ext-info" style="margin-top:6px">Taille: '+size+'</div>';
+    html+=(u?'<button class="ext-btn zt-btn">T\u00e9l\u00e9charger</button>':'<button class="ext-btn zt-btn" disabled style="opacity:0.4;cursor:not-allowed">Indisponible</button>');
+    html+='</div></div>';
+  });
+  container.innerHTML=html;
+  container.querySelectorAll(".zt-card").forEach(function(card){
+    var btn=card.querySelector(".ext-btn");
+    if(btn.disabled)return;
+    btn.onclick=function(e){
+      e.stopPropagation();
+      var idx=parseInt(card.getAttribute("data-zt-idx"));
+      var l=_allZtLinks[idx];
+      var u=l.url||l.lien||l.link||"";
+      if(!u){alert("Lien non disponible");return;}
+      _openExtAdModal(u,{provider:l.host,host_name:l.host});
+    };
+  });
+}
+
 _renderLinks();
 _loadExternal();
 ${adModalDigital.js}
@@ -906,6 +1009,9 @@ ${adModalDigital.js}
     altContent: generateRandomId("exa"),
     altLoading: generateRandomId("exal"),
     altCount: generateRandomId("exac"),
+    ztContent: generateRandomId("exz"),
+    ztLoading: generateRandomId("exzl"),
+    ztCount: generateRandomId("exzn"),
   }
 
   const movieHtml = `<!DOCTYPE html>
@@ -968,6 +1074,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .alt-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:800;letter-spacing:0.5px;vertical-align:middle}
 .alt-filename{font-size:11px;color:#94a3b8;word-break:break-word;margin-top:6px;line-height:1.4;max-height:3.2em;overflow:hidden}
 .ext-btn.alt-btn{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.ext-card.zt-card{border-color:rgba(20,184,166,0.3)}
+.ext-card.zt-card:hover{border-color:rgba(20,184,166,0.6)}
+.zt-badge{display:inline-block;background:linear-gradient(135deg,#14B8A6,#0d9488);color:#fff;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:800;letter-spacing:0.5px;vertical-align:middle}
+.ext-btn.zt-btn{background:linear-gradient(135deg,#14B8A6,#0d9488);color:#0c1520}
+.zt-filename{font-size:11px;color:#94a3b8;word-break:break-word;margin-top:6px;line-height:1.4;max-height:3.2em;overflow:hidden}
 .link-display-area{display:none;margin:20px 0;padding:20px;background:linear-gradient(135deg,rgba(16,185,129,0.1),rgba(20,184,166,0.1));border:2px solid #10b981;border-radius:12px}
 .link-display-title{font-size:16px;font-weight:700;color:#10b981;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .link-display-url{background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;font-family:monospace;font-size:12px;color:#5eead4;word-break:break-all;margin-bottom:16px;border:1px solid rgba(94,234,212,0.3)}
@@ -1039,6 +1150,11 @@ Sources externes
   Sources Alt
   <span class="ext-tab-badge" id="${externalIds.altCount}">...</span>
 </button>
+<button class="ext-tab" id="tabZt" onclick="switchTab('zt')">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M6 12h12M9 17h6"/></svg>
+  Sources ZT
+  <span class="ext-tab-badge" id="${externalIds.ztCount}">...</span>
+</button>
 </div>
 
 <div id="${externalIds.container}">
@@ -1064,6 +1180,18 @@ Recherche de sources alternatives...
 <select id="altHostFilter" class="ext-select"><option value="">Host</option></select>
 </div>
 <div id="${externalIds.altContent}" class="ext-grid"></div>
+</div>
+
+<div id="${externalIds.ztContent}_wrap" style="display:none">
+<div class="ext-loading" id="${externalIds.ztLoading}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+Recherche de sources ZT...
+</div>
+<div id="${externalIds.ztContent}_ztfilters" class="ext-filters" style="display:none">
+<select id="ztQualityFilter" class="ext-select"><option value="">Qualit\u00e9</option></select>
+<select id="ztHostFilter" class="ext-select"><option value="">Host</option></select>
+</div>
+<div id="${externalIds.ztContent}" class="ext-grid"></div>
 </div>
 
 <div class="link-display-area" id="linkDisplayArea"></div>
@@ -1126,8 +1254,12 @@ var _currentExtLinks=[];
 var _allAltLinks=[];
 var _currentAltLinks=[];
 var _altLoaded=false;
+var _allZtLinks=[];
+var _currentZtLinks=[];
+var _ztLoaded=false;
 var _movixMovieId=null;
 var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
+var ZT_BASE="https://apis.wavewatch.top/zt.php";
 // AD_URL_EXT removed in session 9 — all ad clicks now use the unified 2-step modal (otieu + adsterra)
 var ALT_BASE="https://apis.wavewatch.top/wawa.php";
 
@@ -1236,15 +1368,20 @@ function _showRateLimitModal(retryAt){
 window.switchTab=function(tab){
   var movixWrap=document.getElementById(_extIds.container);
   var altWrap=document.getElementById(_extIds.altContent+"_wrap");
+  var ztWrap=document.getElementById(_extIds.ztContent+"_wrap");
   var tabMovix=document.getElementById("tabMovix");
   var tabAlt=document.getElementById("tabAlt");
+  var tabZt=document.getElementById("tabZt");
+  movixWrap.style.display="none";altWrap.style.display="none";ztWrap.style.display="none";
+  tabMovix.classList.remove("active");tabAlt.classList.remove("active");tabZt.classList.remove("active");
   if(tab==="movix"){
-    movixWrap.style.display="block";altWrap.style.display="none";
-    tabMovix.classList.add("active");tabAlt.classList.remove("active");
-  }else{
-    movixWrap.style.display="none";altWrap.style.display="block";
-    tabAlt.classList.add("active");tabMovix.classList.remove("active");
+    movixWrap.style.display="block";tabMovix.classList.add("active");
+  }else if(tab==="alt"){
+    altWrap.style.display="block";tabAlt.classList.add("active");
     if(!_altLoaded){_altLoaded=true;_loadAltExternal();}
+  }else if(tab==="zt"){
+    ztWrap.style.display="block";tabZt.classList.add("active");
+    if(!_ztLoaded){_ztLoaded=true;_loadZtExternal();}
   }
 };
 
@@ -1254,7 +1391,11 @@ function _parseFilename(fname){
   var qualities=["2160P","4K","1080P","720P","480P","576P","1080I","720I","BDRIP","BLURAY","BLU-RAY","BDREMUX","REMUX","WEBDL","WEB-DL","WEBRIP","WEB-RIP","HDRIP","HDTV","DVDSCR","DVDRIP","DVD","TVRIP","VHSRIP","HDCAM","CAM","TS","R5","SCR","VODRIP"];
   for(var i=0;i<qualities.length;i++){if(up.indexOf(qualities[i])!==-1){quality=qualities[i].replace("-","");break;}}
   var langs=[["MULTI","MULTI"],["TRUEFRENCH","TRUEFRENCH"],["FRENCH","FR"],["VOSTFR","VOSTFR"],["VOSTSUB","VOSTSUB"],["VOST","VOST"],["VFF","VFF"],["VFQ","VFQ"],["VF","VF"],["FANSUB","FANSUB"],["ENGLISH","EN"],["ENG","EN"],["SPANISH","ES"],["SPA","ES"],["GERMAN","DE"],["GER","DE"],["DEUTSCH","DE"],["ITALIAN","IT"],["ITA","IT"],["PORTUGUESE","PT"],["POR","PT"],["ARABIC","AR"],["ARA","AR"],["RUSSIAN","RU"],["RUS","RU"],["JAPANESE","JA"],["JPN","JA"],["KOREAN","KO"],["KOR","KO"],["CHINESE","ZH"],["CHI","ZH"]];
-  for(var j=0;j<langs.length;j++){if(up.indexOf(langs[j][0])!==-1){lang=langs[j][1];break;}}
+  for(var j=0;j<langs.length;j++){
+    // word-boundary match to avoid false positives like "GER" inside "TELECHARGER"
+    var re=new RegExp("(^|[^A-Z0-9])"+langs[j][0]+"([^A-Z0-9]|$)");
+    if(re.test(up)){lang=langs[j][1];break;}
+  }
   return{quality:quality,lang:lang};
 }
 
@@ -1268,7 +1409,7 @@ function _normaliseAltLinks(data){
   else if(data&&Array.isArray(data.qualities)){
     data.qualities.forEach(function(q){
       if(Array.isArray(q.downloadLinks)){
-        q.downloadLinks.forEach(function(l){raw.push(Object.assign({},l,{quality:l.protection||q.quality||"",_qualityGroup:q.quality||""}));});
+        q.downloadLinks.forEach(function(l){raw.push(Object.assign({},l,{quality:l.protection||q.quality||"",_qualityGroup:q.quality||"",language:l.language||q.lang||"",size:l.size||q.size||""}));});
       }
     });
   }
@@ -1761,6 +1902,105 @@ fetch(decodeUrl).then(function(r){return r.json();})
   }).catch(function(){
     var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
     alert("Erreur lors du d\u00e9codage du lien");
+  });
+}
+
+function _loadZtExternal(){
+  var ztLoading=document.getElementById(_extIds.ztLoading);
+  var ztContent=document.getElementById(_extIds.ztContent);
+  var ztFilters=document.getElementById(_extIds.ztContent+"_ztfilters");
+  var ztCountBadge=document.getElementById(_extIds.ztCount);
+  var url;
+  if(_mediaType==="tv"){
+    var s=_seasonNum||1;var e=_episodeNum||1;
+    url=ZT_BASE+"?_route=api&type=tv&id="+_tmdbId+"&s="+s+"&e="+e;
+  }else{
+    url=ZT_BASE+"?_route=api&type=movie&id="+_tmdbId;
+  }
+  fetch(url)
+  .then(function(r){return r.json();})
+  .then(function(data){
+    ztLoading.style.display="none";
+    var raw=_normaliseAltLinks(data);
+    var links=_filterAltLinks(raw);
+    _allZtLinks=links;_currentZtLinks=links;
+    ztCountBadge.textContent=links.length;
+    if(links.length===0){ztContent.innerHTML='<div class="em">Aucune source ZT disponible</div>';return;}
+    _populateZtFilters(links,ztFilters);ztFilters.style.display="flex";
+    _renderZtLinks(links);
+  }).catch(function(){
+    ztLoading.style.display="none";
+    ztContent.innerHTML='<div class="em">Erreur de chargement</div>';
+    ztCountBadge.textContent="0";
+  });
+}
+
+function _populateZtFilters(links,filtersEl){
+  var qualities=new Set(),hosts=new Set();
+  links.forEach(function(l){
+    var fname=l.filename||l.name||"";
+    var parsed=_parseFilename(fname);
+    var q=l._qualityGroup||parsed.quality||"";
+    var h=l.host||l.provider||"";
+    if(q)qualities.add(q);if(h)hosts.add(h);
+  });
+  var qf=document.getElementById("ztQualityFilter");
+  var hf=document.getElementById("ztHostFilter");
+  qualities.forEach(function(q){var o=document.createElement("option");o.value=q;o.textContent=q;qf.appendChild(o);});
+  hosts.forEach(function(h){var o=document.createElement("option");o.value=h;o.textContent=h;hf.appendChild(o);});
+  qf.onchange=hf.onchange=_applyZtFilters;
+}
+
+function _applyZtFilters(){
+  var qf=document.getElementById("ztQualityFilter").value;
+  var hf=document.getElementById("ztHostFilter").value;
+  var filtered=_allZtLinks.filter(function(l){
+    var fname=l.filename||l.name||"";
+    var parsed=_parseFilename(fname);
+    var q=l._qualityGroup||parsed.quality||"";
+    var h=l.host||l.provider||"";
+    if(qf&&q!==qf)return false;
+    if(hf&&h!==hf)return false;
+    return true;
+  });
+  _currentZtLinks=filtered;_renderZtLinks(filtered);
+}
+
+function _renderZtLinks(links){
+  var content=document.getElementById(_extIds.ztContent);
+  if(!links||links.length===0){content.innerHTML='<div class="em">Aucun r\u00e9sultat</div>';return;}
+  var html="";
+  links.forEach(function(l,idx){
+    var u=l.url||l.lien||l.link||"";
+    var host=l.host||l.provider||"";
+    var fname=l.filename||l.name||"";
+    var size=l.size||"";
+    var parsed=_parseFilename(fname);
+    var dispQuality=l._qualityGroup||parsed.quality||"";
+    var dispLang=l.language||parsed.lang||"";
+    html+='<div class="ext-card zt-card" data-zt-idx="'+idx+'"><div class="ext-card-body">';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">';
+    if(dispQuality)html+='<span class="ext-quality">'+dispQuality+'</span>';
+    if(dispLang)html+='<span style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700">'+dispLang+'</span>';
+    html+='<span class="zt-badge">ZT</span></div>';
+    if(host)html+='<div class="ext-provider">'+host+'</div>';
+    if(fname)html+='<div class="zt-filename">'+fname+'</div>';
+    if(size)html+='<div class="ext-info" style="margin-top:6px">Taille: '+size+'</div>';
+    html+=(u?'<button class="ext-btn zt-btn">Voir le lien</button>':'<button class="ext-btn zt-btn" disabled style="opacity:0.4;cursor:not-allowed">Indisponible</button>');
+    html+='</div></div>';
+  });
+  content.innerHTML=html;
+  content.querySelectorAll(".zt-card").forEach(function(card){
+    var btn=card.querySelector(".ext-btn");
+    if(btn.disabled)return;
+    btn.onclick=function(e){
+      e.stopPropagation();
+      var idx=parseInt(card.getAttribute("data-zt-idx"));
+      var l=_currentZtLinks[idx];
+      var u=l.url||l.lien||l.link||"";
+      if(!u){alert("Lien non disponible");return;}
+      _openExtAdModal(u,{provider:l.host||l.provider,host_name:l.host||l.provider});
+    };
   });
 }
 
