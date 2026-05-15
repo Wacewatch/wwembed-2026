@@ -1,0 +1,2030 @@
+module.exports = [
+"[externals]/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js [external] (next/dist/compiled/next-server/app-route-turbo.runtime.dev.js, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/compiled/next-server/app-route-turbo.runtime.dev.js", () => require("next/dist/compiled/next-server/app-route-turbo.runtime.dev.js"));
+
+module.exports = mod;
+}),
+"[externals]/next/dist/compiled/@opentelemetry/api [external] (next/dist/compiled/@opentelemetry/api, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/compiled/@opentelemetry/api", () => require("next/dist/compiled/@opentelemetry/api"));
+
+module.exports = mod;
+}),
+"[externals]/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js [external] (next/dist/compiled/next-server/app-page-turbo.runtime.dev.js, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/compiled/next-server/app-page-turbo.runtime.dev.js", () => require("next/dist/compiled/next-server/app-page-turbo.runtime.dev.js"));
+
+module.exports = mod;
+}),
+"[externals]/next/dist/server/app-render/work-unit-async-storage.external.js [external] (next/dist/server/app-render/work-unit-async-storage.external.js, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/server/app-render/work-unit-async-storage.external.js", () => require("next/dist/server/app-render/work-unit-async-storage.external.js"));
+
+module.exports = mod;
+}),
+"[externals]/next/dist/server/app-render/work-async-storage.external.js [external] (next/dist/server/app-render/work-async-storage.external.js, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/server/app-render/work-async-storage.external.js", () => require("next/dist/server/app-render/work-async-storage.external.js"));
+
+module.exports = mod;
+}),
+"[externals]/next/dist/shared/lib/no-fallback-error.external.js [external] (next/dist/shared/lib/no-fallback-error.external.js, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/shared/lib/no-fallback-error.external.js", () => require("next/dist/shared/lib/no-fallback-error.external.js"));
+
+module.exports = mod;
+}),
+"[externals]/next/dist/server/app-render/after-task-async-storage.external.js [external] (next/dist/server/app-render/after-task-async-storage.external.js, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/server/app-render/after-task-async-storage.external.js", () => require("next/dist/server/app-render/after-task-async-storage.external.js"));
+
+module.exports = mod;
+}),
+"[externals]/mongodb [external] (mongodb, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("mongodb", () => require("mongodb"));
+
+module.exports = mod;
+}),
+"[project]/lib/mongo/db.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+/**
+ * MongoDB connection helper.
+ * Single, cached MongoClient + Db across the Next.js dev/prod runtimes.
+ */ __turbopack_context__.s([
+    "getCollection",
+    ()=>getCollection,
+    "getDb",
+    ()=>getDb
+]);
+var __TURBOPACK__imported__module__$5b$externals$5d2f$mongodb__$5b$external$5d$__$28$mongodb$2c$__cjs$29$__ = __turbopack_context__.i("[externals]/mongodb [external] (mongodb, cjs)");
+;
+const MONGO_URL = process.env.MONGO_URL || "mongodb://localhost:27017";
+const DB_NAME = process.env.DB_NAME || "wwembed";
+async function getDb() {
+    if (global.__mongoDb) return global.__mongoDb;
+    const client = global.__mongoClient ?? new __TURBOPACK__imported__module__$5b$externals$5d2f$mongodb__$5b$external$5d$__$28$mongodb$2c$__cjs$29$__["MongoClient"](MONGO_URL);
+    if (!global.__mongoClient) {
+        await client.connect();
+        global.__mongoClient = client;
+    }
+    const db = client.db(DB_NAME);
+    global.__mongoDb = db;
+    if (!global.__mongoIndexed) {
+        global.__mongoIndexed = true;
+        await ensureIndexes(db).catch((e)=>console.error("Index creation failed:", e));
+    }
+    return db;
+}
+async function ensureIndexes(db) {
+    // users (auth)
+    await db.collection("users").createIndex({
+        email: 1
+    }, {
+        unique: true
+    });
+    await db.collection("users").createIndex({
+        username: 1
+    }, {
+        unique: true,
+        sparse: true
+    });
+    // streaming/download links
+    await db.collection("streaming_links").createIndex({
+        tmdb_id: 1,
+        media_type: 1
+    });
+    await db.collection("streaming_links").createIndex({
+        ww_id: 1
+    });
+    await db.collection("streaming_links").createIndex({
+        legacy_uuid: 1
+    });
+    await db.collection("download_links").createIndex({
+        tmdb_id: 1,
+        media_type: 1
+    });
+    await db.collection("download_links").createIndex({
+        ww_id: 1
+    });
+    await db.collection("download_links").createIndex({
+        legacy_uuid: 1
+    });
+    // digital
+    await db.collection("digital_content").createIndex({
+        ww_id: 1
+    }, {
+        unique: true
+    });
+    await db.collection("digital_content").createIndex({
+        content_type: 1
+    });
+    await db.collection("digital_download_links").createIndex({
+        content_id: 1
+    });
+    await db.collection("digital_download_links").createIndex({
+        ww_id: 1
+    });
+    await db.collection("digital_download_links").createIndex({
+        legacy_uuid: 1
+    });
+    // live tv
+    await db.collection("live_tv_channels").createIndex({
+        status: 1,
+        is_active: 1
+    });
+    await db.collection("live_tv_sources").createIndex({
+        channel_id: 1
+    });
+    // stats — primary lookup indexes
+    await db.collection("embed_views").createIndex({
+        ww_id: 1
+    });
+    await db.collection("embed_views").createIndex({
+        viewed_at: -1
+    });
+    await db.collection("embed_views").createIndex({
+        embed_type: 1,
+        viewed_at: -1
+    });
+    await db.collection("link_clicks").createIndex({
+        clicked_at: -1
+    });
+    await db.collection("link_clicks").createIndex({
+        link_id: 1,
+        clicked_at: -1
+    });
+    await db.collection("api_usage").createIndex({
+        created_at: -1
+    });
+    // stats — TTL (auto-purge raw events older than 180 days). We use the
+    // dedicated `_ttl` Date field populated at insert (see shim.ts) because
+    // Mongo TTL indexes only work on Date BSON, not on ISO strings.
+    const TTL_180_DAYS = 180 * 86400;
+    await safeTtl(db, "embed_views", TTL_180_DAYS);
+    await safeTtl(db, "link_clicks", TTL_180_DAYS);
+    await safeTtl(db, "ad_clicks", TTL_180_DAYS);
+    // login_attempts has its own short TTL (24h) created on first rate-limit hit.
+    // ads
+    await db.collection("ads").createIndex({
+        slot_number: 1
+    }, {
+        unique: true,
+        sparse: true
+    });
+    // bug reports
+    await db.collection("bug_reports").createIndex({
+        created_at: -1
+    });
+    // login attempts
+    await db.collection("login_attempts").createIndex({
+        identifier: 1
+    });
+    // tmdb cache (used by lib/tmdb-cache.ts)
+    await db.collection("tmdb_cache").createIndex({
+        key: 1
+    }, {
+        unique: true
+    });
+    await safeTtl(db, "tmdb_cache", 7 * 86400); // 7 days
+}
+async function safeTtl(db, coll, seconds) {
+    try {
+        await db.collection(coll).createIndex({
+            _ttl: 1
+        }, {
+            expireAfterSeconds: seconds,
+            name: "_ttl_auto_purge"
+        });
+    } catch (e) {
+    // Index may exist with different opts — fine.
+    }
+}
+async function getCollection(name) {
+    const db = await getDb();
+    return db.collection(name);
+}
+}),
+"[externals]/crypto [external] (crypto, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("crypto", () => require("crypto"));
+
+module.exports = mod;
+}),
+"[externals]/buffer [external] (buffer, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("buffer", () => require("buffer"));
+
+module.exports = mod;
+}),
+"[externals]/stream [external] (stream, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("stream", () => require("stream"));
+
+module.exports = mod;
+}),
+"[externals]/util [external] (util, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("util", () => require("util"));
+
+module.exports = mod;
+}),
+"[project]/lib/mongo/auth.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+/**
+ * JWT auth helpers (server-side only).
+ * Uses bcryptjs + jsonwebtoken with httpOnly cookies.
+ */ __turbopack_context__.s([
+    "COOKIES",
+    ()=>COOKIES,
+    "clearAuthCookies",
+    ()=>clearAuthCookies,
+    "createAccessToken",
+    ()=>createAccessToken,
+    "createRefreshToken",
+    ()=>createRefreshToken,
+    "getCurrentUser",
+    ()=>getCurrentUser,
+    "hashPassword",
+    ()=>hashPassword,
+    "requireAdmin",
+    ()=>requireAdmin,
+    "requireUser",
+    ()=>requireUser,
+    "setAuthCookies",
+    ()=>setAuthCookies,
+    "verifyAccessToken",
+    ()=>verifyAccessToken,
+    "verifyPassword",
+    ()=>verifyPassword
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$bcryptjs$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/bcryptjs/index.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/jsonwebtoken/index.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$externals$5d2f$mongodb__$5b$external$5d$__$28$mongodb$2c$__cjs$29$__ = __turbopack_context__.i("[externals]/mongodb [external] (mongodb, cjs)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/headers.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/mongo/db.ts [app-route] (ecmascript)");
+;
+;
+;
+;
+;
+const JWT_SECRET = (()=>{
+    const v = process.env.JWT_SECRET;
+    if (!v || v === "change-me-in-prod") {
+        if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+        ;
+        // Dev fallback — never reachable in prod thanks to the guard above.
+        console.warn("[auth] JWT_SECRET not set, using dev-only fallback. DO NOT deploy without setting it.");
+        return "dev-only-insecure-secret-do-not-use-in-prod";
+    }
+    if (v.length < 32) {
+        if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+        ;
+        console.warn("[auth] JWT_SECRET is shorter than 32 chars — unsafe in prod.");
+    }
+    return v;
+})();
+const ACCESS_COOKIE = "ww_access";
+const REFRESH_COOKIE = "ww_refresh";
+async function hashPassword(plain) {
+    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$bcryptjs$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].hash(plain, 10);
+}
+async function verifyPassword(plain, hash) {
+    if (!hash) return false;
+    try {
+        return await __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$bcryptjs$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].compare(plain, hash);
+    } catch  {
+        return false;
+    }
+}
+function createAccessToken(userId, email) {
+    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].sign({
+        sub: userId,
+        email,
+        type: "access"
+    }, JWT_SECRET, {
+        expiresIn: "12h"
+    });
+}
+function createRefreshToken(userId) {
+    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].sign({
+        sub: userId,
+        type: "refresh"
+    }, JWT_SECRET, {
+        expiresIn: "30d"
+    });
+}
+function verifyAccessToken(token) {
+    try {
+        const decoded = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].verify(token, JWT_SECRET);
+        if (decoded.type !== "access") return null;
+        return {
+            sub: decoded.sub,
+            email: decoded.email
+        };
+    } catch  {
+        return null;
+    }
+}
+function setAuthCookies(res, accessToken, refreshToken) {
+    res.headers.append("Set-Cookie", `${ACCESS_COOKIE}=${accessToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=43200`);
+    res.headers.append("Set-Cookie", `${REFRESH_COOKIE}=${refreshToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`);
+}
+function clearAuthCookies(res) {
+    res.headers.append("Set-Cookie", `${ACCESS_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+    res.headers.append("Set-Cookie", `${REFRESH_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+}
+async function getCurrentUser(req) {
+    let token;
+    if (req) {
+        token = req.cookies.get(ACCESS_COOKIE)?.value;
+    } else {
+        const c = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["cookies"])();
+        token = c.get(ACCESS_COOKIE)?.value;
+    }
+    if (!token) return null;
+    const payload = verifyAccessToken(token);
+    if (!payload) return null;
+    const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getDb"])();
+    let userDoc = null;
+    if (/^[a-f0-9]{24}$/i.test(payload.sub)) {
+        userDoc = await db.collection("users").findOne({
+            _id: new __TURBOPACK__imported__module__$5b$externals$5d2f$mongodb__$5b$external$5d$__$28$mongodb$2c$__cjs$29$__["ObjectId"](payload.sub)
+        });
+    } else {
+        userDoc = await db.collection("users").findOne({
+            id: payload.sub
+        });
+    }
+    if (!userDoc) return null;
+    return {
+        // Prefer legacy_uuid (original Supabase UUID) so that joins with foreign-key
+        // fields stored as the old UUID (e.g. streaming_links.submitted_by from the
+        // Supabase→Mongo migration) keep working. Fallback to the Mongo ObjectId hex
+        // for post-migration users that don't have a legacy UUID.
+        id: userDoc.legacy_uuid || userDoc._id?.toString() || userDoc.id,
+        email: userDoc.email,
+        username: userDoc.username || null,
+        role: userDoc.role || "member",
+        created_at: userDoc.created_at,
+        needs_password_reset: userDoc.needs_password_reset || false
+    };
+}
+async function requireUser(req) {
+    const u = await getCurrentUser(req);
+    if (!u) throw new Error("Unauthorized");
+    return u;
+}
+async function requireAdmin(req) {
+    const u = await requireUser(req);
+    if (u.role !== "admin") throw new Error("Forbidden");
+    return u;
+}
+const COOKIES = {
+    ACCESS_COOKIE,
+    REFRESH_COOKIE
+};
+}),
+"[project]/lib/tmdb-cache.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+/**
+ * MongoDB-backed TMDB cache.
+ *
+ * Replaces the per-process in-memory `Map` cache that used to live in
+ * `app/api/admin/stats/route.ts`. On serverless / multi-instance hosting
+ * the in-memory cache hit-rate is near zero (every cold start refetches
+ * everything from TMDB). The Mongo cache is shared across instances,
+ * survives restarts, and gets auto-purged after 7 days by the TTL index
+ * declared in `lib/mongo/db.ts`.
+ *
+ * Usage:
+ *   const hit = await getTmdbCached("movie", 12345)
+ *   if (!hit) { ... call TMDB ... await putTmdbCached("movie", 12345, payload) }
+ */ __turbopack_context__.s([
+    "fetchTmdbCached",
+    ()=>fetchTmdbCached
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/mongo/db.ts [app-route] (ecmascript)");
+;
+const TMDB_KEY = process.env.TMDB_API_KEY || "";
+const TMDB_IMG = "https://image.tmdb.org/t/p/w92";
+async function fetchTmdbCached(type, id) {
+    if (!id || type !== "movie" && type !== "tv") {
+        return {
+            title: `#${id}`,
+            poster: null
+        };
+    }
+    const key = `${type}/${id}`;
+    const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getDb"])();
+    const coll = db.collection("tmdb_cache");
+    const hit = await coll.findOne({
+        key
+    });
+    if (hit && hit.title) {
+        return {
+            title: hit.title,
+            poster: hit.poster ?? null
+        };
+    }
+    try {
+        const r = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_KEY}&language=fr-FR`, {
+            next: {
+                revalidate: 21600
+            }
+        });
+        if (!r.ok) throw new Error(`tmdb ${r.status}`);
+        const j = await r.json();
+        const entry = {
+            title: j.title || j.name || `#${id}`,
+            poster: j.poster_path ? `${TMDB_IMG}${j.poster_path}` : null
+        };
+        // Upsert with a fresh _ttl (Date) so the TTL index keeps the row alive.
+        await coll.updateOne({
+            key
+        }, {
+            $set: {
+                ...entry,
+                key,
+                _ttl: new Date()
+            }
+        }, {
+            upsert: true
+        });
+        return entry;
+    } catch  {
+        // Cache the negative result for a short time so we don't hammer TMDB.
+        const fallback = {
+            title: `#${id}`,
+            poster: null
+        };
+        await coll.updateOne({
+            key
+        }, {
+            $set: {
+                ...fallback,
+                key,
+                _ttl: new Date(Date.now() - 6 * 86400 * 1000)
+            }
+        }, {
+            upsert: true
+        }).catch(()=>{});
+        return fallback;
+    }
+}
+}),
+"[project]/app/api/admin/stats/route.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+/**
+ * Single fast endpoint that returns everything the Admin > Stats tab needs.
+ * Uses MongoDB aggregation pipelines instead of paginated client fetches.
+ * Typical response time: ~100-300ms vs 5-15s previously.
+ *
+ * NOTE: per user request, NO arbitrary limits are applied anywhere in this
+ * endpoint. Group-by aggregations are naturally bounded by the cardinality
+ * of the grouping key (ww_id, host, etc.). For raw-document fetches we use
+ * a time window filter (no $limit).
+ */ __turbopack_context__.s([
+    "GET",
+    ()=>GET
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/server.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/mongo/db.ts [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/mongo/auth.ts [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$tmdb$2d$cache$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/tmdb-cache.ts [app-route] (ecmascript)");
+;
+;
+;
+;
+// In-memory TMDB cache REMOVED — use Mongo-backed `fetchTmdbCached` from
+// lib/tmdb-cache.ts. On serverless / multi-instance hosting the per-process
+// Map cache had a near-zero hit rate after every cold start.
+// Index bootstrap: runs once per server process. createIndex is idempotent
+// and very cheap if the index already exists. These indexes are essential
+// for the admin/stats endpoint to complete in <1s instead of timing out
+// on multi-million-row collections.
+let indexesEnsured = null;
+async function ensureStatsIndexes(db) {
+    if (indexesEnsured) return indexesEnsured;
+    indexesEnsured = (async ()=>{
+        const safe = async (fn)=>{
+            try {
+                await fn();
+            } catch (e) {
+                console.warn("[admin/stats] index create skipped:", e?.message);
+            }
+        };
+        await Promise.all([
+            safe(()=>db.collection("embed_views").createIndex({
+                    viewed_at: -1
+                })),
+            safe(()=>db.collection("embed_views").createIndex({
+                    ww_id: 1
+                })),
+            safe(()=>db.collection("embed_views").createIndex({
+                    embed_type: 1,
+                    viewed_at: -1
+                })),
+            safe(()=>db.collection("link_clicks").createIndex({
+                    clicked_at: -1
+                })),
+            safe(()=>db.collection("link_clicks").createIndex({
+                    link_id: 1,
+                    clicked_at: -1
+                })),
+            safe(()=>db.collection("link_clicks").createIndex({
+                    ww_id: 1
+                })),
+            safe(()=>db.collection("ad_clicks").createIndex({
+                    clicked_at: -1
+                })),
+            safe(()=>db.collection("streaming_links").createIndex({
+                    submitted_by: 1
+                })),
+            safe(()=>db.collection("streaming_links").createIndex({
+                    status: 1,
+                    is_active: 1
+                })),
+            safe(()=>db.collection("download_links").createIndex({
+                    submitted_by: 1
+                })),
+            safe(()=>db.collection("download_links").createIndex({
+                    status: 1,
+                    is_active: 1
+                })),
+            safe(()=>db.collection("digital_content").createIndex({
+                    submitted_by: 1
+                })),
+            safe(()=>db.collection("digital_download_links").createIndex({
+                    submitted_by: 1
+                })),
+            safe(()=>db.collection("live_tv_sources").createIndex({
+                    submitted_by: 1
+                })),
+            safe(()=>db.collection("bug_reports").createIndex({
+                    status: 1,
+                    created_at: -1
+                }))
+        ]);
+        console.log("[admin/stats] indexes ensured");
+    })();
+    return indexesEnsured;
+}
+async function fetchTmdb(type, id) {
+    if (type !== "movie" && type !== "tv") return {
+        title: `#${id}`,
+        poster: null
+    };
+    return (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$tmdb$2d$cache$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["fetchTmdbCached"])(type, id);
+}
+async function GET(req) {
+    try {
+        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["requireAdmin"])(req);
+    } catch  {
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+            error: "Unauthorized"
+        }, {
+            status: 401
+        });
+    }
+    try {
+        return await buildStatsResponse(req);
+    } catch (err) {
+        console.error("[admin/stats] failed:", err?.stack || err);
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+            error: "Internal error",
+            message: err?.message || String(err)
+        }, {
+            status: 500
+        });
+    }
+}
+async function buildStatsResponse(req) {
+    const period = Math.max(1, Math.min(365, parseInt(req.nextUrl.searchParams.get("period") || "7", 10)));
+    const now = new Date();
+    const startDate = new Date(now.getTime() - period * 86400000).toISOString();
+    const fiveMinAgo = new Date(now.getTime() - 5 * 60000).toISOString();
+    const fifteenMinAgo = new Date(now.getTime() - 15 * 60000).toISOString();
+    const oneHourAgo = new Date(now.getTime() - 3600000).toISOString();
+    const twentyFourHoursAgo = new Date(now.getTime() - 86400000).toISOString();
+    const db = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getDb"])();
+    // Ensure critical indexes exist (idempotent: createIndex is a no-op if the
+    // index already exists). Without these the admin/stats aggregations do a
+    // COLLSCAN on millions of rows and either run out of memory or time out
+    // through the reverse-proxy (502). This block runs once and is cheap.
+    await ensureStatsIndexes(db);
+    // maxTimeMS: hard cap so a slow aggregation fails fast (proper 500 with
+    // a clear message) instead of hanging until the upstream nginx times out
+    // and returns an opaque 502.
+    const AGG_OPTS = {
+        allowDiskUse: true,
+        maxTimeMS: 25000
+    };
+    // Composite unique-visitor key. Historical records (pre-fix) did not store
+    // `ip_hash`, so the previous `$ifNull: [ip_hash, user_agent]` collapsed
+    // every distinct user with a common Chrome/Edge UA into a single bucket
+    // — drastically under-counting unique visitors (e.g. 927 unique vs 42k
+    // views in 24h). We now key by the (ip_hash, user_agent) tuple so:
+    //   • new records (ip_hash present) → one group per IP×UA
+    //   • old records (ip_hash null)    → fall back to one group per UA
+    // This is the standard "unique visitor" semantic used by analytics tools.
+    const uniqueKey = {
+        i: "$ip_hash",
+        u: "$user_agent"
+    };
+    // Type-safe day bucket: handles both String (ISO) and Date BSON types.
+    const dayBucket = (field)=>({
+            $cond: [
+                {
+                    $eq: [
+                        {
+                            $type: field
+                        },
+                        "string"
+                    ]
+                },
+                {
+                    $substrCP: [
+                        field,
+                        0,
+                        10
+                    ]
+                },
+                {
+                    $cond: [
+                        {
+                            $eq: [
+                                {
+                                    $type: field
+                                },
+                                "date"
+                            ]
+                        },
+                        {
+                            $dateToString: {
+                                date: field,
+                                format: "%Y-%m-%d"
+                            }
+                        },
+                        null
+                    ]
+                }
+            ]
+        });
+    // Run main aggregations in parallel — NO $limit anywhere.
+    const [viewsByDay, totalViews, totalStreamingViews, totalLinkClicks, totalAdClicks, uniqueIpsAgg, viewsByType, topMediaRaw, topDownloadRaw, topRefererRaw, online5, online15, online1h, online24h, activePagesRaw, recentVisitorsRaw, externalClicksRaw, externalByDayRaw, externalProvidersRaw, externalHostsRaw, externalQualityRaw, externalMediaTypeRaw, externalTopRaw, totalExternalClicks, externalBySourceRaw, // ------- Internal downloads (clicks on user-submitted internal links) -------
+    internalClicksRaw, internalByDayRaw, internalTopLinksRaw, internalTopUploadersRaw, internalByQualityRaw, internalByMediaTypeRaw, internalByLinkTypeRaw, totalInternalClicksAllTime] = await Promise.all([
+        db.collection("embed_views").aggregate([
+            {
+                $match: {
+                    viewed_at: {
+                        $gte: startDate
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: dayBucket("$viewed_at"),
+                    total: {
+                        $sum: 1
+                    },
+                    streaming: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $or: [
+                                        {
+                                            $eq: [
+                                                "$embed_type",
+                                                "streaming"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
+                        }
+                    }
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("embed_views").countDocuments({
+            viewed_at: {
+                $gte: startDate
+            }
+        }),
+        db.collection("embed_views").countDocuments({
+            viewed_at: {
+                $gte: startDate
+            },
+            embed_type: "streaming"
+        }),
+        db.collection("link_clicks").countDocuments({
+            clicked_at: {
+                $gte: startDate
+            }
+        }),
+        db.collection("ad_clicks").countDocuments({
+            clicked_at: {
+                $gte: startDate
+            }
+        }),
+        db.collection("embed_views").aggregate([
+            {
+                $match: {
+                    viewed_at: {
+                        $gte: startDate
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: uniqueKey
+                }
+            },
+            {
+                $count: "n"
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("embed_views").aggregate([
+            {
+                $match: {
+                    viewed_at: {
+                        $gte: startDate
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: "$media_type",
+                    count: {
+                        $sum: 1
+                    }
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("embed_views").aggregate([
+            {
+                $match: {
+                    viewed_at: {
+                        $gte: startDate
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        ww_id: "$ww_id",
+                        media_type: "$media_type",
+                        tmdb_id: "$tmdb_id"
+                    },
+                    views: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    views: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        ww_id: "$ww_id",
+                        media_type: "$media_type",
+                        tmdb_id: "$tmdb_id"
+                    },
+                    downloads: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    downloads: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("embed_views").aggregate([
+            {
+                $match: {
+                    viewed_at: {
+                        $gte: startDate
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $ifNull: [
+                            "$referrer",
+                            "Direct"
+                        ]
+                    },
+                    count: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    count: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("embed_views").countDocuments({
+            viewed_at: {
+                $gte: fiveMinAgo
+            }
+        }),
+        db.collection("embed_views").countDocuments({
+            viewed_at: {
+                $gte: fifteenMinAgo
+            }
+        }),
+        db.collection("embed_views").countDocuments({
+            viewed_at: {
+                $gte: oneHourAgo
+            }
+        }),
+        db.collection("embed_views").countDocuments({
+            viewed_at: {
+                $gte: twentyFourHoursAgo
+            }
+        }),
+        db.collection("embed_views").aggregate([
+            {
+                $match: {
+                    viewed_at: {
+                        $gte: fifteenMinAgo
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: "$ww_id",
+                    count: {
+                        $sum: 1
+                    },
+                    media_type: {
+                        $first: "$media_type"
+                    },
+                    tmdb_id: {
+                        $first: "$tmdb_id"
+                    }
+                }
+            },
+            {
+                $sort: {
+                    count: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("embed_views").aggregate([
+            {
+                $match: {
+                    viewed_at: {
+                        $gte: oneHourAgo
+                    }
+                }
+            },
+            {
+                $sort: {
+                    viewed_at: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        // External clicks — count ALL link_clicks (every click on a download/streaming
+        // external link counts; the Supabase `is_external` flag was inconsistent
+        // historically so we treat any link_click as a 3rd-party exit click).
+        db.collection("link_clicks").countDocuments({
+            clicked_at: {
+                $gte: startDate
+            }
+        }),
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: dayBucket("$clicked_at"),
+                    count: {
+                        $sum: 1
+                    }
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $ifNull: [
+                            "$provider",
+                            "Inconnu"
+                        ]
+                    },
+                    count: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    count: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $ifNull: [
+                            "$host_name",
+                            "?"
+                        ]
+                    },
+                    count: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    count: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $ifNull: [
+                            "$quality",
+                            "N/A"
+                        ]
+                    },
+                    count: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    count: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $ifNull: [
+                            "$media_type",
+                            "?"
+                        ]
+                    },
+                    count: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    count: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        ww_id: "$ww_id",
+                        media_type: "$media_type",
+                        tmdb_id: "$tmdb_id"
+                    },
+                    clicks: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    clicks: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("link_clicks").countDocuments({}),
+        // ------- Breakdown of external clicks by source (movix / alt / zt) -------
+        // Only clicks tagged with `link_type: "external"` carry a `source` field.
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    },
+                    link_type: "external"
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $ifNull: [
+                            "$source",
+                            "movix"
+                        ]
+                    },
+                    count: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    count: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        // -------- Internal-download stats --------
+        // Per request: "Internal" = clicks on links uploaded to this site (link_id
+        // present and matching a download_links / digital_download_links row).
+        // Group by link_id so we can show the most-clicked SPECIFIC link, then
+        // join in a second pass to get title, source, quality, uploader.
+        db.collection("link_clicks").countDocuments({
+            clicked_at: {
+                $gte: startDate
+            },
+            link_id: {
+                $ne: null
+            }
+        }),
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    },
+                    link_id: {
+                        $ne: null
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: dayBucket("$clicked_at"),
+                    count: {
+                        $sum: 1
+                    }
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    },
+                    link_id: {
+                        $ne: null
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: "$link_id",
+                    clicks: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    clicks: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        // Top uploaders — done via $lookup so a single aggregation gives us the
+        // total clicks per submitted_by across both download_links and
+        // digital_download_links.
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    },
+                    link_id: {
+                        $ne: null
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: "$link_id",
+                    clicks: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: "download_links",
+                    let: {
+                        lid: "$_id"
+                    },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: [
+                                        "$legacy_uuid",
+                                        "$$lid"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                submitted_by: 1,
+                                _id: 0
+                            }
+                        }
+                    ],
+                    as: "dl"
+                }
+            },
+            {
+                $lookup: {
+                    from: "digital_download_links",
+                    let: {
+                        lid: "$_id"
+                    },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: [
+                                        "$legacy_uuid",
+                                        "$$lid"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                submitted_by: 1,
+                                _id: 0
+                            }
+                        }
+                    ],
+                    as: "ddl"
+                }
+            },
+            {
+                $project: {
+                    clicks: 1,
+                    uploader: {
+                        $ifNull: [
+                            {
+                                $arrayElemAt: [
+                                    "$dl.submitted_by",
+                                    0
+                                ]
+                            },
+                            {
+                                $arrayElemAt: [
+                                    "$ddl.submitted_by",
+                                    0
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                $match: {
+                    uploader: {
+                        $ne: null
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: "$uploader",
+                    clicks: {
+                        $sum: "$clicks"
+                    },
+                    linkCount: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    clicks: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    },
+                    link_id: {
+                        $ne: null
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $ifNull: [
+                            "$quality",
+                            "N/A"
+                        ]
+                    },
+                    count: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    count: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    },
+                    link_id: {
+                        $ne: null
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $ifNull: [
+                            "$media_type",
+                            "?"
+                        ]
+                    },
+                    count: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    count: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    },
+                    link_id: {
+                        $ne: null
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $ifNull: [
+                            "$link_type",
+                            "direct"
+                        ]
+                    },
+                    count: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    count: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        db.collection("link_clicks").countDocuments({
+            link_id: {
+                $ne: null
+            }
+        })
+    ]);
+    // Build day buckets
+    const byDayMap = new Map();
+    for(let i = period - 1; i >= 0; i--){
+        const d = new Date(now.getTime() - i * 86400000).toISOString().split("T")[0];
+        byDayMap.set(d, {
+            total: 0,
+            streaming: 0,
+            download: 0
+        });
+    }
+    for (const row of viewsByDay){
+        if (byDayMap.has(row._id)) {
+            byDayMap.get(row._id).total = row.total;
+            byDayMap.get(row._id).streaming = row.streaming;
+        }
+    }
+    // Add downloads per day
+    const linkClicksDay = await db.collection("link_clicks").aggregate([
+        {
+            $match: {
+                clicked_at: {
+                    $gte: startDate
+                }
+            }
+        },
+        {
+            $group: {
+                _id: dayBucket("$clicked_at"),
+                count: {
+                    $sum: 1
+                }
+            }
+        }
+    ], {
+        allowDiskUse: true
+    }).toArray();
+    for (const row of linkClicksDay){
+        if (byDayMap.has(row._id)) byDayMap.get(row._id).download = row.count;
+    }
+    const viewsByDayFinal = Array.from(byDayMap.entries()).map(([date, v])=>({
+            date,
+            count: v.total,
+            streamingCount: v.streaming,
+            downloadCount: v.download,
+            formattedDate: new Date(date).toLocaleDateString("fr-FR", {
+                day: "2-digit",
+                month: "2-digit"
+            })
+        }));
+    // Enrich top media (parallel TMDB + Live TV lookups)
+    const channelIds = new Set();
+    for (const m of topMediaRaw){
+        if (m._id?.ww_id?.startsWith("ww-live-")) channelIds.add(m._id.ww_id.slice("ww-live-".length));
+    }
+    for (const m of topDownloadRaw){
+        if (m._id?.ww_id?.startsWith("ww-live-")) channelIds.add(m._id.ww_id.slice("ww-live-".length));
+    }
+    for (const m of activePagesRaw){
+        if (m._id?.startsWith?.("ww-live-")) channelIds.add(m._id.slice("ww-live-".length));
+    }
+    for (const v of recentVisitorsRaw){
+        if (v.ww_id?.startsWith?.("ww-live-")) channelIds.add(v.ww_id.slice("ww-live-".length));
+    }
+    const ObjectIdLib = (await __turbopack_context__.A("[externals]/mongodb [external] (mongodb, cjs, async loader)")).ObjectId;
+    const uuidToObjectIdHex = (uuid)=>uuid.replace(/-/g, "").slice(0, 24).padEnd(24, "0");
+    const channelMap = new Map();
+    if (channelIds.size > 0) {
+        const stringIds = [];
+        const objectIds = [];
+        const legacyUuids = [];
+        for (const cid of channelIds){
+            stringIds.push(cid);
+            if (/^[a-f0-9]{24}$/i.test(cid)) {
+                try {
+                    objectIds.push(new ObjectIdLib(cid));
+                } catch  {}
+            }
+            if (/^[0-9a-f-]{36}$/i.test(cid)) {
+                try {
+                    objectIds.push(new ObjectIdLib(uuidToObjectIdHex(cid)));
+                } catch  {}
+                legacyUuids.push(cid);
+            }
+        }
+        const allIds = [
+            ...stringIds,
+            ...objectIds
+        ];
+        const channels = await db.collection("live_tv_channels").find({
+            $or: [
+                {
+                    _id: {
+                        $in: allIds
+                    }
+                },
+                {
+                    id: {
+                        $in: stringIds
+                    }
+                },
+                {
+                    legacy_uuid: {
+                        $in: legacyUuids
+                    }
+                }
+            ]
+        }).project({
+            channel_name: 1,
+            channel_logo: 1,
+            legacy_uuid: 1
+        }).toArray();
+        for (const c of channels){
+            const entry = {
+                title: c.channel_name,
+                poster: c.channel_logo
+            };
+            channelMap.set(c._id?.toString(), entry);
+            if (c.legacy_uuid) channelMap.set(c.legacy_uuid, entry);
+        }
+    }
+    // Digital lookups
+    const digitalIds = new Set();
+    const collectDigitalIds = (ww)=>{
+        if (ww && /^ww-(ebook|music|soft|game)-/.test(ww)) digitalIds.add(ww);
+    };
+    for (const m of topMediaRaw)collectDigitalIds(m._id?.ww_id);
+    for (const m of topDownloadRaw)collectDigitalIds(m._id?.ww_id);
+    for (const p of activePagesRaw)collectDigitalIds(p._id);
+    for (const v of recentVisitorsRaw)collectDigitalIds(v.ww_id);
+    const digitalMap = new Map();
+    if (digitalIds.size > 0) {
+        const digitals = await db.collection("digital_content").find({
+            ww_id: {
+                $in: Array.from(digitalIds)
+            }
+        }).project({
+            ww_id: 1,
+            title: 1,
+            cover_url: 1,
+            content_type: 1
+        }).toArray();
+        for (const d of digitals)digitalMap.set(d.ww_id, {
+            title: d.title,
+            poster: d.cover_url,
+            content_type: d.content_type
+        });
+    }
+    const enrich = async (item, kind)=>{
+        const wwId = item._id?.ww_id;
+        const mediaType = item._id?.media_type;
+        const tmdbId = item._id?.tmdb_id;
+        let title = wwId || "?";
+        let poster = null;
+        if (wwId?.startsWith?.("ww-live-")) {
+            const cid = wwId.slice("ww-live-".length);
+            const ch = channelMap.get(cid) || channelMap.get(cid);
+            title = ch?.title || "Chaîne TV";
+            poster = ch?.poster || null;
+        } else if (wwId && /^ww-(ebook|music|soft|game)-/.test(wwId)) {
+            const dg = digitalMap.get(wwId);
+            title = dg?.title || "Contenu Digital";
+            poster = dg?.poster || null;
+        } else if (tmdbId && (mediaType === "movie" || mediaType === "tv")) {
+            const tm = await fetchTmdb(mediaType, tmdbId);
+            title = tm.title;
+            poster = tm.poster;
+        }
+        return {
+            tmdb_id: tmdbId,
+            media_type: wwId?.startsWith?.("ww-live-") ? "live" : wwId && /^ww-(ebook|music|soft|game)-/.test(wwId) ? "digital" : mediaType,
+            ww_id: wwId,
+            title,
+            poster,
+            ...kind === "view" ? {
+                views: item.views
+            } : {
+                downloads: item.downloads
+            }
+        };
+    };
+    const topMedia = await Promise.all(topMediaRaw.map((m)=>enrich(m, "view")));
+    const topMediaDownload = await Promise.all(topDownloadRaw.map((m)=>enrich(m, "download")));
+    // Active pages enrichment
+    const activePages = await Promise.all(activePagesRaw.map(async (p)=>{
+        const wwId = p._id;
+        let title = wwId;
+        let poster = null;
+        let mediaType = p.media_type;
+        if (wwId?.startsWith?.("ww-live-")) {
+            const ch = channelMap.get(wwId.slice("ww-live-".length));
+            title = ch?.title || wwId;
+            poster = ch?.poster || null;
+            mediaType = "live";
+        } else if (wwId && /^ww-(ebook|music|soft|game)-/.test(wwId)) {
+            const dg = digitalMap.get(wwId);
+            title = dg?.title || "Contenu Digital";
+            poster = dg?.poster || null;
+            mediaType = dg?.content_type || "digital";
+        } else if (p.tmdb_id && (p.media_type === "movie" || p.media_type === "tv")) {
+            const tm = await fetchTmdb(p.media_type, p.tmdb_id);
+            title = tm.title;
+            poster = tm.poster;
+        }
+        return {
+            ww_id: wwId,
+            count: p.count,
+            media_type: mediaType,
+            title,
+            poster
+        };
+    }));
+    const recentVisitorsSeen = new Set();
+    const recentVisitors = await Promise.all(recentVisitorsRaw.filter((v)=>{
+        const k = v.ww_id || v.viewed_at;
+        if (recentVisitorsSeen.has(k)) return false;
+        recentVisitorsSeen.add(k);
+        return true;
+    }).map(async (v)=>{
+        let title = v.ww_id || "N/A";
+        let poster = null;
+        let mediaType = v.media_type || "?";
+        if (v.ww_id?.startsWith?.("ww-live-")) {
+            const ch = channelMap.get(v.ww_id.slice("ww-live-".length));
+            title = ch?.title || v.ww_id;
+            poster = ch?.poster || null;
+            mediaType = "live";
+        } else if (v.ww_id && /^ww-(ebook|music|soft|game)-/.test(v.ww_id)) {
+            const dg = digitalMap.get(v.ww_id);
+            title = dg?.title || "Contenu Digital";
+            poster = dg?.poster || null;
+            mediaType = dg?.content_type || "digital";
+        } else if (v.tmdb_id && (v.media_type === "movie" || v.media_type === "tv")) {
+            const tm = await fetchTmdb(v.media_type, v.tmdb_id);
+            title = tm.title;
+            poster = tm.poster;
+        }
+        return {
+            ip_hash: v.ip_hash ? v.ip_hash.substring(0, 8) + "…" : "Anonyme",
+            viewed_at: v.viewed_at,
+            ww_id: v.ww_id || "N/A",
+            media_type: mediaType,
+            title,
+            poster
+        };
+    }));
+    // Format top referers — dedup by normalised hostname.
+    // The upstream $group keys by the raw referrer URL, so the same site can
+    // appear several times (different paths, protocols, ports, www. prefix,
+    // FQDN trailing dot, mixed case, etc.). We collapse to bare hostname
+    // (no protocol/path/port/www/trailing-dot) so each origin appears once.
+    const normaliseReferer = (raw)=>{
+        if (raw === null || raw === undefined) return "Direct";
+        const s = String(raw).trim();
+        if (!s || s.toLowerCase() === "direct" || s === "null" || s === "undefined") return "Direct";
+        let host = null;
+        try {
+            host = new URL(s).hostname;
+        } catch  {
+            // Fallback parser for malformed URLs (e.g. missing scheme, accidental
+            // spaces). Strip everything to the first path/query character.
+            host = s.replace(/^[a-z][a-z0-9+.\-]*:\/\//i, "").split(/[\/\?#]/)[0];
+        }
+        if (!host) return "Direct";
+        host = host.toLowerCase();
+        // Strip default ports
+        host = host.replace(/:(80|443)$/, "");
+        // Strip trailing dot (FQDN form: "example.com.")
+        host = host.replace(/\.+$/, "");
+        // Strip leading "www." so www.example.com and example.com merge
+        host = host.replace(/^www\./, "");
+        return host || "Direct";
+    };
+    const refererMerge = new Map();
+    for (const r of topRefererRaw){
+        const host = normaliseReferer(r._id);
+        refererMerge.set(host, (refererMerge.get(host) || 0) + (r.count || 0));
+    }
+    const topReferers = Array.from(refererMerge.entries()).map(([referrer, count])=>({
+            referrer,
+            count
+        })).sort((a, b)=>b.count - a.count);
+    // External top media enrichment
+    const externalTop = await Promise.all(externalTopRaw.map((m)=>enrich({
+            _id: m._id,
+            downloads: m.clicks
+        }, "download")));
+    // External by-day fill
+    const externalByDayMap = new Map();
+    for(let i = period - 1; i >= 0; i--){
+        externalByDayMap.set(new Date(now.getTime() - i * 86400000).toISOString().split("T")[0], 0);
+    }
+    for (const row of externalByDayRaw){
+        if (externalByDayMap.has(row._id)) externalByDayMap.set(row._id, row.count);
+    }
+    // -------- Internal-download enrichment: resolve link_id → link details --------
+    const internalLinkIds = internalTopLinksRaw.map((r)=>r._id).filter(Boolean);
+    const internalLinks = [];
+    if (internalLinkIds.length > 0) {
+        const [dlRows, ddlRows] = await Promise.all([
+            db.collection("download_links").find({
+                legacy_uuid: {
+                    $in: internalLinkIds
+                }
+            }).project({
+                legacy_uuid: 1,
+                ww_id: 1,
+                source_name: 1,
+                quality: 1,
+                language: 1,
+                file_size: 1,
+                link_type: 1,
+                media_type: 1,
+                tmdb_id: 1,
+                season_number: 1,
+                episode_number: 1,
+                submitted_by: 1,
+                status: 1
+            }).toArray(),
+            db.collection("digital_download_links").find({
+                legacy_uuid: {
+                    $in: internalLinkIds
+                }
+            }).project({
+                legacy_uuid: 1,
+                ww_id: 1,
+                source_name: 1,
+                quality: 1,
+                file_format: 1,
+                language: 1,
+                file_size: 1,
+                link_type: 1,
+                submitted_by: 1,
+                status: 1,
+                content_id: 1
+            }).toArray()
+        ]);
+        const linkMap = new Map();
+        for (const r of dlRows){
+            linkMap.set(r.legacy_uuid, {
+                ...r,
+                _kind: "download"
+            });
+        }
+        for (const r of ddlRows){
+            if (!linkMap.has(r.legacy_uuid)) {
+                linkMap.set(r.legacy_uuid, {
+                    ...r,
+                    _kind: "digital"
+                });
+            }
+        }
+        for (const r of internalTopLinksRaw){
+            const meta = linkMap.get(r._id);
+            if (meta) internalLinks.push({
+                ...meta,
+                link_id: r._id,
+                clicks: r.clicks
+            });
+        }
+    }
+    // Resolve media titles for internal top links (TMDB + digital_content)
+    const internalDigitalIds = new Set();
+    for (const l of internalLinks){
+        if (l.ww_id && /^ww-(ebook|music|soft|game)-/.test(l.ww_id)) internalDigitalIds.add(l.ww_id);
+    }
+    const internalDigitalMap = new Map();
+    if (internalDigitalIds.size > 0) {
+        const digs = await db.collection("digital_content").find({
+            ww_id: {
+                $in: Array.from(internalDigitalIds)
+            }
+        }).project({
+            ww_id: 1,
+            title: 1,
+            cover_url: 1
+        }).toArray();
+        for (const d of digs)internalDigitalMap.set(d.ww_id, {
+            title: d.title,
+            poster: d.cover_url
+        });
+    }
+    const internalTopLinks = await Promise.all(internalLinks.map(async (l)=>{
+        let title = l.source_name || l.ww_id || "?";
+        let poster = null;
+        if (l._kind === "digital") {
+            const dg = l.ww_id ? internalDigitalMap.get(l.ww_id) : null;
+            title = dg?.title || title;
+            poster = dg?.poster || null;
+        } else if (l.tmdb_id && (l.media_type === "movie" || l.media_type === "tv")) {
+            const tm = await fetchTmdb(l.media_type, l.tmdb_id);
+            title = tm.title;
+            poster = tm.poster;
+        }
+        return {
+            link_id: l.link_id,
+            ww_id: l.ww_id,
+            kind: l._kind,
+            title,
+            poster,
+            source_name: l.source_name,
+            quality: l.quality || l.file_format || null,
+            language: l.language,
+            file_size: l.file_size,
+            link_type: l.link_type,
+            media_type: l.media_type || (l._kind === "digital" ? "digital" : null),
+            season_number: l.season_number,
+            episode_number: l.episode_number,
+            submitted_by: l.submitted_by,
+            status: l.status,
+            clicks: l.clicks
+        };
+    }));
+    // Resolve uploader usernames for top uploaders
+    const uploaderIds = internalTopUploadersRaw.map((r)=>r._id).filter(Boolean);
+    const uploaderMap = new Map();
+    if (uploaderIds.length > 0) {
+        // submitted_by stored values can be either ObjectId or original UUID string;
+        // try matching via legacy_uuid (UUID) OR derived ObjectId. We also try
+        // matching the `profiles` collection (uses same ids).
+        const stringIds = uploaderIds.filter((v)=>typeof v === "string");
+        const oids = [];
+        for (const v of stringIds){
+            if (/^[0-9a-f-]{36}$/i.test(v)) {
+                try {
+                    oids.push(new ObjectIdLib(uuidToObjectIdHex(v)));
+                } catch  {}
+            } else if (/^[a-f0-9]{24}$/i.test(v)) {
+                try {
+                    oids.push(new ObjectIdLib(v));
+                } catch  {}
+            }
+        }
+        const allIds = [
+            ...stringIds,
+            ...oids
+        ];
+        const [users, profiles] = await Promise.all([
+            db.collection("users").find({
+                $or: [
+                    {
+                        _id: {
+                            $in: allIds
+                        }
+                    },
+                    {
+                        legacy_uuid: {
+                            $in: stringIds
+                        }
+                    }
+                ]
+            }).project({
+                username: 1,
+                role: 1,
+                legacy_uuid: 1
+            }).toArray(),
+            db.collection("profiles").find({
+                $or: [
+                    {
+                        _id: {
+                            $in: allIds
+                        }
+                    },
+                    {
+                        legacy_uuid: {
+                            $in: stringIds
+                        }
+                    }
+                ]
+            }).project({
+                username: 1,
+                role: 1,
+                legacy_uuid: 1
+            }).toArray()
+        ]);
+        for (const u of users){
+            const lookupKey = u.legacy_uuid || (u._id?.toString ? u._id.toString() : String(u._id));
+            uploaderMap.set(lookupKey, {
+                username: u.username || "?",
+                role: u.role || "member"
+            });
+            if (u.legacy_uuid && u._id) {
+                uploaderMap.set(u._id.toString(), {
+                    username: u.username || "?",
+                    role: u.role || "member"
+                });
+            }
+        }
+        for (const p of profiles){
+            const lookupKey = p.legacy_uuid || (p._id?.toString ? p._id.toString() : String(p._id));
+            if (!uploaderMap.has(lookupKey)) uploaderMap.set(lookupKey, {
+                username: p.username || "?",
+                role: p.role || "member"
+            });
+        }
+    }
+    const internalTopUploaders = internalTopUploadersRaw.map((r)=>{
+        const meta = uploaderMap.get(r._id);
+        return {
+            user_id: r._id,
+            username: meta?.username || "Inconnu",
+            role: meta?.role || "?",
+            clicks: r.clicks,
+            linkCount: r.linkCount
+        };
+    });
+    // Internal by-day fill
+    const internalByDayMap = new Map();
+    for(let i = period - 1; i >= 0; i--){
+        internalByDayMap.set(new Date(now.getTime() - i * 86400000).toISOString().split("T")[0], 0);
+    }
+    for (const row of internalByDayRaw){
+        if (internalByDayMap.has(row._id)) internalByDayMap.set(row._id, row.count);
+    }
+    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+        period,
+        generated_at: new Date().toISOString(),
+        detailed: {
+            totalViews,
+            totalStreamingViews,
+            totalClicks: totalLinkClicks,
+            totalAdClicks,
+            uniqueVisitors: uniqueIpsAgg[0]?.n || 0,
+            avgViewsPerDay: period > 0 ? totalViews / period : 0,
+            viewsByType: [
+                {
+                    type: "Films",
+                    count: viewsByType.find((x)=>x._id === "movie")?.count || 0
+                },
+                {
+                    type: "Séries",
+                    count: viewsByType.find((x)=>x._id === "tv")?.count || 0
+                },
+                {
+                    type: "TV Live",
+                    count: viewsByType.find((x)=>x._id === "live")?.count || 0 + (viewsByType.find((x)=>x._id === "live_tv")?.count || 0)
+                },
+                {
+                    type: "Streaming",
+                    count: totalStreamingViews
+                }
+            ]
+        },
+        viewsByDay: viewsByDayFinal,
+        topMedia,
+        topMediaDownload,
+        topReferers,
+        online: {
+            online5min: online5 || 0,
+            online15min: online15 || 0,
+            online1hour: online1h || 0,
+            online24h: online24h || 0,
+            activePages,
+            recentVisitors
+        },
+        external: {
+            totalClicks: externalClicksRaw,
+            totalClicksAllTime: totalExternalClicks,
+            byDay: Array.from(externalByDayMap.entries()).map(([date, count])=>({
+                    date,
+                    count
+                })),
+            byProvider: externalProvidersRaw.map((r)=>({
+                    provider: r._id,
+                    count: r.count
+                })),
+            byHost: externalHostsRaw.map((r)=>({
+                    host: r._id,
+                    count: r.count
+                })),
+            byQuality: externalQualityRaw.map((r)=>({
+                    quality: r._id,
+                    count: r.count
+                })),
+            byMediaType: externalMediaTypeRaw.map((r)=>({
+                    type: r._id,
+                    count: r.count
+                })),
+            bySource: externalBySourceRaw.map((r)=>({
+                    source: r._id,
+                    count: r.count
+                })),
+            topMedia: externalTop
+        },
+        internal: {
+            totalClicks: internalClicksRaw,
+            totalClicksAllTime: totalInternalClicksAllTime,
+            byDay: Array.from(internalByDayMap.entries()).map(([date, count])=>({
+                    date,
+                    count
+                })),
+            topLinks: internalTopLinks,
+            topUploaders: internalTopUploaders,
+            byQuality: internalByQualityRaw.map((r)=>({
+                    quality: r._id,
+                    count: r.count
+                })),
+            byMediaType: internalByMediaTypeRaw.map((r)=>({
+                    type: r._id,
+                    count: r.count
+                })),
+            byLinkType: internalByLinkTypeRaw.map((r)=>({
+                    link_type: r._id,
+                    count: r.count
+                }))
+        }
+    });
+}
+}),
+];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__22d1adf2._.js.map

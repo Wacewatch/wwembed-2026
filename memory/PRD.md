@@ -79,7 +79,7 @@ Next.js 16 (App Router) · React 19 · MongoDB · TMDB API · JWT auth (bcrypt) 
 ### Files créés (cette session)
 lib/link-checker.ts, lib/link-checker-runner.ts, lib/url-probe.ts, lib/url-utils.ts, lib/geo.ts, app/api/admin/check-link/run/route.ts, app/api/admin/stats/advanced/route.ts, app/api/dashboard/my-stats/route.ts, app/api/leaderboard/route.ts, app/api/upload/probe/route.ts, app/movie/[tmdbId]/page.tsx, app/tv/[tmdbId]/page.tsx, components/admin/link-health-module.tsx, components/admin/admin-stats-advanced.tsx, components/dashboard/dashboard-stats-overview.tsx, components/url-probe-button.tsx
 
-## 2026-05-15 — Onglet ZT dans embed Téléchargement
+## 2026-05-15 — Onglet ZT dans embed Téléchargement + Fix stats admin
 - Ajout d'un 3ème onglet « Sources ZT » dans `/api/v1/download/[wwId]` (sections films/séries ET digital), avec badge compteur + filtres Qualité/Host.
 - Source : API `https://apis.wavewatch.top/zt.php?_route=api` — types `movie|tv` avec `id={tmdb_id}` (+ `&s=&e=` pour séries) et fallback `q={title}` pour digital (categories `jeux|musique|ebook|logiciel`).
 - Lazy-load on tab click pour économiser le coût API (TV ZT prend ~15s upstream).
@@ -87,3 +87,19 @@ lib/link-checker.ts, lib/link-checker-runner.ts, lib/url-probe.ts, lib/url-utils
 - Champs API utilisés : `host`, `filename`, `size`, `url`, `qualities[].quality`, `qualities[].lang`. Champ `protection: "zoneurs"` ignoré conformément à la demande utilisateur.
 - Amélioration collatérale : `_parseFilename` utilise désormais des word-boundaries (regex) pour la détection langue afin d'éviter les faux positifs (ex: « GER » dans « Telecharger » qui matchait à tort comme DE).
 - `_normaliseAltLinks` / `_extractAndFilterAltLinks` propagent maintenant `lang` et `size` du parent `qualities[]` vers chaque downloadLink → onglets Alt + ZT affichent désormais correctement la langue réelle.
+
+### Fix « Utilisateurs en ligne » (compteurs identiques 143/143/143)
+- Remplacé l'aggrégation unique-keys `{ip_hash, user_agent}` par `countDocuments` (vues totales) sur les 4 fenêtres 5min/15min/1h/24h. La précédente aggrégation collapsait tous les inserts avec `ip_hash=null` dans une seule clé, donnant le même chiffre quelle que soit la fenêtre.
+- Labels UI changés en « vues » (cohérent avec le graph quotidien).
+- Touche les routes `app/api/admin/online-stream/route.ts` + `app/api/admin/stats/route.ts` + composant `online-users-module.tsx`.
+
+### Fix critique TTL purge auto (impactait toutes les stats long-terme)
+- `lib/mongo/db.ts` : `safeTtl(db, "embed_views", 180)` interprétait `180` comme **secondes** → MongoDB supprimait toutes les vues/clics au bout de 3 minutes. Le commentaire disait « 180 jours ». Corrigé en `180 * 86400` (≈15 552 000 s).
+- Concerne également `link_clicks` et `ad_clicks`.
+
+### Tracking par source externe (movix / alt / zt)
+- `/api/link-click` accepte maintenant un champ `source` (whitelist `movix|alt|zt`), stocké dans `link_clicks.source`.
+- Les 3 onglets de l'embed download (Sources externes, Sources Alt, Sources ZT) envoient désormais ce champ + tous les metadata (provider, host_name, quality, language, tmdbId, mediaType, season/episode).
+- Bug pré-existant fixé : les clics externes n'avaient jamais leurs metadata enregistrés car la route exigeait `isExternal=true` strict. Maintenant les metadata sont acceptés dès que `linkType === "external"`.
+- Nouvelle aggrégation `externalBySourceRaw` dans `/api/admin/stats` → exposée comme `external.bySource: [{source, count}]`.
+- Nouvelle UI `SourceBreakdown` dans `external-links-stats.tsx` : 3 tiles (Movix / Alt / ZT) avec %, ranking et barre stacked horizontale pour comparaison visuelle.

@@ -27,54 +27,16 @@ async function buildSnapshot() {
   const oneHourAgo = new Date(now - 3_600_000).toISOString()
   const twentyFourHoursAgo = new Date(now - 86_400_000).toISOString()
 
-  const uniqueKey = { i: "$ip_hash", u: "$user_agent" }
-  const opts = { allowDiskUse: true, maxTimeMS: 8000 }
-
   const [u5, u15, u1h, u24, activePages, recentVisitors] = await Promise.all([
-    db
-      .collection("embed_views")
-      .aggregate(
-        [
-          { $match: { viewed_at: { $gte: fiveMinAgo } } },
-          { $group: { _id: uniqueKey } },
-          { $count: "n" },
-        ],
-        opts
-      )
-      .toArray(),
-    db
-      .collection("embed_views")
-      .aggregate(
-        [
-          { $match: { viewed_at: { $gte: fifteenMinAgo } } },
-          { $group: { _id: uniqueKey } },
-          { $count: "n" },
-        ],
-        opts
-      )
-      .toArray(),
-    db
-      .collection("embed_views")
-      .aggregate(
-        [
-          { $match: { viewed_at: { $gte: oneHourAgo } } },
-          { $group: { _id: uniqueKey } },
-          { $count: "n" },
-        ],
-        opts
-      )
-      .toArray(),
-    db
-      .collection("embed_views")
-      .aggregate(
-        [
-          { $match: { viewed_at: { $gte: twentyFourHoursAgo } } },
-          { $group: { _id: uniqueKey } },
-          { $count: "n" },
-        ],
-        opts
-      )
-      .toArray(),
+    // Total views per window (matches the daily activity chart on /admin).
+    // Switched from "unique ip_hash+user_agent" aggregation to a simple
+    // countDocuments: counters were stuck on the same number because most
+    // recent inserts share `ip_hash=null,user_agent=null` and collapsed into
+    // a single bucket. Counting raw events gives the user-expected numbers.
+    db.collection("embed_views").countDocuments({ viewed_at: { $gte: fiveMinAgo } }),
+    db.collection("embed_views").countDocuments({ viewed_at: { $gte: fifteenMinAgo } }),
+    db.collection("embed_views").countDocuments({ viewed_at: { $gte: oneHourAgo } }),
+    db.collection("embed_views").countDocuments({ viewed_at: { $gte: twentyFourHoursAgo } }),
     db
       .collection("embed_views")
       .aggregate(
@@ -91,7 +53,7 @@ async function buildSnapshot() {
           { $sort: { count: -1 } },
           { $limit: ACTIVE_PAGES_LIMIT },
         ],
-        opts
+        { allowDiskUse: true, maxTimeMS: 8000 }
       )
       .toArray(),
     db
@@ -103,10 +65,10 @@ async function buildSnapshot() {
   ])
 
   return {
-    online5min: (u5 as any[])[0]?.n || 0,
-    online15min: (u15 as any[])[0]?.n || 0,
-    online1hour: (u1h as any[])[0]?.n || 0,
-    online24h: (u24 as any[])[0]?.n || 0,
+    online5min: u5 || 0,
+    online15min: u15 || 0,
+    online1hour: u1h || 0,
+    online24h: u24 || 0,
     activePages: (activePages as any[]).map((p) => ({
       ww_id: p._id,
       count: p.count,

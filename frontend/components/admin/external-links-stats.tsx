@@ -27,6 +27,7 @@ interface ExternalData {
   byHost: { host: string; count: number }[]
   byQuality: { quality: string; count: number }[]
   byMediaType: { type: string; count: number }[]
+  bySource: { source: string; count: number }[]
   topMedia: any[]
 }
 
@@ -72,6 +73,21 @@ export function ExternalLinksStats({
         <Tile icon={Server} label="Sources distinctes" value={data.byProvider.length} accent="oklch(0.7 0.2 145)" />
         <Tile icon={Globe} label="Hôtes distincts" value={data.byHost.length} accent="oklch(0.74 0.2 50)" />
       </div>
+
+      {/* Breakdown by source (movix / alt / zt) */}
+      <Card className="glass-strong border-white/5" data-testid="ext-by-source-card">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Server className="w-4 h-4 text-primary" /> Clics par source externe
+            <Badge variant="outline" className="ml-auto border-primary/30 text-primary">
+              {(data.bySource || []).reduce((s, x) => s + x.count, 0).toLocaleString()} clics
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SourceBreakdown rows={data.bySource || []} />
+        </CardContent>
+      </Card>
 
       {/* Day chart */}
       <Card className="glass-strong border-white/5">
@@ -314,6 +330,107 @@ function Tile({ icon: Icon, label, value, accent }: any) {
         </div>
         <div className="w-11 h-11 rounded-xl grid place-items-center ring-1 ring-white/10" style={{ background: accent }}>
           <Icon className="w-5 h-5 text-white" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const SOURCE_META: Record<string, { label: string; sub: string; accent: string; gradient: string }> = {
+  movix: {
+    label: "Sources externes",
+    sub: "Movix / Darkiworld",
+    accent: "oklch(0.7 0.18 280)",
+    gradient: "from-violet-500 to-fuchsia-500",
+  },
+  alt: {
+    label: "Sources Alt",
+    sub: "Wawa",
+    accent: "oklch(0.74 0.2 50)",
+    gradient: "from-amber-500 to-orange-500",
+  },
+  zt: {
+    label: "Sources ZT",
+    sub: "Zone-Telechargement",
+    accent: "oklch(0.78 0.16 195)",
+    gradient: "from-teal-400 to-cyan-500",
+  },
+}
+
+function SourceBreakdown({ rows }: { rows: { source: string; count: number }[] }) {
+  const ORDER = ["movix", "alt", "zt"] as const
+  const map = new Map(rows.map((r) => [r.source, r.count]))
+  const total = rows.reduce((s, x) => s + x.count, 0)
+  if (total === 0) {
+    return <p className="text-muted-foreground text-sm py-4 text-center">Aucun clic externe sur la période</p>
+  }
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {ORDER.map((src) => {
+          const meta = SOURCE_META[src]
+          const count = map.get(src) || 0
+          const pct = total > 0 ? (count / total) * 100 : 0
+          return (
+            <div
+              key={src}
+              className="relative overflow-hidden rounded-xl glass-subtle border border-white/10 p-4"
+              data-testid={`ext-source-${src}`}
+            >
+              <div
+                className="absolute -top-10 -right-10 w-28 h-28 rounded-full blur-3xl opacity-30"
+                style={{ background: meta.accent }}
+              />
+              <div className="relative">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{meta.label}</p>
+                <p className="text-[10px] text-muted-foreground/70 mt-0.5">{meta.sub}</p>
+                <p className="text-3xl font-black tabular-nums mt-3">{count.toLocaleString()}</p>
+                <div className="flex items-center justify-between mt-2 text-xs">
+                  <span className="text-muted-foreground">{pct.toFixed(1)}% du total</span>
+                  <span className="text-primary font-semibold">
+                    {pct >= 1 ? `#${[...ORDER].sort((a, b) => (map.get(b) || 0) - (map.get(a) || 0)).indexOf(src) + 1}` : "—"}
+                  </span>
+                </div>
+                <div className="mt-3 h-2 rounded-full bg-white/5 overflow-hidden">
+                  <div className={`h-full bg-gradient-to-r ${meta.gradient}`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Stacked horizontal bar — visual comparison */}
+      <div>
+        <p className="text-xs text-muted-foreground mb-2">Répartition globale</p>
+        <div className="h-4 rounded-full overflow-hidden flex bg-white/5 border border-white/5">
+          {ORDER.map((src) => {
+            const meta = SOURCE_META[src]
+            const count = map.get(src) || 0
+            const pct = total > 0 ? (count / total) * 100 : 0
+            if (pct === 0) return null
+            return (
+              <div
+                key={src}
+                className={`bg-gradient-to-r ${meta.gradient} h-full`}
+                style={{ width: `${pct}%` }}
+                title={`${meta.label}: ${count.toLocaleString()} (${pct.toFixed(1)}%)`}
+              />
+            )
+          })}
+        </div>
+        <div className="flex flex-wrap gap-4 mt-3 text-xs">
+          {ORDER.map((src) => {
+            const meta = SOURCE_META[src]
+            const count = map.get(src) || 0
+            return (
+              <div key={src} className="flex items-center gap-2">
+                <span className={`w-3 h-3 rounded-sm bg-gradient-to-r ${meta.gradient}`} />
+                <span className="text-muted-foreground">{meta.label}</span>
+                <span className="font-bold tabular-nums">{count.toLocaleString()}</span>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

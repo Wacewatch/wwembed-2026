@@ -131,32 +131,32 @@ export function OnlineUsersModule() {
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               <span className="text-sm text-muted-foreground">5 dernières min</span>
             </div>
-            <p className="text-3xl font-bold text-green-500">{onlineStats.usersOnline5min}</p>
-            <p className="text-xs text-muted-foreground mt-1">utilisateurs actifs</p>
+            <p className="text-3xl font-bold text-green-500">{onlineStats.usersOnline5min.toLocaleString("fr-FR")}</p>
+            <p className="text-xs text-muted-foreground mt-1">vues</p>
           </div>
           <div className="text-center p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Clock className="w-4 h-4 text-yellow-500" />
               <span className="text-sm text-muted-foreground">15 dernières min</span>
             </div>
-            <p className="text-3xl font-bold text-yellow-500">{onlineStats.usersOnline15min}</p>
-            <p className="text-xs text-muted-foreground mt-1">utilisateurs actifs</p>
+            <p className="text-3xl font-bold text-yellow-500">{onlineStats.usersOnline15min.toLocaleString("fr-FR")}</p>
+            <p className="text-xs text-muted-foreground mt-1">vues</p>
           </div>
           <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
             <div className="flex items-center justify-center gap-2 mb-2">
               <UserCheck className="w-4 h-4 text-blue-500" />
               <span className="text-sm text-muted-foreground">Dernière heure</span>
             </div>
-            <p className="text-3xl font-bold text-blue-500">{onlineStats.usersOnline1hour}</p>
-            <p className="text-xs text-muted-foreground mt-1">visiteurs uniques</p>
+            <p className="text-3xl font-bold text-blue-500">{onlineStats.usersOnline1hour.toLocaleString("fr-FR")}</p>
+            <p className="text-xs text-muted-foreground mt-1">vues</p>
           </div>
           <div className="text-center p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Calendar className="w-4 h-4 text-purple-500" />
               <span className="text-sm text-muted-foreground">24 dernières heures</span>
             </div>
-            <p className="text-3xl font-bold text-purple-500">{onlineStats.usersOnline24h}</p>
-            <p className="text-xs text-muted-foreground mt-1">visiteurs uniques</p>
+            <p className="text-3xl font-bold text-purple-500">{onlineStats.usersOnline24h.toLocaleString("fr-FR")}</p>
+            <p className="text-xs text-muted-foreground mt-1">vues</p>
           </div>
         </div>
 

@@ -40,6 +40,13 @@ export async function POST(request: Request) {
     const wwId = safeStr(body.wwId, 100)
     const isExternal = Boolean(body.isExternal)
     const externalLinkId = safeStr(body.externalLinkId, 100)
+    // Source of the external link: "movix" (legacy), "alt" (wawa.php) or "zt" (zt.php).
+    // Only meaningful when linkType === "external"; stored as null otherwise.
+    const sourceRaw = safeStr(body.source, 20)
+    const source =
+      linkType === "external" && sourceRaw && ["movix", "alt", "zt"].includes(sourceRaw)
+        ? sourceRaw
+        : null
 
     // Server-resolved metadata (truth = DB, NOT client).
     let resolved = {
@@ -85,7 +92,7 @@ export async function POST(request: Request) {
         // Unknown link_id — refuse to record (would skew stats).
         return NextResponse.json({ success: false, error: "unknown_link" }, { status: 404 })
       }
-    } else if (isExternal) {
+    } else if (isExternal || linkType === "external") {
       // External clicks (no DB link). Accept client-provided metadata BUT only
       // after length capping + whitelist-style filtering.
       resolved = {
@@ -110,6 +117,7 @@ export async function POST(request: Request) {
     await supabase.from("link_clicks").insert({
       link_id: linkId,
       link_type: linkType,
+      source: source,
       ww_id: wwId,
       ip_hash: ipHash,
       user_agent: userAgent,

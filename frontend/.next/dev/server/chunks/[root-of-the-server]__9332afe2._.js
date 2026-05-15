@@ -99,12 +99,18 @@ async function ensureIndexes(db) {
     await db.collection("streaming_links").createIndex({
         ww_id: 1
     });
+    await db.collection("streaming_links").createIndex({
+        legacy_uuid: 1
+    });
     await db.collection("download_links").createIndex({
         tmdb_id: 1,
         media_type: 1
     });
     await db.collection("download_links").createIndex({
         ww_id: 1
+    });
+    await db.collection("download_links").createIndex({
+        legacy_uuid: 1
     });
     // digital
     await db.collection("digital_content").createIndex({
@@ -121,6 +127,9 @@ async function ensureIndexes(db) {
     await db.collection("digital_download_links").createIndex({
         ww_id: 1
     });
+    await db.collection("digital_download_links").createIndex({
+        legacy_uuid: 1
+    });
     // live tv
     await db.collection("live_tv_channels").createIndex({
         status: 1,
@@ -129,19 +138,34 @@ async function ensureIndexes(db) {
     await db.collection("live_tv_sources").createIndex({
         channel_id: 1
     });
-    // stats
+    // stats — primary lookup indexes
     await db.collection("embed_views").createIndex({
         ww_id: 1
     });
     await db.collection("embed_views").createIndex({
         viewed_at: -1
     });
+    await db.collection("embed_views").createIndex({
+        embed_type: 1,
+        viewed_at: -1
+    });
     await db.collection("link_clicks").createIndex({
+        clicked_at: -1
+    });
+    await db.collection("link_clicks").createIndex({
+        link_id: 1,
         clicked_at: -1
     });
     await db.collection("api_usage").createIndex({
         created_at: -1
     });
+    // stats — TTL (auto-purge raw events older than 180 days). We use the
+    // dedicated `_ttl` Date field populated at insert (see shim.ts) because
+    // Mongo TTL indexes only work on Date BSON, not on ISO strings.
+    await safeTtl(db, "embed_views", 180);
+    await safeTtl(db, "link_clicks", 180);
+    await safeTtl(db, "ad_clicks", 180);
+    // login_attempts has its own short TTL (24h) created on first rate-limit hit.
     // ads
     await db.collection("ads").createIndex({
         slot_number: 1
@@ -153,15 +177,29 @@ async function ensureIndexes(db) {
     await db.collection("bug_reports").createIndex({
         created_at: -1
     });
-    // sessions for password reset / login attempts
-    await db.collection("password_reset_tokens").createIndex({
-        expires_at: 1
-    }, {
-        expireAfterSeconds: 0
-    });
+    // login attempts
     await db.collection("login_attempts").createIndex({
         identifier: 1
     });
+    // tmdb cache (used by lib/tmdb-cache.ts)
+    await db.collection("tmdb_cache").createIndex({
+        key: 1
+    }, {
+        unique: true
+    });
+    await safeTtl(db, "tmdb_cache", 7 * 86400); // 7 days
+}
+async function safeTtl(db, coll, seconds) {
+    try {
+        await db.collection(coll).createIndex({
+            _ttl: 1
+        }, {
+            expireAfterSeconds: seconds,
+            name: "_ttl_auto_purge"
+        });
+    } catch (e) {
+    // Index may exist with different opts — fine.
+    }
 }
 async function getCollection(name) {
     const db = await getDb();
@@ -232,7 +270,22 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5
 ;
 ;
 ;
-const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-prod";
+const JWT_SECRET = (()=>{
+    const v = process.env.JWT_SECRET;
+    if (!v || v === "change-me-in-prod") {
+        if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+        ;
+        // Dev fallback — never reachable in prod thanks to the guard above.
+        console.warn("[auth] JWT_SECRET not set, using dev-only fallback. DO NOT deploy without setting it.");
+        return "dev-only-insecure-secret-do-not-use-in-prod";
+    }
+    if (v.length < 32) {
+        if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+        ;
+        console.warn("[auth] JWT_SECRET is shorter than 32 chars — unsafe in prod.");
+    }
+    return v;
+})();
 const ACCESS_COOKIE = "ww_access";
 const REFRESH_COOKIE = "ww_refresh";
 async function hashPassword(plain) {
@@ -307,7 +360,11 @@ async function getCurrentUser(req) {
     }
     if (!userDoc) return null;
     return {
-        id: userDoc._id?.toString() || userDoc.id,
+        // Prefer legacy_uuid (original Supabase UUID) so that joins with foreign-key
+        // fields stored as the old UUID (e.g. streaming_links.submitted_by from the
+        // Supabase→Mongo migration) keep working. Fallback to the Mongo ObjectId hex
+        // for post-migration users that don't have a legacy UUID.
+        id: userDoc.legacy_uuid || userDoc._id?.toString() || userDoc.id,
         email: userDoc.email,
         username: userDoc.username || null,
         role: userDoc.role || "member",
@@ -396,12 +453,15 @@ async function POST(req) {
         });
         userId = r.insertedId;
     }
-    const id = userId.toString();
-    const access = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createAccessToken"])(id, email);
-    const refresh = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createRefreshToken"])(id);
+    const tokenSub = userId.toString();
+    const access = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createAccessToken"])(tokenSub, email);
+    const refresh = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createRefreshToken"])(tokenSub);
     const userDoc = await db.collection("users").findOne({
         _id: userId
     });
+    // Use legacy_uuid for the public id when the account was migrated from
+    // Supabase, otherwise the Mongo ObjectId hex.
+    const id = userDoc?.legacy_uuid || tokenSub;
     // Mirror the user as a `profiles` row (same _id) so the existing
     // dashboard / admin pages that read from `profiles` keep working.
     await db.collection("profiles").updateOne({

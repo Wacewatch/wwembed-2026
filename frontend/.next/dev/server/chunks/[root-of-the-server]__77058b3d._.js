@@ -162,9 +162,10 @@ async function ensureIndexes(db) {
     // stats — TTL (auto-purge raw events older than 180 days). We use the
     // dedicated `_ttl` Date field populated at insert (see shim.ts) because
     // Mongo TTL indexes only work on Date BSON, not on ISO strings.
-    await safeTtl(db, "embed_views", 180);
-    await safeTtl(db, "link_clicks", 180);
-    await safeTtl(db, "ad_clicks", 180);
+    const TTL_180_DAYS = 180 * 86400;
+    await safeTtl(db, "embed_views", TTL_180_DAYS);
+    await safeTtl(db, "link_clicks", TTL_180_DAYS);
+    await safeTtl(db, "ad_clicks", TTL_180_DAYS);
     // login_attempts has its own short TTL (24h) created on first rate-limit hit.
     // ads
     await db.collection("ads").createIndex({
@@ -188,12 +189,6 @@ async function ensureIndexes(db) {
         unique: true
     });
     await safeTtl(db, "tmdb_cache", 7 * 86400); // 7 days
-    // pre-aggregated stats (see lib/stats-rollup.ts)
-    await db.collection("stats_daily_rollup").createIndex({
-        date: -1
-    }, {
-        unique: true
-    });
 }
 async function safeTtl(db, coll, seconds) {
     try {

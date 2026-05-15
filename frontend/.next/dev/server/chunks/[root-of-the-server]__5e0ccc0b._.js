@@ -99,12 +99,18 @@ async function ensureIndexes(db) {
     await db.collection("streaming_links").createIndex({
         ww_id: 1
     });
+    await db.collection("streaming_links").createIndex({
+        legacy_uuid: 1
+    });
     await db.collection("download_links").createIndex({
         tmdb_id: 1,
         media_type: 1
     });
     await db.collection("download_links").createIndex({
         ww_id: 1
+    });
+    await db.collection("download_links").createIndex({
+        legacy_uuid: 1
     });
     // digital
     await db.collection("digital_content").createIndex({
@@ -121,6 +127,9 @@ async function ensureIndexes(db) {
     await db.collection("digital_download_links").createIndex({
         ww_id: 1
     });
+    await db.collection("digital_download_links").createIndex({
+        legacy_uuid: 1
+    });
     // live tv
     await db.collection("live_tv_channels").createIndex({
         status: 1,
@@ -129,19 +138,35 @@ async function ensureIndexes(db) {
     await db.collection("live_tv_sources").createIndex({
         channel_id: 1
     });
-    // stats
+    // stats — primary lookup indexes
     await db.collection("embed_views").createIndex({
         ww_id: 1
     });
     await db.collection("embed_views").createIndex({
         viewed_at: -1
     });
+    await db.collection("embed_views").createIndex({
+        embed_type: 1,
+        viewed_at: -1
+    });
     await db.collection("link_clicks").createIndex({
+        clicked_at: -1
+    });
+    await db.collection("link_clicks").createIndex({
+        link_id: 1,
         clicked_at: -1
     });
     await db.collection("api_usage").createIndex({
         created_at: -1
     });
+    // stats — TTL (auto-purge raw events older than 180 days). We use the
+    // dedicated `_ttl` Date field populated at insert (see shim.ts) because
+    // Mongo TTL indexes only work on Date BSON, not on ISO strings.
+    const TTL_180_DAYS = 180 * 86400;
+    await safeTtl(db, "embed_views", TTL_180_DAYS);
+    await safeTtl(db, "link_clicks", TTL_180_DAYS);
+    await safeTtl(db, "ad_clicks", TTL_180_DAYS);
+    // login_attempts has its own short TTL (24h) created on first rate-limit hit.
     // ads
     await db.collection("ads").createIndex({
         slot_number: 1
@@ -157,6 +182,25 @@ async function ensureIndexes(db) {
     await db.collection("login_attempts").createIndex({
         identifier: 1
     });
+    // tmdb cache (used by lib/tmdb-cache.ts)
+    await db.collection("tmdb_cache").createIndex({
+        key: 1
+    }, {
+        unique: true
+    });
+    await safeTtl(db, "tmdb_cache", 7 * 86400); // 7 days
+}
+async function safeTtl(db, coll, seconds) {
+    try {
+        await db.collection(coll).createIndex({
+            _ttl: 1
+        }, {
+            expireAfterSeconds: seconds,
+            name: "_ttl_auto_purge"
+        });
+    } catch (e) {
+    // Index may exist with different opts — fine.
+    }
 }
 async function getCollection(name) {
     const db = await getDb();
@@ -543,15 +587,40 @@ class SupabaseShimQuery {
                         count
                     };
                 }
-                let cursor = coll.find(this.buildFilter());
+                // When sorting is requested we route through aggregate({ allowDiskUse: true })
+                // because find().sort() has a hard 32 MB in-memory limit and crashes on
+                // large collections without a covering index. allowDiskUse lets MongoDB
+                // spill the sort to disk if needed — slower but never fails.
+                // maxTimeMS caps the query so it fails fast (clean 500 with a clear
+                // error) instead of hanging until the upstream reverse-proxy returns 502.
+                let docs;
                 if (this.orders.length) {
                     const sort = {};
                     for (const o of this.orders)sort[o.column] = o.ascending ? 1 : -1;
-                    cursor = cursor.sort(sort);
+                    const pipeline = [
+                        {
+                            $match: this.buildFilter()
+                        },
+                        {
+                            $sort: sort
+                        }
+                    ];
+                    if (this.skipN) pipeline.push({
+                        $skip: this.skipN
+                    });
+                    if (this.limitN) pipeline.push({
+                        $limit: this.limitN
+                    });
+                    docs = await coll.aggregate(pipeline, {
+                        allowDiskUse: true,
+                        maxTimeMS: 25000
+                    }).toArray();
+                } else {
+                    let cursor = coll.find(this.buildFilter()).maxTimeMS(25000);
+                    if (this.skipN) cursor = cursor.skip(this.skipN);
+                    if (this.limitN) cursor = cursor.limit(this.limitN);
+                    docs = await cursor.toArray();
                 }
-                if (this.skipN) cursor = cursor.skip(this.skipN);
-                if (this.limitN) cursor = cursor.limit(this.limitN);
-                const docs = await cursor.toArray();
                 const normalized = docs.map((d)=>normalizeDoc(d));
                 if (this.isSingle) {
                     if (normalized.length === 0) return {
@@ -590,12 +659,19 @@ class SupabaseShimQuery {
                     ad_clicks: "clicked_at"
                 };
                 const timeField = tableTimeField[this.collectionName];
+                const needsTtl = !!timeField // every stats collection gets a Date _ttl for purging
+                ;
+                const nowIso = new Date().toISOString();
+                const nowDate = new Date();
                 const docs = this.payload.map((d)=>{
                     const out = {
                         ...d,
-                        created_at: d.created_at || new Date().toISOString()
+                        created_at: d.created_at || nowIso
                     };
                     if (timeField && !out[timeField]) out[timeField] = out.created_at;
+                    // _ttl is a real Date BSON value so a Mongo TTL index can purge it.
+                    // We can't TTL on the ISO string `viewed_at` directly.
+                    if (needsTtl && !out._ttl) out._ttl = nowDate;
                     return out;
                 });
                 const res = await coll.insertMany(docs);
@@ -603,56 +679,66 @@ class SupabaseShimQuery {
                         ...d,
                         _id: res.insertedIds[i]
                     }));
-                // Side-effect: when recording an embed view or link click, also bump
-                // the parent record's view_count / download_count for fast dashboard reads.
-                if (this.collectionName === "embed_views") {
-                    for (const doc of docs){
-                        if (!doc.ww_id) continue;
-                        await Promise.all([
-                            db.collection("streaming_links").updateMany({
-                                ww_id: doc.ww_id
-                            }, {
-                                $inc: {
-                                    view_count: 1
+                // Side-effect: bump parent counters. These are NOT awaited — they happen
+                // in the background so the user-facing insert returns immediately.
+                // This used to add 50-150 ms to every embed_views insert on the hot path.
+                if (this.collectionName === "embed_views" || this.collectionName === "link_clicks") {
+                    const tableName = this.collectionName;
+                    (async ()=>{
+                        try {
+                            if (tableName === "embed_views") {
+                                for (const doc of docs){
+                                    if (!doc.ww_id) continue;
+                                    await Promise.all([
+                                        db.collection("streaming_links").updateMany({
+                                            ww_id: doc.ww_id
+                                        }, {
+                                            $inc: {
+                                                view_count: 1
+                                            }
+                                        }),
+                                        db.collection("digital_content").updateMany({
+                                            ww_id: doc.ww_id
+                                        }, {
+                                            $inc: {
+                                                view_count: 1
+                                            }
+                                        })
+                                    ]);
+                                    if (typeof doc.ww_id === "string" && doc.ww_id.startsWith("ww-live-")) {
+                                        const cid = doc.ww_id.slice("ww-live-".length);
+                                        await db.collection("live_tv_channels").updateMany(idFilter(cid), {
+                                            $inc: {
+                                                view_count: 1
+                                            }
+                                        });
+                                    }
                                 }
-                            }),
-                            db.collection("digital_content").updateMany({
-                                ww_id: doc.ww_id
-                            }, {
-                                $inc: {
-                                    view_count: 1
+                            } else {
+                                for (const doc of docs){
+                                    if (!doc.ww_id) continue;
+                                    await Promise.all([
+                                        db.collection("download_links").updateMany({
+                                            ww_id: doc.ww_id
+                                        }, {
+                                            $inc: {
+                                                click_count: 1
+                                            }
+                                        }),
+                                        db.collection("digital_download_links").updateMany({
+                                            ww_id: doc.ww_id
+                                        }, {
+                                            $inc: {
+                                                click_count: 1
+                                            }
+                                        })
+                                    ]);
                                 }
-                            })
-                        ]);
-                        if (doc.ww_id.startsWith("ww-live-")) {
-                            const cid = doc.ww_id.slice("ww-live-".length);
-                            await db.collection("live_tv_channels").updateMany(idFilter(cid), {
-                                $inc: {
-                                    view_count: 1
-                                }
-                            });
+                            }
+                        } catch (err) {
+                            console.error(`[mongo-shim] async counter bump failed for ${tableName}:`, err);
                         }
-                    }
-                } else if (this.collectionName === "link_clicks") {
-                    for (const doc of docs){
-                        if (!doc.ww_id) continue;
-                        await Promise.all([
-                            db.collection("download_links").updateMany({
-                                ww_id: doc.ww_id
-                            }, {
-                                $inc: {
-                                    click_count: 1
-                                }
-                            }),
-                            db.collection("digital_download_links").updateMany({
-                                ww_id: doc.ww_id
-                            }, {
-                                $inc: {
-                                    click_count: 1
-                                }
-                            })
-                        ]);
-                    }
+                    })();
                 }
                 return {
                     data: this.isSingle ? inserted[0] : inserted,
@@ -934,32 +1020,47 @@ module.exports = mod;
     "verifyPassword",
     ()=>verifyPassword
 ]);
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$bcryptjs$40$3$2e$0$2e$3$2f$node_modules$2f$bcryptjs$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/bcryptjs@3.0.3/node_modules/bcryptjs/index.js [app-route] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$jsonwebtoken$40$9$2e$0$2e$3$2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/jsonwebtoken@9.0.3/node_modules/jsonwebtoken/index.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$bcryptjs$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/bcryptjs/index.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/jsonwebtoken/index.js [app-route] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$externals$5d2f$mongodb__$5b$external$5d$__$28$mongodb$2c$__cjs$29$__ = __turbopack_context__.i("[externals]/mongodb [external] (mongodb, cjs)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/next@16.0.10_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/headers.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/headers.js [app-route] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongo$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/mongo/db.ts [app-route] (ecmascript)");
 ;
 ;
 ;
 ;
 ;
-const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-prod";
+const JWT_SECRET = (()=>{
+    const v = process.env.JWT_SECRET;
+    if (!v || v === "change-me-in-prod") {
+        if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+        ;
+        // Dev fallback — never reachable in prod thanks to the guard above.
+        console.warn("[auth] JWT_SECRET not set, using dev-only fallback. DO NOT deploy without setting it.");
+        return "dev-only-insecure-secret-do-not-use-in-prod";
+    }
+    if (v.length < 32) {
+        if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+        ;
+        console.warn("[auth] JWT_SECRET is shorter than 32 chars — unsafe in prod.");
+    }
+    return v;
+})();
 const ACCESS_COOKIE = "ww_access";
 const REFRESH_COOKIE = "ww_refresh";
 async function hashPassword(plain) {
-    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$bcryptjs$40$3$2e$0$2e$3$2f$node_modules$2f$bcryptjs$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].hash(plain, 10);
+    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$bcryptjs$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].hash(plain, 10);
 }
 async function verifyPassword(plain, hash) {
     if (!hash) return false;
     try {
-        return await __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$bcryptjs$40$3$2e$0$2e$3$2f$node_modules$2f$bcryptjs$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].compare(plain, hash);
+        return await __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$bcryptjs$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].compare(plain, hash);
     } catch  {
         return false;
     }
 }
 function createAccessToken(userId, email) {
-    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$jsonwebtoken$40$9$2e$0$2e$3$2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].sign({
+    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].sign({
         sub: userId,
         email,
         type: "access"
@@ -968,7 +1069,7 @@ function createAccessToken(userId, email) {
     });
 }
 function createRefreshToken(userId) {
-    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$jsonwebtoken$40$9$2e$0$2e$3$2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].sign({
+    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].sign({
         sub: userId,
         type: "refresh"
     }, JWT_SECRET, {
@@ -977,7 +1078,7 @@ function createRefreshToken(userId) {
 }
 function verifyAccessToken(token) {
     try {
-        const decoded = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$jsonwebtoken$40$9$2e$0$2e$3$2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].verify(token, JWT_SECRET);
+        const decoded = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$jsonwebtoken$2f$index$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].verify(token, JWT_SECRET);
         if (decoded.type !== "access") return null;
         return {
             sub: decoded.sub,
@@ -1000,7 +1101,7 @@ async function getCurrentUser(req) {
     if (req) {
         token = req.cookies.get(ACCESS_COOKIE)?.value;
     } else {
-        const c = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["cookies"])();
+        const c = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["cookies"])();
         token = c.get(ACCESS_COOKIE)?.value;
     }
     if (!token) return null;
@@ -1145,7 +1246,7 @@ __turbopack_context__.s([
     "GET",
     ()=>GET
 ]);
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/next@16.0.10_react-dom@19.2.0_react@19.2.0__react@19.2.0/node_modules/next/server.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/server.js [app-route] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/supabase/admin.ts [app-route] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/supabase/server.ts [app-route] (ecmascript)");
 ;
@@ -1156,7 +1257,7 @@ async function GET(request) {
         const supabaseAuth = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$supabase$2f$server$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createClient"])();
         const { data: { user } } = await supabaseAuth.auth.getUser();
         if (!user) {
-            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
                 error: "Not authenticated"
             }, {
                 status: 401
@@ -1169,16 +1270,16 @@ async function GET(request) {
         });
         if (error) {
             console.error("Bug reports fetch error:", error);
-            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
                 error: "Failed to fetch reports"
             }, {
                 status: 500
             });
         }
-        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(data || []);
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(data || []);
     } catch (error) {
         console.error("Bug reports error:", error);
-        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$10_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             error: "Internal server error"
         }, {
             status: 500

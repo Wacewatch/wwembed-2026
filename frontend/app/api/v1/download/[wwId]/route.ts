@@ -720,7 +720,7 @@ function _renderAltLinks(links,container){
       var l=_allAltLinks[idx];
       var u=l.url||l.lien||l.link||"";
       if(!u){alert("Lien non disponible");return;}
-      _openExtAdModal(u,{provider:l.host,quality:l.protection||l._qualityGroup});
+      _openExtAdModal(u,{provider:l.host,host_name:l.host,quality:l.protection||l._qualityGroup,language:l.language||""},"alt");
     };
   });
 }
@@ -778,9 +778,9 @@ function _renderExtLinks(links){
   });
 }
 
-function _openExtAdModal(finalUrl,extLink){
+function _openExtAdModal(finalUrl,extLink,source){
   fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({linkType:"external",wwId:_wwId,provider:(extLink&&extLink.provider)||null,hostName:(extLink&&extLink.host_name)||null,quality:(extLink&&extLink.quality)||null,language:(extLink&&extLink.language)||null,fileSize:(extLink&&extLink.size)||null})
+    body:JSON.stringify({linkType:"external",source:source||"movix",wwId:_wwId,provider:(extLink&&extLink.provider)||null,hostName:(extLink&&extLink.host_name)||null,quality:(extLink&&extLink.quality)||null,language:(extLink&&extLink.language)||null,fileSize:(extLink&&extLink.size)||null})
   }).catch(function(){});
   // Unified 2-step ad modal — also used for direct DB links and alt sources
   if(window._wwAdModal){
@@ -810,7 +810,7 @@ function _showExtDetails(extLink){
     var rh0=_hostFromUrl(extLink.lien);
     if(rh0){extLink.host_name=_prettyHost(rh0);extLink._real_host=rh0;}
     if(typeof _renderExtLinks==="function"&&Array.isArray(_currentExtLinks))_renderExtLinks(_currentExtLinks);
-    _openExtAdModal(extLink.lien,extLink);
+    _openExtAdModal(extLink.lien,extLink,"movix");
     return;
   }
   if(!extLink.id){alert("Lien non disponible pour ce fichier");return;}
@@ -834,7 +834,7 @@ fetch(decodeUrl).then(function(r){return r.json();})
       extLink.host_name=_prettyHost(realHost);
     }
     if(typeof _renderExtLinks==="function"&&Array.isArray(_currentExtLinks))_renderExtLinks(_currentExtLinks);
-    _openExtAdModal(finalUrl,extLink);
+    _openExtAdModal(finalUrl,extLink,"movix");
   }).catch(function(){
     var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
     alert("Erreur lors du d\u00e9codage du lien");
@@ -902,7 +902,7 @@ function _renderZtLinks(links,container){
       var l=_allZtLinks[idx];
       var u=l.url||l.lien||l.link||"";
       if(!u){alert("Lien non disponible");return;}
-      _openExtAdModal(u,{provider:l.host,host_name:l.host});
+      _openExtAdModal(u,{provider:l.host,host_name:l.host,quality:l._qualityGroup||"",language:l.language||""},"zt");
     };
   });
 }
@@ -1526,7 +1526,7 @@ function _renderAltLinks(links){
       var l=_currentAltLinks[idx];
       var u=l.url||l.lien||l.link||"";
       if(!u){alert("Lien non disponible");return;}
-      _openExtAdModal(u,{provider:l.host||l.provider,quality:l.protection||l.quality||l._qualityGroup});
+      _openExtAdModal(u,{provider:l.host||l.provider,host_name:l.host||l.provider,quality:l.protection||l.quality||l._qualityGroup,language:l.language||""},"alt");
     };
   });
 }
@@ -1799,10 +1799,10 @@ function _renderExtLinks(links){
   });
 }
 
-function _openExtAdModal(finalUrl,extLink){
+function _openExtAdModal(finalUrl,extLink,source){
   fetch("/api/link-click",{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
-      linkType:"external",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType,
+      linkType:"external",source:source||"movix",wwId:_wwId,tmdbId:_tmdbId,mediaType:_mediaType,
       seasonNumber:_seasonNum||null,episodeNumber:_episodeNum||null,
       provider:(extLink&&extLink.provider)||null,hostName:(extLink&&extLink.host_name)||null,
       quality:(extLink&&extLink.quality)||null,language:(extLink&&extLink.language)||null,
@@ -1872,7 +1872,7 @@ function _showExtDetails(extLink){
     var rh0=_hostFromUrl(extLink.lien);
     if(rh0){extLink.host_name=_prettyHost(rh0);extLink._real_host=rh0;}
     if(typeof _renderExtLinks==="function"&&Array.isArray(_currentExtLinks))_renderExtLinks(_currentExtLinks);
-    _openExtAdModal(extLink.lien,extLink);
+    _openExtAdModal(extLink.lien,extLink,"movix");
     return;
   }
   if(!extLink.id){alert("Lien non disponible pour ce fichier");return;}
@@ -1898,7 +1898,7 @@ fetch(decodeUrl).then(function(r){return r.json();})
     }
     // Re-render the list so the card now shows the correct host
     if(typeof _renderExtLinks==="function"&&Array.isArray(_currentExtLinks))_renderExtLinks(_currentExtLinks);
-    _openExtAdModal(finalUrl,extLink);
+    _openExtAdModal(finalUrl,extLink,"movix");
   }).catch(function(){
     var loader=document.getElementById("decodeLoader");if(loader)loader.remove();
     alert("Erreur lors du d\u00e9codage du lien");
@@ -1999,7 +1999,7 @@ function _renderZtLinks(links){
       var l=_currentZtLinks[idx];
       var u=l.url||l.lien||l.link||"";
       if(!u){alert("Lien non disponible");return;}
-      _openExtAdModal(u,{provider:l.host||l.provider,host_name:l.host||l.provider});
+      _openExtAdModal(u,{provider:l.host||l.provider,host_name:l.host||l.provider,quality:l._qualityGroup||"",language:l.language||"",size:l.size||""},"zt");
     };
   });
 }

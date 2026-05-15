@@ -2541,14 +2541,14 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                 className: "w-6 h-6 text-primary"
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 51,
+                                lineNumber: 52,
                                 columnNumber: 11
                             }, this),
                             "Liens externes (3rd-party)"
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 50,
+                        lineNumber: 51,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -2559,12 +2559,12 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                 className: "w-44 glass-subtle border-white/10",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectValue"], {}, void 0, false, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 56,
+                                    lineNumber: 57,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 55,
+                                lineNumber: 56,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -2574,7 +2574,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                         children: "7 derniers jours"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                                        lineNumber: 59,
+                                        lineNumber: 60,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -2582,7 +2582,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                         children: "14 derniers jours"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                                        lineNumber: 60,
+                                        lineNumber: 61,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -2590,7 +2590,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                         children: "30 derniers jours"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                                        lineNumber: 61,
+                                        lineNumber: 62,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -2598,7 +2598,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                         children: "90 derniers jours"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                                        lineNumber: 62,
+                                        lineNumber: 63,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -2606,25 +2606,25 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                         children: "12 derniers mois"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                                        lineNumber: 63,
+                                        lineNumber: 64,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 58,
+                                lineNumber: 59,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 54,
+                        lineNumber: 55,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                lineNumber: 49,
+                lineNumber: 50,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2637,7 +2637,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                         accent: "oklch(0.65 0.22 295)"
                     }, void 0, false, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 70,
+                        lineNumber: 71,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Tile, {
@@ -2647,7 +2647,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                         accent: "oklch(0.7 0.18 220)"
                     }, void 0, false, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 71,
+                        lineNumber: 72,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Tile, {
@@ -2657,7 +2657,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                         accent: "oklch(0.7 0.2 145)"
                     }, void 0, false, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 72,
+                        lineNumber: 73,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Tile, {
@@ -2667,13 +2667,71 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                         accent: "oklch(0.74 0.2 50)"
                     }, void 0, false, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 73,
+                        lineNumber: 74,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                lineNumber: 69,
+                lineNumber: 70,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Card"], {
+                className: "glass-strong border-white/5",
+                "data-testid": "ext-by-source-card",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardHeader"], {
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardTitle"], {
+                            className: "text-base flex items-center gap-2",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$server$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Server$3e$__["Server"], {
+                                    className: "w-4 h-4 text-primary"
+                                }, void 0, false, {
+                                    fileName: "[project]/components/admin/external-links-stats.tsx",
+                                    lineNumber: 81,
+                                    columnNumber: 13
+                                }, this),
+                                " Clics par source externe",
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Badge"], {
+                                    variant: "outline",
+                                    className: "ml-auto border-primary/30 text-primary",
+                                    children: [
+                                        (data.bySource || []).reduce((s, x)=>s + x.count, 0).toLocaleString(),
+                                        " clics"
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/components/admin/external-links-stats.tsx",
+                                    lineNumber: 82,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/components/admin/external-links-stats.tsx",
+                            lineNumber: 80,
+                            columnNumber: 11
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                        lineNumber: 79,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardContent"], {
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(SourceBreakdown, {
+                            rows: data.bySource || []
+                        }, void 0, false, {
+                            fileName: "[project]/components/admin/external-links-stats.tsx",
+                            lineNumber: 88,
+                            columnNumber: 11
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                        lineNumber: 87,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "[project]/components/admin/external-links-stats.tsx",
+                lineNumber: 78,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Card"], {
@@ -2690,14 +2748,14 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             className: "w-5 h-5 text-primary"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 81,
+                                            lineNumber: 97,
                                             columnNumber: 15
                                         }, this),
                                         " Clics externes / jour"
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 80,
+                                    lineNumber: 96,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Badge"], {
@@ -2709,18 +2767,18 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 83,
+                                    lineNumber: 99,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                            lineNumber: 79,
+                            lineNumber: 95,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 78,
+                        lineNumber: 94,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -2743,7 +2801,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             stroke: "#1f2937"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 92,
+                                            lineNumber: 108,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$XAxis$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["XAxis"], {
@@ -2755,7 +2813,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             }
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 93,
+                                            lineNumber: 109,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$YAxis$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["YAxis"], {
@@ -2767,7 +2825,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             allowDecimals: false
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 94,
+                                            lineNumber: 110,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$component$2f$Tooltip$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Tooltip"], {
@@ -2779,7 +2837,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             }
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 95,
+                                            lineNumber: 111,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$Bar$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Bar"], {
@@ -2794,34 +2852,34 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             name: "Clics"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 103,
+                                            lineNumber: 119,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 91,
+                                    lineNumber: 107,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 90,
+                                lineNumber: 106,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                            lineNumber: 89,
+                            lineNumber: 105,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 88,
+                        lineNumber: 104,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                lineNumber: 77,
+                lineNumber: 93,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2838,19 +2896,19 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             className: "w-4 h-4 text-primary"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 115,
+                                            lineNumber: 131,
                                             columnNumber: 15
                                         }, this),
                                         " Top providers"
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 114,
+                                    lineNumber: 130,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 113,
+                                lineNumber: 129,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -2859,7 +2917,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                     children: "Aucune donnée"
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 120,
+                                    lineNumber: 136,
                                     columnNumber: 15
                                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "grid grid-cols-1 md:grid-cols-2 gap-4 items-center",
@@ -2882,12 +2940,12 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                                     fill: COLORS[i % COLORS.length]
                                                                 }, i, false, {
                                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                                    lineNumber: 135,
+                                                                    lineNumber: 151,
                                                                     columnNumber: 27
                                                                 }, this))
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                            lineNumber: 126,
+                                                            lineNumber: 142,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$component$2f$Tooltip$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Tooltip"], {
@@ -2898,23 +2956,23 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                             }
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                            lineNumber: 138,
+                                                            lineNumber: 154,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 125,
+                                                    lineNumber: 141,
                                                     columnNumber: 21
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                lineNumber: 124,
+                                                lineNumber: 140,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 123,
+                                            lineNumber: 139,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
@@ -2931,7 +2989,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                             }
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                            lineNumber: 153,
+                                                            lineNumber: 169,
                                                             columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2939,7 +2997,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                             children: p.provider
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                            lineNumber: 157,
+                                                            lineNumber: 173,
                                                             columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2950,7 +3008,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                            lineNumber: 158,
+                                                            lineNumber: 174,
                                                             columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2958,36 +3016,36 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                             children: p.count
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                            lineNumber: 161,
+                                                            lineNumber: 177,
                                                             columnNumber: 25
                                                         }, this)
                                                     ]
                                                 }, p.provider + i, true, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 152,
+                                                    lineNumber: 168,
                                                     columnNumber: 23
                                                 }, this);
                                             })
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 148,
+                                            lineNumber: 164,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 122,
+                                    lineNumber: 138,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 118,
+                                lineNumber: 134,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 112,
+                        lineNumber: 128,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Card"], {
@@ -3001,19 +3059,19 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             className: "w-4 h-4 text-primary"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 174,
+                                            lineNumber: 190,
                                             columnNumber: 15
                                         }, this),
                                         " Top hôtes"
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 173,
+                                    lineNumber: 189,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 172,
+                                lineNumber: 188,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -3024,7 +3082,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                         children: "Aucune donnée"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                                        lineNumber: 180,
+                                        lineNumber: 196,
                                         columnNumber: 17
                                     }, this) : data.byHost.map((h, i)=>{
                                         const max = data.byHost[0]?.count || 1;
@@ -3039,7 +3097,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 186,
+                                                    lineNumber: 202,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3048,7 +3106,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                     children: h.host
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 187,
+                                                    lineNumber: 203,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3060,12 +3118,12 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                         }
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                        lineNumber: 191,
+                                                        lineNumber: 207,
                                                         columnNumber: 25
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 190,
+                                                    lineNumber: 206,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3073,36 +3131,36 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                     children: h.count.toLocaleString()
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 196,
+                                                    lineNumber: 212,
                                                     columnNumber: 23
                                                 }, this)
                                             ]
                                         }, h.host + i, true, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 185,
+                                            lineNumber: 201,
                                             columnNumber: 21
                                         }, this);
                                     })
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 178,
+                                    lineNumber: 194,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 177,
+                                lineNumber: 193,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 171,
+                        lineNumber: 187,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                lineNumber: 111,
+                lineNumber: 127,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3119,19 +3177,19 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             className: "w-4 h-4 text-primary"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 211,
+                                            lineNumber: 227,
                                             columnNumber: 15
                                         }, this),
                                         " Par type de média"
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 210,
+                                    lineNumber: 226,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 209,
+                                lineNumber: 225,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -3142,7 +3200,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                         children: "Aucune donnée"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                                        lineNumber: 217,
+                                        lineNumber: 233,
                                         columnNumber: 17
                                     }, this) : data.byMediaType.map((t)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "glass-subtle rounded-xl p-4 text-center border border-white/5",
@@ -3151,14 +3209,14 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                     className: "w-6 h-6 mx-auto mb-2 text-blue-400"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 221,
+                                                    lineNumber: 237,
                                                     columnNumber: 44
                                                 }, this),
                                                 t.type === "tv" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$tv$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Tv$3e$__["Tv"], {
                                                     className: "w-6 h-6 mx-auto mb-2 text-purple-400"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 222,
+                                                    lineNumber: 238,
                                                     columnNumber: 41
                                                 }, this),
                                                 ![
@@ -3168,7 +3226,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                     className: "w-6 h-6 mx-auto mb-2 text-amber-400"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 223,
+                                                    lineNumber: 239,
                                                     columnNumber: 59
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3176,7 +3234,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                     children: t.count.toLocaleString()
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 224,
+                                                    lineNumber: 240,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3184,29 +3242,29 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                     children: t.type === "movie" ? "Films" : t.type === "tv" ? "Séries" : t.type
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 225,
+                                                    lineNumber: 241,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, t.type, true, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 220,
+                                            lineNumber: 236,
                                             columnNumber: 19
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 215,
+                                    lineNumber: 231,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 214,
+                                lineNumber: 230,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 208,
+                        lineNumber: 224,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Card"], {
@@ -3220,19 +3278,19 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             className: "w-4 h-4 text-primary"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 238,
+                                            lineNumber: 254,
                                             columnNumber: 15
                                         }, this),
                                         " Par qualité"
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 237,
+                                    lineNumber: 253,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 236,
+                                lineNumber: 252,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -3243,7 +3301,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                         children: "Aucune donnée"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                                        lineNumber: 244,
+                                        lineNumber: 260,
                                         columnNumber: 17
                                     }, this) : data.byQuality.map((q, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "glass-subtle rounded-xl p-3 text-center border border-white/5",
@@ -3253,7 +3311,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                     children: q.count.toLocaleString()
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 248,
+                                                    lineNumber: 264,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3261,35 +3319,35 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                     children: q.quality
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 249,
+                                                    lineNumber: 265,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, q.quality + i, true, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 247,
+                                            lineNumber: 263,
                                             columnNumber: 19
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 242,
+                                    lineNumber: 258,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 241,
+                                lineNumber: 257,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 235,
+                        lineNumber: 251,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                lineNumber: 207,
+                lineNumber: 223,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Card"], {
@@ -3306,14 +3364,14 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             className: "w-4 h-4 text-orange-400"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 263,
+                                            lineNumber: 279,
                                             columnNumber: 15
                                         }, this),
                                         " Top médias (clics externes)"
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 262,
+                                    lineNumber: 278,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$badge$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Badge"], {
@@ -3322,18 +3380,18 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                     children: data.topMedia.reduce((s, m)=>s + (m.downloads || 0), 0).toLocaleString()
                                 }, void 0, false, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 265,
+                                    lineNumber: 281,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                            lineNumber: 261,
+                            lineNumber: 277,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 260,
+                        lineNumber: 276,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -3344,7 +3402,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                 children: "Aucune donnée"
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 273,
+                                lineNumber: 289,
                                 columnNumber: 15
                             }, this) : data.topMedia.map((m, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
                                     href: m.ww_id ? `/embed/${m.ww_id}/stats` : "#",
@@ -3360,7 +3418,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 283,
+                                            lineNumber: 299,
                                             columnNumber: 19
                                         }, this),
                                         m.poster ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
@@ -3370,7 +3428,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             loading: "lazy"
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 285,
+                                            lineNumber: 301,
                                             columnNumber: 21
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "w-9 h-12 bg-white/5 rounded grid place-items-center",
@@ -3378,12 +3436,12 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                 className: "w-4 h-4 text-muted-foreground"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                lineNumber: 288,
+                                                lineNumber: 304,
                                                 columnNumber: 23
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 287,
+                                            lineNumber: 303,
                                             columnNumber: 21
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3394,7 +3452,7 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                     children: m.title
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 292,
+                                                    lineNumber: 308,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3402,13 +3460,13 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                                     children: m.media_type
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                                    lineNumber: 293,
+                                                    lineNumber: 309,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 291,
+                                            lineNumber: 307,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3416,35 +3474,35 @@ function ExternalLinksStats({ period, setPeriod, data }) {
                                             children: (m.downloads || 0).toLocaleString()
                                         }, void 0, false, {
                                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                                            lineNumber: 295,
+                                            lineNumber: 311,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, `${m.ww_id || m.tmdb_id}-${i}`, true, {
                                     fileName: "[project]/components/admin/external-links-stats.tsx",
-                                    lineNumber: 276,
+                                    lineNumber: 292,
                                     columnNumber: 17
                                 }, this))
                         }, void 0, false, {
                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                            lineNumber: 271,
+                            lineNumber: 287,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 270,
+                        lineNumber: 286,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                lineNumber: 259,
+                lineNumber: 275,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/admin/external-links-stats.tsx",
-        lineNumber: 48,
+        lineNumber: 49,
         columnNumber: 5
     }, this);
 }
@@ -3459,7 +3517,7 @@ function Tile({ icon: Icon, label, value, accent }) {
                 }
             }, void 0, false, {
                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                lineNumber: 309,
+                lineNumber: 325,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3472,7 +3530,7 @@ function Tile({ icon: Icon, label, value, accent }) {
                                 children: label
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 312,
+                                lineNumber: 328,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3480,13 +3538,13 @@ function Tile({ icon: Icon, label, value, accent }) {
                                 children: (value || 0).toLocaleString()
                             }, void 0, false, {
                                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                                lineNumber: 313,
+                                lineNumber: 329,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 311,
+                        lineNumber: 327,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3498,24 +3556,270 @@ function Tile({ icon: Icon, label, value, accent }) {
                             className: "w-5 h-5 text-white"
                         }, void 0, false, {
                             fileName: "[project]/components/admin/external-links-stats.tsx",
-                            lineNumber: 316,
+                            lineNumber: 332,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/admin/external-links-stats.tsx",
-                        lineNumber: 315,
+                        lineNumber: 331,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/admin/external-links-stats.tsx",
-                lineNumber: 310,
+                lineNumber: 326,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/admin/external-links-stats.tsx",
-        lineNumber: 308,
+        lineNumber: 324,
+        columnNumber: 5
+    }, this);
+}
+const SOURCE_META = {
+    movix: {
+        label: "Sources externes",
+        sub: "Movix / Darkiworld",
+        accent: "oklch(0.7 0.18 280)",
+        gradient: "from-violet-500 to-fuchsia-500"
+    },
+    alt: {
+        label: "Sources Alt",
+        sub: "Wawa",
+        accent: "oklch(0.74 0.2 50)",
+        gradient: "from-amber-500 to-orange-500"
+    },
+    zt: {
+        label: "Sources ZT",
+        sub: "Zone-Telechargement",
+        accent: "oklch(0.78 0.16 195)",
+        gradient: "from-teal-400 to-cyan-500"
+    }
+};
+function SourceBreakdown({ rows }) {
+    const ORDER = [
+        "movix",
+        "alt",
+        "zt"
+    ];
+    const map = new Map(rows.map((r)=>[
+            r.source,
+            r.count
+        ]));
+    const total = rows.reduce((s, x)=>s + x.count, 0);
+    if (total === 0) {
+        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+            className: "text-muted-foreground text-sm py-4 text-center",
+            children: "Aucun clic externe sur la période"
+        }, void 0, false, {
+            fileName: "[project]/components/admin/external-links-stats.tsx",
+            lineNumber: 365,
+            columnNumber: 12
+        }, this);
+    }
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: "space-y-5",
+        children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "grid grid-cols-1 md:grid-cols-3 gap-3",
+                children: ORDER.map((src)=>{
+                    const meta = SOURCE_META[src];
+                    const count = map.get(src) || 0;
+                    const pct = total > 0 ? count / total * 100 : 0;
+                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "relative overflow-hidden rounded-xl glass-subtle border border-white/10 p-4",
+                        "data-testid": `ext-source-${src}`,
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "absolute -top-10 -right-10 w-28 h-28 rounded-full blur-3xl opacity-30",
+                                style: {
+                                    background: meta.accent
+                                }
+                            }, void 0, false, {
+                                fileName: "[project]/components/admin/external-links-stats.tsx",
+                                lineNumber: 380,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "relative",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        className: "text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+                                        children: meta.label
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                                        lineNumber: 385,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        className: "text-[10px] text-muted-foreground/70 mt-0.5",
+                                        children: meta.sub
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                                        lineNumber: 386,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        className: "text-3xl font-black tabular-nums mt-3",
+                                        children: count.toLocaleString()
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                                        lineNumber: 387,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "flex items-center justify-between mt-2 text-xs",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "text-muted-foreground",
+                                                children: [
+                                                    pct.toFixed(1),
+                                                    "% du total"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/components/admin/external-links-stats.tsx",
+                                                lineNumber: 389,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "text-primary font-semibold",
+                                                children: pct >= 1 ? `#${[
+                                                    ...ORDER
+                                                ].sort((a, b)=>(map.get(b) || 0) - (map.get(a) || 0)).indexOf(src) + 1}` : "—"
+                                            }, void 0, false, {
+                                                fileName: "[project]/components/admin/external-links-stats.tsx",
+                                                lineNumber: 390,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                                        lineNumber: 388,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "mt-3 h-2 rounded-full bg-white/5 overflow-hidden",
+                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: `h-full bg-gradient-to-r ${meta.gradient}`,
+                                            style: {
+                                                width: `${pct}%`
+                                            }
+                                        }, void 0, false, {
+                                            fileName: "[project]/components/admin/external-links-stats.tsx",
+                                            lineNumber: 395,
+                                            columnNumber: 19
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                                        lineNumber: 394,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/components/admin/external-links-stats.tsx",
+                                lineNumber: 384,
+                                columnNumber: 15
+                            }, this)
+                        ]
+                    }, src, true, {
+                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                        lineNumber: 375,
+                        columnNumber: 13
+                    }, this);
+                })
+            }, void 0, false, {
+                fileName: "[project]/components/admin/external-links-stats.tsx",
+                lineNumber: 369,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                        className: "text-xs text-muted-foreground mb-2",
+                        children: "Répartition globale"
+                    }, void 0, false, {
+                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                        lineNumber: 405,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "h-4 rounded-full overflow-hidden flex bg-white/5 border border-white/5",
+                        children: ORDER.map((src)=>{
+                            const meta = SOURCE_META[src];
+                            const count = map.get(src) || 0;
+                            const pct = total > 0 ? count / total * 100 : 0;
+                            if (pct === 0) return null;
+                            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: `bg-gradient-to-r ${meta.gradient} h-full`,
+                                style: {
+                                    width: `${pct}%`
+                                },
+                                title: `${meta.label}: ${count.toLocaleString()} (${pct.toFixed(1)}%)`
+                            }, src, false, {
+                                fileName: "[project]/components/admin/external-links-stats.tsx",
+                                lineNumber: 413,
+                                columnNumber: 15
+                            }, this);
+                        })
+                    }, void 0, false, {
+                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                        lineNumber: 406,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "flex flex-wrap gap-4 mt-3 text-xs",
+                        children: ORDER.map((src)=>{
+                            const meta = SOURCE_META[src];
+                            const count = map.get(src) || 0;
+                            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex items-center gap-2",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: `w-3 h-3 rounded-sm bg-gradient-to-r ${meta.gradient}`
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                                        lineNumber: 428,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "text-muted-foreground",
+                                        children: meta.label
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                                        lineNumber: 429,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "font-bold tabular-nums",
+                                        children: count.toLocaleString()
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                                        lineNumber: 430,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, src, true, {
+                                fileName: "[project]/components/admin/external-links-stats.tsx",
+                                lineNumber: 427,
+                                columnNumber: 15
+                            }, this);
+                        })
+                    }, void 0, false, {
+                        fileName: "[project]/components/admin/external-links-stats.tsx",
+                        lineNumber: 422,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "[project]/components/admin/external-links-stats.tsx",
+                lineNumber: 404,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "[project]/components/admin/external-links-stats.tsx",
+        lineNumber: 368,
         columnNumber: 5
     }, this);
 }
@@ -9529,7 +9833,7 @@ function OnlineUsersModule() {
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         className: "text-3xl font-bold text-green-500",
-                                        children: onlineStats.usersOnline5min
+                                        children: onlineStats.usersOnline5min.toLocaleString("fr-FR")
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
                                         lineNumber: 134,
@@ -9537,7 +9841,7 @@ function OnlineUsersModule() {
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         className: "text-xs text-muted-foreground mt-1",
-                                        children: "utilisateurs actifs"
+                                        children: "vues"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
                                         lineNumber: 135,
@@ -9578,7 +9882,7 @@ function OnlineUsersModule() {
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         className: "text-3xl font-bold text-yellow-500",
-                                        children: onlineStats.usersOnline15min
+                                        children: onlineStats.usersOnline15min.toLocaleString("fr-FR")
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
                                         lineNumber: 142,
@@ -9586,7 +9890,7 @@ function OnlineUsersModule() {
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         className: "text-xs text-muted-foreground mt-1",
-                                        children: "utilisateurs actifs"
+                                        children: "vues"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
                                         lineNumber: 143,
@@ -9627,7 +9931,7 @@ function OnlineUsersModule() {
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         className: "text-3xl font-bold text-blue-500",
-                                        children: onlineStats.usersOnline1hour
+                                        children: onlineStats.usersOnline1hour.toLocaleString("fr-FR")
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
                                         lineNumber: 150,
@@ -9635,7 +9939,7 @@ function OnlineUsersModule() {
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         className: "text-xs text-muted-foreground mt-1",
-                                        children: "visiteurs uniques"
+                                        children: "vues"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
                                         lineNumber: 151,
@@ -9676,7 +9980,7 @@ function OnlineUsersModule() {
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         className: "text-3xl font-bold text-purple-500",
-                                        children: onlineStats.usersOnline24h
+                                        children: onlineStats.usersOnline24h.toLocaleString("fr-FR")
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
                                         lineNumber: 158,
@@ -9684,7 +9988,7 @@ function OnlineUsersModule() {
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         className: "text-xs text-muted-foreground mt-1",
-                                        children: "visiteurs uniques"
+                                        children: "vues"
                                     }, void 0, false, {
                                         fileName: "[project]/components/admin/online-users-module.tsx",
                                         lineNumber: 159,

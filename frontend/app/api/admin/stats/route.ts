@@ -147,6 +147,7 @@ async function buildStatsResponse(req: NextRequest) {
     externalMediaTypeRaw,
     externalTopRaw,
     totalExternalClicks,
+    externalBySourceRaw,
     // ------- Internal downloads (clicks on user-submitted internal links) -------
     internalClicksRaw,
     internalByDayRaw,
@@ -239,36 +240,16 @@ async function buildStatsResponse(req: NextRequest) {
       .toArray(),
     db
       .collection("embed_views")
-      .aggregate([
-        { $match: { viewed_at: { $gte: fiveMinAgo } } },
-        { $group: { _id: uniqueKey } },
-        { $count: "n" },
-      ], { allowDiskUse: true })
-      .toArray(),
+      .countDocuments({ viewed_at: { $gte: fiveMinAgo } }),
     db
       .collection("embed_views")
-      .aggregate([
-        { $match: { viewed_at: { $gte: fifteenMinAgo } } },
-        { $group: { _id: uniqueKey } },
-        { $count: "n" },
-      ], { allowDiskUse: true })
-      .toArray(),
+      .countDocuments({ viewed_at: { $gte: fifteenMinAgo } }),
     db
       .collection("embed_views")
-      .aggregate([
-        { $match: { viewed_at: { $gte: oneHourAgo } } },
-        { $group: { _id: uniqueKey } },
-        { $count: "n" },
-      ], { allowDiskUse: true })
-      .toArray(),
+      .countDocuments({ viewed_at: { $gte: oneHourAgo } }),
     db
       .collection("embed_views")
-      .aggregate([
-        { $match: { viewed_at: { $gte: twentyFourHoursAgo } } },
-        { $group: { _id: uniqueKey } },
-        { $count: "n" },
-      ], { allowDiskUse: true })
-      .toArray(),
+      .countDocuments({ viewed_at: { $gte: twentyFourHoursAgo } }),
     db
       .collection("embed_views")
       .aggregate([
@@ -350,6 +331,16 @@ async function buildStatsResponse(req: NextRequest) {
       ], { allowDiskUse: true })
       .toArray(),
     db.collection("link_clicks").countDocuments({}),
+    // ------- Breakdown of external clicks by source (movix / alt / zt) -------
+    // Only clicks tagged with `link_type: "external"` carry a `source` field.
+    db
+      .collection("link_clicks")
+      .aggregate([
+        { $match: { clicked_at: { $gte: startDate }, link_type: "external" } },
+        { $group: { _id: { $ifNull: ["$source", "movix"] }, count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ], { allowDiskUse: true })
+      .toArray(),
     // -------- Internal-download stats --------
     // Per request: "Internal" = clicks on links uploaded to this site (link_id
     // present and matching a download_links / digital_download_links row).
@@ -908,10 +899,10 @@ async function buildStatsResponse(req: NextRequest) {
     topMediaDownload,
     topReferers,
     online: {
-      online5min: (online5 as any[])[0]?.n || 0,
-      online15min: (online15 as any[])[0]?.n || 0,
-      online1hour: (online1h as any[])[0]?.n || 0,
-      online24h: (online24h as any[])[0]?.n || 0,
+      online5min: (online5 as number) || 0,
+      online15min: (online15 as number) || 0,
+      online1hour: (online1h as number) || 0,
+      online24h: (online24h as number) || 0,
       activePages,
       recentVisitors,
     },
@@ -923,6 +914,7 @@ async function buildStatsResponse(req: NextRequest) {
       byHost: (externalHostsRaw as any[]).map((r) => ({ host: r._id, count: r.count })),
       byQuality: (externalQualityRaw as any[]).map((r) => ({ quality: r._id, count: r.count })),
       byMediaType: (externalMediaTypeRaw as any[]).map((r) => ({ type: r._id, count: r.count })),
+      bySource: (externalBySourceRaw as any[]).map((r) => ({ source: r._id, count: r.count })),
       topMedia: externalTop,
     },
     internal: {

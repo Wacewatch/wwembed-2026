@@ -156,9 +156,10 @@ async function ensureIndexes(db) {
     // stats — TTL (auto-purge raw events older than 180 days). We use the
     // dedicated `_ttl` Date field populated at insert (see shim.ts) because
     // Mongo TTL indexes only work on Date BSON, not on ISO strings.
-    await safeTtl(db, "embed_views", 180);
-    await safeTtl(db, "link_clicks", 180);
-    await safeTtl(db, "ad_clicks", 180);
+    const TTL_180_DAYS = 180 * 86400;
+    await safeTtl(db, "embed_views", TTL_180_DAYS);
+    await safeTtl(db, "link_clicks", TTL_180_DAYS);
+    await safeTtl(db, "ad_clicks", TTL_180_DAYS);
     // login_attempts has its own short TTL (24h) created on first rate-limit hit.
     // ads
     await db.collection("ads").createIndex({
@@ -182,12 +183,6 @@ async function ensureIndexes(db) {
         unique: true
     });
     await safeTtl(db, "tmdb_cache", 7 * 86400); // 7 days
-    // pre-aggregated stats (see lib/stats-rollup.ts)
-    await db.collection("stats_daily_rollup").createIndex({
-        date: -1
-    }, {
-        unique: true
-    });
 }
 async function safeTtl(db, coll, seconds) {
     try {
@@ -429,83 +424,32 @@ async function buildSnapshot() {
     const fifteenMinAgo = new Date(now - 15 * 60_000).toISOString();
     const oneHourAgo = new Date(now - 3_600_000).toISOString();
     const twentyFourHoursAgo = new Date(now - 86_400_000).toISOString();
-    const uniqueKey = {
-        i: "$ip_hash",
-        u: "$user_agent"
-    };
-    const opts = {
-        allowDiskUse: true,
-        maxTimeMS: 8000
-    };
     const [u5, u15, u1h, u24, activePages, recentVisitors] = await Promise.all([
-        db.collection("embed_views").aggregate([
-            {
-                $match: {
-                    viewed_at: {
-                        $gte: fiveMinAgo
-                    }
-                }
-            },
-            {
-                $group: {
-                    _id: uniqueKey
-                }
-            },
-            {
-                $count: "n"
+        // Total views per window (matches the daily activity chart on /admin).
+        // Switched from "unique ip_hash+user_agent" aggregation to a simple
+        // countDocuments: counters were stuck on the same number because most
+        // recent inserts share `ip_hash=null,user_agent=null` and collapsed into
+        // a single bucket. Counting raw events gives the user-expected numbers.
+        db.collection("embed_views").countDocuments({
+            viewed_at: {
+                $gte: fiveMinAgo
             }
-        ], opts).toArray(),
-        db.collection("embed_views").aggregate([
-            {
-                $match: {
-                    viewed_at: {
-                        $gte: fifteenMinAgo
-                    }
-                }
-            },
-            {
-                $group: {
-                    _id: uniqueKey
-                }
-            },
-            {
-                $count: "n"
+        }),
+        db.collection("embed_views").countDocuments({
+            viewed_at: {
+                $gte: fifteenMinAgo
             }
-        ], opts).toArray(),
-        db.collection("embed_views").aggregate([
-            {
-                $match: {
-                    viewed_at: {
-                        $gte: oneHourAgo
-                    }
-                }
-            },
-            {
-                $group: {
-                    _id: uniqueKey
-                }
-            },
-            {
-                $count: "n"
+        }),
+        db.collection("embed_views").countDocuments({
+            viewed_at: {
+                $gte: oneHourAgo
             }
-        ], opts).toArray(),
-        db.collection("embed_views").aggregate([
-            {
-                $match: {
-                    viewed_at: {
-                        $gte: twentyFourHoursAgo
-                    }
-                }
-            },
-            {
-                $group: {
-                    _id: uniqueKey
-                }
-            },
-            {
-                $count: "n"
+        }),
+        db.collection("embed_views").countDocuments({
+            viewed_at: {
+                $gte: twentyFourHoursAgo
             }
-        ], opts).toArray(),
+        }),
         db.collection("embed_views").aggregate([
             {
                 $match: {
@@ -536,7 +480,10 @@ async function buildSnapshot() {
             {
                 $limit: ACTIVE_PAGES_LIMIT
             }
-        ], opts).toArray(),
+        ], {
+            allowDiskUse: true,
+            maxTimeMS: 8000
+        }).toArray(),
         db.collection("embed_views").find({
             viewed_at: {
                 $gte: oneHourAgo
@@ -546,10 +493,10 @@ async function buildSnapshot() {
         }).limit(RECENT_VISITORS_LIMIT).toArray()
     ]);
     return {
-        online5min: u5[0]?.n || 0,
-        online15min: u15[0]?.n || 0,
-        online1hour: u1h[0]?.n || 0,
-        online24h: u24[0]?.n || 0,
+        online5min: u5 || 0,
+        online15min: u15 || 0,
+        online1hour: u1h || 0,
+        online24h: u24 || 0,
         activePages: activePages.map((p)=>({
                 ww_id: p._id,
                 count: p.count,
