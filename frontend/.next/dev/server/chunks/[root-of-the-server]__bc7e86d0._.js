@@ -601,7 +601,7 @@ async function GET(req) {
             $lt: thirtyDaysAgo
         }
     };
-    const [totalViews, views30, views7, clicks30, viewsPrev30, seriesViews, seriesClicks, topContents, healthBreakdown] = await Promise.all([
+    const [totalViews, views30, views7, clicks30, viewsPrev30, seriesViews, seriesClicks, topContents, healthBreakdown, bySourceRaw, topMediaBySourceRaw] = await Promise.all([
         db.collection("embed_views").countDocuments({
             ww_id: {
                 $in: myWwIds
@@ -682,7 +682,93 @@ async function GET(req) {
                     }
                 }
             }
-        ]).toArray()
+        ]).toArray(),
+        // bySource breakdown of EXTERNAL clicks on this uploader's contents.
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    ...matchClicks30,
+                    link_type: "external"
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $ifNull: [
+                            "$source",
+                            "movix"
+                        ]
+                    },
+                    count: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    count: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        // Top-3 contents per source for this uploader.
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    ...matchClicks30,
+                    link_type: "external"
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        ww_id: "$ww_id",
+                        tmdb_id: "$tmdb_id",
+                        media_type: "$media_type",
+                        source: {
+                            $ifNull: [
+                                "$source",
+                                "movix"
+                            ]
+                        }
+                    },
+                    clicks: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    clicks: -1
+                }
+            },
+            {
+                $group: {
+                    _id: "$_id.source",
+                    items: {
+                        $push: {
+                            ww_id: "$_id.ww_id",
+                            tmdb_id: "$_id.tmdb_id",
+                            media_type: "$_id.media_type",
+                            clicks: "$clicks"
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    items: {
+                        $slice: [
+                            "$items",
+                            3
+                        ]
+                    }
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray()
     ]);
     // Dense series
     const viewsByDay = new Map();
@@ -731,7 +817,21 @@ async function GET(req) {
             unknown: healthBreakdown.find((r)=>r._id === "unknown")?.n || 0,
             total: healthBreakdown.reduce((acc, r)=>acc + r.n, 0)
         },
-        content_count: myWwIds.length
+        content_count: myWwIds.length,
+        by_source: {
+            breakdown: bySourceRaw.map((r)=>({
+                    source: r._id,
+                    count: r.count
+                })),
+            top_media: topMediaBySourceRaw.reduce((acc, b)=>{
+                acc[b._id] = b.items;
+                return acc;
+            }, {
+                movix: [],
+                alt: [],
+                zt: []
+            })
+        }
     });
 }
 }),

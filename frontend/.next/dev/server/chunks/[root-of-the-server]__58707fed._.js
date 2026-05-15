@@ -162,9 +162,10 @@ async function ensureIndexes(db) {
     // stats — TTL (auto-purge raw events older than 180 days). We use the
     // dedicated `_ttl` Date field populated at insert (see shim.ts) because
     // Mongo TTL indexes only work on Date BSON, not on ISO strings.
-    await safeTtl(db, "embed_views", 180);
-    await safeTtl(db, "link_clicks", 180);
-    await safeTtl(db, "ad_clicks", 180);
+    const TTL_180_DAYS = 180 * 86400;
+    await safeTtl(db, "embed_views", TTL_180_DAYS);
+    await safeTtl(db, "link_clicks", TTL_180_DAYS);
+    await safeTtl(db, "ad_clicks", TTL_180_DAYS);
     // login_attempts has its own short TTL (24h) created on first rate-limit hit.
     // ads
     await db.collection("ads").createIndex({
@@ -1729,6 +1730,12 @@ Recherche de sources ZT...
 <div id="${externalIds.ztContent}_ztfilters" class="ext-filters" style="display:none">
 <select id="ztQualityFilter" class="ext-select"><option value="">Qualit\u00e9</option></select>
 <select id="ztHostFilter" class="ext-select"><option value="">Host</option></select>
+<select id="ztLangFilter" class="ext-select"><option value="">Langue</option></select>
+<select id="ztSort" class="ext-select">
+<option value="smart">Tri intelligent</option>
+<option value="quality">Qualit\u00e9 (haute \u2192 basse)</option>
+<option value="size">Taille (grande \u2192 petite)</option>
+</select>
 </div>
 <div id="${externalIds.ztContent}" class="ext-grid"></div>
 </div>
@@ -1759,7 +1766,9 @@ var _allZtLinks=[];
 var _ztLoaded=false;
 var _movixContentId=null;
 var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
-var ZT_BASE="https://apis.wavewatch.top/zt.php";
+// Server-side cached proxy for ZT (1h TTL). Eliminates the ~15s TV ZT latency
+// on repeat queries. See app/api/v1/zt-proxy/route.ts.
+var ZT_BASE="/api/v1/zt-proxy";
 // AD_URL_EXT removed in session 9 — all ad clicks now use the unified 2-step modal (otieu + adsterra)
 
 // ── Rate limit modal ──────────────────────────────────────────────────────
@@ -2326,6 +2335,12 @@ function _renderZtLinks(links,container){
 
 _renderLinks();
 _loadExternal();
+// Pre-load Alt + ZT in background so badges populate without user interaction.
+// Both functions guard against double-loads via their loaded flags.
+setTimeout(function(){
+  if(!_altLoaded){_altLoaded=true;_loadAltExternal();}
+  if(!_ztLoaded){_ztLoaded=true;_loadZtExternal();}
+}, 350);
 ${adModalDigital.js}
 })();
 </script>
@@ -2592,6 +2607,12 @@ Recherche de sources ZT...
 <div id="${externalIds.ztContent}_ztfilters" class="ext-filters" style="display:none">
 <select id="ztQualityFilter" class="ext-select"><option value="">Qualit\u00e9</option></select>
 <select id="ztHostFilter" class="ext-select"><option value="">Host</option></select>
+<select id="ztLangFilter" class="ext-select"><option value="">Langue</option></select>
+<select id="ztSort" class="ext-select">
+<option value="smart">Tri intelligent</option>
+<option value="quality">Qualit\u00e9 (haute \u2192 basse)</option>
+<option value="size">Taille (grande \u2192 petite)</option>
+</select>
 </div>
 <div id="${externalIds.ztContent}" class="ext-grid"></div>
 </div>
@@ -2661,7 +2682,9 @@ var _currentZtLinks=[];
 var _ztLoaded=false;
 var _movixMovieId=null;
 var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
-var ZT_BASE="https://apis.wavewatch.top/zt.php";
+// Server-side cached proxy for ZT (1h TTL). Eliminates the ~15s TV ZT latency
+// on repeat queries. See app/api/v1/zt-proxy/route.ts.
+var ZT_BASE="/api/v1/zt-proxy";
 // AD_URL_EXT removed in session 9 — all ad clicks now use the unified 2-step modal (otieu + adsterra)
 var ALT_BASE="https://apis.wavewatch.top/wawa.php";
 
@@ -3329,7 +3352,7 @@ function _loadZtExternal(){
     ztCountBadge.textContent=links.length;
     if(links.length===0){ztContent.innerHTML='<div class="em">Aucune source ZT disponible</div>';return;}
     _populateZtFilters(links,ztFilters);ztFilters.style.display="flex";
-    _renderZtLinks(links);
+    _applyZtFilters();
   }).catch(function(){
     ztLoading.style.display="none";
     ztContent.innerHTML='<div class="em">Erreur de chargement</div>';
@@ -3337,33 +3360,91 @@ function _loadZtExternal(){
   });
 }
 
+function _ztQualityRank(q){
+  if(!q)return 0;
+  var u=String(q).toUpperCase();
+  if(u.indexOf("2160")!==-1||u.indexOf("4K")!==-1)return 100;
+  if(u.indexOf("1080")!==-1)return 80;
+  if(u.indexOf("720")!==-1)return 60;
+  if(u.indexOf("REMUX")!==-1||u.indexOf("BLURAY")!==-1)return 90;
+  if(u.indexOf("WEBDL")!==-1||u.indexOf("WEB-DL")!==-1||u.indexOf("WEBRIP")!==-1)return 55;
+  if(u.indexOf("HDLIGHT")!==-1)return 70;
+  if(u.indexOf("480")!==-1)return 40;
+  if(u.indexOf("DVD")!==-1)return 30;
+  return 20;
+}
+function _ztHostRank(h){
+  if(!h)return 0;
+  var u=String(h).toLowerCase();
+  if(u.indexOf("1fichier")!==-1)return 100;
+  if(u.indexOf("rapidgator")!==-1)return 95;
+  if(u.indexOf("nitroflare")!==-1)return 90;
+  if(u.indexOf("turbobit")!==-1)return 80;
+  if(u.indexOf("fileserve")!==-1)return 70;
+  if(u.indexOf("uptobox")!==-1)return 65;
+  return 50;
+}
+function _ztSizeBytes(s){
+  if(!s)return 0;
+  var m=String(s).match(/([\d.,]+)\s*(g|m|k)?o/i);
+  if(!m)return 0;
+  var n=parseFloat(m[1].replace(",","."));
+  var unit=(m[2]||"").toLowerCase();
+  if(unit==="g")return n*1024*1024*1024;
+  if(unit==="m")return n*1024*1024;
+  if(unit==="k")return n*1024;
+  return n;
+}
+function _ztSmartScore(l){
+  var parsed=_parseFilename(l.filename||l.name||"");
+  var q=l._qualityGroup||parsed.quality||"";
+  return _ztQualityRank(q)*1000 + _ztHostRank(l.host||l.provider||"") + Math.min(_ztSizeBytes(l.size||"")/1e9,20);
+}
+
 function _populateZtFilters(links,filtersEl){
-  var qualities=new Set(),hosts=new Set();
+  var qualities=new Set(),hosts=new Set(),langs=new Set();
   links.forEach(function(l){
     var fname=l.filename||l.name||"";
     var parsed=_parseFilename(fname);
     var q=l._qualityGroup||parsed.quality||"";
     var h=l.host||l.provider||"";
-    if(q)qualities.add(q);if(h)hosts.add(h);
+    var lg=l.language||parsed.lang||"";
+    if(q)qualities.add(q);if(h)hosts.add(h);if(lg)langs.add(lg);
   });
   var qf=document.getElementById("ztQualityFilter");
   var hf=document.getElementById("ztHostFilter");
+  var lf=document.getElementById("ztLangFilter");
+  var sf=document.getElementById("ztSort");
   qualities.forEach(function(q){var o=document.createElement("option");o.value=q;o.textContent=q;qf.appendChild(o);});
   hosts.forEach(function(h){var o=document.createElement("option");o.value=h;o.textContent=h;hf.appendChild(o);});
-  qf.onchange=hf.onchange=_applyZtFilters;
+  langs.forEach(function(lg){var o=document.createElement("option");o.value=lg;o.textContent=lg;lf.appendChild(o);});
+  qf.onchange=hf.onchange=lf.onchange=sf.onchange=_applyZtFilters;
 }
 
 function _applyZtFilters(){
   var qf=document.getElementById("ztQualityFilter").value;
   var hf=document.getElementById("ztHostFilter").value;
+  var lf=document.getElementById("ztLangFilter").value;
+  var sf=document.getElementById("ztSort").value||"smart";
   var filtered=_allZtLinks.filter(function(l){
     var fname=l.filename||l.name||"";
     var parsed=_parseFilename(fname);
     var q=l._qualityGroup||parsed.quality||"";
     var h=l.host||l.provider||"";
+    var lg=l.language||parsed.lang||"";
     if(qf&&q!==qf)return false;
     if(hf&&h!==hf)return false;
+    if(lf&&lg!==lf)return false;
     return true;
+  });
+  filtered.sort(function(a,b){
+    if(sf==="quality"){
+      var pa=_parseFilename(a.filename||a.name||"");
+      var pb=_parseFilename(b.filename||b.name||"");
+      return _ztQualityRank(b._qualityGroup||pb.quality)-_ztQualityRank(a._qualityGroup||pa.quality);
+    }
+    if(sf==="size") return _ztSizeBytes(b.size)-_ztSizeBytes(a.size);
+    return _ztSmartScore(b)-_ztSmartScore(a);
   });
   _currentZtLinks=filtered;_renderZtLinks(filtered);
 }
@@ -3408,6 +3489,11 @@ function _renderZtLinks(links){
 
 _renderLinks();
 _loadExternal();
+// Pre-load Alt + ZT in background so badges populate without user interaction.
+setTimeout(function(){
+  if(!_altLoaded){_altLoaded=true;_loadAltExternal();}
+  if(!_ztLoaded){_ztLoaded=true;_loadZtExternal();}
+}, 350);
 })();
 </script>
 </body>

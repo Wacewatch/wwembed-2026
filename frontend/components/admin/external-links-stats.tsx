@@ -15,6 +15,9 @@ import {
   Pie,
   Cell,
   CartesianGrid,
+  LineChart,
+  Line,
+  Legend,
 } from "recharts"
 
 const COLORS = ["oklch(0.78 0.16 195)", "oklch(0.7 0.18 280)", "oklch(0.74 0.2 50)", "oklch(0.65 0.24 25)", "oklch(0.7 0.2 145)", "oklch(0.74 0.18 30)", "oklch(0.7 0.2 320)", "oklch(0.75 0.16 230)"]
@@ -28,6 +31,8 @@ interface ExternalData {
   byQuality: { quality: string; count: number }[]
   byMediaType: { type: string; count: number }[]
   bySource: { source: string; count: number }[]
+  byDayBySource?: { date: string; formattedDate: string; movix: number; alt: number; zt: number }[]
+  topMediaBySource?: Record<string, any[]>
   topMedia: any[]
 }
 
@@ -88,6 +93,52 @@ export function ExternalLinksStats({
           <SourceBreakdown rows={data.bySource || []} />
         </CardContent>
       </Card>
+
+      {/* Time series per source — line chart */}
+      {data.byDayBySource && data.byDayBySource.length > 0 && (
+        <Card className="glass-strong border-white/5" data-testid="ext-time-series-card">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-primary" /> Évolution des clics par source
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={data.byDayBySource}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                <XAxis dataKey="formattedDate" tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    background: "rgba(15,23,42,0.95)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 8,
+                  }}
+                  labelStyle={{ color: "#fff", fontWeight: 700 }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Line type="monotone" dataKey="movix" stroke="#a855f7" strokeWidth={2.5} dot={false} name="Movix" />
+                <Line type="monotone" dataKey="alt" stroke="#f59e0b" strokeWidth={2.5} dot={false} name="Alt" />
+                <Line type="monotone" dataKey="zt" stroke="#14b8a6" strokeWidth={2.5} dot={false} name="ZT" />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Top media per source */}
+      {data.topMediaBySource && (
+        <Card className="glass-strong border-white/5" data-testid="ext-top-by-source-card">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Film className="w-4 h-4 text-primary" /> Top 5 contenus par source
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TopMediaBySource data={data.topMediaBySource} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Day chart */}
       <Card className="glass-strong border-white/5">
@@ -436,3 +487,63 @@ function SourceBreakdown({ rows }: { rows: { source: string; count: number }[] }
     </div>
   )
 }
+
+function TopMediaBySource({ data }: { data: Record<string, any[]> }) {
+  const ORDER = ["movix", "alt", "zt"] as const
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {ORDER.map((src) => {
+        const meta = SOURCE_META[src]
+        const items = data[src] || []
+        return (
+          <div key={src} className="rounded-xl glass-subtle border border-white/10 overflow-hidden">
+            <div className={`px-4 py-2.5 bg-gradient-to-r ${meta.gradient} flex items-center justify-between`}>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-white drop-shadow">{meta.label}</p>
+                <p className="text-[10px] text-white/80">{meta.sub}</p>
+              </div>
+              <Badge variant="outline" className="bg-white/15 border-white/30 text-white">
+                {items.length}
+              </Badge>
+            </div>
+            <div className="p-2 space-y-1.5">
+              {items.length === 0 && (
+                <p className="text-muted-foreground text-xs py-3 text-center">Aucune donnée sur la période</p>
+              )}
+              {items.map((m: any, idx: number) => (
+                <div
+                  key={`${src}-${m.ww_id || idx}`}
+                  className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                  data-testid={`top-${src}-${idx}`}
+                >
+                  <span className="flex-shrink-0 w-5 text-center font-black text-xs text-muted-foreground tabular-nums">
+                    #{idx + 1}
+                  </span>
+                  {m.poster ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={m.poster}
+                      alt=""
+                      className="w-9 h-12 object-cover rounded-sm flex-shrink-0 ring-1 ring-white/10"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-9 h-12 rounded-sm bg-white/5 flex-shrink-0 grid place-items-center text-muted-foreground">
+                      {m.media_type === "tv" ? <Tv className="w-4 h-4" /> : m.media_type === "digital" ? <Book className="w-4 h-4" /> : <Film className="w-4 h-4" />}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold truncate">{m.title || m.ww_id}</p>
+                    <p className="text-[10px] text-muted-foreground capitalize">{m.media_type || "—"}</p>
+                  </div>
+                  <span className="text-xs font-black tabular-nums text-primary">{(m.downloads || 0).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+

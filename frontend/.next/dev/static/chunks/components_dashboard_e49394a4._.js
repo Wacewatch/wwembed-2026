@@ -1609,12 +1609,12 @@ function DashboardStatsOverview({ currentUserId }) {
                 children: "Chargement des statistiques…"
             }, void 0, false, {
                 fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                lineNumber: 65,
+                lineNumber: 69,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-            lineNumber: 64,
+            lineNumber: 68,
             columnNumber: 7
         }, this);
     }
@@ -1638,7 +1638,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                     children: "Vues 30j"
                                 }, void 0, false, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 82,
+                                    lineNumber: 86,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1647,7 +1647,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                     children: fmt(stats.totals.views_30d)
                                 }, void 0, false, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 83,
+                                    lineNumber: 87,
                                     columnNumber: 13
                                 }, this),
                                 delta !== null && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1657,13 +1657,13 @@ function DashboardStatsOverview({ currentUserId }) {
                                             className: "w-3 h-3"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 86,
+                                            lineNumber: 90,
                                             columnNumber: 31
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trending$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__TrendingDown$3e$__["TrendingDown"], {
                                             className: "w-3 h-3"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 86,
+                                            lineNumber: 90,
                                             columnNumber: 68
                                         }, this),
                                         delta >= 0 ? "+" : "",
@@ -1672,18 +1672,18 @@ function DashboardStatsOverview({ currentUserId }) {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 85,
+                                    lineNumber: 89,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                            lineNumber: 81,
+                            lineNumber: 85,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                        lineNumber: 80,
+                        lineNumber: 84,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -1696,7 +1696,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                     children: "Vues totales"
                                 }, void 0, false, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 94,
+                                    lineNumber: 98,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1705,7 +1705,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                     children: fmt(stats.totals.views)
                                 }, void 0, false, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 95,
+                                    lineNumber: 99,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1717,18 +1717,18 @@ function DashboardStatsOverview({ currentUserId }) {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 96,
+                                    lineNumber: 100,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                            lineNumber: 93,
+                            lineNumber: 97,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                        lineNumber: 92,
+                        lineNumber: 96,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -1741,7 +1741,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                     children: "Clics liens 30j"
                                 }, void 0, false, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 101,
+                                    lineNumber: 105,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1750,7 +1750,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                     children: fmt(stats.totals.clicks_30d)
                                 }, void 0, false, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 102,
+                                    lineNumber: 106,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1762,18 +1762,18 @@ function DashboardStatsOverview({ currentUserId }) {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 103,
+                                    lineNumber: 107,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                            lineNumber: 100,
+                            lineNumber: 104,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                        lineNumber: 99,
+                        lineNumber: 103,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -1788,7 +1788,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                             className: "w-3 h-3"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 111,
+                                            lineNumber: 115,
                                             columnNumber: 15
                                         }, this),
                                         " Classement ",
@@ -1796,7 +1796,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 110,
+                                    lineNumber: 114,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1805,7 +1805,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                     children: myRank > 0 ? `#${myRank}` : "—"
                                 }, void 0, false, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 113,
+                                    lineNumber: 117,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1813,24 +1813,24 @@ function DashboardStatsOverview({ currentUserId }) {
                                     children: "parmi les top 10"
                                 }, void 0, false, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 116,
+                                    lineNumber: 120,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                            lineNumber: 109,
+                            lineNumber: 113,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                        lineNumber: 108,
+                        lineNumber: 112,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                lineNumber: 79,
+                lineNumber: 83,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1851,14 +1851,14 @@ function DashboardStatsOverview({ currentUserId }) {
                                                     className: "w-4 h-4 text-primary"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 128,
+                                                    lineNumber: 132,
                                                     columnNumber: 17
                                                 }, this),
                                                 " Activité 30 jours"
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 127,
+                                            lineNumber: 131,
                                             columnNumber: 15
                                         }, this),
                                         stats.best_day && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1871,13 +1871,13 @@ function DashboardStatsOverview({ currentUserId }) {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 131,
+                                            lineNumber: 135,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 126,
+                                    lineNumber: 130,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1903,7 +1903,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                                 stopOpacity: 0.55
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                                lineNumber: 141,
+                                                                lineNumber: 145,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("stop", {
@@ -1912,18 +1912,18 @@ function DashboardStatsOverview({ currentUserId }) {
                                                                 stopOpacity: 0
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                                lineNumber: 142,
+                                                                lineNumber: 146,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                        lineNumber: 140,
+                                                        lineNumber: 144,
                                                         columnNumber: 21
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 139,
+                                                    lineNumber: 143,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$CartesianGrid$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CartesianGrid"], {
@@ -1932,7 +1932,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                     strokeOpacity: 0.4
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 145,
+                                                    lineNumber: 149,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$XAxis$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["XAxis"], {
@@ -1944,7 +1944,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                     stroke: "hsl(var(--muted-foreground))"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 146,
+                                                    lineNumber: 150,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$YAxis$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["YAxis"], {
@@ -1955,7 +1955,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                     allowDecimals: false
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 147,
+                                                    lineNumber: 151,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$component$2f$Tooltip$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Tooltip"], {
@@ -1969,7 +1969,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                     }
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 148,
+                                                    lineNumber: 152,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$Area$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Area"], {
@@ -1980,7 +1980,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                     fill: "url(#myViews)"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 152,
+                                                    lineNumber: 156,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$cartesian$2f$Line$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Line"], {
@@ -1991,34 +1991,34 @@ function DashboardStatsOverview({ currentUserId }) {
                                                     dot: false
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 153,
+                                                    lineNumber: 157,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 138,
+                                            lineNumber: 142,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                        lineNumber: 137,
+                                        lineNumber: 141,
                                         columnNumber: 15
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 136,
+                                    lineNumber: 140,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                            lineNumber: 125,
+                            lineNumber: 129,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                        lineNumber: 124,
+                        lineNumber: 128,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2034,7 +2034,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                             children: "Santé de tes liens"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 164,
+                                            lineNumber: 168,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2048,7 +2048,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                             className: "w-4 h-4 mx-auto text-emerald-500 mb-1"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                            lineNumber: 167,
+                                                            lineNumber: 171,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2056,7 +2056,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                             children: stats.link_health.alive
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                            lineNumber: 168,
+                                                            lineNumber: 172,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2064,13 +2064,13 @@ function DashboardStatsOverview({ currentUserId }) {
                                                             children: "en ligne"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                            lineNumber: 169,
+                                                            lineNumber: 173,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 166,
+                                                    lineNumber: 170,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2081,7 +2081,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                             className: "w-4 h-4 mx-auto text-red-500 mb-1"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                            lineNumber: 172,
+                                                            lineNumber: 176,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2089,7 +2089,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                             children: stats.link_health.dead
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                            lineNumber: 173,
+                                                            lineNumber: 177,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2097,13 +2097,13 @@ function DashboardStatsOverview({ currentUserId }) {
                                                             children: "morts"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                            lineNumber: 174,
+                                                            lineNumber: 178,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 171,
+                                                    lineNumber: 175,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2114,7 +2114,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                             className: "w-4 h-4 mx-auto text-amber-500 mb-1"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                            lineNumber: 177,
+                                                            lineNumber: 181,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2122,7 +2122,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                             children: stats.link_health.unknown
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                            lineNumber: 178,
+                                                            lineNumber: 182,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2130,30 +2130,30 @@ function DashboardStatsOverview({ currentUserId }) {
                                                             children: "à vérifier"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                            lineNumber: 179,
+                                                            lineNumber: 183,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 176,
+                                                    lineNumber: 180,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 165,
+                                            lineNumber: 169,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 163,
+                                    lineNumber: 167,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                lineNumber: 162,
+                                lineNumber: 166,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -2166,7 +2166,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                             children: "Tes top contenus (30j)"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 186,
+                                            lineNumber: 190,
                                             columnNumber: 15
                                         }, this),
                                         stats.top_contents.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2174,7 +2174,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                             children: "Pas encore de vues sur tes contenus."
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 188,
+                                            lineNumber: 192,
                                             columnNumber: 17
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
                                             className: "text-xs space-y-1.5",
@@ -2187,7 +2187,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                             children: c.ww_id
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                            lineNumber: 193,
+                                                            lineNumber: 197,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2195,42 +2195,84 @@ function DashboardStatsOverview({ currentUserId }) {
                                                             children: fmt(c.views)
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                            lineNumber: 194,
+                                                            lineNumber: 198,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, c.ww_id, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 192,
+                                                    lineNumber: 196,
                                                     columnNumber: 21
                                                 }, this))
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 190,
+                                            lineNumber: 194,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 185,
+                                    lineNumber: 189,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                lineNumber: 184,
+                                lineNumber: 188,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                        lineNumber: 161,
+                        lineNumber: 165,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                lineNumber: 122,
+                lineNumber: 126,
                 columnNumber: 7
+            }, this),
+            stats && stats.by_source && (stats.by_source.breakdown || []).reduce((s, x)=>s + x.count, 0) > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
+                className: "border-border",
+                "data-testid": "dashboard-by-source",
+                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
+                    className: "p-4",
+                    children: [
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "text-sm font-semibold mb-3 inline-flex items-center gap-2",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trending$2d$up$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__TrendingUp$3e$__["TrendingUp"], {
+                                    className: "w-4 h-4 text-primary"
+                                }, void 0, false, {
+                                    fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                                    lineNumber: 213,
+                                    columnNumber: 15
+                                }, this),
+                                " Clics externes par source (30j)"
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                            lineNumber: 212,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(DashboardBySource, {
+                            breakdown: stats.by_source.breakdown,
+                            topMedia: stats.by_source.top_media
+                        }, void 0, false, {
+                            fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                            lineNumber: 215,
+                            columnNumber: 13
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                    lineNumber: 211,
+                    columnNumber: 11
+                }, this)
+            }, void 0, false, {
+                fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                lineNumber: 210,
+                columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
                 className: "border-border",
@@ -2247,14 +2289,14 @@ function DashboardStatsOverview({ currentUserId }) {
                                             className: "w-4 h-4 text-yellow-500"
                                         }, void 0, false, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 209,
+                                            lineNumber: 225,
                                             columnNumber: 15
                                         }, this),
                                         " Leaderboard uploaders"
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 208,
+                                    lineNumber: 224,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2269,18 +2311,18 @@ function DashboardStatsOverview({ currentUserId }) {
                                             children: p === "7d" ? "7 jours" : "30 jours"
                                         }, p, false, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 213,
+                                            lineNumber: 229,
                                             columnNumber: 17
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 211,
+                                    lineNumber: 227,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                            lineNumber: 207,
+                            lineNumber: 223,
                             columnNumber: 11
                         }, this),
                         board.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2289,7 +2331,7 @@ function DashboardStatsOverview({ currentUserId }) {
                             children: "Pas encore de données pour cette période."
                         }, void 0, false, {
                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                            lineNumber: 225,
+                            lineNumber: 241,
                             columnNumber: 13
                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ol", {
                             className: "text-sm space-y-1",
@@ -2311,7 +2353,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 239,
+                                                    lineNumber: 255,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2323,19 +2365,19 @@ function DashboardStatsOverview({ currentUserId }) {
                                                             children: "(toi)"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                            lineNumber: 248,
+                                                            lineNumber: 264,
                                                             columnNumber: 32
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 246,
+                                                    lineNumber: 262,
                                                     columnNumber: 23
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 238,
+                                            lineNumber: 254,
                                             columnNumber: 21
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2346,7 +2388,7 @@ function DashboardStatsOverview({ currentUserId }) {
                                                     children: fmt(r.views)
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                                    lineNumber: 252,
+                                                    lineNumber: 268,
                                                     columnNumber: 23
                                                 }, this),
                                                 " vues · ",
@@ -2355,43 +2397,198 @@ function DashboardStatsOverview({ currentUserId }) {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                            lineNumber: 251,
+                                            lineNumber: 267,
                                             columnNumber: 21
                                         }, this)
                                     ]
                                 }, r.uploader_id, true, {
                                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                                    lineNumber: 233,
+                                    lineNumber: 249,
                                     columnNumber: 19
                                 }, this);
                             })
                         }, void 0, false, {
                             fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                            lineNumber: 229,
+                            lineNumber: 245,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                    lineNumber: 206,
+                    lineNumber: 222,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-                lineNumber: 205,
+                lineNumber: 221,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
-        lineNumber: 77,
+        lineNumber: 81,
         columnNumber: 5
     }, this);
 }
 _s(DashboardStatsOverview, "mcyFoHxc4akN8I8ETsPhLxCwueQ=");
 _c = DashboardStatsOverview;
-var _c;
+const DASH_SOURCE_META = {
+    movix: {
+        label: "Sources externes",
+        gradient: "from-violet-500 to-fuchsia-500"
+    },
+    alt: {
+        label: "Sources Alt",
+        gradient: "from-amber-500 to-orange-500"
+    },
+    zt: {
+        label: "Sources ZT",
+        gradient: "from-teal-400 to-cyan-500"
+    }
+};
+function DashboardBySource({ breakdown, topMedia }) {
+    const ORDER = [
+        "movix",
+        "alt",
+        "zt"
+    ];
+    const total = breakdown.reduce((s, x)=>s + x.count, 0);
+    const map = new Map(breakdown.map((r)=>[
+            r.source,
+            r.count
+        ]));
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: "grid grid-cols-1 md:grid-cols-3 gap-3",
+        children: ORDER.map((src)=>{
+            const meta = DASH_SOURCE_META[src];
+            const count = map.get(src) || 0;
+            const pct = total > 0 ? count / total * 100 : 0;
+            const items = topMedia && topMedia[src] || [];
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "rounded-lg border border-border overflow-hidden",
+                "data-testid": `dash-source-${src}`,
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: `px-3 py-2 bg-gradient-to-r ${meta.gradient}`,
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                className: "text-[10px] font-bold uppercase tracking-widest text-white drop-shadow",
+                                children: meta.label
+                            }, void 0, false, {
+                                fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                                lineNumber: 307,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex items-baseline gap-2 mt-0.5",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "text-2xl font-black text-white tabular-nums",
+                                        children: count.toLocaleString("fr-FR")
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                                        lineNumber: 309,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "text-[10px] text-white/85",
+                                        children: [
+                                            pct.toFixed(1),
+                                            "%"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                                        lineNumber: 310,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                                lineNumber: 308,
+                                columnNumber: 15
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                        lineNumber: 306,
+                        columnNumber: 13
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "p-2",
+                        children: items.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                            className: "text-[10px] text-muted-foreground text-center py-2",
+                            children: "Aucun clic sur cette source"
+                        }, void 0, false, {
+                            fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                            lineNumber: 315,
+                            columnNumber: 17
+                        }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
+                            className: "space-y-1 text-xs",
+                            children: items.map((it, idx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
+                                    className: "flex justify-between gap-2",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                            className: "truncate text-foreground/85",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                    className: "text-muted-foreground tabular-nums mr-1",
+                                                    children: [
+                                                        "#",
+                                                        idx + 1
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                                                    lineNumber: 321,
+                                                    columnNumber: 25
+                                                }, this),
+                                                it.ww_id
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                                            lineNumber: 320,
+                                            columnNumber: 23
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                            className: "text-primary font-semibold tabular-nums",
+                                            children: it.clicks.toLocaleString()
+                                        }, void 0, false, {
+                                            fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                                            lineNumber: 324,
+                                            columnNumber: 23
+                                        }, this)
+                                    ]
+                                }, `${src}-${it.ww_id || idx}`, true, {
+                                    fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                                    lineNumber: 319,
+                                    columnNumber: 21
+                                }, this))
+                        }, void 0, false, {
+                            fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                            lineNumber: 317,
+                            columnNumber: 17
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                        lineNumber: 313,
+                        columnNumber: 13
+                    }, this)
+                ]
+            }, src, true, {
+                fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+                lineNumber: 305,
+                columnNumber: 11
+            }, this);
+        })
+    }, void 0, false, {
+        fileName: "[project]/components/dashboard/dashboard-stats-overview.tsx",
+        lineNumber: 298,
+        columnNumber: 5
+    }, this);
+}
+_c1 = DashboardBySource;
+var _c, _c1;
 __turbopack_context__.k.register(_c, "DashboardStatsOverview");
+__turbopack_context__.k.register(_c1, "DashboardBySource");
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
 }

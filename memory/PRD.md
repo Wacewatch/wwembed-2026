@@ -103,3 +103,33 @@ lib/link-checker.ts, lib/link-checker-runner.ts, lib/url-probe.ts, lib/url-utils
 - Bug pré-existant fixé : les clics externes n'avaient jamais leurs metadata enregistrés car la route exigeait `isExternal=true` strict. Maintenant les metadata sont acceptés dès que `linkType === "external"`.
 - Nouvelle aggrégation `externalBySourceRaw` dans `/api/admin/stats` → exposée comme `external.bySource: [{source, count}]`.
 - Nouvelle UI `SourceBreakdown` dans `external-links-stats.tsx` : 3 tiles (Movix / Alt / ZT) avec %, ranking et barre stacked horizontale pour comparaison visuelle.
+
+## 2026-05-15 (suite) — Cache ZT + analytics enrichies + tri intelligent
+
+### Cache serveur ZT (perf x400)
+- Nouveau endpoint `GET /api/v1/zt-proxy?type=…&id=…&s=…&e=…&q=…` qui met en cache 1h les réponses de l'API ZT dans Mongo (`zt_cache` collection avec TTL natif `expires_at`).
+- L'embed download passe désormais par ce proxy (`ZT_BASE="/api/v1/zt-proxy"`).
+- Mesure : 7.3s (upstream MISS) → **0.018 s (HIT)** = ~400x plus rapide sur les requêtes répétées.
+- Fallback : si l'upstream est down ou >25 s, le proxy sert la dernière copie cachée (header `X-ZT-Cache: STALE` / `STALE-ERR`).
+- TTL configurable via env `ZT_CACHE_TTL_MS`.
+
+### Pré-chargement parallèle des 3 onglets
+- `_loadAltExternal()` + `_loadZtExternal()` sont déclenchés en arrière-plan 350 ms après l'init de l'embed.
+- Les 3 badges (Sources externes / Alt / ZT) sont peuplés sans interaction utilisateur. Cliquer sur un onglet affiche directement le contenu déjà chargé.
+
+### Tri intelligent + filtre langue ZT
+- Onglet ZT (section films/séries) gagne 2 contrôles : sélecteur **Langue** (peuplé dynamiquement à partir des liens) et sélecteur **Tri** (intelligent / qualité / taille).
+- Tri « intelligent » par défaut : score combiné qualité (2160P=100, 1080P=80, BluRay=90, HDLight=70…), host (1fichier=100, Rapidgator=95, Nitroflare=90, Turbobit=80…), taille en Go.
+- Filtres et tri sont totalement client-side, instantanés.
+
+### Top média par source (admin)
+- Nouvelle aggrégation `externalTopBySourceRaw` exposée comme `external.topMediaBySource: { movix: [...], alt: [...], zt: [...] }` (top 5 par source avec enrichissement TMDB : titre + poster).
+- Nouvelle UI `TopMediaBySource` : 3 colonnes (Movix violet / Alt orange / ZT cyan), chaque item liste poster mini + titre + media_type + nombre de clics. Idéal pour voir quel contenu convertit le mieux sur chaque source.
+
+### Graphique temporel par source (admin)
+- Nouvelle aggrégation `externalByDayBySourceRaw` exposée comme `external.byDayBySource: [{date, formattedDate, movix, alt, zt}]` dense sur la période.
+- Nouveau `LineChart` recharts dans `external-links-stats.tsx` : 3 lignes superposées (violet/orange/cyan) sur 7/30j.
+
+### Dashboard uploader → breakdown bySource
+- `/api/dashboard/my-stats` ajoute `by_source: { breakdown, top_media }` filtré sur les contenus de l'uploader (jointure via `submitted_by` sur les 4 collections de liens).
+- Nouveau panneau `DashboardBySource` dans `dashboard-stats-overview.tsx` : chaque uploader voit en un coup d'œil la performance de SES contenus sur chacune des 3 sources externes.

@@ -677,7 +677,7 @@ async function buildStatsResponse(req) {
             ]
         });
     // Run main aggregations in parallel — NO $limit anywhere.
-    const [viewsByDay, totalViews, totalStreamingViews, totalLinkClicks, totalAdClicks, uniqueIpsAgg, viewsByType, topMediaRaw, topDownloadRaw, topRefererRaw, online5, online15, online1h, online24h, activePagesRaw, recentVisitorsRaw, externalClicksRaw, externalByDayRaw, externalProvidersRaw, externalHostsRaw, externalQualityRaw, externalMediaTypeRaw, externalTopRaw, totalExternalClicks, externalBySourceRaw, // ------- Internal downloads (clicks on user-submitted internal links) -------
+    const [viewsByDay, totalViews, totalStreamingViews, totalLinkClicks, totalAdClicks, uniqueIpsAgg, viewsByType, topMediaRaw, topDownloadRaw, topRefererRaw, online5, online15, online1h, online24h, activePagesRaw, recentVisitorsRaw, externalClicksRaw, externalByDayRaw, externalProvidersRaw, externalHostsRaw, externalQualityRaw, externalMediaTypeRaw, externalTopRaw, totalExternalClicks, externalBySourceRaw, externalByDayBySourceRaw, externalTopBySourceRaw, // ------- Internal downloads (clicks on user-submitted internal links) -------
     internalClicksRaw, internalByDayRaw, internalTopLinksRaw, internalTopUploadersRaw, internalByQualityRaw, internalByMediaTypeRaw, internalByLinkTypeRaw, totalInternalClicksAllTime] = await Promise.all([
         db.collection("embed_views").aggregate([
             {
@@ -1125,6 +1125,95 @@ async function buildStatsResponse(req) {
             {
                 $sort: {
                     count: -1
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        // ------- Time-series of external clicks per source per day -------
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    },
+                    link_type: "external"
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        date: dayBucket("$clicked_at"),
+                        source: {
+                            $ifNull: [
+                                "$source",
+                                "movix"
+                            ]
+                        }
+                    },
+                    count: {
+                        $sum: 1
+                    }
+                }
+            }
+        ], {
+            allowDiskUse: true
+        }).toArray(),
+        // ------- Top media per source (top 5 most-clicked media for movix / alt / zt) -------
+        db.collection("link_clicks").aggregate([
+            {
+                $match: {
+                    clicked_at: {
+                        $gte: startDate
+                    },
+                    link_type: "external"
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        ww_id: "$ww_id",
+                        tmdb_id: "$tmdb_id",
+                        media_type: "$media_type",
+                        source: {
+                            $ifNull: [
+                                "$source",
+                                "movix"
+                            ]
+                        }
+                    },
+                    clicks: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    clicks: -1
+                }
+            },
+            // Bucket per source so we can slice top-5 per source after.
+            {
+                $group: {
+                    _id: "$_id.source",
+                    items: {
+                        $push: {
+                            ww_id: "$_id.ww_id",
+                            tmdb_id: "$_id.tmdb_id",
+                            media_type: "$_id.media_type",
+                            clicks: "$clicks"
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    items: {
+                        $slice: [
+                            "$items",
+                            5
+                        ]
+                    }
                 }
             }
         ], {
@@ -1703,6 +1792,53 @@ async function buildStatsResponse(req) {
             _id: m._id,
             downloads: m.clicks
         }, "download")));
+    // Top-media per source (movix / alt / zt) with TMDB enrichment.
+    const topMediaBySource = {
+        movix: [],
+        alt: [],
+        zt: []
+    };
+    for (const bucket of externalTopBySourceRaw){
+        const src = bucket._id;
+        if (!topMediaBySource[src]) topMediaBySource[src] = [];
+        topMediaBySource[src] = await Promise.all(bucket.items.map((it)=>enrich({
+                _id: {
+                    ww_id: it.ww_id,
+                    media_type: it.media_type,
+                    tmdb_id: it.tmdb_id
+                },
+                downloads: it.clicks
+            }, "download")));
+    }
+    // Dense daily series per source (3 lines: movix / alt / zt) for the
+    // chart on the admin → Liens Externes tab.
+    const sourceDayMap = new Map();
+    for(let i = period - 1; i >= 0; i--){
+        const d = new Date(now.getTime() - i * 86400000).toISOString().split("T")[0];
+        sourceDayMap.set(d, {
+            movix: 0,
+            alt: 0,
+            zt: 0
+        });
+    }
+    for (const row of externalByDayBySourceRaw){
+        const d = row._id?.date;
+        const src = row._id?.source;
+        if (!d || !sourceDayMap.has(d)) continue;
+        if (src !== "movix" && src !== "alt" && src !== "zt") continue;
+        const entry = sourceDayMap.get(d);
+        entry[src] = row.count;
+    }
+    const byDayBySource = Array.from(sourceDayMap.entries()).map(([date, v])=>({
+            date,
+            formattedDate: new Date(date).toLocaleDateString("fr-FR", {
+                day: "2-digit",
+                month: "2-digit"
+            }),
+            movix: v.movix,
+            alt: v.alt,
+            zt: v.zt
+        }));
     // External by-day fill
     const externalByDayMap = new Map();
     for(let i = period - 1; i >= 0; i--){
@@ -1998,6 +2134,8 @@ async function buildStatsResponse(req) {
                     source: r._id,
                     count: r.count
                 })),
+            byDayBySource,
+            topMediaBySource,
             topMedia: externalTop
         },
         internal: {

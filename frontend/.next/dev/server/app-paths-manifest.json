@@ -10,6 +10,7 @@
   "/api/leaderboard/route": "app/api/leaderboard/route.js",
   "/api/server-stats/route": "app/api/server-stats/route.js",
   "/api/tmdb-stats/route": "app/api/tmdb-stats/route.js",
+  "/api/v1/download/[wwId]/route": "app/api/v1/download/[wwId]/route.js",
   "/auth/login/page": "app/auth/login/page.js",
   "/dashboard/page": "app/dashboard/page.js",
   "/page": "app/page.js"

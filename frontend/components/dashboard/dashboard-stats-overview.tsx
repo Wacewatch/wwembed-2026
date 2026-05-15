@@ -15,6 +15,10 @@ interface MyStats {
   avg_views_per_day_30d: number
   link_health: { alive: number; dead: number; unknown: number; total: number }
   content_count: number
+  by_source?: {
+    breakdown: { source: string; count: number }[]
+    top_media: Record<string, { ww_id: string; tmdb_id: number | null; media_type: string | null; clicks: number }[]>
+  }
 }
 
 interface LeaderRow {
@@ -201,6 +205,18 @@ export function DashboardStatsOverview({ currentUserId }: { currentUserId?: stri
         </div>
       </div>
 
+      {/* Per-source breakdown (movix / alt / zt) for THIS uploader's contents */}
+      {stats && stats.by_source && (stats.by_source.breakdown || []).reduce((s, x) => s + x.count, 0) > 0 && (
+        <Cd className="border-border" data-testid="dashboard-by-source">
+          <CardContent className="p-4">
+            <div className="text-sm font-semibold mb-3 inline-flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-primary" /> Clics externes par source (30j)
+            </div>
+            <DashboardBySource breakdown={stats.by_source.breakdown} topMedia={stats.by_source.top_media} />
+          </CardContent>
+        </Cd>
+      )}
+
       {/* Leaderboard */}
       <Cd className="border-border">
         <CardContent className="p-4">
@@ -258,6 +274,62 @@ export function DashboardStatsOverview({ currentUserId }: { currentUserId?: stri
           )}
         </CardContent>
       </Cd>
+    </div>
+  )
+}
+
+const DASH_SOURCE_META: Record<string, { label: string; gradient: string }> = {
+  movix: { label: "Sources externes", gradient: "from-violet-500 to-fuchsia-500" },
+  alt: { label: "Sources Alt", gradient: "from-amber-500 to-orange-500" },
+  zt: { label: "Sources ZT", gradient: "from-teal-400 to-cyan-500" },
+}
+
+function DashboardBySource({
+  breakdown,
+  topMedia,
+}: {
+  breakdown: { source: string; count: number }[]
+  topMedia: Record<string, { ww_id: string; tmdb_id: number | null; media_type: string | null; clicks: number }[]>
+}) {
+  const ORDER = ["movix", "alt", "zt"] as const
+  const total = breakdown.reduce((s, x) => s + x.count, 0)
+  const map = new Map(breakdown.map((r) => [r.source, r.count]))
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      {ORDER.map((src) => {
+        const meta = DASH_SOURCE_META[src]
+        const count = map.get(src) || 0
+        const pct = total > 0 ? (count / total) * 100 : 0
+        const items = (topMedia && topMedia[src]) || []
+        return (
+          <div key={src} className="rounded-lg border border-border overflow-hidden" data-testid={`dash-source-${src}`}>
+            <div className={`px-3 py-2 bg-gradient-to-r ${meta.gradient}`}>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white drop-shadow">{meta.label}</p>
+              <div className="flex items-baseline gap-2 mt-0.5">
+                <span className="text-2xl font-black text-white tabular-nums">{count.toLocaleString("fr-FR")}</span>
+                <span className="text-[10px] text-white/85">{pct.toFixed(1)}%</span>
+              </div>
+            </div>
+            <div className="p-2">
+              {items.length === 0 ? (
+                <p className="text-[10px] text-muted-foreground text-center py-2">Aucun clic sur cette source</p>
+              ) : (
+                <ul className="space-y-1 text-xs">
+                  {items.map((it, idx) => (
+                    <li key={`${src}-${it.ww_id || idx}`} className="flex justify-between gap-2">
+                      <span className="truncate text-foreground/85">
+                        <span className="text-muted-foreground tabular-nums mr-1">#{idx + 1}</span>
+                        {it.ww_id}
+                      </span>
+                      <span className="text-primary font-semibold tabular-nums">{it.clicks.toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
