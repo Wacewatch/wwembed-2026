@@ -63,7 +63,7 @@ export default async function AdminPage() {
     supabase.from("digital_download_links").select("*", { count: "exact", head: true }),
   ])
 
-  const totalAdClicks = (adsData || []).reduce((sum, ad) => sum + (ad.click_count || 0), 0)
+  const totalAdClicks = (adsData || []).reduce((sum: number, ad: any) => sum + (ad.click_count || 0), 0)
 
   const stats = {
     totalViews: totalViews || 0,

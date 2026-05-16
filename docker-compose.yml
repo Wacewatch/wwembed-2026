@@ -1,0 +1,48 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - JWT_SECRET=${JWT_SECRET}
+        - MONGO_URL=${MONGO_URL}
+        - TMDB_API_KEY=${TMDB_API_KEY}
+    container_name: wwembed2-frontend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=2048
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - wwembed2-net
+      - npm-plus_default
+
+  mongo:
+    image: mongo:7.0
+    container_name: wwembed2-mongo
+    command: ["mongod", "--wiredTigerCacheSizeGB", "2"]
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - wwembed2-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: wwembed2-redis
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru", "--save", ""]
+    networks:
+      - wwembed2-net
+
+volumes:
+  mongo_data:
+
+networks:
+  wwembed2-net:
+    driver: bridge
+  npm-plus_default:
+    external: true

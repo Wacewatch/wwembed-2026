@@ -18,7 +18,7 @@
 import { Filter, ObjectId } from "mongodb"
 import { getDb } from "./db"
 
-type SupaResponse<T> = { data: T | null; error: { message: string; code?: string } | null }
+type SupaResponse<T> = { data: T | null; error: { message: string; code?: string } | null; count?: number }
 
 type Mode = "select" | "insert" | "update" | "upsert" | "delete"
 

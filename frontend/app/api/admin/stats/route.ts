@@ -12,6 +12,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/mongo/db"
 import { requireAdmin } from "@/lib/mongo/auth"
 import { fetchTmdbCached } from "@/lib/tmdb-cache"
+import Redis from "ioredis"
+
+const redis = new Redis(process.env.REDIS_URL || "redis://redis:6379", {
+  maxRetriesPerRequest: 2,
+  enableOfflineQueue: false,
+  lazyConnect: true,
+})
+redis.on("error", (err) => console.error("[redis]", err.message))
 
 // In-memory TMDB cache REMOVED — use Mongo-backed `fetchTmdbCached` from
 // lib/tmdb-cache.ts. On serverless / multi-instance hosting the per-process
@@ -56,14 +64,83 @@ async function fetchTmdb(type: string, id: number) {
 }
 
 export async function GET(req: NextRequest) {
-  try {
-    await requireAdmin(req)
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  // Bypass auth pour le warmup interne (header injecté par /api/internal/warm-stats)
+  const internalWarmup = req.headers.get("x-internal-warmup")
+  const isWarmup =
+    internalWarmup !== null &&
+    process.env.INTERNAL_WARMUP_TOKEN !== undefined &&
+    internalWarmup === process.env.INTERNAL_WARMUP_TOKEN
+
+  if (!isWarmup) {
+    try {
+      await requireAdmin(req)
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
   }
 
   try {
-    return await buildStatsResponse(req)
+    const period = Math.max(1, Math.min(365, parseInt(req.nextUrl.searchParams.get("period") || "7", 10)))
+    const cacheKey = `stats:period:${period}`
+    const lockKey = `stats:lock:${period}`
+    // TTL adaptatif selon la période
+    const ttl = period <= 7 ? 120 : period <= 30 ? 300 : 900  // 2min / 5min / 15min
+    const staleTtl = ttl * 3 // données restent en cache 3x le TTL
+
+    // 1) Hit cache : sert immédiat, et si stale on régénère en background
+    try {
+      const cachedJson = await redis.get(cacheKey)
+      const cachedAt = await redis.get(`${cacheKey}:ts`)
+      if (cachedJson) {
+        const age = cachedAt ? Math.floor((Date.now() - parseInt(cachedAt)) / 1000) : 0
+        // Stale-while-revalidate : on retourne la donnée stale et on régénère en bg
+        if (age > ttl && age < staleTtl) {
+          const lockAcquired = await redis.set(lockKey, "1", "EX", 120, "NX")
+          if (lockAcquired === "OK") {
+            buildStatsResponse(req)
+              .then(async (res) => {
+                const data = await res.json()
+                await redis.setex(cacheKey, staleTtl, JSON.stringify(data))
+                await redis.setex(`${cacheKey}:ts`, staleTtl, String(Date.now()))
+                await redis.del(lockKey)
+              })
+              .catch((err) => {
+                console.error("[stats bg refresh]", err?.message || err)
+                redis.del(lockKey).catch(() => {})
+              })
+          }
+        }
+        return NextResponse.json(JSON.parse(cachedJson))
+      }
+    } catch (e) {
+      // Redis indisponible — on continue sans cache
+    }
+
+    // 2) Pas de cache : lock anti-stampede, sinon attend le résultat d'un autre worker
+    const initLockAcquired = await redis.set(lockKey, "1", "EX", 120, "NX").catch(() => null)
+    if (initLockAcquired !== "OK") {
+      // Un autre worker construit déjà la réponse — on attend max 30s
+      for (let i = 0; i < 60; i++) {
+        await new Promise((r) => setTimeout(r, 500))
+        try {
+          const result = await redis.get(cacheKey)
+          if (result) return NextResponse.json(JSON.parse(result))
+        } catch (e) {}
+      }
+    }
+
+    // 3) On a le lock (ou Redis down) : on génère et on cache
+    try {
+      const res = await buildStatsResponse(req)
+      const data = await res.json()
+      try {
+        await redis.setex(cacheKey, staleTtl, JSON.stringify(data))
+        await redis.setex(`${cacheKey}:ts`, staleTtl, String(Date.now()))
+      } catch (e) {}
+      return NextResponse.json(data)
+    } finally {
+      redis.del(lockKey).catch(() => {})
+    }
   } catch (err: any) {
     console.error("[admin/stats] failed:", err?.stack || err)
     return NextResponse.json(
