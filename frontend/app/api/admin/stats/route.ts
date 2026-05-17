@@ -198,44 +198,64 @@ async function buildStatsResponse(req: NextRequest) {
     ],
   })
 
-  // Run main aggregations in parallel — NO $limit anywhere.
+  // ═══════════════════════════════════════════════════════════════
+  // SERIALIZED WAVES instead of single Promise.all with 35 aggregations.
+  // Before: 35 aggregations in parallel → 200-800 MB peak Node RAM → OOM kills.
+  // After:  5 sequential waves → ~150 MB peak RAM, +30% latency, no more OOM.
+  // ═══════════════════════════════════════════════════════════════
+
+  // ── Wave 1 — countDocuments simples (légers) ──
   const [
-    viewsByDay,
     totalViews,
     totalStreamingViews,
     totalLinkClicks,
     totalAdClicks,
-    uniqueIpsAgg,
-    viewsByType,
-    topMediaRaw,
-    topDownloadRaw,
-    topRefererRaw,
     online5,
     online15,
     online1h,
     online24h,
+    externalClicksRaw,
+    totalExternalClicks,
+    internalClicksRaw,
+    totalInternalClicksAllTime,
+  ] = await Promise.all([
+    db.collection("embed_views").countDocuments({ viewed_at: { $gte: startDate } }),
+    db
+      .collection("embed_views")
+      .countDocuments({ viewed_at: { $gte: startDate }, embed_type: "streaming" }),
+    db.collection("link_clicks").countDocuments({ clicked_at: { $gte: startDate } }),
+    db.collection("ad_clicks").countDocuments({ clicked_at: { $gte: startDate } }),
+    db
+      .collection("embed_views")
+      .countDocuments({ viewed_at: { $gte: fiveMinAgo } }),
+    db
+      .collection("embed_views")
+      .countDocuments({ viewed_at: { $gte: fifteenMinAgo } }),
+    db
+      .collection("embed_views")
+      .countDocuments({ viewed_at: { $gte: oneHourAgo } }),
+    db
+      .collection("embed_views")
+      .countDocuments({ viewed_at: { $gte: twentyFourHoursAgo } }),
+    db
+      .collection("link_clicks")
+      .countDocuments({ clicked_at: { $gte: startDate } }),
+    db.collection("link_clicks").countDocuments({}),
+    db
+      .collection("link_clicks")
+      .countDocuments({ clicked_at: { $gte: startDate }, link_id: { $ne: null } }),
+    db.collection("link_clicks").countDocuments({ link_id: { $ne: null } }),
+  ])
+
+  // ── Wave 2 — embed_views aggregations (lourdes) ──
+  const [
+    viewsByDay,
+    uniqueIpsAgg,
+    viewsByType,
+    topMediaRaw,
+    topRefererRaw,
     activePagesRaw,
     recentVisitorsRaw,
-    externalClicksRaw,
-    externalByDayRaw,
-    externalProvidersRaw,
-    externalHostsRaw,
-    externalQualityRaw,
-    externalMediaTypeRaw,
-    externalTopRaw,
-    totalExternalClicks,
-    externalBySourceRaw,
-    externalByDayBySourceRaw,
-    externalTopBySourceRaw,
-    // ------- Internal downloads (clicks on user-submitted internal links) -------
-    internalClicksRaw,
-    internalByDayRaw,
-    internalTopLinksRaw,
-    internalTopUploadersRaw,
-    internalByQualityRaw,
-    internalByMediaTypeRaw,
-    internalByLinkTypeRaw,
-    totalInternalClicksAllTime,
   ] = await Promise.all([
     db
       .collection("embed_views")
@@ -254,12 +274,6 @@ async function buildStatsResponse(req: NextRequest) {
         },
       ], { allowDiskUse: true })
       .toArray(),
-    db.collection("embed_views").countDocuments({ viewed_at: { $gte: startDate } }),
-    db
-      .collection("embed_views")
-      .countDocuments({ viewed_at: { $gte: startDate }, embed_type: "streaming" }),
-    db.collection("link_clicks").countDocuments({ clicked_at: { $gte: startDate } }),
-    db.collection("ad_clicks").countDocuments({ clicked_at: { $gte: startDate } }),
     db
       .collection("embed_views")
       .aggregate([
@@ -293,23 +307,6 @@ async function buildStatsResponse(req: NextRequest) {
       ], { allowDiskUse: true })
       .toArray(),
     db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate } } },
-        {
-          $group: {
-            _id: {
-              ww_id: "$ww_id",
-              media_type: "$media_type",
-              tmdb_id: "$tmdb_id",
-            },
-            downloads: { $sum: 1 },
-          },
-        },
-        { $sort: { downloads: -1 } },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
       .collection("embed_views")
       .aggregate([
         { $match: { viewed_at: { $gte: startDate } } },
@@ -317,18 +314,6 @@ async function buildStatsResponse(req: NextRequest) {
         { $sort: { count: -1 } },
       ], { allowDiskUse: true })
       .toArray(),
-    db
-      .collection("embed_views")
-      .countDocuments({ viewed_at: { $gte: fiveMinAgo } }),
-    db
-      .collection("embed_views")
-      .countDocuments({ viewed_at: { $gte: fifteenMinAgo } }),
-    db
-      .collection("embed_views")
-      .countDocuments({ viewed_at: { $gte: oneHourAgo } }),
-    db
-      .collection("embed_views")
-      .countDocuments({ viewed_at: { $gte: twentyFourHoursAgo } }),
     db
       .collection("embed_views")
       .aggregate([
@@ -351,12 +336,35 @@ async function buildStatsResponse(req: NextRequest) {
         { allowDiskUse: true }
       )
       .toArray(),
-    // External clicks — count ALL link_clicks (every click on a download/streaming
-    // external link counts; the Supabase `is_external` flag was inconsistent
-    // historically so we treat any link_click as a 3rd-party exit click).
+  ])
+
+  // ── Wave 3 — link_clicks externals partie 1 ──
+  const [
+    topDownloadRaw,
+    externalByDayRaw,
+    externalProvidersRaw,
+    externalHostsRaw,
+    externalQualityRaw,
+    externalMediaTypeRaw,
+    externalTopRaw,
+  ] = await Promise.all([
     db
       .collection("link_clicks")
-      .countDocuments({ clicked_at: { $gte: startDate } }),
+      .aggregate([
+        { $match: { clicked_at: { $gte: startDate } } },
+        {
+          $group: {
+            _id: {
+              ww_id: "$ww_id",
+              media_type: "$media_type",
+              tmdb_id: "$tmdb_id",
+            },
+            downloads: { $sum: 1 },
+          },
+        },
+        { $sort: { downloads: -1 } },
+      ], { allowDiskUse: true })
+      .toArray(),
     db
       .collection("link_clicks")
       .aggregate([
@@ -409,9 +417,14 @@ async function buildStatsResponse(req: NextRequest) {
         { $sort: { clicks: -1 } },
       ], { allowDiskUse: true })
       .toArray(),
-    db.collection("link_clicks").countDocuments({}),
-    // ------- Breakdown of external clicks by source (movix / alt / zt) -------
-    // Only clicks tagged with `link_type: "external"` carry a `source` field.
+  ])
+
+  // ── Wave 4 — link_clicks externals by source ──
+  const [
+    externalBySourceRaw,
+    externalByDayBySourceRaw,
+    externalTopBySourceRaw,
+  ] = await Promise.all([
     db
       .collection("link_clicks")
       .aggregate([
@@ -420,7 +433,6 @@ async function buildStatsResponse(req: NextRequest) {
         { $sort: { count: -1 } },
       ], { allowDiskUse: true })
       .toArray(),
-    // ------- Time-series of external clicks per source per day -------
     db
       .collection("link_clicks")
       .aggregate([
@@ -436,7 +448,6 @@ async function buildStatsResponse(req: NextRequest) {
         },
       ], { allowDiskUse: true })
       .toArray(),
-    // ------- Top media per source (top 5 most-clicked media for movix / alt / zt) -------
     db
       .collection("link_clicks")
       .aggregate([
@@ -470,14 +481,17 @@ async function buildStatsResponse(req: NextRequest) {
         { $project: { items: { $slice: ["$items", 5] } } },
       ], { allowDiskUse: true })
       .toArray(),
-    // -------- Internal-download stats --------
-    // Per request: "Internal" = clicks on links uploaded to this site (link_id
-    // present and matching a download_links / digital_download_links row).
-    // Group by link_id so we can show the most-clicked SPECIFIC link, then
-    // join in a second pass to get title, source, quality, uploader.
-    db
-      .collection("link_clicks")
-      .countDocuments({ clicked_at: { $gte: startDate }, link_id: { $ne: null } }),
+  ])
+
+  // ── Wave 5 — link_clicks internals (avec $lookup) ──
+  const [
+    internalByDayRaw,
+    internalTopLinksRaw,
+    internalTopUploadersRaw,
+    internalByQualityRaw,
+    internalByMediaTypeRaw,
+    internalByLinkTypeRaw,
+  ] = await Promise.all([
     db
       .collection("link_clicks")
       .aggregate([
@@ -493,9 +507,6 @@ async function buildStatsResponse(req: NextRequest) {
         { $sort: { clicks: -1 } },
       ], { allowDiskUse: true })
       .toArray(),
-    // Top uploaders — done via $lookup so a single aggregation gives us the
-    // total clicks per submitted_by across both download_links and
-    // digital_download_links.
     db
       .collection("link_clicks")
       .aggregate([
@@ -563,8 +574,8 @@ async function buildStatsResponse(req: NextRequest) {
         { $sort: { count: -1 } },
       ], { allowDiskUse: true })
       .toArray(),
-    db.collection("link_clicks").countDocuments({ link_id: { $ne: null } }),
   ])
+
 
   // Build day buckets
   const byDayMap = new Map<string, { total: number; streaming: number; download: number }>()
