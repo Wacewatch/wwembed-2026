@@ -83,8 +83,9 @@ export async function GET(req: NextRequest) {
     const period = Math.max(1, Math.min(365, parseInt(req.nextUrl.searchParams.get("period") || "7", 10)))
     const cacheKey = `stats:period:${period}`
     const lockKey = `stats:lock:${period}`
-    // TTL adaptatif selon la période
-    const ttl = period <= 7 ? 120 : period <= 30 ? 300 : 900  // 2min / 5min / 15min
+    // TTL adaptatif selon la période — longue durée pour minimiser cache miss
+    // qui déclenchent un rebuild lourd (35 aggrégations) au chargement de /admin.
+    const ttl = period <= 7 ? 300 : period <= 30 ? 900 : 3600  // 5min / 15min / 1h
     const staleTtl = ttl * 3 // données restent en cache 3x le TTL
 
     // 1) Hit cache : sert immédiat, et si stale on régénère en background
@@ -304,6 +305,7 @@ async function buildStatsResponse(req: NextRequest) {
           },
         },
         { $sort: { views: -1 } },
+        { $limit: 100 },
       ], { allowDiskUse: true })
       .toArray(),
     db
@@ -312,6 +314,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { viewed_at: { $gte: startDate } } },
         { $group: { _id: { $ifNull: ["$referrer", "Direct"] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
+        { $limit: 100 },
       ], { allowDiskUse: true })
       .toArray(),
     db
@@ -363,6 +366,7 @@ async function buildStatsResponse(req: NextRequest) {
           },
         },
         { $sort: { downloads: -1 } },
+        { $limit: 100 },
       ], { allowDiskUse: true })
       .toArray(),
     db
@@ -505,6 +509,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
         { $group: { _id: "$link_id", clicks: { $sum: 1 } } },
         { $sort: { clicks: -1 } },
+        { $limit: 100 },
       ], { allowDiskUse: true })
       .toArray(),
     db
@@ -548,6 +553,7 @@ async function buildStatsResponse(req: NextRequest) {
         { $match: { uploader: { $ne: null } } },
         { $group: { _id: "$uploader", clicks: { $sum: "$clicks" }, linkCount: { $sum: 1 } } },
         { $sort: { clicks: -1 } },
+        { $limit: 50 },
       ], { allowDiskUse: true })
       .toArray(),
     db
