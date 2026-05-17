@@ -34,8 +34,9 @@ export function OnlineUsersModule() {
   useEffect(() => {
     // Initial full load (with TMDB-enriched lists).
     loadOnlineStats()
-    // Slower poll for the heavier enriched payload (titles, posters).
-    const poll = setInterval(loadOnlineStats, 60_000)
+    // Poll the lightweight /api/admin/live endpoint every 15s.
+    // Cache TTL is 15s so we hit cache almost every time (~10ms response).
+    const poll = setInterval(loadOnlineStats, 15_000)
 
     // SSE stream: live counters every 10 s. Falls back gracefully to the
     // polled values if the stream errors out.
@@ -75,25 +76,26 @@ export function OnlineUsersModule() {
 
   const loadOnlineStats = async () => {
     try {
-      // Use the unified server-side stats endpoint — it already enriches
-      // digital (ebook/music/soft/game), live channels and TMDB titles.
-      const res = await fetch("/api/admin/stats", { credentials: "include" })
+      // Dedicated lightweight endpoint for live admin metrics.
+      // Returns only online counts + activePages + recentVisitors (~13 KB).
+      // Cached 15s in Redis, response time <10ms on cache hit.
+      const res = await fetch("/api/admin/live", { credentials: "include" })
       if (!res.ok) return
       const data = await res.json()
-      const o = data?.online || {}
+      // /api/admin/live returns fields at the top level (no "online" sub-object).
       setOnlineStats({
-        usersOnline5min: o.online5min || 0,
-        usersOnline15min: o.online15min || 0,
-        usersOnline1hour: o.online1hour || 0,
-        usersOnline24h: o.online24h || 0,
-        activePages: (o.activePages || []).map((p: any) => ({
+        usersOnline5min: data.online5min || 0,
+        usersOnline15min: data.online15min || 0,
+        usersOnline1hour: data.online1hour || 0,
+        usersOnline24h: data.online24h || 0,
+        activePages: (data.activePages || []).map((p: any) => ({
           ww_id: p.ww_id,
           count: p.count,
           title: p.title || p.ww_id,
           poster: p.poster || null,
           media_type: p.media_type,
         })),
-        recentVisitors: (o.recentVisitors || []).map((v: any) => ({
+        recentVisitors: (data.recentVisitors || []).map((v: any) => ({
           ip_hash: v.ip_hash || "Anonyme",
           viewed_at: v.viewed_at,
           ww_id: v.ww_id,
