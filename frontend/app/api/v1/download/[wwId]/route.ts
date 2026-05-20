@@ -1932,16 +1932,16 @@ function _loadZtExternal(){
   var ztContent=document.getElementById(_extIds.ztContent);
   var ztFilters=document.getElementById(_extIds.ztContent+"_ztfilters");
   var ztCountBadge=document.getElementById(_extIds.ztCount);
-  var url;
+  var primaryUrl, fallbackUrl;
   if(_mediaType==="tv"){
     var s=_seasonNum||1;var e=_episodeNum||1;
-    url=ZT_BASE+"?_route=api&type=tv&id="+_tmdbId+"&s="+s+"&e="+e;
+    primaryUrl=ZT_BASE+"?_route=api&type=tv&id="+_tmdbId+"&s="+s+"&e="+e;
+    fallbackUrl=ZT_BASE+"?_route=api&type=tv&q="+encodeURIComponent(_title)+"&s="+s+"&e="+e;
   }else{
-    url=ZT_BASE+"?_route=api&type=movie&id="+_tmdbId;
+    primaryUrl=ZT_BASE+"?_route=api&type=movie&id="+_tmdbId;
+    fallbackUrl=ZT_BASE+"?_route=api&type=movie&q="+encodeURIComponent(_title);
   }
-  fetch(url)
-  .then(function(r){return r.json();})
-  .then(function(data){
+  function _renderZtData(data){
     ztLoading.style.display="none";
     var raw=_normaliseAltLinks(data);
     var links=_filterAltLinks(raw);
@@ -1950,6 +1950,20 @@ function _loadZtExternal(){
     if(links.length===0){ztContent.innerHTML='<div class="em">Aucune source ZT disponible</div>';return;}
     _populateZtFilters(links,ztFilters);ztFilters.style.display="flex";
     _applyZtFilters();
+  }
+  function _ztLinksCount(data){
+    try{return _filterAltLinks(_normaliseAltLinks(data)).length;}catch(_){return 0;}
+  }
+  fetch(primaryUrl)
+  .then(function(r){return r.json();})
+  .then(function(data){
+    // Fallback to title search if TMDB-id lookup returned no usable links.
+    if(_ztLinksCount(data)===0&&_title){
+      return fetch(fallbackUrl).then(function(r){return r.json();}).then(function(fdata){
+        _renderZtData(_ztLinksCount(fdata)>0?fdata:data);
+      }).catch(function(){_renderZtData(data);});
+    }
+    _renderZtData(data);
   }).catch(function(){
     ztLoading.style.display="none";
     ztContent.innerHTML='<div class="em">Erreur de chargement</div>';
