@@ -362,21 +362,27 @@ async function GET(req) {
         }
         const data = await res.json();
         const expires_at = new Date(now + TTL_MS);
-        await db.collection("zt_cache").updateOne({
-            _id: cacheKey
-        }, {
-            $set: {
-                _id: cacheKey,
-                data,
-                cached_at: new Date(now).toISOString(),
-                expires_at
-            }
-        }, {
-            upsert: true
-        }).catch(()=>{});
+        // Ne cache PAS les réponses « vides » (totalLinks=0 ou liste de résultats vide).
+        // Évite de figer pendant 1h des résultats où le scraper upstream a échoué :
+        // dès qu'une version corrigée est en ligne, l'appel suivant retentera l'upstream.
+        const isEmpty = typeof data?.totalLinks === "number" && data.totalLinks === 0 || Array.isArray(data?.results) && data.results.length === 0;
+        if (!isEmpty) {
+            await db.collection("zt_cache").updateOne({
+                _id: cacheKey
+            }, {
+                $set: {
+                    _id: cacheKey,
+                    data,
+                    cached_at: new Date(now).toISOString(),
+                    expires_at
+                }
+            }, {
+                upsert: true
+            }).catch(()=>{});
+        }
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(data, {
             headers: {
-                "X-ZT-Cache": "MISS",
+                "X-ZT-Cache": isEmpty ? "MISS-NOCACHE" : "MISS",
                 "Cache-Control": "public, max-age=60"
             }
         });
