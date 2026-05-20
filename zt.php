@@ -286,6 +286,79 @@ function decode_zoneurs(string $url): string {
     return $url;
 }
 
+/**
+ * Extrait l'URL directe finale depuis le HTML d'une page zoneurs.net.
+ * Le pattern actuel (mai 2026) : la vraie URL apparaît dans un
+ *   <input type="text" class="result-input" value="URL_FINALE" readonly>
+ * OU dans le bouton :
+ *   <a href="URL_FINALE" class="btn-action btn-success" target="_blank">
+ * Cette fonction est appelée en batch via http_fetch_multi.
+ */
+function extract_zoneurs_real_url(string $html): string {
+    if (!$html) return '';
+    if (preg_match('~class=["\']result-input["\'][^>]*value=["\'](https?://[^"\']+)["\']~i', $html, $m)) {
+        return hd($m[1]);
+    }
+    if (preg_match('~<a[^>]+href=["\'](https?://[^"\']+)["\'][^>]*class=["\'][^"\']*btn-action[^"\']*btn-success~i', $html, $m)) {
+        return hd($m[1]);
+    }
+    // Dernier recours : premier <a> externe non-zoneurs/non-zone-telechargement
+    if (preg_match_all('~<a[^>]+href=["\'](https?://[^"\']+)["\']~i', $html, $ma)) {
+        foreach ($ma[1] as $href) {
+            $hl = strtolower($href);
+            if (strpos($hl, 'zoneurs') !== false) continue;
+            if (strpos($hl, 'zone-telechargement') !== false) continue;
+            if (preg_match('~\.(?:css|js|png|jpe?g|gif|svg|ico|woff2?)(?:\?|$)~i', $hl)) continue;
+            return hd($href);
+        }
+    }
+    return '';
+}
+
+/**
+ * Résout en parallèle tous les liens zoneurs.net d'une liste, en remplaçant
+ * leur `url` par l'URL directe vers l'hébergeur final (1fichier, fileserve,
+ * nitroflare, ...). Met également à jour le `host` détecté.
+ * Modifie la liste passée par référence pour préserver l'ordre et les autres
+ * champs (filename, size, season, episode, protection).
+ */
+function resolve_zoneurs_batch(array &$links): void {
+    if (empty($links)) return;
+    $toFetch = [];
+    foreach ($links as $idx => $lk) {
+        if (!empty($lk['url']) && preg_match('~^https?://(?:www\.)?zoneurs\.net/~i', $lk['url'])) {
+            $toFetch[$idx] = $lk['url'];
+        }
+    }
+    if (empty($toFetch)) return;
+
+    $htmlByUrl = http_fetch_multi(array_values(array_unique($toFetch)), 12);
+    foreach ($toFetch as $idx => $zUrl) {
+        $html = $htmlByUrl[$zUrl] ?? null;
+        if (!$html) continue;
+        $real = extract_zoneurs_real_url($html);
+        if (!$real) continue;
+        $links[$idx]['url'] = $real;
+        // Re-détecte le host depuis la vraie URL
+        $rlow = strtolower($real);
+        $newHost = '';
+        foreach (HOST_PATTERNS as $pat => $label) {
+            if (strpos($rlow, $pat) !== false) { $newHost = $label; break; }
+        }
+        if (!$newHost) {
+            $p = parse_url($real);
+            if (!empty($p['host'])) {
+                $h = preg_replace('/^(?:www\d*|dl\d*|cdn\d*|files?\d*)\./', '', strtolower($p['host']));
+                $parts = explode('.', $h);
+                $newHost = ucfirst($parts[0] ?? '');
+            }
+        }
+        if ($newHost) $links[$idx]['host'] = $newHost;
+        // La protection « zoneurs » est levée puisqu'on a la vraie URL
+        $links[$idx]['protection'] = '';
+    }
+}
+
 function extract_host_and_protection(string $href, string $textSrc = ''): array {
     $hlow = strtolower($href);
     $tlow = strtolower($textSrc);
@@ -1040,6 +1113,12 @@ function enrich_non_tmdb_cards(array $results, int $maxCards = 12, int $maxUrlsP
         $allQualities = array_values(array_filter($allQualities, function ($q) {
             return !empty($q['downloadLinks']) || !empty($q['streamLinks']);
         }));
+        // Résolution batch zoneurs.net → URL directe (1fichier, fileserve, ...)
+        foreach ($allQualities as &$q) {
+            resolve_zoneurs_batch($q['downloadLinks']);
+            resolve_zoneurs_batch($q['streamLinks']);
+        }
+        unset($q);
         $totalLinks = array_sum(array_map(
             fn($q) => count($q['downloadLinks']) + count($q['streamLinks']),
             $allQualities
@@ -1169,6 +1248,14 @@ function merge_qualities(array $urlList, string $year = '', bool $isSerie = fals
     $allQualities = array_values(array_filter($allQualities, function ($q) {
         return !empty($q['downloadLinks']) || !empty($q['streamLinks']);
     }));
+
+    // Résolution des liens zoneurs.net → URLs directes (1fichier, fileserve, …)
+    // en parallèle, après que toutes les pages détail aient été scrappées.
+    foreach ($allQualities as &$q) {
+        resolve_zoneurs_batch($q['downloadLinks']);
+        resolve_zoneurs_batch($q['streamLinks']);
+    }
+    unset($q);
 
     usort($allQualities, function ($a, $b) {
         $rank = function ($q) {

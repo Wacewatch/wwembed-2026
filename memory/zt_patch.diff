@@ -1,6 +1,86 @@
---- /tmp/zt_orig_lf.php	2026-05-20 21:01:41.828857596 +0000
-+++ /app/zt.php	2026-05-20 20:52:00.931857160 +0000
-@@ -360,7 +360,13 @@
+--- /tmp/zt_orig_lf.php	2026-05-20 21:20:33.231858420 +0000
++++ /app/zt.php	2026-05-20 21:12:29.208858076 +0000
+@@ -286,6 +286,79 @@
+     return $url;
+ }
+ 
++/**
++ * Extrait l'URL directe finale depuis le HTML d'une page zoneurs.net.
++ * Le pattern actuel (mai 2026) : la vraie URL apparaît dans un
++ *   <input type="text" class="result-input" value="URL_FINALE" readonly>
++ * OU dans le bouton :
++ *   <a href="URL_FINALE" class="btn-action btn-success" target="_blank">
++ * Cette fonction est appelée en batch via http_fetch_multi.
++ */
++function extract_zoneurs_real_url(string $html): string {
++    if (!$html) return '';
++    if (preg_match('~class=["\']result-input["\'][^>]*value=["\'](https?://[^"\']+)["\']~i', $html, $m)) {
++        return hd($m[1]);
++    }
++    if (preg_match('~<a[^>]+href=["\'](https?://[^"\']+)["\'][^>]*class=["\'][^"\']*btn-action[^"\']*btn-success~i', $html, $m)) {
++        return hd($m[1]);
++    }
++    // Dernier recours : premier <a> externe non-zoneurs/non-zone-telechargement
++    if (preg_match_all('~<a[^>]+href=["\'](https?://[^"\']+)["\']~i', $html, $ma)) {
++        foreach ($ma[1] as $href) {
++            $hl = strtolower($href);
++            if (strpos($hl, 'zoneurs') !== false) continue;
++            if (strpos($hl, 'zone-telechargement') !== false) continue;
++            if (preg_match('~\.(?:css|js|png|jpe?g|gif|svg|ico|woff2?)(?:\?|$)~i', $hl)) continue;
++            return hd($href);
++        }
++    }
++    return '';
++}
++
++/**
++ * Résout en parallèle tous les liens zoneurs.net d'une liste, en remplaçant
++ * leur `url` par l'URL directe vers l'hébergeur final (1fichier, fileserve,
++ * nitroflare, ...). Met également à jour le `host` détecté.
++ * Modifie la liste passée par référence pour préserver l'ordre et les autres
++ * champs (filename, size, season, episode, protection).
++ */
++function resolve_zoneurs_batch(array &$links): void {
++    if (empty($links)) return;
++    $toFetch = [];
++    foreach ($links as $idx => $lk) {
++        if (!empty($lk['url']) && preg_match('~^https?://(?:www\.)?zoneurs\.net/~i', $lk['url'])) {
++            $toFetch[$idx] = $lk['url'];
++        }
++    }
++    if (empty($toFetch)) return;
++
++    $htmlByUrl = http_fetch_multi(array_values(array_unique($toFetch)), 12);
++    foreach ($toFetch as $idx => $zUrl) {
++        $html = $htmlByUrl[$zUrl] ?? null;
++        if (!$html) continue;
++        $real = extract_zoneurs_real_url($html);
++        if (!$real) continue;
++        $links[$idx]['url'] = $real;
++        // Re-détecte le host depuis la vraie URL
++        $rlow = strtolower($real);
++        $newHost = '';
++        foreach (HOST_PATTERNS as $pat => $label) {
++            if (strpos($rlow, $pat) !== false) { $newHost = $label; break; }
++        }
++        if (!$newHost) {
++            $p = parse_url($real);
++            if (!empty($p['host'])) {
++                $h = preg_replace('/^(?:www\d*|dl\d*|cdn\d*|files?\d*)\./', '', strtolower($p['host']));
++                $parts = explode('.', $h);
++                $newHost = ucfirst($parts[0] ?? '');
++            }
++        }
++        if ($newHost) $links[$idx]['host'] = $newHost;
++        // La protection « zoneurs » est levée puisqu'on a la vraie URL
++        $links[$idx]['protection'] = '';
++    }
++}
++
+ function extract_host_and_protection(string $href, string $textSrc = ''): array {
+     $hlow = strtolower($href);
+     $tlow = strtolower($textSrc);
+@@ -360,7 +433,13 @@
  function is_valid_link(string $url, string $linkText = ''): bool {
      if (!$url || $url === '#') return false;
      if (preg_match('/^(?:javascript|mailto|tel|data):/i', $url)) return false;
@@ -15,7 +95,7 @@
  
      $urlLow  = strtolower($url);
      $textLow = strtolower($linkText);
-@@ -429,7 +435,16 @@
+@@ -429,7 +508,16 @@
              $titleLow = mb_strtolower($title, 'UTF-8');
              if (preg_match('~^(suite\.{0,3}|voir toute la liste|cliquez|accueil)~u', $titleLow)) continue;
              $seen[$href] = true;
@@ -33,7 +113,7 @@
          }
      }
      return $results;
-@@ -729,6 +744,10 @@
+@@ -729,6 +817,10 @@
                  // [1]=imgHost, [2]=imgHostName, [3]=textHost, [4]=textHostName,
                  // [5]=streamMarker, [6]=dlMarker, [7]=link, [8]=href, [9]=linkText
                  $rawHref  = hd(trim($tk[8][0]));
@@ -44,7 +124,7 @@
                  $rawText  = hd(preg_replace('/\s+/', ' ', trim(strip_tags($tk[9][0]))));
                  if (!is_valid_link($rawHref, $rawText)) continue;
  
-@@ -820,16 +839,27 @@
+@@ -820,16 +912,27 @@
  function group_results(array $items, bool $supportsTmdb, string $tmdbSType): array {
      $groups = [];
      foreach ($items as $item) {
@@ -75,7 +155,7 @@
      }
  
      $tmdbByNorm = [];
-@@ -863,7 +893,7 @@
+@@ -863,7 +966,7 @@
              if (!$best) {
                  foreach (array_slice($d['results'], 0, 8) as $r) {
                      $cand = tmdb_normalize($r);
@@ -84,7 +164,7 @@
                          $best = $r;
                          break;
                      }
-@@ -887,7 +917,7 @@
+@@ -887,7 +990,7 @@
          // au titre du groupe. Évite la fusion abusive (ex: "Avatar" + "Avatar: De
          // feu et de cendres" qui pointent tous deux vers le best-match TMDB le
          // plus récent, ce qui absorbait les versions Avatar 2009).
@@ -93,7 +173,35 @@
              $td = null;
          }
  
-@@ -1370,12 +1400,16 @@
+@@ -1010,6 +1113,12 @@
+         $allQualities = array_values(array_filter($allQualities, function ($q) {
+             return !empty($q['downloadLinks']) || !empty($q['streamLinks']);
+         }));
++        // Résolution batch zoneurs.net → URL directe (1fichier, fileserve, ...)
++        foreach ($allQualities as &$q) {
++            resolve_zoneurs_batch($q['downloadLinks']);
++            resolve_zoneurs_batch($q['streamLinks']);
++        }
++        unset($q);
+         $totalLinks = array_sum(array_map(
+             fn($q) => count($q['downloadLinks']) + count($q['streamLinks']),
+             $allQualities
+@@ -1140,6 +1249,14 @@
+         return !empty($q['downloadLinks']) || !empty($q['streamLinks']);
+     }));
+ 
++    // Résolution des liens zoneurs.net → URLs directes (1fichier, fileserve, …)
++    // en parallèle, après que toutes les pages détail aient été scrappées.
++    foreach ($allQualities as &$q) {
++        resolve_zoneurs_batch($q['downloadLinks']);
++        resolve_zoneurs_batch($q['streamLinks']);
++    }
++    unset($q);
++
+     usort($allQualities, function ($a, $b) {
+         $rank = function ($q) {
+             $u = strtoupper($q);
+@@ -1370,12 +1487,16 @@
      return 'movie';
  }
  
@@ -111,7 +219,7 @@
      $ztYear = extract_year_from_title($ztTitle);
      if ($year && $ztYear && $ztYear !== $year) return false;
  
-@@ -1392,26 +1426,40 @@
+@@ -1392,26 +1513,40 @@
      if ($tmdbSeq === '' && $ztSeq !== '')                       return false;
  
      if ($normZt === $normTmdb || $normZt === $normOrig) return true;
@@ -159,7 +267,7 @@
          });
      }
      $c = $f ?: [];
-@@ -1487,12 +1535,35 @@
+@@ -1487,12 +1622,35 @@
          return '';
      };
  
@@ -195,7 +303,7 @@
      // 2) Titre sans articles initiaux
      $stripped = preg_replace('/^(?:le|la|les|l\'|un|une|des|the|a|an)\s+/iu', '', $title);
      if ($stripped !== $title) $variants[] = $stripped;
-@@ -1524,9 +1595,15 @@
+@@ -1524,9 +1682,15 @@
      $items = array_slice($items, 0, 24);  // élargi pour mieux gérer les listings mixtes
      $tmdbUrls = [];
      foreach ($items as $idx => $it) {
@@ -213,7 +321,7 @@
          $url = 'https://api.themoviedb.org/3/search/' . $tmdbSType
               . '?api_key=' . TMDB_API_KEY . '&language=fr-FR&query=' . rawurlencode($clean);
          if ($itYear) $url .= ($tmdbSType === 'tv' ? '&first_air_date_year=' : '&year=') . $itYear;
-@@ -1539,11 +1616,14 @@
+@@ -1539,11 +1703,14 @@
          if (!$raw) continue;
          $d = json_decode($raw, true);
          if (empty($d['results'])) continue;
@@ -233,7 +341,7 @@
          }
      }
      return $matched;
-@@ -1601,6 +1681,11 @@
+@@ -1601,6 +1768,11 @@
          $prefiltered = [];
          foreach ($allItems as $it) {
              $itWords = $extractSigWords(clean_title($it['title']));
@@ -245,7 +353,7 @@
              if (!empty(array_intersect($itWords, $tmdbWords))) {
                  $prefiltered[] = $it;
              }
-@@ -1611,8 +1696,10 @@
+@@ -1611,8 +1783,10 @@
  
      // 1) Filtrage STRICT par title_matches_tmdb uniquement (pas de fallback substring,
      //    pour éviter qu'"Avatar" matche "Les Secrets du monde d'Avatar").
