@@ -164,6 +164,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../../app/api/admin/live/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/live">> = Specific
+  const handler = {} as typeof import("../../../app/api/admin/live/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../app/api/admin/online-stream/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/online-stream">> = Specific
@@ -303,6 +312,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/db">> = Specific
   const handler = {} as typeof import("../../../app/api/db/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/api/internal/warm-stats/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/internal/warm-stats">> = Specific
+  const handler = {} as typeof import("../../../app/api/internal/warm-stats/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

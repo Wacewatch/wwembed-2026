@@ -11,8 +11,8 @@
 - Rôle: `member`
 
 ## URLs
-- Frontend: https://zt-embed-download.preview.emergentagent.com/
-- Backend proxy (FastAPI): https://zt-embed-download.preview.emergentagent.com/api/health
+- Frontend: https://preview-maker-7.preview.emergentagent.com/
+- Backend proxy (FastAPI): https://preview-maker-7.preview.emergentagent.com/api/health
 - Login: /auth/login
 - Sign up: /auth/sign-up
 - Mot de passe oublié: /auth/forgot-password
