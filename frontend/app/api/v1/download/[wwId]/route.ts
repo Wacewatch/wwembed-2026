@@ -1446,11 +1446,16 @@ var _altLoaded=false;
 var _allZtLinks=[];
 var _currentZtLinks=[];
 var _ztLoaded=false;
+var _allDarkLinks=[];
+var _currentDarkLinks=[];
+var _darkLoaded=false;
 var _movixMovieId=null;
 var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
 // Server-side cached proxy for ZT (1h TTL). Eliminates the ~15s TV ZT latency
 // on repeat queries. See app/api/v1/zt-proxy/route.ts.
 var ZT_BASE="/api/v1/zt-proxy";
+// Dark proxy → darkdl.php via /api/v1/dark-proxy (caches 1h dans Mongo).
+var DARK_BASE="/api/v1/dark-proxy";
 // AD_URL_EXT removed in session 9 — all ad clicks now use the unified 2-step modal (otieu + adsterra)
 var ALT_BASE="https://apis.wavewatch.top/wawa.php";
 

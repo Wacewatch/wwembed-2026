@@ -133,3 +133,8 @@ lib/link-checker.ts, lib/link-checker-runner.ts, lib/url-probe.ts, lib/url-utils
 ### Dashboard uploader → breakdown bySource
 - `/api/dashboard/my-stats` ajoute `by_source: { breakdown, top_media }` filtré sur les contenus de l'uploader (jointure via `submitted_by` sur les 4 collections de liens).
 - Nouveau panneau `DashboardBySource` dans `dashboard-stats-overview.tsx` : chaque uploader voit en un coup d'œil la performance de SES contenus sur chacune des 3 sources externes.
+
+## 2026-05-21 — Fix Sources Dark "charge sans cesse"
+**Cause racine** : Dans `frontend/app/api/v1/download/[wwId]/route.ts`, le bloc IIFE de la section movie/TV (ligne ~1380) ne déclarait pas les variables `_darkLoaded`, `_allDarkLinks`, `_currentDarkLinks` ni la constante `DARK_BASE`. Le `switchTab('dark')` et le pré-loader `setTimeout` levaient donc `ReferenceError: _darkLoaded is not defined`, ce qui interrompait le JS avant l'appel à `_loadDarkExternal()`. Résultat : le spinner restait visible et le badge à "...".
+**Fix** : ajout des 4 déclarations manquantes au même endroit que pour la section digital (avant `_movixMovieId`). Les fichiers `darkdl.php` / `darkst.php` côté `apis.wavewatch.top` n'étaient PAS en cause — leur upload était correct.
+**Validation** : preview env, `ww-movie-550` → 5 cartes Dark, `ww-tv-1399-s1-e1` → 8 cartes Dark. Badge OK, loading masqué.

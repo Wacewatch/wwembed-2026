@@ -2370,9 +2370,17 @@ function _loadDarkExternal(){
   var filters=document.getElementById(_extIds.darkContent+"_filters");
   var countBadge=document.getElementById(_extIds.darkCount);
   if(!loading||!content||!countBadge)return;
+  // Pas de tmdbId (cas digital content : games/music/...) → masque l'onglet
+  if(typeof _tmdbId==="undefined"||!_tmdbId){
+    var tabDark=document.getElementById("tabDark");
+    if(tabDark)tabDark.style.display="none";
+    countBadge.textContent="0";
+    return;
+  }
   var url;
-  if(_mediaType==="tv"){
-    var s=_seasonNum||1, e=_episodeNum||1;
+  if(typeof _mediaType!=="undefined"&&_mediaType==="tv"){
+    var s=(typeof _seasonNum!=="undefined"?_seasonNum:1)||1;
+    var e=(typeof _episodeNum!=="undefined"?_episodeNum:1)||1;
     url=DARK_BASE+"?type=tv&id="+encodeURIComponent(_tmdbId)+"&s="+s+"&e="+e;
   }else{
     url=DARK_BASE+"?type=movie&id="+encodeURIComponent(_tmdbId);
@@ -2841,11 +2849,16 @@ var _altLoaded=false;
 var _allZtLinks=[];
 var _currentZtLinks=[];
 var _ztLoaded=false;
+var _allDarkLinks=[];
+var _currentDarkLinks=[];
+var _darkLoaded=false;
 var _movixMovieId=null;
 var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
 // Server-side cached proxy for ZT (1h TTL). Eliminates the ~15s TV ZT latency
 // on repeat queries. See app/api/v1/zt-proxy/route.ts.
 var ZT_BASE="/api/v1/zt-proxy";
+// Dark proxy → darkdl.php via /api/v1/dark-proxy (caches 1h dans Mongo).
+var DARK_BASE="/api/v1/dark-proxy";
 // AD_URL_EXT removed in session 9 — all ad clicks now use the unified 2-step modal (otieu + adsterra)
 var ALT_BASE="https://apis.wavewatch.top/wawa.php";
 
@@ -3673,9 +3686,17 @@ function _loadDarkExternal(){
   var filters=document.getElementById(_extIds.darkContent+"_filters");
   var countBadge=document.getElementById(_extIds.darkCount);
   if(!loading||!content||!countBadge)return;
+  // Pas de tmdbId (cas digital content : games/music/...) → masque l'onglet
+  if(typeof _tmdbId==="undefined"||!_tmdbId){
+    var tabDark=document.getElementById("tabDark");
+    if(tabDark)tabDark.style.display="none";
+    countBadge.textContent="0";
+    return;
+  }
   var url;
-  if(_mediaType==="tv"){
-    var s=_seasonNum||1, e=_episodeNum||1;
+  if(typeof _mediaType!=="undefined"&&_mediaType==="tv"){
+    var s=(typeof _seasonNum!=="undefined"?_seasonNum:1)||1;
+    var e=(typeof _episodeNum!=="undefined"?_episodeNum:1)||1;
     url=DARK_BASE+"?type=tv&id="+encodeURIComponent(_tmdbId)+"&s="+s+"&e="+e;
   }else{
     url=DARK_BASE+"?type=movie&id="+encodeURIComponent(_tmdbId);
