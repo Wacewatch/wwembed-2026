@@ -224,7 +224,7 @@ export function buildAdModal2Step(opts: BuildAdModalOpts): {
     <button class="ww-bt ww-bp1" id="${ids.btnUnlock1}">ÉTAPE 1 / 2<span class="ww-tag">PUB</span></button>
     <button class="ww-bt ww-bp2 ww-hi" id="${ids.btnUnlock2}">ÉTAPE 2 / 2<span class="ww-tag2">PUB</span></button>
     ${finalBtnHtml}
-    <div class="ww-cf">Propulsé par <a href="https://wavewatch.top" target="_blank">WaveWatch</a></div>
+    <div class="ww-cf"></div>
   </div>
 </div>
 `.trim()

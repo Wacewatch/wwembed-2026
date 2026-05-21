@@ -1297,7 +1297,7 @@ function buildAdModal2Step(opts) {
     <button class="ww-bt ww-bp1" id="${ids.btnUnlock1}">ÉTAPE 1 / 2<span class="ww-tag">PUB</span></button>
     <button class="ww-bt ww-bp2 ww-hi" id="${ids.btnUnlock2}">ÉTAPE 2 / 2<span class="ww-tag2">PUB</span></button>
     ${finalBtnHtml}
-    <div class="ww-cf">Propulsé par <a href="https://wavewatch.top" target="_blank">WaveWatch</a></div>
+    <div class="ww-cf"></div>
   </div>
 </div>
 `.trim();
@@ -1681,16 +1681,11 @@ ${cover ? `<img src="${cover}" alt="${title}" class="ps">` : ""}
 
 <div id="${ids.linksContainer}"></div>
 
-<div class="sec-title">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-Sources externes
-</div>
-
 <div class="ext-tabs">
-<button class="ext-tab active" id="tabMovix" onclick="switchTab('movix')">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-  Sources externes
-  <span class="ext-tab-badge" id="${externalIds.count}">...</span>
+<button class="ext-tab active" id="tabDark" onclick="switchTab('dark')">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  Sources Dark
+  <span class="ext-tab-badge" id="${externalIds.darkCount}">...</span>
 </button>
 <button class="ext-tab" id="tabAlt" onclick="switchTab('alt')">
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -1702,14 +1697,9 @@ Sources externes
   Sources ZT
   <span class="ext-tab-badge" id="${externalIds.ztCount}">...</span>
 </button>
-<button class="ext-tab" id="tabDark" onclick="switchTab('dark')">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-  Sources Dark
-  <span class="ext-tab-badge" id="${externalIds.darkCount}">...</span>
-</button>
 </div>
 
-<div id="${externalIds.container}">
+<div id="${externalIds.container}" style="display:none">
 <div class="ext-loading" id="${externalIds.loading}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 Recherche de sources externes...
@@ -1748,7 +1738,7 @@ Recherche de sources ZT...
 <div id="${externalIds.ztContent}" class="ext-grid"></div>
 </div>
 
-<div id="${externalIds.darkContent}_wrap" style="display:none">
+<div id="${externalIds.darkContent}_wrap">
 <div class="ext-loading" id="${externalIds.darkLoading}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 Recherche de sources Dark...
@@ -1763,7 +1753,7 @@ Recherche de sources Dark...
 
 <div class="link-display-area" id="linkDisplayArea"></div>
 
-<div class="ft">par <a href="https://wavewatch.top" target="_blank">wavewatch.top</a></div>
+<!-- footer removed -->
 
 ${adModalDigital.html}
 
@@ -1884,7 +1874,7 @@ function _showRateLimitModal(retryAt){
     '</button>' +
 
     '<p style="margin-top:12px;font-size:10px;color:#4b5563">' +
-    'Propulsé par <a href="https://wavewatch.top" target="_blank" style="color:#60a5fa;text-decoration:none">WaveWatch</a>' +
+    '' +
     '</p>';
 
   modal.appendChild(box);
@@ -1909,9 +1899,9 @@ window.switchTab=function(tab){
   var tabZt=document.getElementById("tabZt");
   var tabDark=document.getElementById("tabDark");
   movixWrap.style.display="none";altWrap.style.display="none";ztWrap.style.display="none";if(darkWrap)darkWrap.style.display="none";
-  tabMovix.classList.remove("active");tabAlt.classList.remove("active");tabZt.classList.remove("active");if(tabDark)tabDark.classList.remove("active");
+  if(tabMovix)tabMovix.classList.remove("active");tabAlt.classList.remove("active");tabZt.classList.remove("active");if(tabDark)tabDark.classList.remove("active");
   if(tab==="movix"){
-    movixWrap.style.display="block";tabMovix.classList.add("active");
+    movixWrap.style.display="block";if(tabMovix)tabMovix.classList.add("active");
   }else if(tab==="alt"){
     altWrap.style.display="block";tabAlt.classList.add("active");
     if(!_altLoaded){_altLoaded=true;_loadAltExternal();}
@@ -2021,7 +2011,7 @@ function _loadExternal(){
   var loading=document.getElementById(_extIds.loading);
   var content=document.getElementById(_extIds.content);
   var filters=document.getElementById(_extIds.filters);
-  var countBadge=document.getElementById(_extIds.count);
+  var countBadge=document.getElementById(_extIds.count)||{textContent:""};
   fetch(_BASE+"/search?title="+encodeURIComponent(_title))
   .then(function(r){return r.json();})
   .then(function(data){
@@ -2375,6 +2365,10 @@ function _loadDarkExternal(){
     var tabDark=document.getElementById("tabDark");
     if(tabDark)tabDark.style.display="none";
     countBadge.textContent="0";
+    loading.style.display="none";
+    content.innerHTML='<div class="em">Aucune source Dark disponible</div>';
+    // dark était l'onglet actif par défaut → fallback sur Alt
+    try{if(typeof switchTab==="function")switchTab("alt");}catch(e){}
     return;
   }
   var url;
@@ -2702,16 +2696,11 @@ ${posterUrl ? `<img src="${posterUrl}" alt="${title}" class="ps">` : ""}
 
 <div id="${ids.linksContainer}"></div>
 
-<div class="sec-title">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-Sources externes
-</div>
-
 <div class="ext-tabs">
-<button class="ext-tab active" id="tabMovix" onclick="switchTab('movix')">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-  Sources externes
-  <span class="ext-tab-badge" id="${externalIds.count}">...</span>
+<button class="ext-tab active" id="tabDark" onclick="switchTab('dark')">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  Sources Dark
+  <span class="ext-tab-badge" id="${externalIds.darkCount}">...</span>
 </button>
 <button class="ext-tab" id="tabAlt" onclick="switchTab('alt')">
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -2723,14 +2712,9 @@ Sources externes
   Sources ZT
   <span class="ext-tab-badge" id="${externalIds.ztCount}">...</span>
 </button>
-<button class="ext-tab" id="tabDark" onclick="switchTab('dark')">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-  Sources Dark
-  <span class="ext-tab-badge" id="${externalIds.darkCount}">...</span>
-</button>
 </div>
 
-<div id="${externalIds.container}">
+<div id="${externalIds.container}" style="display:none">
 <div class="ext-loading" id="${externalIds.loading}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 Recherche de sources externes...
@@ -2773,7 +2757,7 @@ Recherche de sources ZT...
 <div id="${externalIds.ztContent}" class="ext-grid"></div>
 </div>
 
-<div id="${externalIds.darkContent}_wrap" style="display:none">
+<div id="${externalIds.darkContent}_wrap">
 <div class="ext-loading" id="${externalIds.darkLoading}">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 Recherche de sources Dark...
@@ -2788,7 +2772,7 @@ Recherche de sources Dark...
 
 <div class="link-display-area" id="linkDisplayArea"></div>
 
-<div class="ft">par <a href="https://wavewatch.top" target="_blank">wavewatch.top</a></div>
+<!-- footer removed -->
 
 <div class="mo" id="${ids.overlay}">
 <div class="mc">
@@ -2820,7 +2804,7 @@ Recherche de sources Dark...
 <div class="mc-foot">
 <button class="bt bp" id="${ids.btnUnlock}">\u00c9TAPE 1 / 2<span class="tag">PUB</span></button>
 <button class="bt bp hi" id="${ids.btnDownload}">\u00c9TAPE 2 / 2<span class="tag">PUB</span></button>
-<div class="cf">Propuls\u00e9 par <a href="https://wavewatch.top" target="_blank">WaveWatch</a></div>
+<!-- footer removed -->
 </div>
 </div>
 </div>
@@ -2949,7 +2933,7 @@ function _showRateLimitModal(retryAt){
     '</button>' +
 
     '<p style="margin-top:12px;font-size:10px;color:#4b5563">' +
-    'Propulsé par <a href="https://wavewatch.top" target="_blank" style="color:#60a5fa;text-decoration:none">WaveWatch</a>' +
+    '' +
     '</p>';
 
   modal.appendChild(box);
@@ -2974,9 +2958,9 @@ window.switchTab=function(tab){
   var tabZt=document.getElementById("tabZt");
   var tabDark=document.getElementById("tabDark");
   movixWrap.style.display="none";altWrap.style.display="none";ztWrap.style.display="none";if(darkWrap)darkWrap.style.display="none";
-  tabMovix.classList.remove("active");tabAlt.classList.remove("active");tabZt.classList.remove("active");if(tabDark)tabDark.classList.remove("active");
+  if(tabMovix)tabMovix.classList.remove("active");tabAlt.classList.remove("active");tabZt.classList.remove("active");if(tabDark)tabDark.classList.remove("active");
   if(tab==="movix"){
-    movixWrap.style.display="block";tabMovix.classList.add("active");
+    movixWrap.style.display="block";if(tabMovix)tabMovix.classList.add("active");
   }else if(tab==="alt"){
     altWrap.style.display="block";tabAlt.classList.add("active");
     if(!_altLoaded){_altLoaded=true;_loadAltExternal();}
@@ -3271,7 +3255,7 @@ function _loadExternal(){
   var loading=document.getElementById(_extIds.loading);
   var content=document.getElementById(_extIds.content);
   var filters=document.getElementById(_extIds.filters);
-  var countBadge=document.getElementById(_extIds.count);
+  var countBadge=document.getElementById(_extIds.count)||{textContent:""};
   fetch(_BASE+"/search?title="+encodeURIComponent(_title))
   .then(function(r){return r.json();})
   .then(function(data){
@@ -3446,7 +3430,7 @@ function _openExtAdModal(finalUrl,extLink,source){
     setTimeout(function(){modal.remove();_displayLink(window._extFinalUrl);},350);
   };
   var footer=document.createElement("p");footer.style.cssText="margin-top:10px;font-size:10px;color:#999";
-  footer.innerHTML='Propuls\u00e9 par <a href="https://wavewatch.top" target="_blank" style="color:#667eea">WaveWatch</a>';
+  footer.innerHTML='';
   box.appendChild(t);box.appendChild(hostBadge);box.appendChild(sub);box.appendChild(warn);box.appendChild(sup);box.appendChild(ad1Btn);box.appendChild(ad2Btn);box.appendChild(footer);
   modal.appendChild(box);document.body.appendChild(modal);
 }
@@ -3691,6 +3675,10 @@ function _loadDarkExternal(){
     var tabDark=document.getElementById("tabDark");
     if(tabDark)tabDark.style.display="none";
     countBadge.textContent="0";
+    loading.style.display="none";
+    content.innerHTML='<div class="em">Aucune source Dark disponible</div>';
+    // dark était l'onglet actif par défaut → fallback sur Alt
+    try{if(typeof switchTab==="function")switchTab("alt");}catch(e){}
     return;
   }
   var url;
