@@ -1,3 +1,0 @@
-{
-  "/api/tmdb/[type]/[id]/route": "app/api/tmdb/[type]/[id]/route.js"
-}

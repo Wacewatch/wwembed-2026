@@ -40,3 +40,4 @@ next-env.d.ts-e
 *.bak
 *.bak-*
 docker-compose.yml.bak
+memory/
