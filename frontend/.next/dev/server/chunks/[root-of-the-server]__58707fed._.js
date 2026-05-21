@@ -1533,7 +1533,10 @@ async function GET(request, { params }) {
             altCount: generateRandomId("exac"),
             ztContent: generateRandomId("exz"),
             ztLoading: generateRandomId("exzl"),
-            ztCount: generateRandomId("exzn")
+            ztCount: generateRandomId("exzn"),
+            darkContent: generateRandomId("exd"),
+            darkLoading: generateRandomId("exdl"),
+            darkCount: generateRandomId("exdn")
         };
         const ids = {
             overlay: generateRandomId("m"),
@@ -1699,6 +1702,11 @@ Sources externes
   Sources ZT
   <span class="ext-tab-badge" id="${externalIds.ztCount}">...</span>
 </button>
+<button class="ext-tab" id="tabDark" onclick="switchTab('dark')">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  Sources Dark
+  <span class="ext-tab-badge" id="${externalIds.darkCount}">...</span>
+</button>
 </div>
 
 <div id="${externalIds.container}">
@@ -1740,6 +1748,19 @@ Recherche de sources ZT...
 <div id="${externalIds.ztContent}" class="ext-grid"></div>
 </div>
 
+<div id="${externalIds.darkContent}_wrap" style="display:none">
+<div class="ext-loading" id="${externalIds.darkLoading}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+Recherche de sources Dark...
+</div>
+<div id="${externalIds.darkContent}_filters" class="ext-filters" style="display:none">
+<select id="darkQualityFilter" class="ext-select"><option value="">Qualit\u00e9</option></select>
+<select id="darkHostFilter" class="ext-select"><option value="">Host</option></select>
+<select id="darkLangFilter" class="ext-select"><option value="">Langue</option></select>
+</div>
+<div id="${externalIds.darkContent}" class="ext-grid"></div>
+</div>
+
 <div class="link-display-area" id="linkDisplayArea"></div>
 
 <div class="ft">par <a href="https://wavewatch.top" target="_blank">wavewatch.top</a></div>
@@ -1764,11 +1785,16 @@ var _allAltLinks=[];
 var _altLoaded=false;
 var _allZtLinks=[];
 var _ztLoaded=false;
+var _allDarkLinks=[];
+var _currentDarkLinks=[];
+var _darkLoaded=false;
 var _movixContentId=null;
 var _BASE="https://still-wood-a206.wavewatchcontact.workers.dev/https://api.movix.cash/api";
 // Server-side cached proxy for ZT (1h TTL). Eliminates the ~15s TV ZT latency
 // on repeat queries. See app/api/v1/zt-proxy/route.ts.
 var ZT_BASE="/api/v1/zt-proxy";
+// Dark proxy → movix.tax via /api/v1/dark-proxy (caches 1h dans Mongo).
+var DARK_BASE="/api/v1/dark-proxy";
 // AD_URL_EXT removed in session 9 — all ad clicks now use the unified 2-step modal (otieu + adsterra)
 
 // ── Rate limit modal ──────────────────────────────────────────────────────
@@ -1877,11 +1903,13 @@ window.switchTab=function(tab){
   var movixWrap=document.getElementById(_extIds.container);
   var altWrap=document.getElementById(_extIds.altContent+"_wrap");
   var ztWrap=document.getElementById(_extIds.ztContent+"_wrap");
+  var darkWrap=document.getElementById(_extIds.darkContent+"_wrap");
   var tabMovix=document.getElementById("tabMovix");
   var tabAlt=document.getElementById("tabAlt");
   var tabZt=document.getElementById("tabZt");
-  movixWrap.style.display="none";altWrap.style.display="none";ztWrap.style.display="none";
-  tabMovix.classList.remove("active");tabAlt.classList.remove("active");tabZt.classList.remove("active");
+  var tabDark=document.getElementById("tabDark");
+  movixWrap.style.display="none";altWrap.style.display="none";ztWrap.style.display="none";if(darkWrap)darkWrap.style.display="none";
+  tabMovix.classList.remove("active");tabAlt.classList.remove("active");tabZt.classList.remove("active");if(tabDark)tabDark.classList.remove("active");
   if(tab==="movix"){
     movixWrap.style.display="block";tabMovix.classList.add("active");
   }else if(tab==="alt"){
@@ -1890,6 +1918,9 @@ window.switchTab=function(tab){
   }else if(tab==="zt"){
     ztWrap.style.display="block";tabZt.classList.add("active");
     if(!_ztLoaded){_ztLoaded=true;_loadZtExternal();}
+  }else if(tab==="dark"){
+    if(darkWrap){darkWrap.style.display="block";tabDark.classList.add("active");}
+    if(!_darkLoaded){_darkLoaded=true;_loadDarkExternal();}
   }
 };
 
@@ -2333,6 +2364,114 @@ function _renderZtLinks(links,container){
   });
 }
 
+function _loadDarkExternal(){
+  var loading=document.getElementById(_extIds.darkLoading);
+  var content=document.getElementById(_extIds.darkContent);
+  var filters=document.getElementById(_extIds.darkContent+"_filters");
+  var countBadge=document.getElementById(_extIds.darkCount);
+  if(!loading||!content||!countBadge)return;
+  var url;
+  if(_mediaType==="tv"){
+    var s=_seasonNum||1, e=_episodeNum||1;
+    url=DARK_BASE+"?type=tv&id="+encodeURIComponent(_tmdbId)+"&s="+s+"&e="+e;
+  }else{
+    url=DARK_BASE+"?type=movie&id="+encodeURIComponent(_tmdbId);
+  }
+  fetch(url)
+  .then(function(r){return r.json();})
+  .then(function(data){
+    loading.style.display="none";
+    var links=[];
+    (data.qualities||[]).forEach(function(q){
+      (q.downloadLinks||[]).forEach(function(lk){
+        links.push({
+          url:lk.url||"",
+          host:lk.host||"",
+          host_icon:lk.host_icon||"",
+          quality:lk.quality||q.quality||"",
+          lang:lk.lang||q.lang||"",
+          sub:lk.sub||"",
+          size:lk.size||"",
+          available:lk.available!==false
+        });
+      });
+    });
+    _allDarkLinks=links;_currentDarkLinks=links;
+    countBadge.textContent=links.length;
+    if(links.length===0){content.innerHTML='<div class="em">Aucune source Dark disponible</div>';return;}
+    _populateDarkFilters(links,filters);if(filters)filters.style.display="flex";
+    _renderDarkLinks(links,content);
+  }).catch(function(){
+    loading.style.display="none";
+    content.innerHTML='<div class="em">Erreur de chargement</div>';
+    countBadge.textContent="0";
+  });
+}
+
+function _populateDarkFilters(links,filtersEl){
+  if(!filtersEl)return;
+  var qf=document.getElementById("darkQualityFilter");
+  var hf=document.getElementById("darkHostFilter");
+  var lf=document.getElementById("darkLangFilter");
+  if(!qf||!hf||!lf)return;
+  qf.innerHTML='<option value="">Qualit\u00e9</option>';
+  hf.innerHTML='<option value="">Host</option>';
+  lf.innerHTML='<option value="">Langue</option>';
+  var qs={},hs={},ls={};
+  links.forEach(function(l){if(l.quality)qs[l.quality]=1;if(l.host)hs[l.host]=1;if(l.lang)ls[l.lang]=1;});
+  Object.keys(qs).sort().forEach(function(v){var o=document.createElement("option");o.value=v;o.textContent=v;qf.appendChild(o);});
+  Object.keys(hs).sort().forEach(function(v){var o=document.createElement("option");o.value=v;o.textContent=v;hf.appendChild(o);});
+  Object.keys(ls).sort().forEach(function(v){var o=document.createElement("option");o.value=v;o.textContent=v;lf.appendChild(o);});
+  qf.onchange=hf.onchange=lf.onchange=_applyDarkFilters;
+}
+function _applyDarkFilters(){
+  var qf=document.getElementById("darkQualityFilter");
+  var hf=document.getElementById("darkHostFilter");
+  var lf=document.getElementById("darkLangFilter");
+  var q=qf?qf.value:"",h=hf?hf.value:"",lg=lf?lf.value:"";
+  var f=_allDarkLinks.filter(function(l){
+    if(q&&l.quality!==q)return false;
+    if(h&&l.host!==h)return false;
+    if(lg&&l.lang!==lg)return false;
+    return true;
+  });
+  _currentDarkLinks=f;
+  _renderDarkLinks(f,document.getElementById(_extIds.darkContent));
+}
+
+function _renderDarkLinks(links,container){
+  if(!container)return;
+  if(!links||links.length===0){container.innerHTML='<div class="em">Aucun r\u00e9sultat</div>';return;}
+  var html="";
+  links.forEach(function(l,idx){
+    var u=l.url||"";
+    html+='<div class="ext-card dark-card" data-dark-idx="'+idx+'"><div class="ext-card-body">';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">';
+    if(l.quality)html+='<span class="ext-quality">'+l.quality+'</span>';
+    if(l.lang)html+='<span style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700">'+l.lang+'</span>';
+    html+='<span style="background:#1f2937;color:#a78bfa;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700">Dark</span></div>';
+    if(l.host)html+='<div class="ext-provider">'+(l.host_icon?'<img src="'+l.host_icon+'" style="width:14px;height:14px;vertical-align:-2px;margin-right:6px">':'')+l.host+'</div>';
+    if(l.sub)html+='<div class="ext-info">Sous-titres: '+l.sub+'</div>';
+    if(l.size)html+='<div class="ext-info" style="margin-top:4px">Taille: '+l.size+'</div>';
+    var dis=(!u||l.available===false);
+    html+=(dis?'<button class="ext-btn" disabled style="opacity:0.4;cursor:not-allowed">Indisponible</button>':'<button class="ext-btn">T\u00e9l\u00e9charger</button>');
+    html+='</div></div>';
+  });
+  container.innerHTML=html;
+  container.querySelectorAll(".dark-card").forEach(function(card){
+    var btn=card.querySelector(".ext-btn");
+    if(btn.disabled)return;
+    btn.onclick=function(e){
+      e.stopPropagation();
+      var idx=parseInt(card.getAttribute("data-dark-idx"));
+      var l=_currentDarkLinks[idx];
+      var u=l&&l.url||"";
+      if(!u){alert("Lien non disponible");return;}
+      _openExtAdModal(u,{provider:l.host,host_name:l.host,quality:l.quality||"",language:l.lang||""},"dark");
+    };
+  });
+}
+
 _renderLinks();
 _loadExternal();
 // Pre-load Alt + ZT in background so badges populate without user interaction.
@@ -2340,6 +2479,7 @@ _loadExternal();
 setTimeout(function(){
   if(!_altLoaded){_altLoaded=true;_loadAltExternal();}
   if(!_ztLoaded){_ztLoaded=true;_loadZtExternal();}
+  if(!_darkLoaded){_darkLoaded=true;_loadDarkExternal();}
 }, 350);
 ${adModalDigital.js}
 })();
@@ -2429,7 +2569,10 @@ ${adModalDigital.js}
         altCount: generateRandomId("exac"),
         ztContent: generateRandomId("exz"),
         ztLoading: generateRandomId("exzl"),
-        ztCount: generateRandomId("exzn")
+        ztCount: generateRandomId("exzn"),
+        darkContent: generateRandomId("exd"),
+        darkLoading: generateRandomId("exdl"),
+        darkCount: generateRandomId("exdn")
     };
     const movieHtml = `<!DOCTYPE html>
 <html lang="fr">
@@ -2572,6 +2715,11 @@ Sources externes
   Sources ZT
   <span class="ext-tab-badge" id="${externalIds.ztCount}">...</span>
 </button>
+<button class="ext-tab" id="tabDark" onclick="switchTab('dark')">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  Sources Dark
+  <span class="ext-tab-badge" id="${externalIds.darkCount}">...</span>
+</button>
 </div>
 
 <div id="${externalIds.container}">
@@ -2615,6 +2763,19 @@ Recherche de sources ZT...
 </select>
 </div>
 <div id="${externalIds.ztContent}" class="ext-grid"></div>
+</div>
+
+<div id="${externalIds.darkContent}_wrap" style="display:none">
+<div class="ext-loading" id="${externalIds.darkLoading}">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+Recherche de sources Dark...
+</div>
+<div id="${externalIds.darkContent}_filters" class="ext-filters" style="display:none">
+<select id="darkQualityFilter" class="ext-select"><option value="">Qualit\u00e9</option></select>
+<select id="darkHostFilter" class="ext-select"><option value="">Host</option></select>
+<select id="darkLangFilter" class="ext-select"><option value="">Langue</option></select>
+</div>
+<div id="${externalIds.darkContent}" class="ext-grid"></div>
 </div>
 
 <div class="link-display-area" id="linkDisplayArea"></div>
@@ -2794,11 +2955,13 @@ window.switchTab=function(tab){
   var movixWrap=document.getElementById(_extIds.container);
   var altWrap=document.getElementById(_extIds.altContent+"_wrap");
   var ztWrap=document.getElementById(_extIds.ztContent+"_wrap");
+  var darkWrap=document.getElementById(_extIds.darkContent+"_wrap");
   var tabMovix=document.getElementById("tabMovix");
   var tabAlt=document.getElementById("tabAlt");
   var tabZt=document.getElementById("tabZt");
-  movixWrap.style.display="none";altWrap.style.display="none";ztWrap.style.display="none";
-  tabMovix.classList.remove("active");tabAlt.classList.remove("active");tabZt.classList.remove("active");
+  var tabDark=document.getElementById("tabDark");
+  movixWrap.style.display="none";altWrap.style.display="none";ztWrap.style.display="none";if(darkWrap)darkWrap.style.display="none";
+  tabMovix.classList.remove("active");tabAlt.classList.remove("active");tabZt.classList.remove("active");if(tabDark)tabDark.classList.remove("active");
   if(tab==="movix"){
     movixWrap.style.display="block";tabMovix.classList.add("active");
   }else if(tab==="alt"){
@@ -2807,6 +2970,9 @@ window.switchTab=function(tab){
   }else if(tab==="zt"){
     ztWrap.style.display="block";tabZt.classList.add("active");
     if(!_ztLoaded){_ztLoaded=true;_loadZtExternal();}
+  }else if(tab==="dark"){
+    if(darkWrap){darkWrap.style.display="block";tabDark.classList.add("active");}
+    if(!_darkLoaded){_darkLoaded=true;_loadDarkExternal();}
   }
 };
 
@@ -3501,12 +3667,121 @@ function _renderZtLinks(links){
   });
 }
 
+function _loadDarkExternal(){
+  var loading=document.getElementById(_extIds.darkLoading);
+  var content=document.getElementById(_extIds.darkContent);
+  var filters=document.getElementById(_extIds.darkContent+"_filters");
+  var countBadge=document.getElementById(_extIds.darkCount);
+  if(!loading||!content||!countBadge)return;
+  var url;
+  if(_mediaType==="tv"){
+    var s=_seasonNum||1, e=_episodeNum||1;
+    url=DARK_BASE+"?type=tv&id="+encodeURIComponent(_tmdbId)+"&s="+s+"&e="+e;
+  }else{
+    url=DARK_BASE+"?type=movie&id="+encodeURIComponent(_tmdbId);
+  }
+  fetch(url)
+  .then(function(r){return r.json();})
+  .then(function(data){
+    loading.style.display="none";
+    var links=[];
+    (data.qualities||[]).forEach(function(q){
+      (q.downloadLinks||[]).forEach(function(lk){
+        links.push({
+          url:lk.url||"",
+          host:lk.host||"",
+          host_icon:lk.host_icon||"",
+          quality:lk.quality||q.quality||"",
+          lang:lk.lang||q.lang||"",
+          sub:lk.sub||"",
+          size:lk.size||"",
+          available:lk.available!==false
+        });
+      });
+    });
+    _allDarkLinks=links;_currentDarkLinks=links;
+    countBadge.textContent=links.length;
+    if(links.length===0){content.innerHTML='<div class="em">Aucune source Dark disponible</div>';return;}
+    _populateDarkFilters(links,filters);if(filters)filters.style.display="flex";
+    _renderDarkLinks(links,content);
+  }).catch(function(){
+    loading.style.display="none";
+    content.innerHTML='<div class="em">Erreur de chargement</div>';
+    countBadge.textContent="0";
+  });
+}
+
+function _populateDarkFilters(links,filtersEl){
+  if(!filtersEl)return;
+  var qf=document.getElementById("darkQualityFilter");
+  var hf=document.getElementById("darkHostFilter");
+  var lf=document.getElementById("darkLangFilter");
+  if(!qf||!hf||!lf)return;
+  qf.innerHTML='<option value="">Qualit\u00e9</option>';
+  hf.innerHTML='<option value="">Host</option>';
+  lf.innerHTML='<option value="">Langue</option>';
+  var qs={},hs={},ls={};
+  links.forEach(function(l){if(l.quality)qs[l.quality]=1;if(l.host)hs[l.host]=1;if(l.lang)ls[l.lang]=1;});
+  Object.keys(qs).sort().forEach(function(v){var o=document.createElement("option");o.value=v;o.textContent=v;qf.appendChild(o);});
+  Object.keys(hs).sort().forEach(function(v){var o=document.createElement("option");o.value=v;o.textContent=v;hf.appendChild(o);});
+  Object.keys(ls).sort().forEach(function(v){var o=document.createElement("option");o.value=v;o.textContent=v;lf.appendChild(o);});
+  qf.onchange=hf.onchange=lf.onchange=_applyDarkFilters;
+}
+function _applyDarkFilters(){
+  var qf=document.getElementById("darkQualityFilter");
+  var hf=document.getElementById("darkHostFilter");
+  var lf=document.getElementById("darkLangFilter");
+  var q=qf?qf.value:"",h=hf?hf.value:"",lg=lf?lf.value:"";
+  var f=_allDarkLinks.filter(function(l){
+    if(q&&l.quality!==q)return false;
+    if(h&&l.host!==h)return false;
+    if(lg&&l.lang!==lg)return false;
+    return true;
+  });
+  _currentDarkLinks=f;
+  _renderDarkLinks(f,document.getElementById(_extIds.darkContent));
+}
+
+function _renderDarkLinks(links,container){
+  if(!container)return;
+  if(!links||links.length===0){container.innerHTML='<div class="em">Aucun r\u00e9sultat</div>';return;}
+  var html="";
+  links.forEach(function(l,idx){
+    var u=l.url||"";
+    html+='<div class="ext-card dark-card" data-dark-idx="'+idx+'"><div class="ext-card-body">';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">';
+    if(l.quality)html+='<span class="ext-quality">'+l.quality+'</span>';
+    if(l.lang)html+='<span style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700">'+l.lang+'</span>';
+    html+='<span style="background:#1f2937;color:#a78bfa;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700">Dark</span></div>';
+    if(l.host)html+='<div class="ext-provider">'+(l.host_icon?'<img src="'+l.host_icon+'" style="width:14px;height:14px;vertical-align:-2px;margin-right:6px">':'')+l.host+'</div>';
+    if(l.sub)html+='<div class="ext-info">Sous-titres: '+l.sub+'</div>';
+    if(l.size)html+='<div class="ext-info" style="margin-top:4px">Taille: '+l.size+'</div>';
+    var dis=(!u||l.available===false);
+    html+=(dis?'<button class="ext-btn" disabled style="opacity:0.4;cursor:not-allowed">Indisponible</button>':'<button class="ext-btn">T\u00e9l\u00e9charger</button>');
+    html+='</div></div>';
+  });
+  container.innerHTML=html;
+  container.querySelectorAll(".dark-card").forEach(function(card){
+    var btn=card.querySelector(".ext-btn");
+    if(btn.disabled)return;
+    btn.onclick=function(e){
+      e.stopPropagation();
+      var idx=parseInt(card.getAttribute("data-dark-idx"));
+      var l=_currentDarkLinks[idx];
+      var u=l&&l.url||"";
+      if(!u){alert("Lien non disponible");return;}
+      _openExtAdModal(u,{provider:l.host,host_name:l.host,quality:l.quality||"",language:l.lang||""},"dark");
+    };
+  });
+}
+
 _renderLinks();
 _loadExternal();
 // Pre-load Alt + ZT in background so badges populate without user interaction.
 setTimeout(function(){
   if(!_altLoaded){_altLoaded=true;_loadAltExternal();}
   if(!_ztLoaded){_ztLoaded=true;_loadZtExternal();}
+  if(!_darkLoaded){_darkLoaded=true;_loadDarkExternal();}
 }, 350);
 })();
 </script>
