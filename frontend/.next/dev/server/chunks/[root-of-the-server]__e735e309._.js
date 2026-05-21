@@ -1355,13 +1355,15 @@ async function POST(request) {
         const wwId = safeStr(body.wwId, 100);
         const isExternal = Boolean(body.isExternal);
         const externalLinkId = safeStr(body.externalLinkId, 100);
-        // Source of the external link: "movix" (legacy), "alt" (wawa.php) or "zt" (zt.php).
+        // Source of the external link: "movix" (legacy), "alt" (wawa.php),
+        // "zt" (zt.php) ou "dark" (darkdl.php).
         // Only meaningful when linkType === "external"; stored as null otherwise.
         const sourceRaw = safeStr(body.source, 20);
         const source = linkType === "external" && sourceRaw && [
             "movix",
             "alt",
-            "zt"
+            "zt",
+            "dark"
         ].includes(sourceRaw) ? sourceRaw : null;
         // Server-resolved metadata (truth = DB, NOT client).
         let resolved = {

@@ -838,8 +838,8 @@ async function buildStatsResponse(req: NextRequest) {
     (externalTopRaw as any[]).map((m) => enrich({ _id: m._id, downloads: m.clicks }, "download"))
   )
 
-  // Top-media per source (movix / alt / zt) with TMDB enrichment.
-  const topMediaBySource: Record<string, any[]> = { movix: [], alt: [], zt: [] }
+  // Top-media per source (movix / alt / zt / dark) with TMDB enrichment.
+  const topMediaBySource: Record<string, any[]> = { movix: [], alt: [], zt: [], dark: [] }
   for (const bucket of externalTopBySourceRaw as any[]) {
     const src = bucket._id as string
     if (!topMediaBySource[src]) topMediaBySource[src] = []
@@ -853,18 +853,18 @@ async function buildStatsResponse(req: NextRequest) {
     )
   }
 
-  // Dense daily series per source (3 lines: movix / alt / zt) for the
+  // Dense daily series per source (4 lines: movix / alt / zt / dark) for the
   // chart on the admin → Liens Externes tab.
-  const sourceDayMap = new Map<string, { movix: number; alt: number; zt: number }>()
+  const sourceDayMap = new Map<string, { movix: number; alt: number; zt: number; dark: number }>()
   for (let i = period - 1; i >= 0; i--) {
     const d = new Date(now.getTime() - i * 86400000).toISOString().split("T")[0]
-    sourceDayMap.set(d, { movix: 0, alt: 0, zt: 0 })
+    sourceDayMap.set(d, { movix: 0, alt: 0, zt: 0, dark: 0 })
   }
   for (const row of externalByDayBySourceRaw as any[]) {
     const d = row._id?.date
-    const src = row._id?.source as keyof { movix: number; alt: number; zt: number }
+    const src = row._id?.source as keyof { movix: number; alt: number; zt: number; dark: number }
     if (!d || !sourceDayMap.has(d)) continue
-    if (src !== "movix" && src !== "alt" && src !== "zt") continue
+    if (src !== "movix" && src !== "alt" && src !== "zt" && src !== "dark") continue
     const entry = sourceDayMap.get(d)!
     entry[src] = row.count
   }
@@ -874,6 +874,7 @@ async function buildStatsResponse(req: NextRequest) {
     movix: v.movix,
     alt: v.alt,
     zt: v.zt,
+    dark: v.dark,
   }))
 
   // External by-day fill

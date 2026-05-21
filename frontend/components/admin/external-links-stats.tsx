@@ -31,7 +31,7 @@ interface ExternalData {
   byQuality: { quality: string; count: number }[]
   byMediaType: { type: string; count: number }[]
   bySource: { source: string; count: number }[]
-  byDayBySource?: { date: string; formattedDate: string; movix: number; alt: number; zt: number }[]
+  byDayBySource?: { date: string; formattedDate: string; movix: number; alt: number; zt: number; dark: number }[]
   topMediaBySource?: Record<string, any[]>
   topMedia: any[]
 }
@@ -120,6 +120,7 @@ export function ExternalLinksStats({
                 <Line type="monotone" dataKey="movix" stroke="#a855f7" strokeWidth={2.5} dot={false} name="Movix" />
                 <Line type="monotone" dataKey="alt" stroke="#f59e0b" strokeWidth={2.5} dot={false} name="Alt" />
                 <Line type="monotone" dataKey="zt" stroke="#14b8a6" strokeWidth={2.5} dot={false} name="ZT" />
+                <Line type="monotone" dataKey="dark" stroke="#ec4899" strokeWidth={2.5} dot={false} name="Dark" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -388,11 +389,11 @@ function Tile({ icon: Icon, label, value, accent }: any) {
 }
 
 const SOURCE_META: Record<string, { label: string; sub: string; accent: string; gradient: string }> = {
-  movix: {
-    label: "Sources externes",
-    sub: "Movix / Darkiworld",
-    accent: "oklch(0.7 0.18 280)",
-    gradient: "from-violet-500 to-fuchsia-500",
+  dark: {
+    label: "Sources Dark",
+    sub: "Darkiworld / movix.tax",
+    accent: "oklch(0.7 0.22 320)",
+    gradient: "from-pink-500 to-purple-600",
   },
   alt: {
     label: "Sources Alt",
@@ -406,10 +407,16 @@ const SOURCE_META: Record<string, { label: string; sub: string; accent: string; 
     accent: "oklch(0.78 0.16 195)",
     gradient: "from-teal-400 to-cyan-500",
   },
+  movix: {
+    label: "Sources Externes (legacy)",
+    sub: "Movix / Darkiworld",
+    accent: "oklch(0.7 0.18 280)",
+    gradient: "from-violet-500 to-fuchsia-500",
+  },
 }
 
 function SourceBreakdown({ rows }: { rows: { source: string; count: number }[] }) {
-  const ORDER = ["movix", "alt", "zt"] as const
+  const ORDER = ["dark", "alt", "zt", "movix"] as const
   const map = new Map(rows.map((r) => [r.source, r.count]))
   const total = rows.reduce((s, x) => s + x.count, 0)
   if (total === 0) {
@@ -417,7 +424,7 @@ function SourceBreakdown({ rows }: { rows: { source: string; count: number }[] }
   }
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {ORDER.map((src) => {
           const meta = SOURCE_META[src]
           const count = map.get(src) || 0
@@ -489,9 +496,9 @@ function SourceBreakdown({ rows }: { rows: { source: string; count: number }[] }
 }
 
 function TopMediaBySource({ data }: { data: Record<string, any[]> }) {
-  const ORDER = ["movix", "alt", "zt"] as const
+  const ORDER = ["dark", "alt", "zt", "movix"] as const
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {ORDER.map((src) => {
         const meta = SOURCE_META[src]
         const items = data[src] || []
