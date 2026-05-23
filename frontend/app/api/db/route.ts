@@ -3,8 +3,8 @@
  * Reconstructs the chain on top of the real MongoSupabaseClient.
  */
 import { NextRequest, NextResponse } from "next/server"
-import { createMongoClient } from "@/lib/mongo/shim"
-import { getCurrentUser } from "@/lib/mongo/auth"
+import { createPgClient } from "@/lib/pg/shim"
+import { getCurrentUser } from "@/lib/pg/auth"
 
 const PUBLIC_READ_TABLES = new Set([
   "live_tv_channels",
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const client = createMongoClient()
+    const client = createPgClient()
     let q: any = client.from(table)
 
     if (mode === "select") q = q.select(selectStr, { count: countMode, head: headOnly })

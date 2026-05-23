@@ -7,8 +7,7 @@
  * Response: { types: ["movie", "tv"] }
  */
 import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/mongo/db"
-import { BASE_FILTER, requireApiKey } from "@/lib/wavewatch-api"
+import { BASE_FILTER, distinctColumn, requireApiKey } from "@/lib/wavewatch-api"
 
 export const dynamic = "force-dynamic"
 
@@ -17,10 +16,11 @@ export async function GET(req: NextRequest) {
   if (denied) return denied
 
   try {
-    const db = await getDb()
-    const types = (await db
-      .collection("download_links")
-      .distinct("media_type", BASE_FILTER)) as Array<string | null>
+    const types = (await distinctColumn(
+      "download_links",
+      "media_type",
+      BASE_FILTER
+    )) as Array<string | null>
     const cleaned = types
       .filter((t): t is string => typeof t === "string" && t.length > 0)
       .sort()

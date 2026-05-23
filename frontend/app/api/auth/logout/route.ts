@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { clearAuthCookies } from "@/lib/mongo/auth"
+import { clearAuthCookies } from "@/lib/pg/auth"
 
 export async function POST() {
   const res = NextResponse.json({ ok: true })

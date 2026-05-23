@@ -9,8 +9,8 @@
  * with no UI change.
  */
 import { NextRequest } from "next/server"
-import { getDb } from "@/lib/mongo/db"
-import { requireAdmin } from "@/lib/mongo/auth"
+import { getPool } from "@/lib/pg/db"
+import { requireAdmin } from "@/lib/pg/auth"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -20,62 +20,64 @@ const ACTIVE_PAGES_LIMIT = 25
 const RECENT_VISITORS_LIMIT = 25
 
 async function buildSnapshot() {
-  const db = await getDb()
+  const pool = getPool()
   const now = Date.now()
   const fiveMinAgo = new Date(now - 5 * 60_000).toISOString()
   const fifteenMinAgo = new Date(now - 15 * 60_000).toISOString()
   const oneHourAgo = new Date(now - 3_600_000).toISOString()
   const twentyFourHoursAgo = new Date(now - 86_400_000).toISOString()
 
-  const [u5, u15, u1h, u24, activePages, recentVisitors] = await Promise.all([
-    // Total views per window (matches the daily activity chart on /admin).
-    // Switched from "unique ip_hash+user_agent" aggregation to a simple
-    // countDocuments: counters were stuck on the same number because most
-    // recent inserts share `ip_hash=null,user_agent=null` and collapsed into
-    // a single bucket. Counting raw events gives the user-expected numbers.
-    db.collection("embed_views").countDocuments({ viewed_at: { $gte: fiveMinAgo } }),
-    db.collection("embed_views").countDocuments({ viewed_at: { $gte: fifteenMinAgo } }),
-    db.collection("embed_views").countDocuments({ viewed_at: { $gte: oneHourAgo } }),
-    db.collection("embed_views").countDocuments({ viewed_at: { $gte: twentyFourHoursAgo } }),
-    db
-      .collection("embed_views")
-      .aggregate(
-        [
-          { $match: { viewed_at: { $gte: fifteenMinAgo } } },
-          {
-            $group: {
-              _id: "$ww_id",
-              count: { $sum: 1 },
-              media_type: { $first: "$media_type" },
-              tmdb_id: { $first: "$tmdb_id" },
-            },
-          },
-          { $sort: { count: -1 } },
-          { $limit: ACTIVE_PAGES_LIMIT },
-        ],
-        { allowDiskUse: true, maxTimeMS: 8000 }
-      )
-      .toArray(),
-    db
-      .collection("embed_views")
-      .find({ viewed_at: { $gte: oneHourAgo } })
-      .sort({ viewed_at: -1 })
-      .limit(RECENT_VISITORS_LIMIT)
-      .toArray(),
+  // Temps réel (fenêtres < 1 jour) → tables brutes obligatoires (les caggs
+  // s'arrêtent à now()-1h et ne descendent pas sous le jour). Rapide grâce
+  // aux index (viewed_at DESC) + chunk exclusion TimescaleDB.
+  const [windowCounts, activePagesRes, recentVisitorsRes] = await Promise.all([
+    // 4 fenêtres en un seul scan via FILTER.
+    pool.query(
+      `SELECT
+         count(*) FILTER (WHERE viewed_at >= $1)::int AS u5,
+         count(*) FILTER (WHERE viewed_at >= $2)::int AS u15,
+         count(*) FILTER (WHERE viewed_at >= $3)::int AS u1h,
+         count(*) FILTER (WHERE viewed_at >= $4)::int AS u24
+       FROM embed_views
+       WHERE viewed_at >= $4`,
+      [fiveMinAgo, fifteenMinAgo, oneHourAgo, twentyFourHoursAgo]
+    ),
+    pool.query(
+      `SELECT ww_id,
+              count(*)::int AS count,
+              (array_agg(media_type ORDER BY viewed_at DESC))[1] AS media_type,
+              (array_agg(tmdb_id    ORDER BY viewed_at DESC))[1] AS tmdb_id
+       FROM embed_views
+       WHERE viewed_at >= $1
+       GROUP BY ww_id
+       ORDER BY count DESC
+       LIMIT $2`,
+      [fifteenMinAgo, ACTIVE_PAGES_LIMIT]
+    ),
+    pool.query(
+      `SELECT ip_hash, viewed_at, ww_id, media_type, tmdb_id
+       FROM embed_views
+       WHERE viewed_at >= $1
+       ORDER BY viewed_at DESC
+       LIMIT $2`,
+      [oneHourAgo, RECENT_VISITORS_LIMIT]
+    ),
   ])
 
+  const wc = windowCounts.rows[0] || {}
+
   return {
-    online5min: u5 || 0,
-    online15min: u15 || 0,
-    online1hour: u1h || 0,
-    online24h: u24 || 0,
-    activePages: (activePages as any[]).map((p) => ({
-      ww_id: p._id,
+    online5min: wc.u5 || 0,
+    online15min: wc.u15 || 0,
+    online1hour: wc.u1h || 0,
+    online24h: wc.u24 || 0,
+    activePages: (activePagesRes.rows as any[]).map((p) => ({
+      ww_id: p.ww_id,
       count: p.count,
       media_type: p.media_type,
       tmdb_id: p.tmdb_id,
     })),
-    recentVisitors: (recentVisitors as any[]).map((v) => ({
+    recentVisitors: (recentVisitorsRes.rows as any[]).map((v) => ({
       ip_hash: v.ip_hash ? v.ip_hash.substring(0, 8) + "…" : "Anonyme",
       viewed_at: v.viewed_at,
       ww_id: v.ww_id,

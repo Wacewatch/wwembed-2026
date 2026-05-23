@@ -7,9 +7,14 @@
  *
  * Pure aggregation — no auth required so the leaderboard widget can be
  * displayed on the home page / docs / etc.
+ *
+ * Migration Mongo → PostgreSQL : le pipeline $unionWith (ownership) + $group
+ * (vues par ww_id) + résolution users devient une requête SQL avec CTE.
+ * Lecture sur tables brutes (embed_views) : exact et rapide grâce à l'index
+ * sur (viewed_at, ww_id) et au chunk exclusion TimescaleDB.
  */
 import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/mongo/db"
+import { getPool } from "@/lib/pg/db"
 
 type Period = "7d" | "30d" | "all"
 
@@ -24,103 +29,88 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(100, parseInt(req.nextUrl.searchParams.get("limit") || "50", 10) || 50)
   const since = sinceFor(period)
 
-  const db = await getDb()
+  const pool = getPool()
 
-  // Build a map of ww_id → submitted_by (one query per link collection).
-  // We use a single aggregation that $unionWith the three sources so the
-  // ww_id → user lookup happens once.
-  const ownership = await db
-    .collection("streaming_links")
-    .aggregate([
-      { $project: { ww_id: 1, submitted_by: 1 } },
-      {
-        $unionWith: {
-          coll: "download_links",
-          pipeline: [{ $project: { ww_id: 1, submitted_by: 1 } }],
-        },
-      },
-      {
-        $unionWith: {
-          coll: "live_tv_channels",
-          pipeline: [{ $project: { ww_id: 1, submitted_by: 1 } }],
-        },
-      },
-      {
-        $unionWith: {
-          coll: "digital_content",
-          pipeline: [{ $project: { ww_id: 1, submitted_by: 1 } }],
-        },
-      },
-      { $match: { ww_id: { $ne: null }, submitted_by: { $ne: null } } },
-      { $group: { _id: "$ww_id", uploader_id: { $first: "$submitted_by" } } },
-    ])
-    .toArray()
-
-  const ownerByWw = new Map<string, string>()
-  for (const row of ownership as any[]) {
-    if (row._id) ownerByWw.set(row._id, row.uploader_id)
-  }
-
-  if (!ownerByWw.size) {
-    return NextResponse.json({ period, leaderboard: [] })
-  }
-
-  // Count embed_views per ww_id over the period.
-  const match: any = { ww_id: { $in: Array.from(ownerByWw.keys()) } }
-  if (since) match.viewed_at = { $gte: since }
-  const viewsAgg = await db
-    .collection("embed_views")
-    .aggregate(
-      [
-        { $match: match },
-        { $group: { _id: "$ww_id", views: { $sum: 1 } } },
-      ],
-      { allowDiskUse: true }
+  // Une seule requête :
+  //  1) ownership : ww_id → uploader_id (premier submitted_by trouvé) via UNION ALL
+  //     des 4 tables sources.
+  //  2) views : comptage embed_views par ww_id sur la période.
+  //  3) jointure ownership×views → somme par uploader (vues + nb contenus).
+  //  4) jointure users pour username/role (id uuid OU legacy_uuid).
+  //  5) tri par vues, limite.
+  // Le filtre temporel est injecté en SQL ($2 nullable → pas de filtre si "all").
+  const sql = `
+    WITH ownership AS (
+      SELECT ww_id, submitted_by FROM streaming_links WHERE ww_id IS NOT NULL AND submitted_by IS NOT NULL
+      UNION ALL
+      SELECT ww_id, submitted_by FROM download_links  WHERE ww_id IS NOT NULL AND submitted_by IS NOT NULL
+      UNION ALL
+      SELECT ('ww-live-' || id::text) AS ww_id, submitted_by FROM live_tv_channels WHERE submitted_by IS NOT NULL
+      UNION ALL
+      SELECT ww_id, submitted_by FROM digital_content   WHERE ww_id IS NOT NULL AND submitted_by IS NOT NULL
+    ),
+    owner_by_ww AS (
+      -- un seul uploader par ww_id (le premier rencontré, comme $first en Mongo)
+      SELECT DISTINCT ON (ww_id) ww_id, submitted_by::text AS uploader_id
+      FROM ownership
+      ORDER BY ww_id
+    ),
+    views AS (
+      SELECT ww_id, count(*)::int AS views
+      FROM embed_views
+      WHERE ($2::timestamptz IS NULL OR viewed_at >= $2::timestamptz)
+      GROUP BY ww_id
+    ),
+    by_uploader AS (
+      SELECT o.uploader_id,
+             sum(v.views)::int AS views,
+             count(*)::int     AS contents
+      FROM owner_by_ww o
+      JOIN views v ON v.ww_id = o.ww_id
+      GROUP BY o.uploader_id
     )
-    .toArray()
+    SELECT b.uploader_id,
+           b.views,
+           b.contents,
+           COALESCE(u.username, 'anonyme') AS username,
+           COALESCE(u.role, 'uploader')    AS role
+    FROM by_uploader b
+    LEFT JOIN users u ON u.id::text = b.uploader_id
+    ORDER BY b.views DESC
+    LIMIT $1
+  `
 
-  // Sum by uploader
-  const byUploader = new Map<string, { views: number; ww_ids: number }>()
-  for (const row of viewsAgg as any[]) {
-    const uploaderId = ownerByWw.get(row._id)
-    if (!uploaderId) continue
-    const cur = byUploader.get(uploaderId) || { views: 0, ww_ids: 0 }
-    cur.views += row.views
-    cur.ww_ids += 1
-    byUploader.set(uploaderId, cur)
-  }
-
-  // Sort + resolve usernames
-  const sorted = Array.from(byUploader.entries())
-    .sort((a, b) => b[1].views - a[1].views)
-    .slice(0, limit)
-
-  if (!sorted.length) return NextResponse.json({ period, leaderboard: [] })
-
-  const users = await db
-    .collection("users")
-    .find(
-      { $or: [{ legacy_uuid: { $in: sorted.map(([id]) => id) } }, { _id: { $in: sorted.map(([id]) => id).filter((s) => /^[0-9a-f]{24}$/.test(s)).map((s) => s as any) } }] },
-      { projection: { username: 1, legacy_uuid: 1, role: 1 } }
-    )
-    .toArray()
-  const userBy = new Map<string, any>()
-  for (const u of users as any[]) {
-    const id = u.legacy_uuid || (u._id?.toString ? u._id.toString() : String(u._id))
-    userBy.set(id, u)
-  }
-
-  const leaderboard = sorted.map(([uploaderId, stats], i) => {
-    const u = userBy.get(uploaderId)
-    return {
+  try {
+    const r = await pool.query(sql, [limit, since])
+    const leaderboard = r.rows.map((row: any, i: number) => ({
       rank: i + 1,
-      uploader_id: uploaderId,
-      username: u?.username || "anonyme",
-      role: u?.role || "uploader",
-      views: stats.views,
-      contents: stats.ww_ids,
-    }
-  })
+      uploader_id: row.uploader_id,
+      username: row.username || "anonyme",
+      role: row.role || "uploader",
+      views: row.views,
+      contents: row.contents,
+    }))
 
-  return NextResponse.json({ period, leaderboard, total_uploaders: byUploader.size })
+    // total_uploaders : nombre d'uploaders ayant au moins une vue sur la période.
+    const totalRes = await pool.query(
+      `WITH ownership AS (
+         SELECT ww_id, submitted_by FROM streaming_links WHERE ww_id IS NOT NULL AND submitted_by IS NOT NULL
+         UNION ALL SELECT ww_id, submitted_by FROM download_links  WHERE ww_id IS NOT NULL AND submitted_by IS NOT NULL
+         UNION ALL SELECT ('ww-live-' || id::text) AS ww_id, submitted_by FROM live_tv_channels WHERE submitted_by IS NOT NULL
+         UNION ALL SELECT ww_id, submitted_by FROM digital_content   WHERE ww_id IS NOT NULL AND submitted_by IS NOT NULL
+       ),
+       owner_by_ww AS (SELECT DISTINCT ON (ww_id) ww_id, submitted_by::text AS uploader_id FROM ownership ORDER BY ww_id),
+       views AS (SELECT ww_id FROM embed_views WHERE ($1::timestamptz IS NULL OR viewed_at >= $1::timestamptz) GROUP BY ww_id)
+       SELECT count(DISTINCT o.uploader_id)::int AS n
+       FROM owner_by_ww o JOIN views v ON v.ww_id = o.ww_id`,
+      [since]
+    )
+    const total_uploaders = totalRes.rows[0]?.n ?? leaderboard.length
+
+    if (!leaderboard.length) return NextResponse.json({ period, leaderboard: [] })
+    return NextResponse.json({ period, leaderboard, total_uploaders })
+  } catch (e: any) {
+    console.error("[leaderboard] error:", e?.message)
+    return NextResponse.json({ period, leaderboard: [], error: e?.message }, { status: 500 })
+  }
 }

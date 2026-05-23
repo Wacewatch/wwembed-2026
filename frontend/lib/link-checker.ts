@@ -25,7 +25,7 @@
  *     last_http_status, response_ms, last_alive_at
  *   }
  */
-import { getDb } from "@/lib/mongo/db"
+import { getPool } from "@/lib/pg/db"
 
 export type LinkStatusValue = "alive" | "dead" | "unknown"
 
@@ -256,12 +256,24 @@ export async function recordCheckResult(args: {
   result: LinkCheckResult
 }): Promise<LinkStatusValue> {
   const { linkId, linkType, url, result } = args
-  const db = await getDb()
+  const pool = getPool()
   const now = new Date().toISOString()
-  const statusColl = db.collection("link_status")
   const host = hostnameOf(url)
 
-  const prev = await statusColl.findOne({ link_id: linkId })
+  // État précédent. `link_status_linkid_idx` est non-unique → on fait un
+  // upsert manuel (SELECT puis UPDATE/INSERT) plutôt qu'un ON CONFLICT.
+  const prevRes = await pool.query<{
+    id: string
+    consecutive_failures: number
+    status: LinkStatusValue | null
+    dead_since: string | null
+    last_alive_at: string | null
+  }>(
+    `SELECT id, consecutive_failures, status, dead_since, last_alive_at
+     FROM link_status WHERE link_id = $1 LIMIT 1`,
+    [linkId]
+  )
+  const prev = prevRes.rows[0] || null
   const prevFails = prev?.consecutive_failures || 0
 
   let nextFails = prevFails
@@ -288,39 +300,47 @@ export async function recordCheckResult(args: {
     effective = prev?.status === "dead" ? "dead" : "unknown"
   }
 
-  await statusColl.updateOne(
-    { link_id: linkId },
-    {
-      $set: {
-        link_id: linkId,
-        link_type: linkType,
-        collection: LINK_COLLECTIONS[linkType],
-        source_url: url,
-        host,
-        status: effective,
-        consecutive_failures: nextFails,
-        last_checked_at: now,
-        last_http_status: result.httpStatus,
-        last_error: result.reason,
-        response_ms: result.responseMs,
-        dead_since: deadSince,
-        last_alive_at: lastAliveAt,
-      },
-    },
-    { upsert: true }
-  )
+  // NB: la colonne s'appelle `collection` dans link_status (réservée nulle part
+  // ailleurs en SQL ; on quote par prudence).
+  if (prev) {
+    await pool.query(
+      `UPDATE link_status SET
+         link_type = $2, "collection" = $3, source_url = $4, host = $5,
+         status = $6, consecutive_failures = $7, last_checked_at = $8,
+         last_http_status = $9, last_error = $10, response_ms = $11,
+         dead_since = $12, last_alive_at = $13
+       WHERE id = $1`,
+      [
+        prev.id, linkType, LINK_COLLECTIONS[linkType], url, host,
+        effective, nextFails, now,
+        result.httpStatus, result.reason, result.responseMs,
+        deadSince, lastAliveAt,
+      ]
+    )
+  } else {
+    await pool.query(
+      `INSERT INTO link_status
+         (link_id, link_type, "collection", source_url, host, status,
+          consecutive_failures, last_checked_at, last_http_status, last_error,
+          response_ms, dead_since, last_alive_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+      [
+        linkId, linkType, LINK_COLLECTIONS[linkType], url, host, effective,
+        nextFails, now, result.httpStatus, result.reason,
+        result.responseMs, deadSince, lastAliveAt,
+      ]
+    )
+  }
 
-  // Mirror to the parent link record (so existing UI/queries see is_valid quickly).
-  const parentColl = db.collection(LINK_COLLECTIONS[linkType])
-  await parentColl.updateOne(
-    { $or: [{ legacy_uuid: linkId }, { id: linkId }] },
-    {
-      $set: {
-        is_valid: effective === "alive",
-        link_status: effective,
-        last_checked: now,
-      },
-    }
+  // Mirror sur l'enregistrement parent (pour que l'UI/les requêtes voient
+  // is_valid rapidement). La migration a promu legacy_uuid → id, donc le
+  // linkId (issu de pickBatch = id::text) matche directement download_links.id.
+  const parentTable = LINK_COLLECTIONS[linkType]
+  await pool.query(
+    `UPDATE ${parentTable} SET
+       is_valid = $2, last_checked = $3
+     WHERE id::text = $1`,
+    [linkId, effective === "alive", now]
   )
 
   return effective

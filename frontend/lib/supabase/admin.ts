@@ -1,9 +1,9 @@
 /**
- * Drop-in replacement: server-side admin client backed by MongoDB.
- * All `from(...).select().eq()...` calls keep working unchanged.
+ * Drop-in replacement: server-side admin client backed by PostgreSQL/TimescaleDB.
+ * All `from(...).select().eq()...` calls keep working unchanged via the pg shim.
  */
-import { createMongoClient } from "@/lib/mongo/shim"
+import { createPgClient } from "@/lib/pg/shim"
 
 export function createAdminClient() {
-  return createMongoClient()
+  return createPgClient()
 }

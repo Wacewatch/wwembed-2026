@@ -1,13 +1,12 @@
 /**
- * Server-side client backed by MongoDB.
- * Unlike `admin.ts`, this client is auth-aware: `auth.getUser()` reads the
- * JWT cookie and returns the current user (so server pages like
- * /dashboard/page.tsx work the same way they did under Supabase).
+ * Server-side client backed by PostgreSQL/TimescaleDB.
+ * Auth-aware: `auth.getUser()` reads the JWT cookie and returns the current user
+ * (so server pages like /dashboard/page.tsx work the same as under Supabase/Mongo).
  */
-import { createMongoClient, MongoSupabaseClient } from "@/lib/mongo/shim"
-import { getCurrentUser } from "@/lib/mongo/auth"
+import { createPgClient, PgSupabaseClient } from "@/lib/pg/shim"
+import { getCurrentUser } from "@/lib/pg/auth"
 
-class AuthAwareClient extends MongoSupabaseClient {
+class AuthAwareClient extends PgSupabaseClient {
   auth = {
     getUser: async () => {
       const u = await getCurrentUser()
@@ -32,9 +31,8 @@ class AuthAwareClient extends MongoSupabaseClient {
 }
 
 export async function createClient() {
-  const base = createMongoClient()
+  const base = createPgClient()
   const c = new AuthAwareClient()
-  // expose .from / .rpc from base
   c.from = base.from.bind(base)
   c.rpc = base.rpc.bind(base)
   return c

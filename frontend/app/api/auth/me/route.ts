@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getCurrentUser } from "@/lib/mongo/auth"
+import { getCurrentUser } from "@/lib/pg/auth"
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser(req)

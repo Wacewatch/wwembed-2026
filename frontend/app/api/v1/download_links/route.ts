@@ -18,12 +18,11 @@
  * Response: { items: [...], total, offset, limit }
  */
 import { NextRequest, NextResponse } from "next/server"
-import { ObjectId } from "mongodb"
-import { getDb } from "@/lib/mongo/db"
 import {
   BASE_FILTER,
   queryDownloadLinks,
   requireApiKey,
+  resolveUploaderToIds,
 } from "@/lib/wavewatch-api"
 
 export const dynamic = "force-dynamic"
@@ -33,22 +32,6 @@ const MAX_LIMIT = 20_000
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-}
-
-async function resolveUploaderToIds(username: string): Promise<string[]> {
-  if (!username) return []
-  const db = await getDb()
-  const docs = await db
-    .collection("profiles")
-    .find({ username }, { projection: { _id: 1, legacy_uuid: 1 } })
-    .toArray()
-  const ids: string[] = []
-  for (const d of docs) {
-    const oid = d._id?.toString?.()
-    if (oid) ids.push(oid)
-    if (d.legacy_uuid) ids.push(d.legacy_uuid)
-  }
-  return ids
 }
 
 export async function GET(req: NextRequest) {
@@ -86,27 +69,20 @@ export async function GET(req: NextRequest) {
   if (language) filter.language = language
 
   if (q) {
+    // Recherche texte insensible à la casse sur 3 champs. La RegExp est
+    // interprétée par l'adaptateur de filtre comme un terme ILIKE (contains).
     const rx = new RegExp(escapeRegex(q), "i")
     filter.$or = [{ release_name: rx }, { source_name: rx }, { ww_id: rx }]
   }
 
   if (uploader) {
+    // resolveUploaderToIds (wavewatch-api) gère déjà ObjectId 24-hex et legacy.
     const ids = await resolveUploaderToIds(uploader)
     if (ids.length === 0) {
       // Unknown uploader → return empty page immediately.
       return NextResponse.json({ items: [], total: 0, offset, limit })
     }
-    const oids = ids
-      .filter((id) => /^[a-f0-9]{24}$/i.test(id))
-      .map((id) => {
-        try {
-          return new ObjectId(id)
-        } catch {
-          return null
-        }
-      })
-      .filter(Boolean) as ObjectId[]
-    filter.submitted_by = { $in: [...ids, ...oids] }
+    filter.submitted_by = { $in: ids }
   }
 
   // Sort parsing.

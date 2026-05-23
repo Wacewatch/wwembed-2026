@@ -9,7 +9,7 @@
  * Response: { total, last_24h }
  */
 import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/mongo/db"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { requireApiKey } from "@/lib/wavewatch-api"
 
 export const dynamic = "force-dynamic"
@@ -19,17 +19,21 @@ export async function GET(req: NextRequest) {
   if (denied) return denied
 
   try {
-    const db = await getDb()
-    const coll = db.collection("download_links")
-
+    const supabase = createAdminClient()
     const dayAgoIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-    const [total, last24h] = await Promise.all([
-      coll.countDocuments({}),
-      coll.countDocuments({ created_at: { $gte: dayAgoIso } }),
+    const [totalRes, last24Res] = await Promise.all([
+      supabase.from("download_links").select("*", { count: "exact", head: true }),
+      supabase
+        .from("download_links")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", dayAgoIso),
     ])
 
-    return NextResponse.json({ total, last_24h: last24h })
+    return NextResponse.json({
+      total: totalRes.count ?? 0,
+      last_24h: last24Res.count ?? 0,
+    })
   } catch (e: any) {
     return NextResponse.json(
       { error: "Internal error", reason: e?.message || "unknown" },

@@ -40,4 +40,12 @@ next-env.d.ts-e
 *.bak
 *.bak-*
 docker-compose.yml.bak
+
+# Emergent context (code PHP + creds, ne pas versionner)
 memory/
+
+# Backups de migration
+*.mongo-bak
+
+# node_modules partout (y compris db/)
+**/node_modules/

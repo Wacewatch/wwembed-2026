@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { ObjectId } from "mongodb"
-import { getDb } from "@/lib/mongo/db"
-import { hashPassword, createAccessToken, createRefreshToken, setAuthCookies } from "@/lib/mongo/auth"
+import { getPool } from "@/lib/pg/db"
+import { hashPassword, createAccessToken, createRefreshToken, setAuthCookies } from "@/lib/pg/auth"
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
@@ -13,73 +12,53 @@ export async function POST(req: NextRequest) {
 
   const email = String(rawEmail).toLowerCase().trim()
   const username = (rawUsername || email.split("@")[0]).trim()
+  const pool = getPool()
 
-  const db = await getDb()
-  const existing = await db.collection("users").findOne({ email })
+  const existingRes = await pool.query(
+    `SELECT id, username, needs_password_reset, created_at FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+    [email]
+  )
+  const existing = existingRes.rows[0]
   if (existing && !existing.needs_password_reset)
     return NextResponse.json({ error: "Cet email est déjà utilisé" }, { status: 409 })
 
   const password_hash = await hashPassword(password)
-  let userId: ObjectId
+  const nowIso = new Date().toISOString()
+  let userId: string
+  let finalUsername: string
+  let role = "member"
 
   if (existing && existing.needs_password_reset) {
-    await db.collection("users").updateOne(
-      { _id: existing._id },
-      {
-        $set: {
-          password_hash,
-          username: existing.username || username,
-          needs_password_reset: false,
-          updated_at: new Date().toISOString(),
-        },
-      }
+    finalUsername = existing.username || username
+    await pool.query(
+      `UPDATE users SET password_hash = $1, username = $2, needs_password_reset = false, updated_at = now() WHERE id = $3`,
+      [password_hash, finalUsername, existing.id]
     )
-    userId = existing._id
+    userId = existing.id
   } else {
-    const usernameClash = await db.collection("users").findOne({ username })
-    const finalUsername = usernameClash ? `${username}${Math.floor(Math.random() * 9999)}` : username
-    const r = await db.collection("users").insertOne({
-      email,
-      username: finalUsername,
-      password_hash,
-      role: "member",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    userId = r.insertedId
+    // Anti-collision username
+    const clashRes = await pool.query(`SELECT 1 FROM users WHERE lower(username) = lower($1) LIMIT 1`, [username])
+    finalUsername = clashRes.rows.length ? `${username}${Math.floor(Math.random() * 9999)}` : username
+    const insRes = await pool.query(
+      `INSERT INTO users (email, username, password_hash, role, created_at, updated_at)
+       VALUES ($1, $2, $3, 'member', now(), now()) RETURNING id`,
+      [email, finalUsername, password_hash]
+    )
+    userId = insRes.rows[0].id
   }
 
-  const tokenSub = userId.toString()
-  const access = createAccessToken(tokenSub, email)
-  const refresh = createRefreshToken(tokenSub)
-
-  const userDoc = await db.collection("users").findOne({ _id: userId })
-  // Use legacy_uuid for the public id when the account was migrated from
-  // Supabase, otherwise the Mongo ObjectId hex.
-  const id = userDoc?.legacy_uuid || tokenSub
-
-  // Mirror the user as a `profiles` row (same _id) so the existing
-  // dashboard / admin pages that read from `profiles` keep working.
-  await db.collection("profiles").updateOne(
-    { _id: userId },
-    {
-      $set: {
-        email: userDoc?.email,
-        username: userDoc?.username,
-        role: userDoc?.role || "member",
-        updated_at: new Date().toISOString(),
-      },
-      $setOnInsert: { created_at: new Date().toISOString() },
-    },
-    { upsert: true }
+  // Miroir dans profiles (même id) pour les pages dashboard/admin qui lisent profiles.
+  await pool.query(
+    `INSERT INTO profiles (id, user_id, email, username, role, created_at, updated_at)
+     VALUES ($1, $1, $2, $3, $4, now(), now())
+     ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, username = EXCLUDED.username, role = EXCLUDED.role, updated_at = now()`,
+    [userId, email, finalUsername, role]
   )
 
-  const res = NextResponse.json({
-    id,
-    email,
-    username: userDoc?.username || username,
-    role: userDoc?.role || "member",
-  })
+  const access = createAccessToken(userId, email)
+  const refresh = createRefreshToken(userId)
+
+  const res = NextResponse.json({ id: userId, email, username: finalUsername, role })
   setAuthCookies(res, access, refresh)
   return res
 }

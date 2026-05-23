@@ -16,17 +16,12 @@
  * of live metrics without rebuilding heavy period-aggregations.
  */
 import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/mongo/db"
-import { requireAdmin } from "@/lib/mongo/auth"
+import { getPool } from "@/lib/pg/db"
+import { requireAdmin } from "@/lib/pg/auth"
 import { fetchTmdbCached } from "@/lib/tmdb-cache"
-import Redis from "ioredis"
+import { getRedis } from "@/lib/redis"
 
-const redis = new Redis(process.env.REDIS_URL || "redis://redis:6379", {
-  maxRetriesPerRequest: 2,
-  enableOfflineQueue: false,
-  lazyConnect: true,
-})
-redis.on("error", (err) => console.error("[redis live]", err.message))
+const redis = getRedis()
 
 async function fetchTmdb(type: string, id: number) {
   if (type !== "movie" && type !== "tv") return { title: `#${id}`, poster: null }
@@ -90,59 +85,44 @@ async function buildLiveResponse() {
   const oneHourAgo = new Date(now.getTime() - 3600000).toISOString()
   const twentyFourHoursAgo = new Date(now.getTime() - 86400000).toISOString()
 
-  const db = await getDb()
+  const pool = getPool()
 
-  const AGG_OPTS = { allowDiskUse: true, maxTimeMS: 8000 }
-
-  // Run all 6 queries in parallel — they are all light:
-  //   - 4 countDocuments (indexed, very fast: <50ms each)
-  //   - 1 aggregate for activePages on last 15min (small window)
-  //   - 1 aggregate for recentVisitors on last 1h ($limit: 50 keeps RAM bounded)
-  const [
-    online5min,
-    online15min,
-    online1hour,
-    online24h,
-    activePagesRaw,
-    recentVisitorsRaw,
-  ] = await Promise.all([
-    db.collection("embed_views").countDocuments({ viewed_at: { $gte: fiveMinAgo } }),
-    db.collection("embed_views").countDocuments({ viewed_at: { $gte: fifteenMinAgo } }),
-    db.collection("embed_views").countDocuments({ viewed_at: { $gte: oneHourAgo } }),
-    db.collection("embed_views").countDocuments({ viewed_at: { $gte: twentyFourHoursAgo } }),
-    // Active pages: ww_id grouped by view count over last 15min, top 20
-    db
-      .collection("embed_views")
-      .aggregate(
-        [
-          { $match: { viewed_at: { $gte: fifteenMinAgo } } },
-          {
-            $group: {
-              _id: "$ww_id",
-              count: { $sum: 1 },
-              media_type: { $first: "$media_type" },
-              tmdb_id: { $first: "$tmdb_id" },
-            },
-          },
-          { $sort: { count: -1 } },
-          { $limit: 20 },
-        ],
-        AGG_OPTS
-      )
-      .toArray(),
-    // Recent visitors: last 50 events of the past hour (already sorted via index)
-    db
-      .collection("embed_views")
-      .aggregate(
-        [
-          { $match: { viewed_at: { $gte: oneHourAgo } } },
-          { $sort: { viewed_at: -1 } },
-          { $limit: 50 },
-        ],
-        AGG_OPTS
-      )
-      .toArray(),
+  // Temps réel (fenêtres courtes) → tables brutes. 4 counts via FILTER (un scan),
+  // + activePages (top 20 sur 15min) + recentVisitors (50 derniers sur 1h).
+  const [windowCounts, activePagesRes, recentVisitorsRes] = await Promise.all([
+    pool.query(
+      `SELECT
+         count(*) FILTER (WHERE viewed_at >= $1)::int AS u5,
+         count(*) FILTER (WHERE viewed_at >= $2)::int AS u15,
+         count(*) FILTER (WHERE viewed_at >= $3)::int AS u1h,
+         count(*) FILTER (WHERE viewed_at >= $4)::int AS u24
+       FROM embed_views WHERE viewed_at >= $4`,
+      [fiveMinAgo, fifteenMinAgo, oneHourAgo, twentyFourHoursAgo]
+    ),
+    pool.query(
+      `SELECT ww_id,
+              count(*)::int AS count,
+              (array_agg(media_type ORDER BY viewed_at DESC))[1] AS media_type,
+              (array_agg(tmdb_id    ORDER BY viewed_at DESC))[1] AS tmdb_id
+       FROM embed_views WHERE viewed_at >= $1
+       GROUP BY ww_id ORDER BY count DESC LIMIT 20`,
+      [fifteenMinAgo]
+    ),
+    pool.query(
+      `SELECT ip_hash, viewed_at, ww_id, media_type, tmdb_id
+       FROM embed_views WHERE viewed_at >= $1
+       ORDER BY viewed_at DESC LIMIT 50`,
+      [oneHourAgo]
+    ),
   ])
+
+  const wc = windowCounts.rows[0] || {}
+  const online5min = wc.u5 || 0
+  const online15min = wc.u15 || 0
+  const online1hour = wc.u1h || 0
+  const online24h = wc.u24 || 0
+  const activePagesRaw = activePagesRes.rows
+  const recentVisitorsRaw = recentVisitorsRes.rows
 
   // Collect IDs that need TMDB/channel/digital enrichment
   const channelIds = new Set<string>()
@@ -152,66 +132,56 @@ async function buildLiveResponse() {
   }
 
   for (const p of activePagesRaw as any[]) {
-    if (p._id?.startsWith?.("ww-live-")) channelIds.add(p._id.slice("ww-live-".length))
-    collectDigitalIds(p._id)
+    if (p.ww_id?.startsWith?.("ww-live-")) channelIds.add(p.ww_id.slice("ww-live-".length))
+    collectDigitalIds(p.ww_id)
   }
   for (const v of recentVisitorsRaw as any[]) {
     if (v.ww_id?.startsWith?.("ww-live-")) channelIds.add(v.ww_id.slice("ww-live-".length))
     collectDigitalIds(v.ww_id)
   }
 
-  // Resolve live TV channels
-  const ObjectIdLib = (await import("mongodb")).ObjectId
-  const uuidToObjectIdHex = (uuid: string): string =>
-    uuid.replace(/-/g, "").slice(0, 24).padEnd(24, "0")
-
+  // Resolve live TV channels.
+  // live_tv_channels n'a pas de legacy_uuid (migration → id). Le cid extrait
+  // du ww_id (ww-live-<cid>) est soit un uuid (= id), soit un ObjectId 24-hex.
+  const oidToUuid = (oidHex: string): string => {
+    const h = oidHex.padEnd(32, "0")
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`
+  }
   const channelMap = new Map<string, any>()
   if (channelIds.size > 0) {
-    const stringIds: any[] = []
-    const objectIds: any[] = []
-    const legacyUuids: string[] = []
-    for (const cid of channelIds) {
-      stringIds.push(cid)
-      if (/^[a-f0-9]{24}$/i.test(cid)) {
-        try {
-          objectIds.push(new ObjectIdLib(cid))
-        } catch {}
-      }
-      if (/^[0-9a-f-]{36}$/i.test(cid)) {
-        try {
-          objectIds.push(new ObjectIdLib(uuidToObjectIdHex(cid)))
-        } catch {}
-        legacyUuids.push(cid)
-      }
+    const rawIds = Array.from(channelIds)
+    const uuids: string[] = []
+    for (const cid of rawIds) {
+      if (/^[0-9a-f-]{36}$/i.test(cid)) uuids.push(cid.toLowerCase())
+      else if (/^[a-f0-9]{24}$/i.test(cid)) uuids.push(oidToUuid(cid.toLowerCase()))
     }
-    const allIds = [...stringIds, ...objectIds]
-    const channels = await db
-      .collection("live_tv_channels")
-      .find({
-        $or: [
-          { _id: { $in: allIds } },
-          { id: { $in: stringIds } },
-          { legacy_uuid: { $in: legacyUuids } },
-        ],
-      })
-      .project({ channel_name: 1, channel_logo: 1, legacy_uuid: 1 })
-      .toArray()
-    for (const c of channels) {
-      const entry = { title: c.channel_name, poster: c.channel_logo }
-      channelMap.set(c._id?.toString(), entry)
-      if (c.legacy_uuid) channelMap.set(c.legacy_uuid, entry)
+    if (uuids.length) {
+      const r = await pool.query(
+        `SELECT id, channel_name, channel_logo
+         FROM live_tv_channels WHERE id = ANY($1::uuid[])`,
+        [uuids]
+      )
+      for (const c of r.rows as any[]) {
+        const entry = { title: c.channel_name, poster: c.channel_logo }
+        if (c.id) channelMap.set(String(c.id), entry)
+      }
+      for (const cid of rawIds) {
+        const derived = /^[a-f0-9]{24}$/i.test(cid) ? oidToUuid(cid.toLowerCase()) : cid.toLowerCase()
+        const e = channelMap.get(derived)
+        if (e) channelMap.set(cid, e)
+      }
     }
   }
 
-  // Resolve digital content
+  // Resolve digital content (par ww_id).
   const digitalMap = new Map<string, any>()
   if (digitalIds.size > 0) {
-    const digitals = await db
-      .collection("digital_content")
-      .find({ ww_id: { $in: Array.from(digitalIds) } })
-      .project({ ww_id: 1, title: 1, cover_url: 1, content_type: 1 })
-      .toArray()
-    for (const d of digitals)
+    const r = await pool.query(
+      `SELECT ww_id, title, cover_url, content_type
+       FROM digital_content WHERE ww_id = ANY($1::text[])`,
+      [Array.from(digitalIds)]
+    )
+    for (const d of r.rows as any[])
       digitalMap.set(d.ww_id, {
         title: d.title,
         poster: d.cover_url,
@@ -222,7 +192,7 @@ async function buildLiveResponse() {
   // Enrich active pages
   const activePages = await Promise.all(
     (activePagesRaw as any[]).map(async (p) => {
-      const wwId = p._id
+      const wwId = p.ww_id
       let title = wwId
       let poster: string | null = null
       let mediaType: string = p.media_type

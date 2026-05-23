@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/mongo/db"
-import { verifyPassword, createAccessToken, createRefreshToken, setAuthCookies } from "@/lib/mongo/auth"
-import { rateLimit, getClientIp } from "@/lib/mongo/rate-limit"
+import { getPool } from "@/lib/pg/db"
+import { verifyPassword, createAccessToken, createRefreshToken, setAuthCookies } from "@/lib/pg/auth"
+import { rateLimit, getClientIp } from "@/lib/pg/rate-limit"
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
@@ -12,14 +12,8 @@ export async function POST(req: NextRequest) {
   const email = String(rawEmail).toLowerCase().trim()
 
   // Brute-force protection: max 8 login attempts / 10 min per (ip + email).
-  // We use a combined key so an attacker can't lock another user out by
-  // hammering one ip, and one ip can't try many emails freely either.
   const ip = getClientIp(req)
-  const rl = await rateLimit({
-    identifier: `login:${ip}:${email}`,
-    windowSec: 600,
-    max: 8,
-  })
+  const rl = await rateLimit({ identifier: `login:${ip}:${email}`, windowSec: 600, max: 8 })
   if (!rl.allowed) {
     return NextResponse.json(
       { error: `Trop de tentatives. Réessaye dans ${rl.retryAfterSec}s.` },
@@ -27,20 +21,18 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const db = await getDb()
-  const user = await db.collection("users").findOne({ email })
+  const pool = getPool()
+  const r = await pool.query(
+    `SELECT id, email, username, password_hash, role, needs_password_reset, created_at
+     FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+    [email]
+  )
+  const user = r.rows[0]
   if (!user) return NextResponse.json({ error: "Identifiants invalides" }, { status: 401 })
 
-  // User imported from a previous migration (or freshly seeded) without a usable
-  // password. Signal the client to redirect to the "setup password" page
-  // (which requires the admin code) instead of letting them log in.
   if (user.needs_password_reset || !user.password_hash) {
     return NextResponse.json(
-      {
-        error: "Ce compte n'a pas encore de mot de passe. Crée-en un.",
-        needs_setup: true,
-        email: user.email,
-      },
+      { error: "Ce compte n'a pas encore de mot de passe. Crée-en un.", needs_setup: true, email: user.email },
       { status: 401 }
     )
   }
@@ -48,19 +40,16 @@ export async function POST(req: NextRequest) {
   const ok = await verifyPassword(password, user.password_hash)
   if (!ok) return NextResponse.json({ error: "Identifiants invalides" }, { status: 401 })
 
-  const tokenSub = user._id.toString()
-  const access = createAccessToken(tokenSub, user.email)
-  const refresh = createRefreshToken(tokenSub)
-  // Prefer legacy_uuid for the public-facing id so it matches submitted_by /
-  // foreign-key fields stored from the Supabase→Mongo migration.
-  const id = user.legacy_uuid || tokenSub
+  // En Postgres, l'id uuid est l'identifiant canonique : sub du token ET id public.
+  const access = createAccessToken(user.id, user.email)
+  const refresh = createRefreshToken(user.id)
 
   const res = NextResponse.json({
-    id,
+    id: user.id,
     email: user.email,
     username: user.username || null,
     role: user.role || "member",
-    created_at: user.created_at,
+    created_at: user.created_at ? new Date(user.created_at).toISOString() : undefined,
   })
   setAuthCookies(res, access, refresh)
   return res

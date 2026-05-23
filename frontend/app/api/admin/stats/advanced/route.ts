@@ -9,54 +9,17 @@
  *   • Funnel: impressions → load → source click → external click.
  *   • Bandwidth proxy: top consuming contents (views × file_size when known).
  *
- * Heavy endpoint — admin-only. Cached for 60s in the Response cache header
- * so the admin UI can poll freely.
+ * Migration Mongo → PostgreSQL. Les helpers dayBucket/hourField/dowField
+ * (gestion ISO-string vs Date BSON) DISPARAISSENT : viewed_at est un vrai
+ * timestamptz, donc EXTRACT(DOW/HOUR FROM viewed_at) suffit. Lecture tables
+ * brutes (exact + rapide). ip_prefix / file_size_bytes vivent dans data jsonb.
  */
 import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/mongo/db"
-import { requireAdmin } from "@/lib/mongo/auth"
+import { getPool } from "@/lib/pg/db"
+import { requireAdmin } from "@/lib/pg/auth"
 import { countryForIp } from "@/lib/geo"
 import { triggerLinkCheckBackground } from "@/lib/link-checker-runner"
 import { fetchTmdbCached } from "@/lib/tmdb-cache"
-
-function dayBucket(field: string) {
-  return {
-    $cond: [
-      { $eq: [{ $type: field }, "string"] },
-      { $substrCP: [field, 0, 10] },
-      {
-        $cond: [
-          { $eq: [{ $type: field }, "date"] },
-          { $dateToString: { date: field, format: "%Y-%m-%d" } },
-          null,
-        ],
-      },
-    ],
-  }
-}
-
-// Build a heatmap expression: for ISO strings we can pull HH from substring;
-// for Date we use $dayOfWeek/$hour.
-function hourField(field: string) {
-  return {
-    $cond: [
-      { $eq: [{ $type: field }, "string"] },
-      { $toInt: { $substrCP: [field, 11, 2] } },
-      { $cond: [{ $eq: [{ $type: field }, "date"] }, { $hour: field }, 0] },
-    ],
-  }
-}
-function dowField(field: string) {
-  // Returns 1..7, 1 = Sunday in Mongo. We'll re-map client-side.
-  return {
-    $cond: [
-      { $eq: [{ $type: field }, "string"] },
-      // $dayOfWeek requires a Date — convert the ISO string first.
-      { $dayOfWeek: { $toDate: field } },
-      { $cond: [{ $eq: [{ $type: field }, "date"] }, { $dayOfWeek: field }, 1] },
-    ],
-  }
-}
 
 export async function GET(req: NextRequest) {
   try {
@@ -65,8 +28,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  // Take the opportunity to kick a background link-health scan. This keeps
-  // the link_status collection fresh without needing any external cron.
+  // Kick a background link-health scan (no external cron needed).
   triggerLinkCheckBackground()
 
   const period = parseInt(req.nextUrl.searchParams.get("period") || "7", 10) || 7
@@ -74,100 +36,89 @@ export async function GET(req: NextRequest) {
   const start = new Date(now - period * 86_400_000).toISOString()
   const prevStart = new Date(now - 2 * period * 86_400_000).toISOString()
   const prevEnd = start
+  const heatmapStart = new Date(now - 7 * 86_400_000).toISOString()
 
-  const db = await getDb()
-  const aggOpts = { allowDiskUse: true, maxTimeMS: 20_000 }
+  const pool = getPool()
 
-  // ───── Comparatif period vs prev period
-  const [
-    viewsCur,
-    viewsPrev,
-    clicksCur,
-    clicksPrev,
-    adClicksCur,
-    adClicksPrev,
-    uniqueCur,
-    uniquePrev,
-  ] = await Promise.all([
-    db.collection("embed_views").countDocuments({ viewed_at: { $gte: start } }),
-    db.collection("embed_views").countDocuments({ viewed_at: { $gte: prevStart, $lt: prevEnd } }),
-    db.collection("link_clicks").countDocuments({ clicked_at: { $gte: start } }),
-    db.collection("link_clicks").countDocuments({ clicked_at: { $gte: prevStart, $lt: prevEnd } }),
-    db.collection("ad_clicks").countDocuments({ clicked_at: { $gte: start } }),
-    db.collection("ad_clicks").countDocuments({ clicked_at: { $gte: prevStart, $lt: prevEnd } }),
-    db
-      .collection("embed_views")
-      .aggregate(
-        [
-          { $match: { viewed_at: { $gte: start } } },
-          { $group: { _id: { i: "$ip_hash", u: "$user_agent" } } },
-          { $count: "n" },
-        ],
-        aggOpts
-      )
-      .toArray(),
-    db
-      .collection("embed_views")
-      .aggregate(
-        [
-          { $match: { viewed_at: { $gte: prevStart, $lt: prevEnd } } },
-          { $group: { _id: { i: "$ip_hash", u: "$user_agent" } } },
-          { $count: "n" },
-        ],
-        aggOpts
-      )
-      .toArray(),
+  // ───── Comparatif period vs prev period (counts + unique visitors)
+  // unique = COUNT(DISTINCT (ip_hash, user_agent)) — équivaut au $group _id:{i,u}.
+  const [cmpRes, heatmapRes, prefixRes, topByViewsRes] = await Promise.all([
+    pool.query(
+      `SELECT
+         (SELECT count(*) FROM embed_views WHERE viewed_at >= $1)::int AS views_cur,
+         (SELECT count(*) FROM embed_views WHERE viewed_at >= $2 AND viewed_at < $3)::int AS views_prev,
+         (SELECT count(*) FROM link_clicks WHERE clicked_at >= $1)::int AS clicks_cur,
+         (SELECT count(*) FROM link_clicks WHERE clicked_at >= $2 AND clicked_at < $3)::int AS clicks_prev,
+         (SELECT count(*) FROM ad_clicks   WHERE clicked_at >= $1)::int AS ad_cur,
+         (SELECT count(*) FROM ad_clicks   WHERE clicked_at >= $2 AND clicked_at < $3)::int AS ad_prev,
+         (SELECT count(DISTINCT (ip_hash, user_agent)) FROM embed_views WHERE viewed_at >= $1)::int AS uniq_cur,
+         (SELECT count(DISTINCT (ip_hash, user_agent)) FROM embed_views WHERE viewed_at >= $2 AND viewed_at < $3)::int AS uniq_prev`,
+      [start, prevStart, prevEnd]
+    ),
+    // Heatmap 7d : DOW (0=dimanche en Postgres, comme Mongo $dayOfWeek 1=dim → on remappe)
+    pool.query(
+      `SELECT EXTRACT(DOW FROM viewed_at)::int AS dow,
+              EXTRACT(HOUR FROM viewed_at)::int AS hour,
+              count(*)::int AS n
+       FROM embed_views
+       WHERE viewed_at >= $1
+       GROUP BY dow, hour`,
+      [heatmapStart]
+    ),
+    // Top ip_prefix (dans data jsonb) sur la période.
+    pool.query(
+      `SELECT (to_jsonb(t) ->> 'ip_prefix') AS ip_prefix, count(*)::int AS n
+       FROM embed_views t
+       WHERE viewed_at >= $1 AND (to_jsonb(t) ->> 'ip_prefix') IS NOT NULL
+       GROUP BY ip_prefix
+       ORDER BY n DESC
+       LIMIT 200`,
+      [start]
+    ),
+    // Bandwidth proxy : top contenus par vues.
+    pool.query(
+      `SELECT ww_id,
+              count(*)::int AS views,
+              (array_agg(media_type ORDER BY viewed_at DESC))[1] AS media_type,
+              (array_agg(tmdb_id    ORDER BY viewed_at DESC))[1] AS tmdb_id
+       FROM embed_views
+       WHERE viewed_at >= $1
+       GROUP BY ww_id
+       ORDER BY views DESC
+       LIMIT 25`,
+      [start]
+    ),
   ])
+
+  const cmp = cmpRes.rows[0] || {}
+  const viewsCur = cmp.views_cur || 0
+  const viewsPrev = cmp.views_prev || 0
+  const clicksCur = cmp.clicks_cur || 0
+  const clicksPrev = cmp.clicks_prev || 0
+  const adClicksCur = cmp.ad_cur || 0
+  const adClicksPrev = cmp.ad_prev || 0
+  const uniqueCurN = cmp.uniq_cur || 0
+  const uniquePrevN = cmp.uniq_prev || 0
 
   const pctDelta = (cur: number, prev: number) =>
     prev > 0 ? Math.round(((cur - prev) / prev) * 100) : cur > 0 ? 100 : 0
 
-  const uniqueCurN = (uniqueCur as any[])[0]?.n || 0
-  const uniquePrevN = (uniquePrev as any[])[0]?.n || 0
-
-  // ───── Heatmap 7d (force a smaller period for cost)
-  const heatmapStart = new Date(now - 7 * 86_400_000).toISOString()
-  const heatmapAgg = await db
-    .collection("embed_views")
-    .aggregate(
-      [
-        { $match: { viewed_at: { $gte: heatmapStart } } },
-        {
-          $group: {
-            _id: { dow: dowField("$viewed_at"), hour: hourField("$viewed_at") },
-            n: { $sum: 1 },
-          },
-        },
-      ],
-      aggOpts
-    )
-    .toArray()
-  // Build dense 7×24 grid; index [dow0=Sun..dow6=Sat][hour0..23]
+  // Build dense 7×24 grid; index [dow0=Sun..dow6=Sat][hour0..23].
+  // Postgres EXTRACT(DOW) : 0=dimanche..6=samedi → directement 0-based, pas de -1.
   const heatmap: number[][] = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0))
-  for (const row of heatmapAgg as any[]) {
-    const dow = (row._id?.dow || 1) - 1 // 1-based → 0-based
-    const hr = row._id?.hour ?? 0
+  for (const row of heatmapRes.rows as any[]) {
+    const dow = row.dow ?? 0
+    const hr = row.hour ?? 0
     if (dow >= 0 && dow < 7 && hr >= 0 && hr < 24) heatmap[dow][hr] = row.n
   }
 
-  // ───── Top countries via ip_prefix (limited to 200 most active prefixes)
-  const topPrefixes = await db
-    .collection("embed_views")
-    .aggregate(
-      [
-        { $match: { viewed_at: { $gte: start }, ip_prefix: { $exists: true, $ne: null } } },
-        { $group: { _id: "$ip_prefix", n: { $sum: 1 } } },
-        { $sort: { n: -1 } },
-        { $limit: 200 },
-      ],
-      aggOpts
-    )
-    .toArray()
+  // ───── Top countries via ip_prefix → countryForIp (cache Postgres geo).
   const countryCounts = new Map<string, number>()
   await Promise.all(
-    (topPrefixes as any[]).map(async (row) => {
-      // Reconstruct a routable IP for geo (use .1 for IPv4 /24)
-      const probe = row._id?.includes(":") ? row._id.replace(/::$/, "::1") : row._id?.replace(/\.0$/, ".1")
+    (prefixRes.rows as any[]).map(async (row) => {
+      const pfx: string | null = row.ip_prefix
+      if (!pfx) return
+      const probe = pfx.includes(":") ? pfx.replace(/::$/, "::1") : pfx.replace(/\.0$/, ".1")
       if (!probe) return
       const c = await countryForIp(probe)
       if (c) countryCounts.set(c, (countryCounts.get(c) || 0) + row.n)
@@ -178,68 +129,44 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 15)
 
-  // ───── Funnel: embed view (impression) → click on source link
-  const distinctSessionsCur = uniqueCurN
+  // ───── Funnel
   const funnel = {
     impressions: viewsCur,
-    unique_sessions: distinctSessionsCur,
+    unique_sessions: uniqueCurN,
     source_clicks: clicksCur,
     ad_clicks: adClicksCur,
     view_to_click_pct: viewsCur > 0 ? Math.round((clicksCur / viewsCur) * 10000) / 100 : 0,
     view_to_ad_pct: viewsCur > 0 ? Math.round((adClicksCur / viewsCur) * 10000) / 100 : 0,
   }
 
-  // ───── Bandwidth proxy: top consuming contents over period
-  // Sum views per ww_id, then enrich with average file_size from download_links.
-  const topByViews = await db
-    .collection("embed_views")
-    .aggregate(
-      [
-        { $match: { viewed_at: { $gte: start } } },
-        {
-          $group: {
-            _id: "$ww_id",
-            views: { $sum: 1 },
-            media_type: { $first: "$media_type" },
-            tmdb_id: { $first: "$tmdb_id" },
-          },
-        },
-        { $sort: { views: -1 } },
-        { $limit: 25 },
-      ],
-      aggOpts
-    )
-    .toArray()
+  // ───── Bandwidth proxy : enrichir avec avg file_size_bytes (data jsonb).
+  const topByViews = topByViewsRes.rows as any[]
   const sizeByWw = new Map<string, number>()
   if (topByViews.length) {
-    const sizeAgg = await db
-      .collection("download_links")
-      .aggregate([
-        { $match: { ww_id: { $in: (topByViews as any[]).map((c) => c._id) } } },
-        {
-          $group: {
-            _id: "$ww_id",
-            avg_bytes: { $avg: { $convert: { input: "$file_size_bytes", to: "long", onError: null, onNull: null } } },
-          },
-        },
-      ])
-      .toArray()
-    for (const row of sizeAgg as any[]) {
-      if (row._id && row.avg_bytes) sizeByWw.set(row._id, row.avg_bytes)
+    const sizeAgg = await pool.query(
+      `SELECT ww_id,
+              avg(NULLIF(t.data->>'file_size_bytes','')::numeric) AS avg_bytes
+       FROM download_links t
+       WHERE ww_id = ANY($1::text[])
+       GROUP BY ww_id`,
+      [topByViews.map((c) => c.ww_id)]
+    )
+    for (const row of sizeAgg.rows as any[]) {
+      if (row.ww_id && row.avg_bytes) sizeByWw.set(row.ww_id, Number(row.avg_bytes))
     }
   }
   const top_bandwidth = await Promise.all(
-    (topByViews as any[]).slice(0, 15).map(async (c) => {
-      let title = `${c._id}`
+    topByViews.slice(0, 15).map(async (c) => {
+      let title = `${c.ww_id}`
       let poster: string | null = null
       if (c.media_type && c.tmdb_id && (c.media_type === "movie" || c.media_type === "tv")) {
         const tm = await fetchTmdbCached(c.media_type, c.tmdb_id)
         title = tm.title
         poster = tm.poster
       }
-      const bytes = sizeByWw.get(c._id) || null
+      const bytes = sizeByWw.get(c.ww_id) || null
       return {
-        ww_id: c._id,
+        ww_id: c.ww_id,
         title,
         poster,
         media_type: c.media_type,

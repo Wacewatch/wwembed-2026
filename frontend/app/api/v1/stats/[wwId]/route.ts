@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getMovieDetails, getTVDetails, getPosterUrl } from "@/lib/tmdb"
-import { getDb } from "@/lib/mongo/db"
+import { getPool } from "@/lib/pg/db"
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -13,31 +13,6 @@ export async function OPTIONS() {
   return new NextResponse(null, { headers: CORS })
 }
 
-/**
- * Day bucket expression that handles BOTH ISO-string and Date BSON values
- * for `viewed_at`. Legacy migrated rows from Supabase were Date objects;
- * new rows inserted via the shim are ISO strings. The previous JS-side
- * `(v.viewed_at||"").slice(0,10)` silently failed on Date objects, which
- * is why the 30-day chart appeared flat (only "today" had any non-zero
- * bucket) — every Date row's slice produced `"Thu May 14"` and never
- * matched a `"2026-05-14"` key.
- */
-function dayBucket(field: string) {
-  return {
-    $cond: [
-      { $eq: [{ $type: field }, "string"] },
-      { $substrCP: [field, 0, 10] },
-      {
-        $cond: [
-          { $eq: [{ $type: field }, "date"] },
-          { $dateToString: { date: field, format: "%Y-%m-%d" } },
-          null,
-        ],
-      },
-    ],
-  }
-}
-
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: string }> }) {
   const { wwId } = await ctx.params
   if (!wwId) return NextResponse.json({ error: "Missing wwId" }, { status: 400, headers: CORS })
@@ -46,9 +21,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: stri
 
   // Lookup any matching record (streaming/download/live/digital) for the title
   const [{ data: streaming }, { data: download }, { data: digital }] = await Promise.all([
-    supabase.from("streaming_links").select("*").eq("ww_id", wwId).maybeSingle(),
-    supabase.from("download_links").select("*").eq("ww_id", wwId).maybeSingle(),
-    supabase.from("digital_content").select("*").eq("ww_id", wwId).maybeSingle(),
+    supabase.from("streaming_links").select("*").eq("ww_id", wwId).limit(1).maybeSingle(),
+    supabase.from("download_links").select("*").eq("ww_id", wwId).limit(1).maybeSingle(),
+    supabase.from("digital_content").select("*").eq("ww_id", wwId).limit(1).maybeSingle(),
   ])
 
   const liveMatch = wwId.startsWith("ww-live-") ? wwId.slice("ww-live-".length) : null
@@ -97,75 +72,81 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: stri
 
   // Date range = last 30 days (UTC).
   const since = new Date(Date.now() - 30 * 86400000).toISOString()
-  const db = await getDb()
+  const todayStart = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z").toISOString()
+  const since7 = new Date(Date.now() - 7 * 86400000).toISOString()
+  const pool = getPool()
 
-  // Everything below runs as native Mongo aggregations so the day bucket is
-  // computed server-side, correctly handling both ISO-string and Date BSON
-  // values for `viewed_at` / `clicked_at`.
-  const aggOpts = { allowDiskUse: true, maxTimeMS: 15000 }
-
+  // Tout passe en SQL sur les hypertables TimescaleDB. `viewed_at` / `clicked_at`
+  // étant des colonnes timestamptz réelles, le bucket jour est trivial
+  // (date_trunc) et le bug d'affichage "chart plat" (mix string/Date côté Mongo)
+  // disparaît structurellement. referrer/country peuvent être colonne typée OU
+  // dans data jsonb → on lit via to_jsonb(t)->>'champ' (robuste au schéma).
   const [
-    viewsByDayAgg,
-    refererAgg,
-    countryAgg,
-    totalViews,
-    totalClicks,
-    todayCount,
-    last7Count,
-    last30Count,
-    clicks30Count,
+    viewsByDayRes,
+    refererRes,
+    countryRes,
+    totalViewsRes,
+    totalClicksRes,
+    todayRes,
+    last7Res,
+    last30Res,
+    clicks30Res,
   ] = await Promise.all([
-    db
-      .collection("embed_views")
-      .aggregate(
-        [
-          { $match: { ww_id: wwId, viewed_at: { $gte: since } } },
-          { $group: { _id: dayBucket("$viewed_at"), n: { $sum: 1 } } },
-        ],
-        aggOpts
-      )
-      .toArray(),
-    db
-      .collection("embed_views")
-      .aggregate(
-        [
-          { $match: { ww_id: wwId, viewed_at: { $gte: since } } },
-          { $group: { _id: { $ifNull: ["$referrer", null] }, n: { $sum: 1 } } },
-          { $sort: { n: -1 } },
-        ],
-        aggOpts
-      )
-      .toArray(),
-    db
-      .collection("embed_views")
-      .aggregate(
-        [
-          { $match: { ww_id: wwId, viewed_at: { $gte: since } } },
-          { $group: { _id: { $ifNull: ["$country", "??"] }, n: { $sum: 1 } } },
-          { $sort: { n: -1 } },
-        ],
-        aggOpts
-      )
-      .toArray(),
-    db.collection("embed_views").countDocuments({ ww_id: wwId }),
-    db.collection("link_clicks").countDocuments({ ww_id: wwId }),
-    db.collection("embed_views").countDocuments({
-      ww_id: wwId,
-      viewed_at: { $gte: new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z").toISOString() },
-    }),
-    db.collection("embed_views").countDocuments({
-      ww_id: wwId,
-      viewed_at: { $gte: new Date(Date.now() - 7 * 86400000).toISOString() },
-    }),
-    db.collection("embed_views").countDocuments({ ww_id: wwId, viewed_at: { $gte: since } }),
-    db.collection("link_clicks").countDocuments({ ww_id: wwId, clicked_at: { $gte: since } }),
+    pool.query(
+      `SELECT to_char(date_trunc('day', viewed_at), 'YYYY-MM-DD') AS day, count(*)::int AS n
+       FROM embed_views
+       WHERE ww_id = $1 AND viewed_at >= $2
+       GROUP BY day`,
+      [wwId, since]
+    ),
+    pool.query(
+      `SELECT referrer, count(*)::int AS n
+       FROM embed_views
+       WHERE ww_id = $1 AND viewed_at >= $2
+       GROUP BY referrer
+       ORDER BY n DESC`,
+      [wwId, since]
+    ),
+    pool.query(
+      `SELECT COALESCE(country, '??') AS country, count(*)::int AS n
+       FROM embed_views
+       WHERE ww_id = $1 AND viewed_at >= $2
+       GROUP BY country
+       ORDER BY n DESC`,
+      [wwId, since]
+    ),
+    pool.query(`SELECT count(*)::int AS n FROM embed_views WHERE ww_id = $1`, [wwId]),
+    pool.query(`SELECT count(*)::int AS n FROM link_clicks WHERE ww_id = $1`, [wwId]),
+    pool.query(
+      `SELECT count(*)::int AS n FROM embed_views WHERE ww_id = $1 AND viewed_at >= $2`,
+      [wwId, todayStart]
+    ),
+    pool.query(
+      `SELECT count(*)::int AS n FROM embed_views WHERE ww_id = $1 AND viewed_at >= $2`,
+      [wwId, since7]
+    ),
+    pool.query(
+      `SELECT count(*)::int AS n FROM embed_views WHERE ww_id = $1 AND viewed_at >= $2`,
+      [wwId, since]
+    ),
+    pool.query(
+      `SELECT count(*)::int AS n FROM link_clicks WHERE ww_id = $1 AND clicked_at >= $2`,
+      [wwId, since]
+    ),
   ])
+
+  const totalViews = totalViewsRes.rows[0]?.n ?? 0
+  const totalClicks = totalClicksRes.rows[0]?.n ?? 0
+  const todayCount = todayRes.rows[0]?.n ?? 0
+  const last7Count = last7Res.rows[0]?.n ?? 0
+  const last30Count = last30Res.rows[0]?.n ?? 0
+  const clicks30Count = clicks30Res.rows[0]?.n ?? 0
 
   // Build a dense 30-day series so the chart never has gaps.
   const series: { date: string; count: number }[] = []
   const map = new Map<string, number>()
-  for (const row of viewsByDayAgg as any[]) {
-    if (row._id) map.set(row._id, row.n)
+  for (const row of viewsByDayRes.rows as any[]) {
+    if (row.day) map.set(row.day, row.n)
   }
   for (let i = 29; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400000).toISOString().split("T")[0]
@@ -188,16 +169,16 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ wwId: stri
     return host || "direct"
   }
   const refererMerge = new Map<string, number>()
-  for (const r of refererAgg as any[]) {
-    const host = normaliseHost(r._id)
+  for (const r of refererRes.rows as any[]) {
+    const host = normaliseHost(r.referrer)
     refererMerge.set(host, (refererMerge.get(host) || 0) + r.n)
   }
   const referers = Array.from(refererMerge.entries())
     .map(([host, count]) => ({ host, count }))
     .sort((a, b) => b.count - a.count)
 
-  const countries = (countryAgg as any[])
-    .map((r) => ({ country: r._id || "??", count: r.n }))
+  const countries = (countryRes.rows as any[])
+    .map((r) => ({ country: r.country || "??", count: r.n }))
     .sort((a, b) => b.count - a.count)
 
   return NextResponse.json(

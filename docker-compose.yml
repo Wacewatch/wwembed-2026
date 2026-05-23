@@ -13,23 +13,23 @@ services:
     environment:
       - NODE_OPTIONS=--max-old-space-size=2048
       - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://${PG_USER:-wwembed}:${PG_PASSWORD}@timescale:5432/wwembed
     depends_on:
       - mongo
       - redis
+      - timescale
     networks:
       - wwembed2-net
       - npm-plus_default
-
   mongo:
     image: mongo:7.0
     container_name: wwembed2-mongo
-    command: ["mongod", "--wiredTigerCacheSizeGB", "2"]
+    command: ["mongod", "--wiredTigerCacheSizeGB", "1.5"]
     restart: unless-stopped
     volumes:
       - mongo_data:/data/db
     networks:
       - wwembed2-net
-
   redis:
     image: redis:7-alpine
     container_name: wwembed2-redis
@@ -37,10 +37,24 @@ services:
     command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru", "--save", ""]
     networks:
       - wwembed2-net
-
+  timescale:
+    image: timescale/timescaledb-ha:pg16
+    container_name: wwembed2-timescale
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - POSTGRES_DB=wwembed
+      - POSTGRES_USER=${PG_USER:-wwembed}
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+    volumes:
+      - timescale_ha_data:/home/postgres/pgdata/data
+    mem_limit: 2g
+    mem_reservation: 512m
+    networks:
+      - wwembed2-net
 volumes:
   mongo_data:
-
+  timescale_ha_data:
 networks:
   wwembed2-net:
     driver: bridge

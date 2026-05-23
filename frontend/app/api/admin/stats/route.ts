@@ -9,54 +9,20 @@
  * a time window filter (no $limit).
  */
 import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/mongo/db"
-import { requireAdmin } from "@/lib/mongo/auth"
+import { getPool } from "@/lib/pg/db"
+import { requireAdmin } from "@/lib/pg/auth"
 import { fetchTmdbCached } from "@/lib/tmdb-cache"
-import Redis from "ioredis"
+import { getRedis } from "@/lib/redis"
 
-const redis = new Redis(process.env.REDIS_URL || "redis://redis:6379", {
-  maxRetriesPerRequest: 2,
-  enableOfflineQueue: false,
-  lazyConnect: true,
-})
-redis.on("error", (err) => console.error("[redis]", err.message))
+const redis = getRedis()
 
 // In-memory TMDB cache REMOVED — use Mongo-backed `fetchTmdbCached` from
 // lib/tmdb-cache.ts. On serverless / multi-instance hosting the per-process
 // Map cache had a near-zero hit rate after every cold start.
 
-// Index bootstrap: runs once per server process. createIndex is idempotent
-// and very cheap if the index already exists. These indexes are essential
-// for the admin/stats endpoint to complete in <1s instead of timing out
-// on multi-million-row collections.
-let indexesEnsured: Promise<void> | null = null
-async function ensureStatsIndexes(db: any): Promise<void> {
-  if (indexesEnsured) return indexesEnsured
-  indexesEnsured = (async () => {
-    const safe = async (fn: () => Promise<any>) => {
-      try { await fn() } catch (e) { console.warn("[admin/stats] index create skipped:", (e as any)?.message) }
-    }
-    await Promise.all([
-      safe(() => db.collection("embed_views").createIndex({ viewed_at: -1 })),
-      safe(() => db.collection("embed_views").createIndex({ ww_id: 1 })),
-      safe(() => db.collection("embed_views").createIndex({ embed_type: 1, viewed_at: -1 })),
-      safe(() => db.collection("link_clicks").createIndex({ clicked_at: -1 })),
-      safe(() => db.collection("link_clicks").createIndex({ link_id: 1, clicked_at: -1 })),
-      safe(() => db.collection("link_clicks").createIndex({ ww_id: 1 })),
-      safe(() => db.collection("ad_clicks").createIndex({ clicked_at: -1 })),
-      safe(() => db.collection("streaming_links").createIndex({ submitted_by: 1 })),
-      safe(() => db.collection("streaming_links").createIndex({ status: 1, is_active: 1 })),
-      safe(() => db.collection("download_links").createIndex({ submitted_by: 1 })),
-      safe(() => db.collection("download_links").createIndex({ status: 1, is_active: 1 })),
-      safe(() => db.collection("digital_content").createIndex({ submitted_by: 1 })),
-      safe(() => db.collection("digital_download_links").createIndex({ submitted_by: 1 })),
-      safe(() => db.collection("live_tv_sources").createIndex({ submitted_by: 1 })),
-      safe(() => db.collection("bug_reports").createIndex({ status: 1, created_at: -1 })),
-    ])
-    console.log("[admin/stats] indexes ensured")
-  })()
-  return indexesEnsured
-}
+// Index bootstrap supprimé : en PostgreSQL/TimescaleDB les index sont définis
+// dans le schéma (db/schema.sql) et gérés par la base. Plus de createIndex
+// applicatif au runtime.
 
 async function fetchTmdb(type: string, id: number) {
   if (type !== "movie" && type !== "tv") return { title: `#${id}`, poster: null }
@@ -161,426 +127,319 @@ async function buildStatsResponse(req: NextRequest) {
   const oneHourAgo = new Date(now.getTime() - 3600000).toISOString()
   const twentyFourHoursAgo = new Date(now.getTime() - 86400000).toISOString()
 
-  const db = await getDb()
+  const pool = getPool()
 
-  // Ensure critical indexes exist (idempotent: createIndex is a no-op if the
-  // index already exists). Without these the admin/stats aggregations do a
-  // COLLSCAN on millions of rows and either run out of memory or time out
-  // through the reverse-proxy (502). This block runs once and is cheap.
-  await ensureStatsIndexes(db)
+  // Lecture sur tables brutes PostgreSQL/TimescaleDB (exact + rapide grâce aux
+  // index sur viewed_at/clicked_at/ww_id et au chunk exclusion). Les helpers
+  // Mongo dayBucket (gestion ISO/Date) et uniqueKey disparaissent : viewed_at
+  // est un timestamptz natif → date_trunc, et l'unicité = COUNT(DISTINCT (ip,ua)).
+  //
+  // Les résultats sont remappés vers la MÊME forme que les anciennes
+  // aggregations Mongo ({_id: ..., count/views/...}) pour que tout le code
+  // d'enrichissement en aval (TMDB, channels, digital, séries denses,
+  // normalisation referer) reste strictement inchangé.
+  //
+  // On n'a plus besoin des "5 vagues séquentielles anti-OOM" : en SQL la DB
+  // agrège côté serveur et ne renvoie que des résultats agrégés (pas de
+  // rapatriement de millions de docs en RAM Node). On garde un découpage en
+  // Promise.all par table pour la lisibilité.
 
-  // maxTimeMS: hard cap so a slow aggregation fails fast (proper 500 with
-  // a clear message) instead of hanging until the upstream nginx times out
-  // and returns an opaque 502.
-  const AGG_OPTS = { allowDiskUse: true, maxTimeMS: 25000 }
-
-  // Composite unique-visitor key. Historical records (pre-fix) did not store
-  // `ip_hash`, so the previous `$ifNull: [ip_hash, user_agent]` collapsed
-  // every distinct user with a common Chrome/Edge UA into a single bucket
-  // — drastically under-counting unique visitors (e.g. 927 unique vs 42k
-  // views in 24h). We now key by the (ip_hash, user_agent) tuple so:
-  //   • new records (ip_hash present) → one group per IP×UA
-  //   • old records (ip_hash null)    → fall back to one group per UA
-  // This is the standard "unique visitor" semantic used by analytics tools.
-  const uniqueKey = { i: "$ip_hash", u: "$user_agent" }
-
-  // Type-safe day bucket: handles both String (ISO) and Date BSON types.
-  const dayBucket = (field: string) => ({
-    $cond: [
-      { $eq: [{ $type: field }, "string"] },
-      { $substrCP: [field, 0, 10] },
-      {
-        $cond: [
-          { $eq: [{ $type: field }, "date"] },
-          { $dateToString: { date: field, format: "%Y-%m-%d" } },
-          null,
-        ],
-      },
-    ],
-  })
-
-  // ═══════════════════════════════════════════════════════════════
-  // SERIALIZED WAVES instead of single Promise.all with 35 aggregations.
-  // Before: 35 aggregations in parallel → 200-800 MB peak Node RAM → OOM kills.
-  // After:  5 sequential waves → ~150 MB peak RAM, +30% latency, no more OOM.
-  // ═══════════════════════════════════════════════════════════════
-
-  // ── Wave 1 — countDocuments simples (légers) ──
-  const [
-    totalViews,
-    totalStreamingViews,
-    totalLinkClicks,
-    totalAdClicks,
-    online5,
-    online15,
-    online1h,
-    online24h,
-    externalClicksRaw,
-    totalExternalClicks,
-    internalClicksRaw,
-    totalInternalClicksAllTime,
-  ] = await Promise.all([
-    db.collection("embed_views").countDocuments({ viewed_at: { $gte: startDate } }),
-    db
-      .collection("embed_views")
-      .countDocuments({ viewed_at: { $gte: startDate }, embed_type: "streaming" }),
-    db.collection("link_clicks").countDocuments({ clicked_at: { $gte: startDate } }),
-    db.collection("ad_clicks").countDocuments({ clicked_at: { $gte: startDate } }),
-    db
-      .collection("embed_views")
-      .countDocuments({ viewed_at: { $gte: fiveMinAgo } }),
-    db
-      .collection("embed_views")
-      .countDocuments({ viewed_at: { $gte: fifteenMinAgo } }),
-    db
-      .collection("embed_views")
-      .countDocuments({ viewed_at: { $gte: oneHourAgo } }),
-    db
-      .collection("embed_views")
-      .countDocuments({ viewed_at: { $gte: twentyFourHoursAgo } }),
-    db
-      .collection("link_clicks")
-      .countDocuments({ clicked_at: { $gte: startDate } }),
-    db.collection("link_clicks").countDocuments({}),
-    db
-      .collection("link_clicks")
-      .countDocuments({ clicked_at: { $gte: startDate }, link_id: { $ne: null } }),
-    db.collection("link_clicks").countDocuments({ link_id: { $ne: null } }),
+  // ── Vague 1 — counts simples (un scan embed_views + un scan link_clicks) ──
+  const [viewCountsRes, clickCountsRes, adClicksRes, totalViewsRes] = await Promise.all([
+    pool.query(
+      `SELECT
+         count(*) FILTER (WHERE viewed_at >= $1)::int AS online5,
+         count(*) FILTER (WHERE viewed_at >= $2)::int AS online15,
+         count(*) FILTER (WHERE viewed_at >= $3)::int AS online1h,
+         count(*) FILTER (WHERE viewed_at >= $4)::int AS online24h
+       FROM embed_views WHERE viewed_at >= $4`,
+      [fiveMinAgo, fifteenMinAgo, oneHourAgo, twentyFourHoursAgo]
+    ),
+    pool.query(
+      `SELECT
+         count(*) FILTER (WHERE clicked_at >= $1)::int AS total_clicks,
+         count(*)::int AS total_all_time,
+         count(*) FILTER (WHERE clicked_at >= $1 AND link_id IS NOT NULL)::int AS internal_period,
+         count(*) FILTER (WHERE link_id IS NOT NULL)::int AS internal_all_time
+       FROM link_clicks`,
+      [startDate]
+    ),
+    pool.query(`SELECT count(*)::int AS n FROM ad_clicks WHERE clicked_at >= $1`, [startDate]),
+    // total_views / total_streaming sur la période → CAGG (sommes additives).
+    pool.query(
+      `SELECT
+         COALESCE(sum(views), 0)::int AS total_views,
+         COALESCE(sum(views) FILTER (WHERE embed_type = 'streaming'), 0)::int AS total_streaming
+       FROM embed_views_daily WHERE day >= $1`,
+      [startDate]
+    ),
   ])
+  const vc = viewCountsRes.rows[0] || {}
+  const cc = clickCountsRes.rows[0] || {}
+  const tv = totalViewsRes.rows[0] || {}
+  const totalViews = tv.total_views || 0
+  const totalStreamingViews = tv.total_streaming || 0
+  const totalLinkClicks = cc.total_clicks || 0
+  const totalAdClicks = adClicksRes.rows[0]?.n || 0
+  const online5 = vc.online5 || 0
+  const online15 = vc.online15 || 0
+  const online1h = vc.online1h || 0
+  const online24h = vc.online24h || 0
+  const externalClicksRaw = cc.total_clicks || 0
+  const totalExternalClicks = cc.total_all_time || 0
+  const internalClicksRaw = cc.internal_period || 0
+  const totalInternalClicksAllTime = cc.internal_all_time || 0
 
-  // ── Wave 2 — embed_views aggregations (lourdes) ──
+  // ── Vague 2 — embed_views aggregations ──
   const [
-    viewsByDay,
-    uniqueIpsAgg,
-    viewsByType,
-    topMediaRaw,
-    topRefererRaw,
-    activePagesRaw,
-    recentVisitorsRaw,
+    viewsByDayRes,
+    uniqueRes,
+    viewsByTypeRes,
+    topMediaRes,
+    topRefererRes,
+    activePagesRes,
+    recentVisitorsRes,
   ] = await Promise.all([
-    db
-      .collection("embed_views")
-      .aggregate([
-        { $match: { viewed_at: { $gte: startDate } } },
-        {
-          $group: {
-            _id: dayBucket("$viewed_at"),
-            total: { $sum: 1 },
-            streaming: {
-              $sum: {
-                $cond: [{ $or: [{ $eq: ["$embed_type", "streaming"] }] }, 1, 0],
-              },
-            },
-          },
-        },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("embed_views")
-      .aggregate([
-        { $match: { viewed_at: { $gte: startDate } } },
-        { $group: { _id: uniqueKey } },
-        { $count: "n" },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("embed_views")
-      .aggregate([
-        { $match: { viewed_at: { $gte: startDate } } },
-        { $group: { _id: "$media_type", count: { $sum: 1 } } },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("embed_views")
-      .aggregate([
-        { $match: { viewed_at: { $gte: startDate } } },
-        {
-          $group: {
-            _id: {
-              ww_id: "$ww_id",
-              media_type: "$media_type",
-              tmdb_id: "$tmdb_id",
-            },
-            views: { $sum: 1 },
-          },
-        },
-        { $sort: { views: -1 } },
-        { $limit: 100 },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("embed_views")
-      .aggregate([
-        { $match: { viewed_at: { $gte: startDate } } },
-        { $group: { _id: { $ifNull: ["$referrer", "Direct"] }, count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-        { $limit: 100 },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("embed_views")
-      .aggregate([
-        { $match: { viewed_at: { $gte: fifteenMinAgo } } },
-        {
-          $group: {
-            _id: "$ww_id",
-            count: { $sum: 1 },
-            media_type: { $first: "$media_type" },
-            tmdb_id: { $first: "$tmdb_id" },
-          },
-        },
-        { $sort: { count: -1 } },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("embed_views")
-      .aggregate(
-        [{ $match: { viewed_at: { $gte: oneHourAgo } } }, { $sort: { viewed_at: -1 } }],
-        { allowDiskUse: true }
-      )
-      .toArray(),
+    // viewsByDay → CAGG embed_views_daily (somme additive par jour).
+    pool.query(
+      `SELECT to_char(day, 'YYYY-MM-DD') AS day,
+              sum(views)::int AS total,
+              COALESCE(sum(views) FILTER (WHERE embed_type = 'streaming'), 0)::int AS streaming
+       FROM embed_views_daily WHERE day >= $1 GROUP BY day`,
+      [startDate]
+    ),
+    // count unique : non additif → reste sur table brute, version hash (3x plus
+    // rapide que le DISTINCT sur tuple (ip_hash,user_agent) large).
+    // count unique → HLL via cagg embed_views_daily (distinct_count(rollup(...))).
+    // ~2% d'erreur (nature hyperloglog), quasi instantané vs ~18s en COUNT(DISTINCT)
+    // sur la table brute. Le rollup fusionne les empreintes journalières/par type.
+    pool.query(
+      `SELECT distinct_count(rollup(visitors_hll))::int AS n
+       FROM embed_views_daily WHERE day >= $1`,
+      [startDate]
+    ),
+    // viewsByType → CAGG embed_views_daily (somme par media_type).
+    pool.query(
+      `SELECT media_type AS _id, sum(views)::int AS count
+       FROM embed_views_daily WHERE day >= $1 GROUP BY media_type`,
+      [startDate]
+    ),
+    // topMedia : movie/tv via cagg bywork (par ŒUVRE = tmdb_id, ~110k clés,
+    // rapide) UNION live/digital via by_content (par ww_id, faible volume).
+    // L'enrichissement movie/tv n'utilise que (media_type, tmdb_id) → ww_id null OK.
+    pool.query(
+      `(SELECT NULL::text AS ww_id, media_type, tmdb_id, sum(views)::int AS views
+        FROM embed_views_bywork_daily WHERE day >= $1
+        GROUP BY media_type, tmdb_id)
+       UNION ALL
+       (SELECT ww_id, NULL::text AS media_type, NULL::int AS tmdb_id, sum(views)::int AS views
+        FROM embed_views_by_content_daily WHERE day >= $1
+          AND (ww_id LIKE 'ww-live-%' OR ww_id LIKE 'ww-ebook-%' OR ww_id LIKE 'ww-music-%'
+               OR ww_id LIKE 'ww-soft-%' OR ww_id LIKE 'ww-game-%')
+        GROUP BY ww_id)
+       ORDER BY views DESC LIMIT 100`,
+      [startDate]
+    ),
+    pool.query(
+      `SELECT COALESCE(referrer, 'Direct') AS _id, sum(views)::int AS count
+       FROM embed_views_byreferer_daily WHERE day >= $1
+       GROUP BY COALESCE(referrer, 'Direct') ORDER BY count DESC LIMIT 100`,
+      [startDate]
+    ),
+    pool.query(
+      `SELECT ww_id AS _id,
+              count(*)::int AS count,
+              (array_agg(media_type ORDER BY viewed_at DESC))[1] AS media_type,
+              (array_agg(tmdb_id    ORDER BY viewed_at DESC))[1] AS tmdb_id
+       FROM embed_views WHERE viewed_at >= $1 GROUP BY ww_id ORDER BY count DESC`,
+      [fifteenMinAgo]
+    ),
+    pool.query(
+      `SELECT ww_id, media_type, tmdb_id, ip_hash, viewed_at
+       FROM embed_views WHERE viewed_at >= $1 ORDER BY viewed_at DESC`,
+      [oneHourAgo]
+    ),
   ])
+  // Remap vers la forme Mongo attendue.
+  const viewsByDay = viewsByDayRes.rows.map((r: any) => ({ _id: r.day, total: r.total, streaming: r.streaming }))
+  const uniqueIpsAgg = [{ n: uniqueRes.rows[0]?.n || 0 }]
+  const viewsByType = viewsByTypeRes.rows
+  const topMediaRaw = topMediaRes.rows.map((r: any) => ({
+    _id: { ww_id: r.ww_id, media_type: r.media_type, tmdb_id: r.tmdb_id },
+    views: r.views,
+  }))
+  const topRefererRaw = topRefererRes.rows
+  const activePagesRaw = activePagesRes.rows
+  const recentVisitorsRaw = recentVisitorsRes.rows
 
-  // ── Wave 3 — link_clicks externals partie 1 ──
+  // ── Vague 3 — link_clicks (tops + breakdowns période) ──
   const [
-    topDownloadRaw,
-    externalByDayRaw,
-    externalProvidersRaw,
-    externalHostsRaw,
-    externalQualityRaw,
-    externalMediaTypeRaw,
-    externalTopRaw,
+    topDownloadRes,
+    externalByDayRes,
+    externalProvidersRes,
+    externalHostsRes,
+    externalQualityRes,
+    externalMediaTypeRes,
+    externalTopRes,
   ] = await Promise.all([
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate } } },
-        {
-          $group: {
-            _id: {
-              ww_id: "$ww_id",
-              media_type: "$media_type",
-              tmdb_id: "$tmdb_id",
-            },
-            downloads: { $sum: 1 },
-          },
-        },
-        { $sort: { downloads: -1 } },
-        { $limit: 100 },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate } } },
-        { $group: { _id: dayBucket("$clicked_at"), count: { $sum: 1 } } },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate } } },
-        { $group: { _id: { $ifNull: ["$provider", "Inconnu"] }, count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate } } },
-        { $group: { _id: { $ifNull: ["$host_name", "?"] }, count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate } } },
-        { $group: { _id: { $ifNull: ["$quality", "N/A"] }, count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate } } },
-        { $group: { _id: { $ifNull: ["$media_type", "?"] }, count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate } } },
-        {
-          $group: {
-            _id: { ww_id: "$ww_id", media_type: "$media_type", tmdb_id: "$tmdb_id" },
-            clicks: { $sum: 1 },
-          },
-        },
-        { $sort: { clicks: -1 } },
-      ], { allowDiskUse: true })
-      .toArray(),
+    pool.query(
+      `SELECT ww_id, media_type, tmdb_id, count(*)::int AS downloads
+       FROM link_clicks WHERE clicked_at >= $1
+       GROUP BY ww_id, media_type, tmdb_id ORDER BY downloads DESC LIMIT 100`,
+      [startDate]
+    ),
+    pool.query(
+      `SELECT to_char(date_trunc('day', clicked_at), 'YYYY-MM-DD') AS _id, count(*)::int AS count
+       FROM link_clicks WHERE clicked_at >= $1 GROUP BY _id`,
+      [startDate]
+    ),
+    pool.query(
+      `SELECT COALESCE(provider, 'Inconnu') AS _id, count(*)::int AS count
+       FROM link_clicks WHERE clicked_at >= $1 GROUP BY COALESCE(provider,'Inconnu') ORDER BY count DESC`,
+      [startDate]
+    ),
+    pool.query(
+      `SELECT COALESCE(host_name, '?') AS _id, count(*)::int AS count
+       FROM link_clicks WHERE clicked_at >= $1 GROUP BY COALESCE(host_name,'?') ORDER BY count DESC`,
+      [startDate]
+    ),
+    pool.query(
+      `SELECT COALESCE(quality, 'N/A') AS _id, count(*)::int AS count
+       FROM link_clicks WHERE clicked_at >= $1 GROUP BY COALESCE(quality,'N/A') ORDER BY count DESC`,
+      [startDate]
+    ),
+    pool.query(
+      `SELECT COALESCE(media_type, '?') AS _id, count(*)::int AS count
+       FROM link_clicks WHERE clicked_at >= $1 GROUP BY COALESCE(media_type,'?') ORDER BY count DESC`,
+      [startDate]
+    ),
+    pool.query(
+      `SELECT ww_id, media_type, tmdb_id, count(*)::int AS clicks
+       FROM link_clicks WHERE clicked_at >= $1
+       GROUP BY ww_id, media_type, tmdb_id ORDER BY clicks DESC`,
+      [startDate]
+    ),
   ])
+  const topDownloadRaw = topDownloadRes.rows.map((r: any) => ({
+    _id: { ww_id: r.ww_id, media_type: r.media_type, tmdb_id: r.tmdb_id },
+    downloads: r.downloads,
+  }))
+  const externalByDayRaw = externalByDayRes.rows
+  const externalProvidersRaw = externalProvidersRes.rows
+  const externalHostsRaw = externalHostsRes.rows
+  const externalQualityRaw = externalQualityRes.rows
+  const externalMediaTypeRaw = externalMediaTypeRes.rows
+  const externalTopRaw = externalTopRes.rows.map((r: any) => ({
+    _id: { ww_id: r.ww_id, media_type: r.media_type, tmdb_id: r.tmdb_id },
+    clicks: r.clicks,
+  }))
 
-  // ── Wave 4 — link_clicks externals by source ──
-  const [
-    externalBySourceRaw,
-    externalByDayBySourceRaw,
-    externalTopBySourceRaw,
-  ] = await Promise.all([
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, link_type: "external" } },
-        { $group: { _id: { $ifNull: ["$source", "movix"] }, count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, link_type: "external" } },
-        {
-          $group: {
-            _id: {
-              date: dayBucket("$clicked_at"),
-              source: { $ifNull: ["$source", "movix"] },
-            },
-            count: { $sum: 1 },
-          },
-        },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, link_type: "external" } },
-        {
-          $group: {
-            _id: {
-              ww_id: "$ww_id",
-              tmdb_id: "$tmdb_id",
-              media_type: "$media_type",
-              source: { $ifNull: ["$source", "movix"] },
-            },
-            clicks: { $sum: 1 },
-          },
-        },
-        { $sort: { clicks: -1 } },
-        // Bucket per source so we can slice top-5 per source after.
-        {
-          $group: {
-            _id: "$_id.source",
-            items: {
-              $push: {
-                ww_id: "$_id.ww_id",
-                tmdb_id: "$_id.tmdb_id",
-                media_type: "$_id.media_type",
-                clicks: "$clicks",
-              },
-            },
-          },
-        },
-        { $project: { items: { $slice: ["$items", 5] } } },
-      ], { allowDiskUse: true })
-      .toArray(),
+  // ── Vague 4 — link_clicks externals by source (link_type='external') ──
+  const [externalBySourceRes, externalByDayBySourceRes, externalTopBySourceRes] = await Promise.all([
+    pool.query(
+      `SELECT COALESCE(source, 'movix') AS _id, count(*)::int AS count
+       FROM link_clicks WHERE clicked_at >= $1 AND link_type = 'external'
+       GROUP BY COALESCE(source,'movix') ORDER BY count DESC`,
+      [startDate]
+    ),
+    pool.query(
+      `SELECT to_char(date_trunc('day', clicked_at), 'YYYY-MM-DD') AS date,
+              COALESCE(source, 'movix') AS source, count(*)::int AS count
+       FROM link_clicks WHERE clicked_at >= $1 AND link_type = 'external'
+       GROUP BY date, COALESCE(source,'movix')`,
+      [startDate]
+    ),
+    // Top-5 contenus par source via ROW_NUMBER partitionné.
+    pool.query(
+      `WITH agg AS (
+         SELECT COALESCE(source,'movix') AS source, ww_id, tmdb_id, media_type, count(*)::int AS clicks
+         FROM link_clicks WHERE clicked_at >= $1 AND link_type = 'external'
+         GROUP BY COALESCE(source,'movix'), ww_id, tmdb_id, media_type
+       ),
+       ranked AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY source ORDER BY clicks DESC) AS rn FROM agg)
+       SELECT source, ww_id, tmdb_id, media_type, clicks FROM ranked WHERE rn <= 5 ORDER BY source, clicks DESC`,
+      [startDate]
+    ),
   ])
+  const externalBySourceRaw = externalBySourceRes.rows
+  const externalByDayBySourceRaw = externalByDayBySourceRes.rows.map((r: any) => ({
+    _id: { date: r.date, source: r.source },
+    count: r.count,
+  }))
+  // Regrouper par source (forme: [{_id: source, items: [...]}]).
+  const bySourceItems = new Map<string, any[]>()
+  for (const r of externalTopBySourceRes.rows as any[]) {
+    if (!bySourceItems.has(r.source)) bySourceItems.set(r.source, [])
+    bySourceItems.get(r.source)!.push({ ww_id: r.ww_id, tmdb_id: r.tmdb_id, media_type: r.media_type, clicks: r.clicks })
+  }
+  const externalTopBySourceRaw = Array.from(bySourceItems.entries()).map(([source, items]) => ({ _id: source, items }))
 
-  // ── Wave 5 — link_clicks internals (avec $lookup) ──
+  // ── Vague 5 — link_clicks internals (link_id IS NOT NULL) ──
   const [
-    internalByDayRaw,
-    internalTopLinksRaw,
-    internalTopUploadersRaw,
-    internalByQualityRaw,
-    internalByMediaTypeRaw,
-    internalByLinkTypeRaw,
+    internalByDayRes,
+    internalTopLinksRes,
+    internalTopUploadersRes,
+    internalByQualityRes,
+    internalByMediaTypeRes,
+    internalByLinkTypeRes,
   ] = await Promise.all([
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
-        { $group: { _id: dayBucket("$clicked_at"), count: { $sum: 1 } } },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
-        { $group: { _id: "$link_id", clicks: { $sum: 1 } } },
-        { $sort: { clicks: -1 } },
-        { $limit: 100 },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
-        { $group: { _id: "$link_id", clicks: { $sum: 1 } } },
-        {
-          $lookup: {
-            from: "download_links",
-            let: { lid: "$_id" },
-            pipeline: [
-              { $match: { $expr: { $eq: ["$legacy_uuid", "$$lid"] } } },
-              { $project: { submitted_by: 1, _id: 0 } },
-            ],
-            as: "dl",
-          },
-        },
-        {
-          $lookup: {
-            from: "digital_download_links",
-            let: { lid: "$_id" },
-            pipeline: [
-              { $match: { $expr: { $eq: ["$legacy_uuid", "$$lid"] } } },
-              { $project: { submitted_by: 1, _id: 0 } },
-            ],
-            as: "ddl",
-          },
-        },
-        {
-          $project: {
-            clicks: 1,
-            uploader: {
-              $ifNull: [
-                { $arrayElemAt: ["$dl.submitted_by", 0] },
-                { $arrayElemAt: ["$ddl.submitted_by", 0] },
-              ],
-            },
-          },
-        },
-        { $match: { uploader: { $ne: null } } },
-        { $group: { _id: "$uploader", clicks: { $sum: "$clicks" }, linkCount: { $sum: 1 } } },
-        { $sort: { clicks: -1 } },
-        { $limit: 50 },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
-        { $group: { _id: { $ifNull: ["$quality", "N/A"] }, count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
-        { $group: { _id: { $ifNull: ["$media_type", "?"] }, count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ], { allowDiskUse: true })
-      .toArray(),
-    db
-      .collection("link_clicks")
-      .aggregate([
-        { $match: { clicked_at: { $gte: startDate }, link_id: { $ne: null } } },
-        { $group: { _id: { $ifNull: ["$link_type", "direct"] }, count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ], { allowDiskUse: true })
-      .toArray(),
+    pool.query(
+      `SELECT to_char(date_trunc('day', clicked_at), 'YYYY-MM-DD') AS _id, count(*)::int AS count
+       FROM link_clicks WHERE clicked_at >= $1 AND link_id IS NOT NULL GROUP BY _id`,
+      [startDate]
+    ),
+    pool.query(
+      `SELECT link_id::text AS _id, count(*)::int AS clicks
+       FROM link_clicks WHERE clicked_at >= $1 AND link_id IS NOT NULL
+       GROUP BY link_id ORDER BY clicks DESC LIMIT 100`,
+      [startDate]
+    ),
+    // Le $lookup Mongo (link_id → submitted_by via download/digital) devient
+    // un LEFT JOIN sur id : la migration a promu l'ancien legacy_uuid au rang
+    // d'id Postgres, donc link_clicks.link_id = download_links.id (uuid = uuid).
+    pool.query(
+      `WITH clk AS (
+         SELECT link_id, count(*)::int AS clicks
+         FROM link_clicks WHERE clicked_at >= $1 AND link_id IS NOT NULL
+         GROUP BY link_id
+       ),
+       resolved AS (
+         SELECT clk.clicks,
+                COALESCE(dl.submitted_by::text, ddl.submitted_by::text) AS uploader
+         FROM clk
+         LEFT JOIN download_links         dl  ON dl.id  = clk.link_id
+         LEFT JOIN digital_download_links ddl ON ddl.id = clk.link_id
+       )
+       SELECT uploader AS _id, sum(clicks)::int AS clicks, count(*)::int AS "linkCount"
+       FROM resolved WHERE uploader IS NOT NULL
+       GROUP BY uploader ORDER BY clicks DESC LIMIT 50`,
+      [startDate]
+    ),
+    pool.query(
+      `SELECT COALESCE(quality, 'N/A') AS _id, count(*)::int AS count
+       FROM link_clicks WHERE clicked_at >= $1 AND link_id IS NOT NULL
+       GROUP BY COALESCE(quality,'N/A') ORDER BY count DESC`,
+      [startDate]
+    ),
+    pool.query(
+      `SELECT COALESCE(media_type, '?') AS _id, count(*)::int AS count
+       FROM link_clicks WHERE clicked_at >= $1 AND link_id IS NOT NULL
+       GROUP BY COALESCE(media_type,'?') ORDER BY count DESC`,
+      [startDate]
+    ),
+    pool.query(
+      `SELECT COALESCE(link_type, 'direct') AS _id, count(*)::int AS count
+       FROM link_clicks WHERE clicked_at >= $1 AND link_id IS NOT NULL
+       GROUP BY COALESCE(link_type,'direct') ORDER BY count DESC`,
+      [startDate]
+    ),
   ])
+  const internalByDayRaw = internalByDayRes.rows
+  const internalTopLinksRaw = internalTopLinksRes.rows
+  const internalTopUploadersRaw = internalTopUploadersRes.rows
+  const internalByQualityRaw = internalByQualityRes.rows
+  const internalByMediaTypeRaw = internalByMediaTypeRes.rows
+  const internalByLinkTypeRaw = internalByLinkTypeRes.rows
 
 
   // Build day buckets
@@ -596,13 +455,12 @@ async function buildStatsResponse(req: NextRequest) {
     }
   }
   // Add downloads per day
-  const linkClicksDay = await db
-    .collection("link_clicks")
-    .aggregate([
-      { $match: { clicked_at: { $gte: startDate } } },
-      { $group: { _id: dayBucket("$clicked_at"), count: { $sum: 1 } } },
-    ], { allowDiskUse: true })
-    .toArray()
+  const linkClicksDayRes = await pool.query(
+    `SELECT to_char(date_trunc('day', clicked_at), 'YYYY-MM-DD') AS _id, count(*)::int AS count
+     FROM link_clicks WHERE clicked_at >= $1 GROUP BY _id`,
+    [startDate]
+  )
+  const linkClicksDay = linkClicksDayRes.rows
   for (const row of linkClicksDay as any[]) {
     if (byDayMap.has(row._id)) byDayMap.get(row._id)!.download = row.count
   }
@@ -630,40 +488,43 @@ async function buildStatsResponse(req: NextRequest) {
     if (v.ww_id?.startsWith?.("ww-live-")) channelIds.add(v.ww_id.slice("ww-live-".length))
   }
 
-  const ObjectIdLib = (await import("mongodb")).ObjectId
-  const uuidToObjectIdHex = (uuid: string): string => uuid.replace(/-/g, "").slice(0, 24).padEnd(24, "0")
+  // oidToUuid : ObjectId 24-hex → UUID dérivé (convention migration).
+  const oidToUuid = (oidHex: string): string => {
+    const h = oidHex.padEnd(32, "0")
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`
+  }
 
   const channelMap = new Map<string, any>()
   if (channelIds.size > 0) {
-    const stringIds: any[] = []
-    const objectIds: any[] = []
-    const legacyUuids: string[] = []
-    for (const cid of channelIds) {
-      stringIds.push(cid)
-      if (/^[a-f0-9]{24}$/i.test(cid)) {
-        try { objectIds.push(new ObjectIdLib(cid)) } catch {}
-      }
-      if (/^[0-9a-f-]{36}$/i.test(cid)) {
-        try { objectIds.push(new ObjectIdLib(uuidToObjectIdHex(cid))) } catch {}
-        legacyUuids.push(cid)
-      }
+    // live_tv_channels n'a pas de legacy_uuid : la migration a promu l'ancien
+    // legacy_uuid au rang d'id. Le cid extrait du ww_id (ww-live-<cid>) est donc
+    // soit déjà un uuid (= id), soit un ObjectId 24-hex (→ uuid dérivé).
+    const rawIds = Array.from(channelIds)
+    const uuids: string[] = []
+    for (const cid of rawIds) {
+      if (/^[0-9a-f-]{36}$/i.test(cid)) uuids.push(cid.toLowerCase())
+      else if (/^[a-f0-9]{24}$/i.test(cid)) uuids.push(oidToUuid(cid.toLowerCase()))
     }
-    const allIds = [...stringIds, ...objectIds]
-    const channels = await db
-      .collection("live_tv_channels")
-      .find({
-        $or: [
-          { _id: { $in: allIds } },
-          { id: { $in: stringIds } },
-          { legacy_uuid: { $in: legacyUuids } },
-        ],
-      })
-      .project({ channel_name: 1, channel_logo: 1, legacy_uuid: 1 })
-      .toArray()
-    for (const c of channels) {
-      const entry = { title: c.channel_name, poster: c.channel_logo }
-      channelMap.set(c._id?.toString(), entry)
-      if (c.legacy_uuid) channelMap.set(c.legacy_uuid, entry)
+    if (uuids.length) {
+      const r = await pool.query(
+        `SELECT id, channel_name, channel_logo
+         FROM live_tv_channels WHERE id = ANY($1::uuid[])`,
+        [uuids]
+      )
+      for (const c of r.rows as any[]) {
+        const entry = { title: c.channel_name, poster: c.channel_logo }
+        if (c.id) {
+          // Indexer par l'id ET par l'éventuel ObjectId source pour que
+          // channelMap.get(cid) (cid = id brut du ww_id) retrouve l'entrée.
+          channelMap.set(String(c.id), entry)
+        }
+      }
+      // Indexer aussi par les cid d'origine (au cas où cid = ObjectId 24-hex).
+      for (const cid of rawIds) {
+        const derived = /^[a-f0-9]{24}$/i.test(cid) ? oidToUuid(cid.toLowerCase()) : cid.toLowerCase()
+        const e = channelMap.get(derived)
+        if (e) channelMap.set(cid, e)
+      }
     }
   }
 
@@ -678,12 +539,12 @@ async function buildStatsResponse(req: NextRequest) {
   for (const v of recentVisitorsRaw as any[]) collectDigitalIds(v.ww_id)
   const digitalMap = new Map<string, any>()
   if (digitalIds.size > 0) {
-    const digitals = await db
-      .collection("digital_content")
-      .find({ ww_id: { $in: Array.from(digitalIds) } })
-      .project({ ww_id: 1, title: 1, cover_url: 1, content_type: 1 })
-      .toArray()
-    for (const d of digitals)
+    const r = await pool.query(
+      `SELECT ww_id, title, cover_url, content_type
+       FROM digital_content WHERE ww_id = ANY($1::text[])`,
+      [Array.from(digitalIds)]
+    )
+    for (const d of r.rows as any[])
       digitalMap.set(d.ww_id, {
         title: d.title,
         poster: d.cover_url,
@@ -890,51 +751,30 @@ async function buildStatsResponse(req: NextRequest) {
   const internalLinkIds = (internalTopLinksRaw as any[]).map((r) => r._id).filter(Boolean)
   const internalLinks: any[] = []
   if (internalLinkIds.length > 0) {
-    const [dlRows, ddlRows] = await Promise.all([
-      db
-        .collection("download_links")
-        .find({ legacy_uuid: { $in: internalLinkIds } })
-        .project({
-          legacy_uuid: 1,
-          ww_id: 1,
-          source_name: 1,
-          quality: 1,
-          language: 1,
-          file_size: 1,
-          link_type: 1,
-          media_type: 1,
-          tmdb_id: 1,
-          season_number: 1,
-          episode_number: 1,
-          submitted_by: 1,
-          status: 1,
-        })
-        .toArray(),
-      db
-        .collection("digital_download_links")
-        .find({ legacy_uuid: { $in: internalLinkIds } })
-        .project({
-          legacy_uuid: 1,
-          ww_id: 1,
-          source_name: 1,
-          quality: 1,
-          file_format: 1,
-          language: 1,
-          file_size: 1,
-          link_type: 1,
-          submitted_by: 1,
-          status: 1,
-          content_id: 1,
-        })
-        .toArray(),
+    // Reconstruction du document complet (colonnes + data jsonb) par id.
+    // internalLinkIds sont des link_id (uuid stringifiés) = download_links.id.
+    const [dlRes, ddlRes] = await Promise.all([
+      pool.query(
+        `SELECT (to_jsonb(t) - 'data' || COALESCE(t.data, '{}'::jsonb)) AS doc
+         FROM download_links t WHERE id = ANY($1::uuid[])`,
+        [internalLinkIds]
+      ),
+      pool.query(
+        `SELECT (to_jsonb(t) - 'data' || COALESCE(t.data, '{}'::jsonb)) AS doc
+         FROM digital_download_links t WHERE id = ANY($1::uuid[])`,
+        [internalLinkIds]
+      ),
     ])
+    const dlRows = dlRes.rows.map((r: any) => r.doc)
+    const ddlRows = ddlRes.rows.map((r: any) => r.doc)
     const linkMap = new Map<string, any>()
+    // On indexe par id (le link_id de référence).
     for (const r of dlRows) {
-      linkMap.set(r.legacy_uuid, { ...r, _kind: "download" })
+      if (r?.id) linkMap.set(String(r.id), { ...r, _kind: "download" })
     }
     for (const r of ddlRows) {
-      if (!linkMap.has(r.legacy_uuid)) {
-        linkMap.set(r.legacy_uuid, { ...r, _kind: "digital" })
+      if (r?.id && !linkMap.has(String(r.id))) {
+        linkMap.set(String(r.id), { ...r, _kind: "digital" })
       }
     }
     for (const r of internalTopLinksRaw as any[]) {
@@ -950,12 +790,11 @@ async function buildStatsResponse(req: NextRequest) {
   }
   const internalDigitalMap = new Map<string, any>()
   if (internalDigitalIds.size > 0) {
-    const digs = await db
-      .collection("digital_content")
-      .find({ ww_id: { $in: Array.from(internalDigitalIds) } })
-      .project({ ww_id: 1, title: 1, cover_url: 1 })
-      .toArray()
-    for (const d of digs) internalDigitalMap.set(d.ww_id, { title: d.title, poster: d.cover_url })
+    const digs = await pool.query(
+      `SELECT ww_id, title, cover_url FROM digital_content WHERE ww_id = ANY($1::text[])`,
+      [Array.from(internalDigitalIds)]
+    )
+    for (const d of digs.rows as any[]) internalDigitalMap.set(d.ww_id, { title: d.title, poster: d.cover_url })
   }
 
   const internalTopLinks = await Promise.all(
@@ -996,44 +835,31 @@ async function buildStatsResponse(req: NextRequest) {
   const uploaderIds = (internalTopUploadersRaw as any[]).map((r) => r._id).filter(Boolean)
   const uploaderMap = new Map<string, { username: string; role: string }>()
   if (uploaderIds.length > 0) {
-    // submitted_by stored values can be either ObjectId or original UUID string;
-    // try matching via legacy_uuid (UUID) OR derived ObjectId. We also try
-    // matching the `profiles` collection (uses same ids).
-    const stringIds = uploaderIds.filter((v) => typeof v === "string")
-    const oids: any[] = []
-    for (const v of stringIds) {
-      if (/^[0-9a-f-]{36}$/i.test(v)) {
-        try { oids.push(new ObjectIdLib(uuidToObjectIdHex(v))) } catch {}
-      } else if (/^[a-f0-9]{24}$/i.test(v)) {
-        try { oids.push(new ObjectIdLib(v)) } catch {}
+    // submitted_by est un uuid pointant vers users.id / profiles.id (pas de
+    // legacy_uuid : migration → id). On résout via les deux tables par id.
+    const uuids = uploaderIds.map(String).filter((v) => /^[0-9a-f-]{36}$/i.test(v)).map((v) => v.toLowerCase())
+    if (uuids.length) {
+      const [usersRes, profilesRes] = await Promise.all([
+        pool.query(
+          `SELECT id, COALESCE(username, data->>'username') AS username,
+                  COALESCE(role, data->>'role') AS role
+           FROM users WHERE id = ANY($1::uuid[])`,
+          [uuids]
+        ),
+        pool.query(
+          `SELECT id, COALESCE(username, data->>'username') AS username,
+                  COALESCE(role, data->>'role') AS role
+           FROM profiles WHERE id = ANY($1::uuid[])`,
+          [uuids]
+        ),
+      ])
+      for (const u of usersRes.rows as any[]) {
+        if (u.id) uploaderMap.set(String(u.id), { username: u.username || "?", role: u.role || "member" })
       }
-    }
-    const allIds: any[] = [...stringIds, ...oids]
-    const [users, profiles] = await Promise.all([
-      db
-        .collection("users")
-        .find({ $or: [{ _id: { $in: allIds } }, { legacy_uuid: { $in: stringIds } }] })
-        .project({ username: 1, role: 1, legacy_uuid: 1 })
-        .toArray(),
-      db
-        .collection("profiles")
-        .find({ $or: [{ _id: { $in: allIds } }, { legacy_uuid: { $in: stringIds } }] })
-        .project({ username: 1, role: 1, legacy_uuid: 1 })
-        .toArray(),
-    ])
-    for (const u of users) {
-      const lookupKey =
-        u.legacy_uuid || (u._id?.toString ? u._id.toString() : String(u._id))
-      uploaderMap.set(lookupKey, { username: u.username || "?", role: u.role || "member" })
-      if (u.legacy_uuid && u._id) {
-        uploaderMap.set(u._id.toString(), { username: u.username || "?", role: u.role || "member" })
+      for (const p of profilesRes.rows as any[]) {
+        const k = p.id ? String(p.id) : null
+        if (k && !uploaderMap.has(k)) uploaderMap.set(k, { username: p.username || "?", role: p.role || "member" })
       }
-    }
-    for (const p of profiles) {
-      const lookupKey =
-        p.legacy_uuid || (p._id?.toString ? p._id.toString() : String(p._id))
-      if (!uploaderMap.has(lookupKey))
-        uploaderMap.set(lookupKey, { username: p.username || "?", role: p.role || "member" })
     }
   }
 

@@ -8,8 +8,8 @@
  */
 import { NextRequest, NextResponse } from "next/server"
 import { probeUrl } from "@/lib/url-probe"
-import { getCurrentUser } from "@/lib/mongo/auth"
-import { rateLimit, getClientIp } from "@/lib/mongo/rate-limit"
+import { getCurrentUser } from "@/lib/pg/auth"
+import { rateLimit, getClientIp } from "@/lib/pg/rate-limit"
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser(req).catch(() => null)
