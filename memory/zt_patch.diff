@@ -1,8 +1,28 @@
 diff --git a/zt.php b/zt.php
-index ae166e4..e65dfdd 100644
+index ae166e4..1f1ef89 100644
 --- a/zt.php
 +++ b/zt.php
-@@ -470,50 +470,41 @@ function scrape_listing(string $html): array {
+@@ -22,6 +22,13 @@ mb_internal_encoding('UTF-8');
+ 
+ // ─── Config ───────────────────────────────────────────────────
+ const BASE_URL       = 'https://www.zone-telechargement.org';
++// Miroirs ZT interrogés en parallèle (ils servent souvent le même contenu mais
++// l'un peut être down/cloudflare-protected pendant que l'autre répond).
++// Les résultats sont fusionnés (dédup par URL d'hébergeur dans merge_qualities).
++const ZT_MIRRORS     = [
++    'https://www.zone-telechargement.org',
++    'https://www.zone-telechargement.cafe',
++];
+ const TMDB_API_KEY   = 'd4b8332681051181b69c8a6c9ba1a70a';
+ const FETCH_TIMEOUT  = 15;
+ const USER_AGENT     = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36';
+@@ -465,55 +472,46 @@ function is_valid_link(string $url, string $linkText = ''): bool {
+  * Extract content detail URLs from a listing page.
+  * ZT detail urls match pattern: /{category-folder}/{id}-{slug}.html
+  */
+-function scrape_listing(string $html): array {
++function scrape_listing(string $html, string $baseUrl = BASE_URL): array {
+     if (!$html) return [];
      $results = [];
      $seen = [];
  
@@ -52,8 +72,8 @@ index ae166e4..e65dfdd 100644
 -            $href  = hd($m[1]);
 +            $kind   = strtolower($m[1]);
 +            $idPart = $m[2];
-+            // Reconstruit une URL absolue canonique sur le domaine officiel
-+            $href   = rtrim(BASE_URL, '/') . '/?p=' . $kind . '&id=' . $idPart;
++            // Reconstruit une URL absolue canonique sur le miroir source
++            $href   = rtrim($baseUrl, '/') . '/?p=' . $kind . '&id=' . $idPart;
              if (isset($seen[$href])) continue;
 -            $title = hd(preg_replace('/\s+/', ' ', trim(strip_tags($m[2]))));
 -            // Skip when the anchor only contains an image (no text)
@@ -81,7 +101,7 @@ index ae166e4..e65dfdd 100644
                  $slugTitle = str_replace('-', ' ', $sm[1]);
                  $slugTitle = preg_replace('/\s+/', ' ', trim($slugTitle));
              }
-@@ -524,33 +515,63 @@ function scrape_listing(string $html): array {
+@@ -524,33 +522,115 @@ function scrape_listing(string $html): array {
  }
  
  /**
@@ -92,7 +112,11 @@ index ae166e4..e65dfdd 100644
 + *   /?p=films&search=...    /?p=series&search=...   /?p=mangas&search=...
 + *   /?p=jeux&search=...     /?p=musiques&search=... /?p=ebooks&search=...
 + *   /?p=logiciels&search=...   /?p=autres-videos&search=...
-+ */
+  */
+-function zt_search_url(string $query, string $category = ''): string {
+-    // Si une catégorie est fournie, on recherche dans cette section uniquement via search.xfsearch
+-    // L'URL de recherche standard fonctionne globalement, on filtrera après par catégorie côté code.
+-    return BASE_URL . '/index.php?do=search&subaction=search&story=' . rawurlencode($query);
 +function zt_search_section(string $type): string {
 +    $t = normalize_type_alias($type);
 +    $map = [
@@ -111,19 +135,6 @@ index ae166e4..e65dfdd 100644
 +        'autoformation' => 'autres-videos',
 +    ];
 +    return $map[$t] ?? 'films';
-+}
-+
-+/**
-+ * Build a search URL for zone-telechargement (nouveau format 2026).
-+ *   /?p=<section>&search=<query>
-  */
--function zt_search_url(string $query, string $category = ''): string {
--    // Si une catégorie est fournie, on recherche dans cette section uniquement via search.xfsearch
--    // L'URL de recherche standard fonctionne globalement, on filtrera après par catégorie côté code.
--    return BASE_URL . '/index.php?do=search&subaction=search&story=' . rawurlencode($query);
-+function zt_search_url(string $query, string $type = 'movie'): string {
-+    $section = zt_search_section($type);
-+    return BASE_URL . '/?p=' . $section . '&search=' . rawurlencode($query);
  }
  
 -function zt_search(string $query): array {
@@ -131,20 +142,84 @@ index ae166e4..e65dfdd 100644
 -    // On essaie GET d'abord, fallback POST si rien.
 -    $url = zt_search_url($query);
 -    $html = http_fetch($url);
+-    $items = scrape_listing($html ?: '');
+-    if (!empty($items)) return $items;
++/**
++ * Build a search URL for zone-telechargement (nouveau format 2026).
++ *   /?p=<section>&search=<query>
++ * Par défaut, utilise le 1er miroir (BASE_URL) — pour ne renvoyer qu'une URL
++ * « sourceUrl » canonique côté UI.
++ */
++function zt_search_url(string $query, string $type = 'movie', string $baseUrl = BASE_URL): string {
++    $section = zt_search_section($type);
++    return rtrim($baseUrl, '/') . '/?p=' . $section . '&search=' . rawurlencode($query);
++}
++
 +function zt_search(string $query, string $type = 'movie'): array {
-+    // Essai sur la section principale (films/series/mangas/jeux/...)
-+    $url   = zt_search_url($query, $type);
-+    $html  = http_fetch($url);
-     $items = scrape_listing($html ?: '');
-     if (!empty($items)) return $items;
++    // Interroge tous les miroirs en parallèle pour maximiser le rappel.
++    // Si un miroir est down / bloqué par Cloudflare, l'autre prend le relais.
++    $section = zt_search_section($type);
++    $urls    = [];
++    foreach (ZT_MIRRORS as $base) {
++        $urls[$base] = rtrim($base, '/') . '/?p=' . $section . '&search=' . rawurlencode($query);
++    }
++    $htmlByUrl = http_fetch_multi(array_values($urls));
++
++    $aggregated = [];
++    $emptyMirrors = [];
++    foreach ($urls as $base => $url) {
++        $html  = $htmlByUrl[$url] ?? null;
++        $items = scrape_listing($html ?: '', $base);
++        if (empty($items)) {
++            $emptyMirrors[] = $base;
++            continue;
++        }
++        foreach ($items as $it) {
++            // Dédup par couple (kind, id) — même item sur 2 miroirs ne compte qu'une fois.
++            // On garde le 1er miroir vu pour la pageUrl ; merge_qualities fetchera
++            // aussi les autres miroirs via le fallback dans merge_qualities.
++            if (preg_match('~[?&]p=([a-z\-]+)&id=(\d+-[^&]+)~i', $it['pageUrl'], $m)) {
++                $key = strtolower($m[1]) . '|' . $m[2];
++                if (!isset($aggregated[$key])) {
++                    // Mémorise la liste des miroirs où ce contenu existe pour pouvoir
++                    // fetcher les détails sur chacun en parallèle plus tard.
++                    $it['mirrors'] = [$base];
++                    $aggregated[$key] = $it;
++                } else {
++                    if (!in_array($base, $aggregated[$key]['mirrors'] ?? [], true)) {
++                        $aggregated[$key]['mirrors'][] = $base;
++                    }
++                }
++            }
++        }
++    }
++
++    // Fallback : si tous les miroirs ont rendu 0 item via la section, on tente
++    // une recherche globale (`/?search=Q`) sur les miroirs qui sont tombés vides.
++    if (empty($aggregated) && !empty($emptyMirrors)) {
++        $fbUrls = [];
++        foreach ($emptyMirrors as $base) {
++            $fbUrls[$base] = rtrim($base, '/') . '/?search=' . rawurlencode($query);
++        }
++        $fbHtml = http_fetch_multi(array_values($fbUrls));
++        foreach ($fbUrls as $base => $u) {
++            $items = scrape_listing($fbHtml[$u] ?? '', $base);
++            foreach ($items as $it) {
++                if (preg_match('~[?&]p=([a-z\-]+)&id=(\d+-[^&]+)~i', $it['pageUrl'], $m)) {
++                    $key = strtolower($m[1]) . '|' . $m[2];
++                    if (!isset($aggregated[$key])) {
++                        $it['mirrors'] = [$base];
++                        $aggregated[$key] = $it;
++                    }
++                }
++            }
++        }
++    }
  
 -    // Fallback POST sur la racine avec champ "q"
 -    $html2 = http_fetch(BASE_URL . '/', 15, 'POST', ['q' => $query]);
-+    // Fallback : recherche sur l'index global (renvoie tous les types confondus,
-+    // sera ensuite filtré par filter_by_category côté appelant).
-+    $url2  = BASE_URL . '/?search=' . rawurlencode($query);
-+    $html2 = http_fetch($url2);
-     return scrape_listing($html2 ?: '');
+-    return scrape_listing($html2 ?: '');
++    return array_values($aggregated);
  }
  
  /**
@@ -160,7 +235,7 @@ index ae166e4..e65dfdd 100644
      return '';
  }
  
-@@ -587,10 +608,12 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie =
+@@ -587,10 +667,12 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie =
          $title = hd(trim(strip_tags($m[1])));
      }
  
@@ -175,7 +250,7 @@ index ae166e4..e65dfdd 100644
          $content = $cm[1];
      }
  
-@@ -625,15 +648,20 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie =
+@@ -625,15 +707,20 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie =
      $meta = ['title' => $bigTitle, 'poster' => $poster];
      $metaLabels = [
          'Origine'          => 'origin',
@@ -196,7 +271,7 @@ index ae166e4..e65dfdd 100644
          'Développement'    => 'developer',
          'Développeur'      => 'developer',
          'Édition'          => 'publisher',
-@@ -651,24 +679,31 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie =
+@@ -651,24 +738,31 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie =
          'Langue'           => 'lang_meta',
          'Format'           => 'format_meta',
          'Taille'           => 'size_meta',
@@ -230,7 +305,7 @@ index ae166e4..e65dfdd 100644
              if ($val && !isset($meta[$key])) $meta[$key] = $val;
          }
      }
-@@ -683,14 +718,63 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie =
+@@ -683,14 +777,63 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie =
          if (mb_strlen($txt) >= 30) $meta['synopsis'] = $txt;
      }
  
@@ -299,7 +374,7 @@ index ae166e4..e65dfdd 100644
      if (!$quality && $bigTitle) {
          $qPatterns = [
              '~\b(ULTRA\s*HD\s*\(?X265\)?|ULTRA\s*HD\s*4K|WEB[-\s]?DL\s*2160p|4K\s*BLU\s*RAY|4K)\b~i',
-@@ -715,181 +799,190 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie =
+@@ -715,181 +858,190 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie =
          }
      }
  
@@ -527,7 +602,9 @@ index ae166e4..e65dfdd 100644
                  $episode = null;
                  $season  = $pageSeInfo['season'] ?? null;
 -                $filename = $rawText;
--
++                if (preg_match('/Episode\s+(\d{1,3})/iu', $rawText, $em)) $episode = (int)$em[1];
++                if (preg_match('/Saison\s+(\d{1,2})/iu', $rawText, $sm2)) $season  = (int)$sm2[1];
+ 
 -                if (preg_match('/Episode\s+(\d{1,3})/iu', $rawText, $em)) {
 -                    $episode = (int)$em[1];
 -                }
@@ -555,9 +632,7 @@ index ae166e4..e65dfdd 100644
 -                } else {
 -                    $host = $currentHost ?: $hostInfo['host'];
 -                }
-+                if (preg_match('/Episode\s+(\d{1,3})/iu', $rawText, $em)) $episode = (int)$em[1];
-+                if (preg_match('/Saison\s+(\d{1,2})/iu', $rawText, $sm2)) $season  = (int)$sm2[1];
- 
+-
 -                // filename pour les séries : "Épisode X - Saison Y"
 +                // Filename : pour les séries → « Épisode N - Saison S »
 +                //            sinon → bandeau rouge ($globalFilename) ou texte du lien
@@ -610,7 +685,53 @@ index ae166e4..e65dfdd 100644
              }
          }
      }
-@@ -1431,30 +1524,41 @@ function normalize_type_alias(string $t): string {
+@@ -1179,9 +1331,45 @@ function filter_links_by_year(array $links, string $year): array {
+     }));
+ }
+ 
++/**
++ * Étend une liste de pageUrls ZT à TOUS les miroirs configurés (ZT_MIRRORS).
++ * Permet de récupérer les liens d'un même contenu sur .org ET .cafe (et tout
++ * autre miroir futur) pour augmenter le nombre de hosters disponibles.
++ *
++ * Une URL `https://www.zone-telechargement.org/?p=film&id=56479-mario`
++ * devient → [
++ *   'https://www.zone-telechargement.org/?p=film&id=56479-mario',
++ *   'https://www.zone-telechargement.cafe/?p=film&id=56479-mario',
++ * ]
++ *
++ * Les pageUrls qui ne pointent pas vers un domaine ZT connu sont conservées
++ * telles quelles (compat).
++ */
++function expand_urls_to_all_mirrors(array $urls): array {
++    $out  = [];
++    $seen = [];
++    foreach ($urls as $u) {
++        // Si l'URL contient un host zone-telechargement.*, on extrait le chemin+query
++        if (preg_match('~^https?://[^/]*zone-telechargement[^/]*(/.*)$~i', $u, $m)) {
++            $tail = $m[1];
++            foreach (ZT_MIRRORS as $base) {
++                $full = rtrim($base, '/') . $tail;
++                if (!isset($seen[$full])) { $out[] = $full; $seen[$full] = true; }
++            }
++        } else {
++            // URL non-ZT (chemin relatif, autre domaine, …) → on ne touche pas
++            if (!isset($seen[$u])) { $out[] = $u; $seen[$u] = true; }
++        }
++    }
++    return $out;
++}
++
+ function merge_qualities(array $urlList, string $year = '', bool $isSerie = false,
+                          int $filterSeason = 0, int $filterEpisode = 0): array {
+     if (empty($urlList)) return ['qualities' => [], 'meta' => []];
++    // Étend chaque pageUrl à tous les miroirs configurés (org + cafe + …) pour
++    // récupérer les liens disponibles sur les deux sites.
++    $urlList   = expand_urls_to_all_mirrors($urlList);
+     $htmlByUrl = http_fetch_multi($urlList);
+     $allQualities = [];
+     $mainMeta = [];
+@@ -1431,30 +1619,41 @@ function normalize_type_alias(string $t): string {
  }
  
  /**
@@ -672,7 +793,7 @@ index ae166e4..e65dfdd 100644
  }
  
  /** Indique si le type donné (alias ou slug) bénéficie d'enrichissement TMDB. */
-@@ -1729,7 +1833,7 @@ function find_candidates_for_tmdb(array $tmdbData, string $type, array $catSlugs
+@@ -1729,7 +1928,7 @@ function find_candidates_for_tmdb(array $tmdbData, string $type, array $catSlugs
      // Agrégation des résultats de toutes les variantes (dédup par pageUrl)
      $aggregated = [];
      foreach ($variants as $q) {
@@ -681,7 +802,7 @@ index ae166e4..e65dfdd 100644
          $batch = filter_by_category($batch, $catSlugs);
          foreach ($batch as $it) {
              if (!isset($aggregated[$it['pageUrl']])) {
-@@ -1883,7 +1987,7 @@ if ($isApiCall) {
+@@ -1883,7 +2082,7 @@ if ($isApiCall) {
  
      if ($query !== '') {
          $catSlugs = type_to_categories($type);
@@ -690,7 +811,7 @@ index ae166e4..e65dfdd 100644
          $items    = filter_by_category($items, $catSlugs);
          $supportsTmdb = is_tmdb_type($type);
          $tmdbSt   = tmdb_search_type($type);
-@@ -1937,7 +2041,7 @@ if ($isAjax) {
+@@ -1937,7 +2136,7 @@ if ($isAjax) {
  
      if ($action === 'search') {
          $catSlugs = type_to_categories($type);
@@ -699,7 +820,7 @@ index ae166e4..e65dfdd 100644
          $items    = filter_by_category($items, $catSlugs);
          $tmdbSt   = tmdb_search_type($type);
          $supportsTmdb = is_tmdb_type($type);
-@@ -1951,7 +2055,7 @@ if ($isAjax) {
+@@ -1951,7 +2150,7 @@ if ($isAjax) {
          echo json_encode([
              'results'   => $results,
              'total'     => count($results),
@@ -708,7 +829,7 @@ index ae166e4..e65dfdd 100644
          ], JSON_UNESCAPED_UNICODE);
          exit;
      }
-@@ -1959,14 +2063,14 @@ if ($isAjax) {
+@@ -1959,14 +2158,14 @@ if ($isAjax) {
      if ($action === 'detail' && $urls) {
          $urlList = array_slice(array_filter(array_map('trim', explode(',', $urls))), 0, 10);
          $cat     = category_from_url($urlList[0] ?? '');

@@ -22,6 +22,13 @@ mb_internal_encoding('UTF-8');
 
 // ─── Config ───────────────────────────────────────────────────
 const BASE_URL       = 'https://www.zone-telechargement.org';
+// Miroirs ZT interrogés en parallèle (ils servent souvent le même contenu mais
+// l'un peut être down/cloudflare-protected pendant que l'autre répond).
+// Les résultats sont fusionnés (dédup par URL d'hébergeur dans merge_qualities).
+const ZT_MIRRORS     = [
+    'https://www.zone-telechargement.org',
+    'https://www.zone-telechargement.cafe',
+];
 const TMDB_API_KEY   = 'd4b8332681051181b69c8a6c9ba1a70a';
 const FETCH_TIMEOUT  = 15;
 const USER_AGENT     = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36';
@@ -465,7 +472,7 @@ function is_valid_link(string $url, string $linkText = ''): bool {
  * Extract content detail URLs from a listing page.
  * ZT detail urls match pattern: /{category-folder}/{id}-{slug}.html
  */
-function scrape_listing(string $html): array {
+function scrape_listing(string $html, string $baseUrl = BASE_URL): array {
     if (!$html) return [];
     $results = [];
     $seen = [];
@@ -489,8 +496,8 @@ function scrape_listing(string $html): array {
         foreach ($matches as $m) {
             $kind   = strtolower($m[1]);
             $idPart = $m[2];
-            // Reconstruit une URL absolue canonique sur le domaine officiel
-            $href   = rtrim(BASE_URL, '/') . '/?p=' . $kind . '&id=' . $idPart;
+            // Reconstruit une URL absolue canonique sur le miroir source
+            $href   = rtrim($baseUrl, '/') . '/?p=' . $kind . '&id=' . $idPart;
             if (isset($seen[$href])) continue;
 
             $title = hd(preg_replace('/\s+/', ' ', trim(strip_tags($m[3]))));
@@ -544,24 +551,76 @@ function zt_search_section(string $type): string {
 /**
  * Build a search URL for zone-telechargement (nouveau format 2026).
  *   /?p=<section>&search=<query>
+ * Par défaut, utilise le 1er miroir (BASE_URL) — pour ne renvoyer qu'une URL
+ * « sourceUrl » canonique côté UI.
  */
-function zt_search_url(string $query, string $type = 'movie'): string {
+function zt_search_url(string $query, string $type = 'movie', string $baseUrl = BASE_URL): string {
     $section = zt_search_section($type);
-    return BASE_URL . '/?p=' . $section . '&search=' . rawurlencode($query);
+    return rtrim($baseUrl, '/') . '/?p=' . $section . '&search=' . rawurlencode($query);
 }
 
 function zt_search(string $query, string $type = 'movie'): array {
-    // Essai sur la section principale (films/series/mangas/jeux/...)
-    $url   = zt_search_url($query, $type);
-    $html  = http_fetch($url);
-    $items = scrape_listing($html ?: '');
-    if (!empty($items)) return $items;
+    // Interroge tous les miroirs en parallèle pour maximiser le rappel.
+    // Si un miroir est down / bloqué par Cloudflare, l'autre prend le relais.
+    $section = zt_search_section($type);
+    $urls    = [];
+    foreach (ZT_MIRRORS as $base) {
+        $urls[$base] = rtrim($base, '/') . '/?p=' . $section . '&search=' . rawurlencode($query);
+    }
+    $htmlByUrl = http_fetch_multi(array_values($urls));
 
-    // Fallback : recherche sur l'index global (renvoie tous les types confondus,
-    // sera ensuite filtré par filter_by_category côté appelant).
-    $url2  = BASE_URL . '/?search=' . rawurlencode($query);
-    $html2 = http_fetch($url2);
-    return scrape_listing($html2 ?: '');
+    $aggregated = [];
+    $emptyMirrors = [];
+    foreach ($urls as $base => $url) {
+        $html  = $htmlByUrl[$url] ?? null;
+        $items = scrape_listing($html ?: '', $base);
+        if (empty($items)) {
+            $emptyMirrors[] = $base;
+            continue;
+        }
+        foreach ($items as $it) {
+            // Dédup par couple (kind, id) — même item sur 2 miroirs ne compte qu'une fois.
+            // On garde le 1er miroir vu pour la pageUrl ; merge_qualities fetchera
+            // aussi les autres miroirs via le fallback dans merge_qualities.
+            if (preg_match('~[?&]p=([a-z\-]+)&id=(\d+-[^&]+)~i', $it['pageUrl'], $m)) {
+                $key = strtolower($m[1]) . '|' . $m[2];
+                if (!isset($aggregated[$key])) {
+                    // Mémorise la liste des miroirs où ce contenu existe pour pouvoir
+                    // fetcher les détails sur chacun en parallèle plus tard.
+                    $it['mirrors'] = [$base];
+                    $aggregated[$key] = $it;
+                } else {
+                    if (!in_array($base, $aggregated[$key]['mirrors'] ?? [], true)) {
+                        $aggregated[$key]['mirrors'][] = $base;
+                    }
+                }
+            }
+        }
+    }
+
+    // Fallback : si tous les miroirs ont rendu 0 item via la section, on tente
+    // une recherche globale (`/?search=Q`) sur les miroirs qui sont tombés vides.
+    if (empty($aggregated) && !empty($emptyMirrors)) {
+        $fbUrls = [];
+        foreach ($emptyMirrors as $base) {
+            $fbUrls[$base] = rtrim($base, '/') . '/?search=' . rawurlencode($query);
+        }
+        $fbHtml = http_fetch_multi(array_values($fbUrls));
+        foreach ($fbUrls as $base => $u) {
+            $items = scrape_listing($fbHtml[$u] ?? '', $base);
+            foreach ($items as $it) {
+                if (preg_match('~[?&]p=([a-z\-]+)&id=(\d+-[^&]+)~i', $it['pageUrl'], $m)) {
+                    $key = strtolower($m[1]) . '|' . $m[2];
+                    if (!isset($aggregated[$key])) {
+                        $it['mirrors'] = [$base];
+                        $aggregated[$key] = $it;
+                    }
+                }
+            }
+        }
+    }
+
+    return array_values($aggregated);
 }
 
 /**
@@ -1272,9 +1331,45 @@ function filter_links_by_year(array $links, string $year): array {
     }));
 }
 
+/**
+ * Étend une liste de pageUrls ZT à TOUS les miroirs configurés (ZT_MIRRORS).
+ * Permet de récupérer les liens d'un même contenu sur .org ET .cafe (et tout
+ * autre miroir futur) pour augmenter le nombre de hosters disponibles.
+ *
+ * Une URL `https://www.zone-telechargement.org/?p=film&id=56479-mario`
+ * devient → [
+ *   'https://www.zone-telechargement.org/?p=film&id=56479-mario',
+ *   'https://www.zone-telechargement.cafe/?p=film&id=56479-mario',
+ * ]
+ *
+ * Les pageUrls qui ne pointent pas vers un domaine ZT connu sont conservées
+ * telles quelles (compat).
+ */
+function expand_urls_to_all_mirrors(array $urls): array {
+    $out  = [];
+    $seen = [];
+    foreach ($urls as $u) {
+        // Si l'URL contient un host zone-telechargement.*, on extrait le chemin+query
+        if (preg_match('~^https?://[^/]*zone-telechargement[^/]*(/.*)$~i', $u, $m)) {
+            $tail = $m[1];
+            foreach (ZT_MIRRORS as $base) {
+                $full = rtrim($base, '/') . $tail;
+                if (!isset($seen[$full])) { $out[] = $full; $seen[$full] = true; }
+            }
+        } else {
+            // URL non-ZT (chemin relatif, autre domaine, …) → on ne touche pas
+            if (!isset($seen[$u])) { $out[] = $u; $seen[$u] = true; }
+        }
+    }
+    return $out;
+}
+
 function merge_qualities(array $urlList, string $year = '', bool $isSerie = false,
                          int $filterSeason = 0, int $filterEpisode = 0): array {
     if (empty($urlList)) return ['qualities' => [], 'meta' => []];
+    // Étend chaque pageUrl à tous les miroirs configurés (org + cafe + …) pour
+    // récupérer les liens disponibles sur les deux sites.
+    $urlList   = expand_urls_to_all_mirrors($urlList);
     $htmlByUrl = http_fetch_multi($urlList);
     $allQualities = [];
     $mainMeta = [];
