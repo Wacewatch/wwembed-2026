@@ -1,5 +1,5 @@
 diff --git a/zt.php b/zt.php
-index ae166e4..1f1ef89 100644
+index ae166e4..f23cb7f 100644
 --- a/zt.php
 +++ b/zt.php
 @@ -22,6 +22,13 @@ mb_internal_encoding('UTF-8');
@@ -793,6 +793,15 @@ index ae166e4..1f1ef89 100644
  }
  
  /** Indique si le type donné (alias ou slug) bénéficie d'enrichissement TMDB. */
+@@ -1591,7 +1790,7 @@ function build_result_base(array $tmdbData, string $type, int $season, int $epis
+         'totalLinks'    => $total,
+         'pagesScraped'  => $pageCount,
+         'message'       => ($pageCount === 0 || $total === 0)
+-            ? 'Aucun lien trouvé pour ce titre sur zone-telechargement.org'
++            ? 'Aucun lien trouvé pour ce titre sur zone-telechargement (.org / .cafe)'
+             : null,
+     ];
+ }
 @@ -1729,7 +1928,7 @@ function find_candidates_for_tmdb(array $tmdbData, string $type, array $catSlugs
      // Agrégation des résultats de toutes les variantes (dédup par pageUrl)
      $aggregated = [];

@@ -1790,7 +1790,7 @@ function build_result_base(array $tmdbData, string $type, int $season, int $epis
         'totalLinks'    => $total,
         'pagesScraped'  => $pageCount,
         'message'       => ($pageCount === 0 || $total === 0)
-            ? 'Aucun lien trouvé pour ce titre sur zone-telechargement.org'
+            ? 'Aucun lien trouvé pour ce titre sur zone-telechargement (.org / .cafe)'
             : null,
     ];
 }
