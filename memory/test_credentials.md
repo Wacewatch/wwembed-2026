@@ -11,8 +11,8 @@
 - Rôle: `member`
 
 ## URLs
-- Frontend: https://dark-source-preview.preview.emergentagent.com/
-- Backend proxy (FastAPI): https://dark-source-preview.preview.emergentagent.com/api/health
+- Frontend: https://restore-org-link.preview.emergentagent.com/
+- Backend proxy (FastAPI): https://restore-org-link.preview.emergentagent.com/api/health
 - Login: /auth/login
 - Sign up: /auth/sign-up
 - Mot de passe oublié: /auth/forgot-password

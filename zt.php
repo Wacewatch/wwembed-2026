@@ -470,50 +470,41 @@ function scrape_listing(string $html): array {
     $results = [];
     $seen = [];
 
-    // Match: <a href=".../[category-folder]/[digits]-[slug].html">TITLE</a>
-    // Categories of interest: film-gratuit, nouveaux-films, telecharger-serie, animes,
-    //   jeux-gratuit, musique-mp3-gratuite, ebooks, logiciels, documentaire-gratuit, emissions-tv...
-    $allowedCats = [
-        'film-gratuit','nouveaux-films','film-vostfr','film-bluray-hd','films-ultra-hd-4k',
-        'film-x265-x264-hdlight','film-dvdrip-bdrip','film-mkv','tscam-films-2020',
-        'dessins-animes','film-vfstfr','films-vo','collections-films-integrale','film-bluray-3d',
-        'telecharger-serie','serie-vf','serie-vf-en-hd','serie-vf-1080p',
-        'serie-vostfr','serie-vostfr-hd','serie-vostfr-1080p','serie-vo','ancienne-serie',
-        'animes','animes-vostfr','animes-vostfr-720p','animes-vostfr-1080p',
-        'animes-vf','animes-vf-720p','animes-vf-1080p','animes-vosten','films-mangas','oav',
-        'jeux-gratuit','jeux-pc','jeux-xbox360','jeux-ps3','jeux-wii-ds','jeux-wii',
-        'jeux-psp','jeux-mac','jeux-objets-caches','nintendo-switch',
-        'musique-mp3-gratuite','musiques-enfants',
-        'ebooks','livre-audio','magazines','journaux','livres','bandeessinee',
-        'logiciels',
-        'documentaire-gratuit',
-        'emissions-tv','emissions-tv-reportages-investigations','emissions-tv-divertissements',
-        'emissions-tv-telerealite','emissions-tv-musique-danse','emissions-tv-actualite',
-        'emissions-tv-nature-animaux','emissions-tv-sport-auto','emissions-tv-cuisine',
-        'emissions-tv-sante','emissions-tv-sciences-technologie',
-        'spectacles','concerts','sport','autoformations',
-    ];
-    $catRe = implode('|', array_map('preg_quote', $allowedCats));
+    // Nouveau format ZT 2026 :
+    //   <a href="?p=film&id=12345-slug-blabla">TITRE</a>
+    //   <a href="?p=serie&id=2000-breaking-bad-saison1">TITRE</a>
+    //   <a href="https://www.zone-telechargement.org/?p=film&id=...">TITRE</a>
+    // Catégories (kinds) : film, serie, manga, jeu, musique, ebook, logiciel,
+    //                      autre-video, mobile
+    $kinds   = ['film','serie','manga','jeu','musique','ebook','logiciel','autre-video','mobile'];
+    $kindsRe = implode('|', array_map('preg_quote', $kinds));
 
-    // Pattern : /CAT/12345-slug-blabla.html
-    $pattern = '~href=["\'](https?://[^"\']*zone-telechargement[^"\']*?/(?:' . $catRe . ')/\d+-[^"\']+\.html)["\'][^>]*>(.*?)</a>~si';
+    // Le href peut être relatif (?p=...) ou absolu, avec & ou &amp;
+    $pattern = '~href=["\']'
+             . '(?:https?://[^"\']*zone-telechargement[^"\']*?)?'
+             . '/?\?p=(' . $kindsRe . ')(?:&|&amp;)id=(\d+-[^"\']+?)["\']'
+             . '[^>]*>(.*?)</a>~si';
+
     if (preg_match_all($pattern, $html, $matches, PREG_SET_ORDER)) {
         foreach ($matches as $m) {
-            $href  = hd($m[1]);
+            $kind   = strtolower($m[1]);
+            $idPart = $m[2];
+            // Reconstruit une URL absolue canonique sur le domaine officiel
+            $href   = rtrim(BASE_URL, '/') . '/?p=' . $kind . '&id=' . $idPart;
             if (isset($seen[$href])) continue;
-            $title = hd(preg_replace('/\s+/', ' ', trim(strip_tags($m[2]))));
-            // Skip when the anchor only contains an image (no text)
-            if (!$title || mb_strlen($title) < 3) continue;
-            // Skip generic navigation links
+
+            $title = hd(preg_replace('/\s+/', ' ', trim(strip_tags($m[3]))));
+            if (!$title || mb_strlen($title) < 2) continue;
+
             $titleLow = mb_strtolower($title, 'UTF-8');
-            if (preg_match('~^(suite\.{0,3}|voir toute la liste|cliquez|accueil)~u', $titleLow)) continue;
+            if (preg_match('~^(suite\.{0,3}|voir toute la liste|cliquez|accueil|s\'?abonner)~u', $titleLow)) continue;
+
             $seen[$href] = true;
-            // Extrait un titre depuis le slug URL (souvent plus complet que le
-            // texte tronqué du <a> dans les listings). Ex :
-            //   /film-gratuit/91280-telecharger-a-marvel-television-special-presentation-the-punisher-one-last-kill-web-dl-1080p-multi.html
-            //   → "a marvel television special presentation the punisher one last kill web dl 1080p multi"
+
+            // Slug → titre lisible (souvent plus complet que le texte du <a>).
+            // Ex : "56479-super-mario-galaxy-le-film" → "super mario galaxy le film"
             $slugTitle = '';
-            if (preg_match('~/\d+-(?:telecharger-)?([^/]+?)\.html~i', $href, $sm)) {
+            if (preg_match('~^\d+-(.+)$~', $idPart, $sm)) {
                 $slugTitle = str_replace('-', ' ', $sm[1]);
                 $slugTitle = preg_replace('/\s+/', ' ', trim($slugTitle));
             }
@@ -524,33 +515,63 @@ function scrape_listing(string $html): array {
 }
 
 /**
- * Build a search URL for zone-telechargement (DataLife Engine).
- * subaction=search + story=... + result_from optional.
+ * Mapping API type → section ZT (paramètre `?p=`) pour la recherche.
+ * Le nouveau site ZT (2026) sépare les recherches par section :
+ *   /?p=films&search=...    /?p=series&search=...   /?p=mangas&search=...
+ *   /?p=jeux&search=...     /?p=musiques&search=... /?p=ebooks&search=...
+ *   /?p=logiciels&search=...   /?p=autres-videos&search=...
  */
-function zt_search_url(string $query, string $category = ''): string {
-    // Si une catégorie est fournie, on recherche dans cette section uniquement via search.xfsearch
-    // L'URL de recherche standard fonctionne globalement, on filtrera après par catégorie côté code.
-    return BASE_URL . '/index.php?do=search&subaction=search&story=' . rawurlencode($query);
+function zt_search_section(string $type): string {
+    $t = normalize_type_alias($type);
+    $map = [
+        'movie'         => 'films',
+        'tv'            => 'series',
+        'anime'         => 'mangas',
+        'jeux'          => 'jeux',
+        'musique'       => 'musiques',
+        'ebook'         => 'ebooks',
+        'logiciel'      => 'logiciels',
+        'documentaire'  => 'autres-videos',
+        'emission'      => 'autres-videos',
+        'spectacle'     => 'autres-videos',
+        'concert'       => 'autres-videos',
+        'sport'         => 'autres-videos',
+        'autoformation' => 'autres-videos',
+    ];
+    return $map[$t] ?? 'films';
 }
 
-function zt_search(string $query): array {
-    // ZT search uses POST (form action="/"), but DLE supports GET on index.php?do=search aussi.
-    // On essaie GET d'abord, fallback POST si rien.
-    $url = zt_search_url($query);
-    $html = http_fetch($url);
+/**
+ * Build a search URL for zone-telechargement (nouveau format 2026).
+ *   /?p=<section>&search=<query>
+ */
+function zt_search_url(string $query, string $type = 'movie'): string {
+    $section = zt_search_section($type);
+    return BASE_URL . '/?p=' . $section . '&search=' . rawurlencode($query);
+}
+
+function zt_search(string $query, string $type = 'movie'): array {
+    // Essai sur la section principale (films/series/mangas/jeux/...)
+    $url   = zt_search_url($query, $type);
+    $html  = http_fetch($url);
     $items = scrape_listing($html ?: '');
     if (!empty($items)) return $items;
 
-    // Fallback POST sur la racine avec champ "q"
-    $html2 = http_fetch(BASE_URL . '/', 15, 'POST', ['q' => $query]);
+    // Fallback : recherche sur l'index global (renvoie tous les types confondus,
+    // sera ensuite filtré par filter_by_category côté appelant).
+    $url2  = BASE_URL . '/?search=' . rawurlencode($query);
+    $html2 = http_fetch($url2);
     return scrape_listing($html2 ?: '');
 }
 
 /**
- * Détermine la catégorie ZT (slug) à partir d'une URL détail.
+ * Détermine la catégorie ZT (kind singulier : film, serie, manga, jeu, …)
+ * à partir d'une URL détail au nouveau format `?p=<kind>&id=<id>-<slug>`.
  */
 function category_from_url(string $url): string {
-    if (preg_match('~/([\w-]+)/\d+-[^/]+\.html~', $url, $m)) return $m[1];
+    if (preg_match('~[?&]p=([a-z\-]+)&(?:amp;)?id=\d+~i', $url, $m)) {
+        return strtolower($m[1]);
+    }
     return '';
 }
 
@@ -587,10 +608,12 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie = 
         $title = hd(trim(strip_tags($m[1])));
     }
 
-    // ── Récupération de la zone "centersideinn" / "dle-content" ──
+    // ── Récupération de la zone "dle-content" ──
     // On isole la zone de contenu pour éviter de scraper le menu/sidebar.
+    // Le nouveau template ZT 2026 utilise `<div id='dle-content'>...</div>`
+    // suivi de blocs `<div class="c-share">` ou `<div class="pheading">`.
     $content = $html;
-    if (preg_match('~<div\s+id=["\']dle-content["\'][^>]*>(.*?)<div\s+class=["\']pheading~si', $html, $cm)) {
+    if (preg_match('~<div\s+id=["\']dle-content["\'][^>]*>(.*?)(?:<div\s+class=["\']c-share|<div\s+class=["\']pheading|<footer)~si', $html, $cm)) {
         $content = $cm[1];
     }
 
@@ -625,15 +648,20 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie = 
     $meta = ['title' => $bigTitle, 'poster' => $poster];
     $metaLabels = [
         'Origine'          => 'origin',
+        'Nationalité'      => 'origin',
         'Réalisation'      => 'director',
+        'Réalisateur(s)'   => 'director',
+        'Réalisateur'      => 'director',
         'Acteur(s)'        => 'actors',
         'Acteurs'          => 'actors',
         'Genre'            => 'genres',
         'Date de sortie'   => 'release_date',
         'Note'             => 'rating',
+        'Critiques Spectateurs' => 'rating',
         'Titre original'   => 'original_title',
         'Durée'            => 'duration',
         'Année'            => 'year',
+        'Année de production' => 'year',
         'Développement'    => 'developer',
         'Développeur'      => 'developer',
         'Édition'          => 'publisher',
@@ -651,24 +679,31 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie = 
         'Langue'           => 'lang_meta',
         'Format'           => 'format_meta',
         'Taille'           => 'size_meta',
+        'Taille du fichier' => 'size_meta',
+        "Taille d'un episode" => 'size_meta',
+        'Qualité'          => 'quality_meta',
     ];
     foreach ($metaLabels as $lbl => $key) {
         // Plus tolérant : le ":" peut être avant OU après </strong>/</b>,
         // et l'ouverture peut être <strong> ou <b> avec ou sans <u>.
+        // La valeur peut contenir des <a>...</a> (réalisateur, acteurs, genres).
+        // On capture donc tout jusqu'au prochain <br>, <strong>, <b>, ou fin de ligne.
         $re = '~<(?:strong|b)>\s*(?:<u>)?\s*' . preg_quote($lbl, '~')
-            . '\s*(?::\s*)?</u>\s*(?::\s*)?</(?:strong|b)>\s*:?\s*([^<\n]{1,400})~siu';
+            . '\s*(?::\s*)?</u>\s*(?::\s*)?</(?:strong|b)>\s*:?\s*(.{1,600}?)(?:<br|<strong|<b>|</?h[1-6]|\n\s*\n)~siu';
         if (preg_match($re, $content, $mm)) {
             $val = hd(trim(strip_tags($mm[1])));
             $val = trim($val, " :\t\n\r\0\x0B");
+            $val = preg_replace('/\s+/u', ' ', $val);
             if ($val && !isset($meta[$key])) $meta[$key] = $val;
             continue;
         }
         // Fallback sans <u>
         $re2 = '~<(?:strong|b)>\s*' . preg_quote($lbl, '~')
-             . '\s*(?::\s*)?</(?:strong|b)>\s*:?\s*([^<\n]{1,400})~siu';
+             . '\s*(?::\s*)?</(?:strong|b)>\s*:?\s*(.{1,600}?)(?:<br|<strong|<b>|</?h[1-6]|\n\s*\n)~siu';
         if (preg_match($re2, $content, $mm)) {
             $val = hd(trim(strip_tags($mm[1])));
             $val = trim($val, " :\t\n\r\0\x0B");
+            $val = preg_replace('/\s+/u', ' ', $val);
             if ($val && !isset($meta[$key])) $meta[$key] = $val;
         }
     }
@@ -683,14 +718,63 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie = 
         if (mb_strlen($txt) >= 30) $meta['synopsis'] = $txt;
     }
 
-    // ── Qualité & Langue depuis le bandeau "Qualité X | LANG" ──
+    // ── Qualité & Langue ─────────────────────────────────────
+    // Nouveau format 2026 :
+    //   films  : <strong><u>Qualité</u> :</strong> WEBRIP<br>
+    //            <strong><u>Langue</u>  :</strong> TRUEFRENCH<br>
+    //            <strong><u>Taille du fichier</u> :</strong> 1.5 Go<br>
+    //   series : bandeau « VOSTFR HD<br><br>7 Episodes | Saison 1 »
+    //   ancien : bandeau « Qualité WEBRIP | TRUEFRENCH »
     $quality = '';
     $lang    = '';
-    if (preg_match('~Qualit[eé]\s*([^|<]+)\s*\|\s*([A-ZÉ]+)~iu', $content, $qm)) {
-        $quality = strtoupper(trim($qm[1]));
-        $lang    = strtoupper(trim($qm[2]));
+
+    // 1) Récupère depuis les méta strong/u extraites plus haut
+    if (!empty($meta['quality_meta'])) $quality = strtoupper(trim($meta['quality_meta']));
+    if (!empty($meta['lang_meta']))    $lang    = strtoupper(trim($meta['lang_meta']));
+
+    // 2) Ancien bandeau « Qualité X | LANG » (au cas où)
+    if ((!$quality || !$lang) &&
+        preg_match('~Qualit[eé]\s+([A-Z0-9][^|<]{1,40})\s*\|\s*([A-ZÉ\s]+?)(?:<|$|\s{2,})~iu', $content, $qm)) {
+        if (!$quality) $quality = strtoupper(trim($qm[1]));
+        if (!$lang)    $lang    = strtoupper(trim($qm[2]));
     }
-    // Fallback : extraire depuis le titre h1
+
+    // 3) Bandeau « font-size:18px ... color:red » des séries : « VOSTFR HD<br>… »
+    if ((!$quality || !$lang)
+        && preg_match('~font-size:\s*18px[^"\']*["\'][^>]*>(.*?)</div>~si', $content, $bnd)) {
+        $bandeau = strip_tags($bnd[1]);
+        $bandeau = preg_replace('/\s+/u', ' ', trim($bandeau));
+        // Capture la 1re séquence de mots de qualité/langue (avant « N Episodes »
+        // ou avant un séparateur fort comme « |   »).
+        $head = preg_split('~\s*\|\s*~u', $bandeau)[0] ?? $bandeau;
+        $head = preg_replace('~\s*\d+\s*Episodes?\b.*$~iu', '', $head);
+        $head = strtoupper(trim($head));
+        if ($head) {
+            // Sépare langue (VOSTFR/VF/MULTI/FRENCH/…) et qualité (HD/1080p/720p/…)
+            $langTokens    = ['TRUEFRENCH','VOSTFR','VFSTFR','MULTI','FRENCH','VFF','VFQ','VF','VO'];
+            $qualityTokens = ['ULTRA HD 4K','WEB-DL 2160P','WEB-DL 1080P','WEB-DL 720P','WEB-DL',
+                              'BLU-RAY 1080P','BLU-RAY 720P','BLU-RAY','BDRIP','BDREMUX',
+                              'WEBRIP 1080P','WEBRIP 720P','WEBRIP','HDLIGHT','HDRIP',
+                              'DVDRIP','HDTS','CAM','HDCAM','TS','TC',
+                              '2160P','1080P','720P','480P','UHD','4K','HD'];
+            if (!$lang) {
+                foreach ($langTokens as $lt) {
+                    if (preg_match('~\b' . preg_quote($lt, '~') . '\b~u', $head)) {
+                        $lang = $lt; break;
+                    }
+                }
+            }
+            if (!$quality) {
+                foreach ($qualityTokens as $qt) {
+                    if (preg_match('~\b' . preg_quote($qt, '~') . '\b~u', $head)) {
+                        $quality = $qt; break;
+                    }
+                }
+            }
+        }
+    }
+
+    // 4) Fallback ultime : extrait depuis le titre h1
     if (!$quality && $bigTitle) {
         $qPatterns = [
             '~\b(ULTRA\s*HD\s*\(?X265\)?|ULTRA\s*HD\s*4K|WEB[-\s]?DL\s*2160p|4K\s*BLU\s*RAY|4K)\b~i',
@@ -715,10 +799,13 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie = 
         }
     }
 
-    // ── Saison / Épisode depuis le bandeau ──
+    // ── Saison / Épisode ───────────────────────────────────
     $pageSeInfo = ['season' => null, 'episode' => null];
     if (preg_match('~Episode\s+(\d{1,3})\s*\|\s*Saison\s*(\d{1,2})~iu', $content, $sem)) {
         $pageSeInfo['episode'] = (int)$sem[1];
+        $pageSeInfo['season']  = (int)$sem[2];
+    } elseif (preg_match('~(\d{1,3})\s*Episodes?\s*\|\s*Saison\s*(\d{1,2})~iu', $content, $sem)) {
+        // Page « Saison entière » : pas d'épisode courant mais on capture la saison
         $pageSeInfo['season']  = (int)$sem[2];
     } else {
         $pageSeInfo = extract_season_episode($bigTitle . ' ' . $pageUrl);
@@ -726,170 +813,176 @@ function scrape_detail_html(string $html, string $pageUrl = '', bool $isSerie = 
 
     // ── Taille globale ──
     $globalSize = '';
-    if (preg_match('~Taille\s*:?\s*</(?:strong|b|u|td)>\s*<[^>]*>?\s*([^<\n]{1,30})~si', $content, $sz)) {
+    if (!empty($meta['size_meta'])) $globalSize = $meta['size_meta'];
+    if (!$globalSize && preg_match('~<center>\s*<font[^>]*color=["\']red["\'][^>]*>[^<]*\(([^()<]{1,30})\)\s*</font>\s*</center>~si', $content, $sz)) {
+        $globalSize = hd(trim($sz[1]));
+    }
+    if (!$globalSize && preg_match('~Taille\s*:?\s*</(?:strong|b|u|td)>\s*<[^>]*>?\s*([^<\n]{1,30})~si', $content, $sz)) {
         $globalSize = hd(trim(strip_tags($sz[1])));
     }
     if (!$globalSize && preg_match('~Taille\s*:?\s*<[^>]+>([^<]{1,30})~si', $content, $sz)) {
         $globalSize = hd(trim(strip_tags($sz[1])));
     }
 
+    // Filename brut depuis le bandeau rouge `<center><font color="red">FILENAME (Size)</font></center>`
+    $globalFilename = '';
+    if (preg_match('~<center>\s*<font[^>]*color=["\']red["\'][^>]*>\s*([^<()]{3,200}?)(?:\s*\([^()<]{1,30}\))?\s*</font>\s*</center>~si', $content, $fnm)) {
+        $globalFilename = hd(trim($fnm[1]));
+    }
+
     // ════════════════════════════════════════════════════════
-    // EXTRACTION DES LIENS DDL & STREAMING
+    // EXTRACTION DES LIENS DDL & STREAMING (Nouveau format 2026)
     // ════════════════════════════════════════════════════════
+    // Structure de page ZT actuelle :
+    //   <h2>...Liens De Téléchargement :</h2>
+    //   <div class="postinfo">
+    //       <b><div style="font-weight:bold;color:#XXXXXX">HostName</div></b>
+    //       <b><a rel="external nofollow" target="_blank"
+    //             href="https://dl-protect.link/HASH?fn=BASE64&rl=aN">Télécharger</a></b><br>
+    //       <a ...>Télécharger</a> ...
+    //       <br/>
+    //       <b><div ...>OtherHost</div></b>
+    //       <a ...>Episode 1</a><a ...>Episode 2</a>...
+    //   </div>
+    //   <h2>...Liens De Streaming :</h2>
+    //   <div class="postinfo">  ... même structure ...  </div>
     //
-    // Structure rencontrée dans <div class="postinfo"> :
-    //   <img src=".../img/{host}.png">  → indique l'hébergeur DDL
-    //   <a class="btnToLink" href="zoneurs.net/?url=BASE64">Episode 1</a>
-    //   <a class="btnToLink" href="...">Episode 2</a>
-    //   ...
-    //
-    // Puis un marqueur "▶ Regarder en Streaming" suivi de :
-    //   <a class="btnToLink" href="...">Hostname - Episode 1</a>
-    //
-    // Stratégie : on parcourt le HTML séquentiellement et on garde un état :
-    //   - $currentHost : dernier host vu (via <img src=".../img/X.png"> ou <div>HostName</div>)
-    //   - $inStream    : true après avoir vu le marqueur "Regarder en Streaming"
-    //
+    // Stratégie : on découpe le contenu par marqueurs DDL / Streaming puis,
+    // dans chaque zone, on parcourt séquentiellement les `<div font-weight:bold>`
+    // (host) et `<a href=...>` (lien).
     $streamLinks   = [];
     $downloadLinks = [];
 
-    // On travaille uniquement sur la zone contenu (entre <div class="postinfo">...).
-    // Il peut y avoir plusieurs postinfo / sections. On capture tout le bloc news-id-* ou postinfo.
-    $contentZone = $content;
-    if (preg_match('~<div\s+id=["\']news-id-\d+["\'][^>]*>(.*?)<div\s+style=["\']bottom~si', $content, $nm)) {
-        $contentZone = $nm[1];
+    // 1) Split en zones (download / stream)
+    $dlMarkerRe = '~<h2[^>]*>\s*<b>\s*<center>\s*Liens\s+De\s+T[ée]l[ée]chargement\s*:?\s*</center>\s*</b>\s*</h2>~siu';
+    $stMarkerRe = '~<h2[^>]*>\s*<b>\s*<center>\s*Liens\s+De\s+Streaming\s*:?\s*</center>\s*</b>\s*</h2>~siu';
+
+    $dlPos = preg_match($dlMarkerRe, $content, $_d, PREG_OFFSET_CAPTURE)
+           ? $_d[0][1] + strlen($_d[0][0]) : -1;
+    $stPos = preg_match($stMarkerRe, $content, $_s, PREG_OFFSET_CAPTURE)
+           ? $_s[0][1] + strlen($_s[0][0]) : -1;
+
+    $zones = [];
+    if ($dlPos >= 0) {
+        $end = ($stPos > $dlPos) ? $stPos : strlen($content);
+        $zones[] = ['kind' => 'dl', 'html' => substr($content, $dlPos, $end - $dlPos)];
+    }
+    if ($stPos >= 0) {
+        $end = ($dlPos > $stPos) ? $dlPos : strlen($content);
+        $zones[] = ['kind' => 'st', 'html' => substr($content, $stPos, $end - $stPos)];
+    }
+    // Fallback : si aucun marqueur trouvé (rare), on tente sur tout le contenu en DDL
+    if (empty($zones)) {
+        $zones[] = ['kind' => 'dl', 'html' => $content];
     }
 
-    // Token-based parsing : on extrait tous les "tokens d'intérêt" dans l'ordre
-    // (img-host, text-host-marker, stream-marker, link-anchor).
-    $tokens = [];
-    $tokenRe = '~'
-        . '(?P<imgHost><img[^>]+src=["\'](?:https?://[^"\']*)?/img/([\w.\-]+)\.png["\'][^>]*>)'
-        . '|'
-        // Texte "Hostname" sous forme de <div ...>Send.now</div> (host sans icône)
-        . '(?P<textHost><div[^>]*font-weight\s*:\s*bold[^>]*>\s*([\w.\-]{2,40})\s*</div>)'
-        . '|'
-        // Marqueur streaming "▶ Regarder en Streaming"
-        . '(?P<streamMarker>▶\s*Regarder\s+en\s+Streaming)'
-        . '|'
-        // Marqueur DDL alternatif
-        . '(?P<dlMarker>(?:Lien[s]?\s+de\s+)?T[ée]l[ée]chargement[^<]{0,40})'
-        . '|'
-        // Lien btnToLink
-        . '(?P<link><a[^>]*class=["\'][^"\']*btnToLink[^"\']*["\'][^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>)'
-        . '~siu';
+    // 2) Pour chaque zone, séquence host / liens
+    $seenUrls = [];
+    foreach ($zones as $zone) {
+        $zoneHtml = $zone['html'];
+        $isStream = ($zone['kind'] === 'st');
 
-    if (preg_match_all($tokenRe, $contentZone, $tokenMatches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE)) {
+        // On s'arrête au prochain <h2> ou bloc de partage (sécurité)
+        if (preg_match('~(<h2\b|<div\s+class=["\']c-share|<div\s+style=["\']bottom)~si',
+                        $zoneHtml, $_e, PREG_OFFSET_CAPTURE)) {
+            $zoneHtml = substr($zoneHtml, 0, $_e[0][1]);
+        }
+
+        // Token pattern :
+        //   - host div  : <div style="font-weight:bold;color:#...">HostName</div>
+        //   - lien      : <a href="..." ...>Texte</a>
+        $tokenRe = '~'
+                 . '(?P<hostDiv><div[^>]*style=["\'][^"\']*font-weight\s*:\s*bold[^"\']*["\'][^>]*>\s*(?:<[^>]+>\s*)*([\w.\- ]{2,40})\s*(?:<[^>]+>\s*)*</div>)'
+                 . '|'
+                 . '(?P<link><a\b[^>]*\bhref=["\']([^"\']+)["\'][^>]*>(.*?)</a>)'
+                 . '~siu';
+
+        if (!preg_match_all($tokenRe, $zoneHtml, $tk, PREG_SET_ORDER)) continue;
+
         $currentHost = '';
-        $inStream    = false;
-        $seenUrls    = [];
-
-        foreach ($tokenMatches as $tk) {
-            if (!empty($tk['imgHost'][0])) {
-                $hostKey = strtolower($tk[2][0]);
-                $currentHost = HOST_PATTERNS[$hostKey] ?? ucfirst($hostKey);
-                continue;
-            }
-            if (!empty($tk['textHost'][0])) {
-                $candidate = trim($tk[4][0]);
+        foreach ($tk as $t) {
+            if (!empty($t['hostDiv'])) {
+                $candidate = trim($t[2]);
                 $candLow   = strtolower($candidate);
-                // Whitelist : doit correspondre à un host connu
-                if (isset(HOST_PATTERNS[$candLow])) {
-                    $currentHost = HOST_PATTERNS[$candLow];
-                } else {
+                // Filtre les divs « génériques » (couleurs/footer/etc.)
+                if ($candLow === '' || in_array($candLow, ['notre','unique','nom','de','domaine','officiel'], true)) continue;
+                // Cherche un host connu
+                $mapped = HOST_PATTERNS[$candLow] ?? '';
+                if (!$mapped) {
                     foreach (HOST_PATTERNS as $pat => $label) {
-                        if (strpos($candLow, $pat) !== false) { $currentHost = $label; break; }
+                        if (strpos($candLow, $pat) !== false) { $mapped = $label; break; }
                     }
                 }
+                $currentHost = $mapped ?: $candidate;
                 continue;
             }
-            if (!empty($tk['streamMarker'][0])) {
-                $inStream    = true;
-                $currentHost = ''; // hosts du stream sont dans le texte du lien
-                continue;
-            }
-            if (!empty($tk['dlMarker'][0])) {
-                $inStream = false;
-                continue;
-            }
-            if (!empty($tk['link'][0])) {
-                // Indices positionnels avec alternance :
-                // [1]=imgHost, [2]=imgHostName, [3]=textHost, [4]=textHostName,
-                // [5]=streamMarker, [6]=dlMarker, [7]=link, [8]=href, [9]=linkText
-                $rawHref  = hd(trim($tk[8][0]));
-                // Normalise les URLs protocol-relative (//host/path → https://...)
-                if (strpos($rawHref, '//') === 0) {
-                    $rawHref = 'https:' . $rawHref;
-                }
-                $rawText  = hd(preg_replace('/\s+/', ' ', trim(strip_tags($tk[9][0]))));
-                if (!is_valid_link($rawHref, $rawText)) continue;
+            if (!empty($t['link'])) {
+                $rawHref = hd(trim($t[4]));
+                if (strpos($rawHref, '//') === 0) $rawHref = 'https:' . $rawHref;
+                $rawText = hd(preg_replace('/\s+/', ' ', trim(strip_tags($t[5]))));
 
-                $hostInfo  = extract_host_and_protection($rawHref, $rawText);
-                $realUrl   = $hostInfo['realUrl'];
+                // On ne s'intéresse qu'aux liens hosters réels (dl-protect / 1fichier
+                // / uptobox / etc.) et on rejette les liens internes ?p=… , YouTube,
+                // partage social, télécharger « PLUS RAPIDE » (premium teaser), …
+                if (!is_valid_link($rawHref, $rawText)) continue;
+                if (strpos($rawHref, '?p=') !== false || $rawHref[0] === '?') continue;
+                if (preg_match('~dl-protect\.link/rqts-url~i', $rawHref)) continue; // bouton « Télécharger en HD » global
+                if (preg_match('~zone-telechargement~i', $rawHref)) continue;
+
+                // Texte trop court (icône uniquement) → tolère « Télécharger » / « Episode N » / « Regarder »
+                $textLow = mb_strtolower($rawText, 'UTF-8');
+                if ($rawText === '' && $currentHost === '') continue;
+
+                $hostInfo = extract_host_and_protection($rawHref, $rawText);
+                $realUrl  = $hostInfo['realUrl'];
                 if (isset($seenUrls[$realUrl])) continue;
                 $seenUrls[$realUrl] = true;
 
-                // Filename + Episode/Saison
+                // Episode / saison depuis le texte du lien
                 $episode = null;
                 $season  = $pageSeInfo['season'] ?? null;
-                $filename = $rawText;
+                if (preg_match('/Episode\s+(\d{1,3})/iu', $rawText, $em)) $episode = (int)$em[1];
+                if (preg_match('/Saison\s+(\d{1,2})/iu', $rawText, $sm2)) $season  = (int)$sm2[1];
 
-                if (preg_match('/Episode\s+(\d{1,3})/iu', $rawText, $em)) {
-                    $episode = (int)$em[1];
-                }
-                if (preg_match('/Saison\s+(\d{1,2})/iu', $rawText, $sm2)) {
-                    $season = (int)$sm2[1];
-                }
-
-                // Host detection : pour streaming, dans le texte ; pour DDL, $currentHost.
-                $host = '';
-                if ($inStream) {
-                    // texte "Hostname - Episode 1" → host = avant le " - "
-                    if (preg_match('~^([\w.\-]+)\s*[-–]\s*Episode~iu', $rawText, $hm)) {
-                        $rawHostName = $hm[1];
-                        $rhLow = strtolower($rawHostName);
-                        $host = HOST_PATTERNS[$rhLow] ?? null;
-                        if (!$host) {
-                            foreach (HOST_PATTERNS as $pat => $label) {
-                                if (strpos($rhLow, $pat) !== false) { $host = $label; break; }
-                            }
-                        }
-                        if (!$host) $host = $rawHostName;
-                    } else {
-                        $host = $hostInfo['host'];
-                    }
-                } else {
-                    $host = $currentHost ?: $hostInfo['host'];
-                }
-
-                // filename pour les séries : "Épisode X - Saison Y"
+                // Filename : pour les séries → « Épisode N - Saison S »
+                //            sinon → bandeau rouge ($globalFilename) ou texte du lien
+                $filename = $globalFilename ?: $rawText;
                 if ($isSerie && $episode) {
                     $filename = 'Épisode ' . $episode;
                     if ($season) $filename .= ' - Saison ' . $season;
                 }
 
+                $host = $currentHost ?: $hostInfo['host'];
+                if (!$host && preg_match('~^([\w.\-]+)\s*[-–]\s*Episode~iu', $rawText, $hm)) {
+                    $host = $hm[1];
+                }
+
                 $entry = [
                     'host'       => $host,
-                    'protection' => $hostInfo['protection'],
+                    'protection' => $hostInfo['protection'] ?: (strpos($rawHref, 'dl-protect') !== false ? 'dl-protect' : ''),
                     'filename'   => $filename,
                     'size'       => $globalSize,
-                    'url'        => $realUrl,            // URL directe vers l'hébergeur (décodée si zoneurs)
+                    'url'        => $realUrl,
                     'season'     => $season,
                     'episode'    => $episode,
                 ];
 
-                // Classification : marqueur stream, ou host connu comme streaming
-                $finalIsStream = $inStream;
+                // Classification finale : si URL pointe vers un host streaming connu, force stream
+                $finalIsStream = $isStream;
                 $realLow = strtolower($realUrl);
                 foreach (STREAM_HOST_PATTERNS as $sp) {
                     if (strpos($realLow, $sp) !== false) { $finalIsStream = true; break; }
                 }
-
-                if ($finalIsStream) {
-                    $streamLinks[] = $entry;
-                } else {
-                    $downloadLinks[] = $entry;
+                // Si le host nommé est un streaming connu (cas dl-protect → vrai host masqué)
+                if (!$finalIsStream && $host) {
+                    $hl = strtolower($host);
+                    foreach (STREAM_HOST_PATTERNS as $sp) {
+                        if (strpos($hl, $sp) !== false) { $finalIsStream = true; break; }
+                    }
                 }
+
+                if ($finalIsStream) $streamLinks[]   = $entry;
+                else                $downloadLinks[] = $entry;
             }
         }
     }
@@ -1431,30 +1524,41 @@ function normalize_type_alias(string $t): string {
 }
 
 /**
- * Retourne la liste des slugs ZT correspondant à un type.
- * - Si $t est un alias principal (movie, tv, jeux...) → tous les slugs du groupe.
- * - Si $t est un slug précis (jeux-pc, serie-vf-1080p, animes-vostfr-720p…) → uniquement celui-là.
- * - Sinon → liste large par défaut.
+ * Retourne la liste des « kinds » (slug singulier détail) ZT correspondant à un type.
+ * Nouveau format 2026 : les pages détail sont `?p=<kind>&id=<id>-<slug>`.
+ *   movie → ['film']           tv → ['serie']           anime → ['manga']
+ *   jeux  → ['jeu']            musique → ['musique']    ebook → ['ebook']
+ *   logiciel → ['logiciel']
+ *   documentaire/emission/spectacle/concert/sport → ['autre-video']
  */
 function type_to_categories(string $t): array {
-    $reg = zt_category_registry();
-    $tn  = normalize_type_alias($t);
-
-    // 1) Type principal ?
-    if (isset($reg[$tn])) {
-        return array_keys($reg[$tn]['subs']);
-    }
-    // 2) Slug précis ?
-    foreach ($reg as $group) {
-        if (isset($group['subs'][$t])) {
-            return [$t];
-        }
-    }
-    // 3) Fallback global
-    return [
-        'film-gratuit','telecharger-serie','animes','jeux-gratuit','musique-mp3-gratuite',
-        'ebooks','logiciels','documentaire-gratuit','emissions-tv',
+    $tn = normalize_type_alias($t);
+    $map = [
+        'movie'         => ['film'],
+        'tv'            => ['serie'],
+        'anime'         => ['manga'],
+        'jeux'          => ['jeu'],
+        'musique'       => ['musique'],
+        'ebook'         => ['ebook'],
+        'logiciel'      => ['logiciel'],
+        'documentaire'  => ['autre-video'],
+        'emission'      => ['autre-video'],
+        'spectacle'     => ['autre-video'],
+        'concert'       => ['autre-video'],
+        'sport'         => ['autre-video'],
+        'autoformation' => ['autre-video'],
     ];
+    if (isset($map[$tn])) return $map[$tn];
+
+    // Si on reçoit directement un sous-slug ancienne nomenclature (film-vf-1080p,
+    // jeux-pc…), on dérive le kind via la racine du registre.
+    $reg = zt_category_registry();
+    foreach ($reg as $key => $group) {
+        if (isset($group['subs'][$t]) && isset($map[$key])) return $map[$key];
+    }
+
+    // Fallback global : toutes les sections principales
+    return ['film','serie','manga','jeu','musique','ebook','logiciel','autre-video'];
 }
 
 /** Indique si le type donné (alias ou slug) bénéficie d'enrichissement TMDB. */
@@ -1729,7 +1833,7 @@ function find_candidates_for_tmdb(array $tmdbData, string $type, array $catSlugs
     // Agrégation des résultats de toutes les variantes (dédup par pageUrl)
     $aggregated = [];
     foreach ($variants as $q) {
-        $batch = zt_search($q);
+        $batch = zt_search($q, $type);
         $batch = filter_by_category($batch, $catSlugs);
         foreach ($batch as $it) {
             if (!isset($aggregated[$it['pageUrl']])) {
@@ -1883,7 +1987,7 @@ if ($isApiCall) {
 
     if ($query !== '') {
         $catSlugs = type_to_categories($type);
-        $items    = zt_search($query);
+        $items    = zt_search($query, $type);
         $items    = filter_by_category($items, $catSlugs);
         $supportsTmdb = is_tmdb_type($type);
         $tmdbSt   = tmdb_search_type($type);
@@ -1937,7 +2041,7 @@ if ($isAjax) {
 
     if ($action === 'search') {
         $catSlugs = type_to_categories($type);
-        $items    = zt_search($title);
+        $items    = zt_search($title, $type);
         $items    = filter_by_category($items, $catSlugs);
         $tmdbSt   = tmdb_search_type($type);
         $supportsTmdb = is_tmdb_type($type);
@@ -1951,7 +2055,7 @@ if ($isAjax) {
         echo json_encode([
             'results'   => $results,
             'total'     => count($results),
-            'sourceUrl' => zt_search_url($title),
+            'sourceUrl' => zt_search_url($title, $type),
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -1959,14 +2063,14 @@ if ($isAjax) {
     if ($action === 'detail' && $urls) {
         $urlList = array_slice(array_filter(array_map('trim', explode(',', $urls))), 0, 10);
         $cat     = category_from_url($urlList[0] ?? '');
-        $isSerie = (strpos($cat, 'serie') !== false) || (strpos($cat, 'anime') !== false);
+        $isSerie = ($cat === 'serie') || ($cat === 'manga');
         $merged  = merge_qualities($urlList, '', $isSerie);
         $mm      = $merged['meta'];
 
         // Tentative d'enrichissement TMDB
         $td = null;
-        if ($isSerie || strpos($cat, 'film') !== false || strpos($cat, 'anime') !== false) {
-            $tmdbSt = (strpos($cat, 'serie') !== false || strpos($cat, 'anime') !== false) ? 'tv' : 'movie';
+        if ($isSerie || $cat === 'film') {
+            $tmdbSt = $isSerie ? 'tv' : 'movie';
             $td = tmdb_search(clean_title($mm['title'] ?? ''), $tmdbSt);
         }
         echo json_encode(['result' => [
