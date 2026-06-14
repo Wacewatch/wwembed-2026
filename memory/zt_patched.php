@@ -25,6 +25,12 @@ const BASE_URL       = 'https://www.zone-telechargement.org';
 // Miroirs ZT interrogés en parallèle (ils servent souvent le même contenu mais
 // l'un peut être down/cloudflare-protected pendant que l'autre répond).
 // Les résultats sont fusionnés (dédup par URL d'hébergeur dans merge_qualities).
+//
+// IMPORTANT : `.org` est protégé par Cloudflare et REFUSE les requêtes provenant
+// d'IPs data-center / cloud (HTTP 403). Depuis le serveur apis.wavewatch.top
+// (qui tourne sur un VPS/cloud), seul `.cafe` répond donc en pratique. Pour
+// rétablir l'accès à `.org` côté serveur, voir `/app/memory/zt-org-proxy-cf-worker.js`
+// (proxy Cloudflare Worker gratuit, 5 min de setup).
 const ZT_MIRRORS     = [
     'https://www.zone-telechargement.org',
     'https://www.zone-telechargement.cafe',
